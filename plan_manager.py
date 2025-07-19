@@ -75,7 +75,7 @@ class PlanManager:
                     "valid": True,
                     "plan": user_plan,
                     "days_used": days_used,
-                    "days_remaining": float('inf'),
+                    "days_remaining": "Unlimited",  # Changed from float('inf') to 'Unlimited'
                     "expired": False,
                     "enabled_features": self._get_all_features(),
                     "locked_features": [],
@@ -118,8 +118,11 @@ class PlanManager:
         if user_plan == "pro":
             return self._get_all_features()
         
-        if user_plan == "trial" and expired:
-            return []  # All features locked after trial expiry
+        if user_plan == "trial":
+            if expired:
+                return []  # All features locked after trial expiry
+            else:
+                return self._get_all_features()  # All features during trial
         
         if user_plan == "basic":
             if expired:
