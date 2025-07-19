@@ -2,7 +2,77 @@
 
 A modern, full-featured Point of Sale (POS) system designed specifically for tailoring businesses. Built with Flask, SQLite, and a beautiful modern UI.
 
-**Last Updated: 2025-07-16**
+**Last Updated: 2025-07-19**
+
+---
+
+## 🚦 Plan Management & Licensing
+
+Tailor POS now supports a flexible, config-driven licensing system with three plans:
+
+- **Trial:** All features for 15 days (free)
+- **Basic:** All features for 1 month, then only basic features (billing, product/customer management)
+- **PRO:** Lifetime access to all features
+
+Plan status, expiry, and feature access are managed via `config.json` and enforced in both backend and frontend. Upgrades and plan changes are supported via API and UI.
+
+### Plan Enforcement
+- **Trial Expiry:** All features locked after 15 days
+- **Basic Expiry:** PRO features (dashboard, customer search, backup/restore) locked after 1 month
+- **PRO:** Never expires, all features always available
+
+---
+
+## ⚙️ Configuration: `config.json`
+
+All plan details, feature definitions, UI lock styles, and upgrade options are defined in `config.json`. You can customize:
+- Plan durations, prices, and expiry behaviors
+- Which features are enabled/locked per plan
+- UI messages and lock overlays
+- Upgrade pricing and flows
+
+---
+
+## 🛠️ Backend Features & API Endpoints
+
+### Plan Management APIs
+- `GET /api/plan/status` — Get current plan status and expiry
+- `POST /api/plan/upgrade` — Change/upgrade plan (trial, basic, pro)
+- `GET /api/plan/features` — List enabled/locked features
+- `GET /api/plan/check-feature/<feature>` — Check if a feature is enabled
+- `GET /api/plan/config` — Get plan config for frontend
+- `POST /api/plan/expire-trial` — (Debug) Expire trial instantly
+- `POST /api/plan/reset-trial` — (Debug) Reset trial to today
+
+### Plan Logic
+- See `plan_manager.py` for all backend plan logic and expiry calculations
+- See `test_plan_manager.py` for backend plan logic tests
+
+---
+
+## 🖥️ Frontend Features
+
+- **UI plan enforcement:** All feature access is locked/unlocked based on plan status
+- **Upgrade prompts:** Users see upgrade modals and lock overlays when features are restricted
+- **Debug page:** `/debug-plan` for interactive plan testing and switching
+
+---
+
+## 🧪 Testing & Debugging
+
+- **Debug Page:** `/debug-plan` — Test plan status, expiry, and switch between plans instantly
+- **Backend Test Script:** `python test_plan_manager.py` — Run backend plan logic tests
+
+---
+
+## 📁 .gitignore & Excluded Files
+
+If you do not want to push the `bkpup/` directory to git, add this to your `.gitignore`:
+```
+bkpup/
+```
+
+---
 
 ## 3-Tier Product Versions & Pricing
 
