@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Tailor POS{% endblock %}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    @keyframes fade-in{0%{opacity:0;transform:translateY(12px);filter:blur(4px)}100%{opacity:1;transform:none;filter:blur(0)}}
+    .fade-in{animation:fade-in .45s cubic-bezier(.33,1,.68,1) forwards}
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-neutral-900 text-white font-sans antialiased selection:bg-indigo-600 selection:text-white">
+  <!-- NAVBAR -->
+  <nav class="bg-neutral-800/60 backdrop-blur border-b border-neutral-700 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo and Brand -->
+        <div class="flex items-center">
+          <img src="{{ url_for('static', filename='dressme_logo.png') }}" alt="DressMe Logo" class="w-10 h-10 rounded-full object-cover border-2 border-neutral-700 mr-3">
+          <div class="flex flex-col">
+            <h1 class="text-xl font-semibold tracking-tight">Tailor POS</h1>
+            <p class="text-xs text-neutral-400">Professional Tailoring Management</p>
+          </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="hidden md:block">
+          <div class="ml-10 flex items-baseline space-x-8">
+            <a href="{{ url_for('app_page') }}" class="nav-link {% if request.endpoint == 'app_page' %}active{% endif %} px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              <svg data-lucide="app-window" class="w-4 h-4 inline mr-2"></svg>
+              App
+            </a>
+            <a href="{{ url_for('pricing') }}" class="nav-link {% if request.endpoint == 'pricing' %}active{% endif %} px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              <svg data-lucide="credit-card" class="w-4 h-4 inline mr-2"></svg>
+              Pricing
+            </a>
+          </div>
+        </div>
+
+        <!-- Mobile menu button -->
+        <div class="md:hidden">
+          <button id="mobile-menu-button" class="text-neutral-300 hover:text-white focus:outline-none focus:text-white">
+            <svg data-lucide="menu" class="w-6 h-6"></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="md:hidden hidden">
+      <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-neutral-800/90">
+        <a href="{{ url_for('app_page') }}" class="mobile-nav-link {% if request.endpoint == 'app_page' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+          <svg data-lucide="app-window" class="w-4 h-4 inline mr-2"></svg>
+          App
+        </a>
+        <a href="{{ url_for('pricing') }}" class="mobile-nav-link {% if request.endpoint == 'pricing' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+          <svg data-lucide="credit-card" class="w-4 h-4 inline mr-2"></svg>
+          Pricing
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="fade-in" style="animation-delay:.12s">
+    {% block content %}{% endblock %}
+  </main>
+
+  <style>
+    .nav-link {
+      @apply text-neutral-300 hover:text-white hover:bg-neutral-700;
+    }
+    .nav-link.active {
+      @apply text-white bg-indigo-600;
+    }
+    .mobile-nav-link {
+      @apply text-neutral-300 hover:text-white hover:bg-neutral-700;
+    }
+    .mobile-nav-link.active {
+      @apply text-white bg-indigo-600;
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      lucide.createIcons();
+      
+      // Mobile menu toggle
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      
+      if (mobileMenuButton && mobileMenu) {
+        mobileMenuButton.addEventListener('click', function() {
+          mobileMenu.classList.toggle('hidden');
+        });
+      }
+    });
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html> 

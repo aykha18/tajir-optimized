@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill #{{ bill.bill_number }}</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .bill-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .customer-info, .bill-details {
+            flex: 1;
+        }
+        
+        .customer-info h3, .bill-details h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+        
+        .info-row {
+            margin-bottom: 5px;
+        }
+        
+        .label {
+            font-weight: bold;
+            color: #000;
+            font-size: 13px;
+            display: inline-block;
+            width: 90px;
+            font-family: Calibri, Arial, sans-serif;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        
+        .totals {
+            margin-left: auto;
+            width: 300px;
+            font-size: 13px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .total-row.final {
+            font-weight: bold;
+            font-size: 14px;
+            border-top: 2px solid #000;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+        }
+        
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .print-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">Print Bill</button>
+    
+    <div class="header">
+        <!-- <div class="title">&nbsp</div> -->
+        <div>&nbsp</div>
+        <div>&nbsp</div>
+        <div>&nbsp</div>
+        <div>&nbsp</div>
+        <div>&nbsp</div>
+        <div class="title">TAX INVOICE</div>
+
+    </div>
+    
+    <div class="bill-info">
+        <div class="customer-info">
+            <h3>CUSTOMER DETAILS</h3>
+            <div class="info-row">
+                <span class="label">Name:</span>
+                <span style="font-size: 14px;">{{ bill.customer_name or 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Phone:</span>
+                <span style="font-size: 14px;">{{ bill.customer_phone or 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">City:</span>
+                <span style="font-size: 14px;">{{ bill.customer_city or 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Area:</span>
+                <span style="font-size: 14px;">{{ bill.customer_area or 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Trial Date:</span>
+                <span style="font-size: 14px;">{{ bill.trial_date or 'N/A' }}</span>
+            </div>
+        </div>
+        
+        <div class="bill-details" style="margin-left: -200px;">
+            <h3 style="display: flex; justify-content: space-between; align-items: flex-end;">
+                BILL DETAILS
+                <span style="font-size: 13px; font-weight: bold; text-align: left; margin-left: -200px;">TRN:104926929100001</span>
+            </h3>
+            <div class="info-row">
+                <span class="label">Bill #:</span>
+                <span style="font-size: 14px;">{{ bill.bill_number }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Date:</span>
+                <span style="font-size: 14px;">{{ bill.bill_date }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Delivery:</span>
+                <span style="font-size: 14px;">{{ bill.delivery_date or 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Payment:</span>
+                <span style="font-size: 14px;">{{ bill.payment_method }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Master:</span>
+                <span style="font-size: 14px;">{{ bill.master_name or 'N/A' }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Sr.</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Rate (AED)</th>
+                <th>Discount (AED)</th>
+                <th>Advance (AED)</th>
+                <th>Total (AED)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ "%.2f"|format(item.rate) }}</td>
+                <td>{{ "%.2f"|format(item.discount) }}</td>
+                <td>{{ "%.2f"|format(item.advance_paid) }}</td>
+                <td>{{ "%.2f"|format(item.total_amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="totals">
+        <div class="total-row">
+            <span>Subtotal:</span>
+            <span>AED {{ "%.2f"|format(bill.subtotal) }}</span>
+        </div>
+        <div class="total-row">
+            <span>VAT ({{ bill.vat_percent or '5.0' }}%):</span>
+            <span>AED {{ "%.2f"|format(bill.vat_amount) }}</span>
+        </div>
+        <div class="total-row">
+            <span>Advance Paid:</span>
+            <span>AED {{ "%.2f"|format(bill.advance_paid) }}</span>
+        </div>
+        <hr style="border: 1px solid #000; margin: 8px 0;">
+        <div class="total-row" style="font-weight: bold; font-size: 1.2em;">
+            <span>Amount Due:</span>
+            <span>AED {{ "%.2f"|format(bill.balance_amount) }}</span>
+        </div>
+        <div class="amount-in-words" style="font-weight: bold; margin-top: 12px;">
+            {{ amount_in_words }}
+        </div>
+    </div>
+    
+    {% if bill.notes %}
+    <div class="notes-section" style="margin-top: 18px; font-size: 1em;">
+      <strong>Notes:</strong>
+      <div>{{ bill.notes }}</div>
+    </div>
+    {% endif %}
+    
+    <div class="footer">
+    </div>
+</body>
+</html> 

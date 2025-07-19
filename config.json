@@ -1,0 +1,192 @@
+{
+  "app_name": "Tailor POS Pro",
+  "version": "1.0.0",
+  "pricing_plans": {
+    "trial": {
+      "name": "Tailor Trial",
+      "price": "Free",
+      "duration_days": 15,
+      "description": "Full PRO features for 15 days",
+      "features": {
+        "billing": {
+          "enabled": true,
+          "name": "Billing",
+          "description": "Create and manage invoices"
+        },
+        "product_management": {
+          "enabled": true,
+          "name": "Product Management",
+          "description": "Manage products and product types"
+        },
+        "customer_management": {
+          "enabled": true,
+          "name": "Customer Management",
+          "description": "Manage customer database"
+        },
+        "dashboard": {
+          "enabled": true,
+          "name": "Dashboard",
+          "description": "Analytics and reports"
+        },
+        "customer_search": {
+          "enabled": true,
+          "name": "Customer Search",
+          "description": "Advanced customer search"
+        },
+        "db_backup_restore": {
+          "enabled": true,
+          "name": "DB Backup/Restore",
+          "description": "Database backup and restore"
+        }
+      },
+      "expiry_behavior": "lock_all",
+      "expiry_message": "Your trial has expired. Upgrade to continue using all features."
+    },
+    "basic": {
+      "name": "Tailor Basic",
+      "price": "AED 3000",
+      "duration_days": 30,
+      "description": "1 month free, then limited features",
+      "features": {
+        "billing": {
+          "enabled": true,
+          "name": "Billing",
+          "description": "Create and manage invoices"
+        },
+        "product_management": {
+          "enabled": true,
+          "name": "Product Management",
+          "description": "Manage products and product types"
+        },
+        "customer_management": {
+          "enabled": true,
+          "name": "Customer Management",
+          "description": "Manage customer database"
+        },
+        "dashboard": {
+          "enabled": false,
+          "name": "Dashboard",
+          "description": "Analytics and reports",
+          "pro_only": true
+        },
+        "customer_search": {
+          "enabled": false,
+          "name": "Customer Search",
+          "description": "Advanced customer search",
+          "pro_only": true
+        },
+        "db_backup_restore": {
+          "enabled": false,
+          "name": "DB Backup/Restore",
+          "description": "Database backup and restore",
+          "pro_only": true
+        }
+      },
+      "expiry_behavior": "lock_pro_features",
+      "expiry_message": "Your basic plan has expired. Upgrade to PRO for advanced features.",
+      "pro_features": ["dashboard", "customer_search", "db_backup_restore"]
+    },
+    "pro": {
+      "name": "Tailor PRO",
+      "price": "AED 5000",
+      "lifetime": true,
+      "description": "Lifetime access to all features",
+      "features": {
+        "billing": {
+          "enabled": true,
+          "name": "Billing",
+          "description": "Create and manage invoices"
+        },
+        "product_management": {
+          "enabled": true,
+          "name": "Product Management",
+          "description": "Manage products and product types"
+        },
+        "customer_management": {
+          "enabled": true,
+          "name": "Customer Management",
+          "description": "Manage customer database"
+        },
+        "dashboard": {
+          "enabled": true,
+          "name": "Dashboard",
+          "description": "Analytics and reports"
+        },
+        "customer_search": {
+          "enabled": true,
+          "name": "Customer Search",
+          "description": "Advanced customer search"
+        },
+        "db_backup_restore": {
+          "enabled": true,
+          "name": "DB Backup/Restore",
+          "description": "Database backup and restore"
+        }
+      },
+      "expiry_behavior": "never_expires"
+    }
+  },
+  "feature_definitions": {
+    "billing": {
+      "section_id": "billingSec",
+      "nav_button": "button[data-go='billingSec']",
+      "required_for": ["invoice_creation", "payment_tracking"]
+    },
+    "product_management": {
+      "section_id": "productSec",
+      "nav_button": "button[data-go='productSec']",
+      "required_for": ["product_catalog", "pricing_management"]
+    },
+    "customer_management": {
+      "section_id": "customerSec",
+      "nav_button": "button[data-go='customerSec']",
+      "required_for": ["customer_database", "contact_management"]
+    },
+    "dashboard": {
+      "section_id": "dashSec",
+      "nav_button": "button[data-go='dashSec']",
+      "required_for": ["analytics", "reports", "insights"]
+    },
+    "customer_search": {
+      "section_id": "customerSec",
+      "element_id": "customerSearch",
+      "required_for": ["advanced_search", "customer_filtering"]
+    },
+    "db_backup_restore": {
+      "section_id": "settingsSec",
+      "element_id": "backupBtn",
+      "required_for": ["data_backup", "system_restore"]
+    }
+  },
+  "ui_settings": {
+    "locked_feature_style": {
+      "opacity": "0.5",
+      "cursor": "not-allowed",
+      "overlay_text": "🔒 Locked",
+      "overlay_color": "#ef4444",
+      "upgrade_message": "Upgrade to PRO to unlock this feature"
+    },
+    "expiry_notifications": {
+      "warning_days": [5, 3, 1],
+      "warning_message": "Your {plan} plan expires in {days} days. Upgrade now to continue.",
+      "expired_message": "Your {plan} plan has expired. Some features are now locked."
+    }
+  },
+  "upgrade_options": {
+    "trial_to_basic": {
+      "price": "AED 3000",
+      "description": "Upgrade to Basic Plan",
+      "features_gained": ["billing", "product_management", "customer_management"]
+    },
+    "trial_to_pro": {
+      "price": "AED 5000",
+      "description": "Upgrade to PRO Plan (Recommended)",
+      "features_gained": ["billing", "product_management", "customer_management", "dashboard", "customer_search", "db_backup_restore"]
+    },
+    "basic_to_pro": {
+      "price": "AED 2000",
+      "description": "Upgrade to PRO Plan",
+      "features_gained": ["dashboard", "customer_search", "db_backup_restore"]
+    }
+  }
+} 
