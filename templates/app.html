@@ -135,6 +135,9 @@
       <button data-go="dashSec" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-400/60 hover:bg-neutral-700 transition">
         <svg data-lucide="bar-chart-3" class="w-4 h-4"></svg> Dashboard
       </button>
+      <button data-go="advancedReportsSec" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-400/60 hover:bg-neutral-700 transition">
+        <svg data-lucide="pie-chart" class="w-4 h-4"></svg> Advanced Reports
+      </button>
     </nav>
 
     <p class="px-6 py-4 border-t border-neutral-700 text-xs text-neutral-400">© 2024</p>
@@ -564,6 +567,194 @@
           </div>
         </div>
       </section>
+
+      <section id="advancedReportsSec" class="page hidden space-y-6">
+        <h3 class="text-2xl font-semibold tracking-tight mb-4">Advanced Reports</h3>
+        <!-- Tabs -->
+        <div class="flex border-b border-neutral-700 mb-6">
+          <button class="report-tab-btn px-6 py-2 -mb-px text-sm font-medium text-neutral-300 border-b-2 border-transparent focus:outline-none transition-colors" data-tab="invoicesTab">Invoices</button>
+          <button class="report-tab-btn px-6 py-2 -mb-px text-sm font-medium text-neutral-300 border-b-2 border-transparent focus:outline-none transition-colors" data-tab="employeesTab">Employees</button>
+          <button class="report-tab-btn px-6 py-2 -mb-px text-sm font-medium text-neutral-300 border-b-2 border-transparent focus:outline-none transition-colors" data-tab="productsTab">Products</button>
+        </div>
+        <!-- Tab Contents -->
+        <div id="invoicesTab" class="report-tab-content">
+          <!-- Filter Bar -->
+          <form class="flex flex-wrap gap-4 items-end mb-6 bg-neutral-800/60 p-4 rounded-xl border border-neutral-700 shadow">
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invFromDate">From Date</label>
+              <input type="date" id="invFromDate" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invToDate">To Date</label>
+              <input type="date" id="invToDate" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invProducts">Products</label>
+              <select id="invProducts" multiple class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invEmployees">Employees</label>
+              <select id="invEmployees" multiple class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invCity">City</label>
+              <select id="invCity" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invArea">Area</label>
+              <select id="invArea" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invStatus">Status</label>
+              <select id="invStatus" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+                <option>Paid</option>
+                <option>Pending</option>
+              </select>
+            </div>
+            <div class="flex gap-2 ml-auto">
+              <button type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="search" class="w-4 h-4"></svg> Preview
+              </button>
+              <button type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="download" class="w-4 h-4"></svg> Download
+              </button>
+              <button type="button" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="printer" class="w-4 h-4"></svg> Print
+              </button>
+            </div>
+          </form>
+          <!-- Data Table -->
+          <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800/80">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold">Bill#</th>
+                  <th class="px-3 py-2 text-left font-semibold">Bill Date</th>
+                  <th class="px-3 py-2 text-left font-semibold">Customer Name</th>
+                  <th class="px-3 py-2 text-left font-semibold">Delivery Date</th>
+                  <th class="px-3 py-2 text-left font-semibold">Time Spent</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total Before VAT</th>
+                  <th class="px-3 py-2 text-left font-semibold">VAT</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total After VAT</th>
+                  <th class="px-3 py-2 text-left font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="9" class="text-center text-neutral-500 py-8">No data to display. Use filters and click Preview.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div id="employeesTab" class="report-tab-content hidden">
+          <!-- Filter Bar -->
+          <form class="flex flex-wrap gap-4 items-end mb-6 bg-neutral-800/60 p-4 rounded-xl border border-neutral-700 shadow">
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empFromDate">From Date</label>
+              <input type="date" id="empFromDate" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empToDate">To Date</label>
+              <input type="date" id="empToDate" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empProducts">Products</label>
+              <select id="empProducts" multiple class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+              </select>
+            </div>
+            <div class="flex gap-2 ml-auto">
+              <button type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="search" class="w-4 h-4"></svg> Preview
+              </button>
+              <button type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="download" class="w-4 h-4"></svg> Download
+              </button>
+              <button type="button" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="printer" class="w-4 h-4"></svg> Print
+              </button>
+            </div>
+          </form>
+          <!-- Data Table -->
+          <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800/80">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold">Employee Name</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total Bills</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total Revenue</th>
+                  <th class="px-3 py-2 text-left font-semibold">Top Product</th>
+                  <th class="px-3 py-2 text-left font-semibold">Average Time per Bill</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="5" class="text-center text-neutral-500 py-8">No data to display. Use filters and click Preview.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div id="productsTab" class="report-tab-content hidden">
+          <!-- Filter Bar -->
+          <form class="flex flex-wrap gap-4 items-end mb-6 bg-neutral-800/60 p-4 rounded-xl border border-neutral-700 shadow">
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodType">Product Type</label>
+              <select id="prodType" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[140px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodFromDate">From Date</label>
+              <input type="date" id="prodFromDate" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodToDate">To Date</label>
+              <input type="date" id="prodToDate" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div class="flex gap-2 ml-auto">
+              <button type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="search" class="w-4 h-4"></svg> Preview
+              </button>
+              <button type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="download" class="w-4 h-4"></svg> Download
+              </button>
+              <button type="button" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="printer" class="w-4 h-4"></svg> Print
+              </button>
+            </div>
+          </form>
+          <!-- Data Table -->
+          <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800/80">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold">Product Name</th>
+                  <th class="px-3 py-2 text-left font-semibold">Type</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total Sold</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total Revenue</th>
+                  <th class="px-3 py-2 text-left font-semibold">Average Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="5" class="text-center text-neutral-500 py-8">No data to display. Use filters and click Preview.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
     </div>
   </main>
 </div>
@@ -638,6 +829,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{{ super() }}
 <script>
   // Plan management variables
   let userPlan = null;
@@ -3331,4 +3523,23 @@
     
   // });
 </script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabBtns = document.querySelectorAll('.report-tab-btn');
+    const tabContents = document.querySelectorAll('.report-tab-content');
+    if (tabBtns.length) {
+      tabBtns[0].classList.add('text-indigo-400', 'border-indigo-500');
+      tabContents[0].classList.remove('hidden');
+    }
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        tabBtns.forEach(b => b.classList.remove('text-indigo-400', 'border-indigo-500'));
+        tabContents.forEach(tc => tc.classList.add('hidden'));
+        btn.classList.add('text-indigo-400', 'border-indigo-500');
+        const tabId = btn.getAttribute('data-tab');
+        document.getElementById(tabId).classList.remove('hidden');
+      });
+    });
+  });
+  </script>
 {% endblock %} 
