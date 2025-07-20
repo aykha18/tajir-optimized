@@ -22,6 +22,43 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def get_user_plan_info():
+    """Get current user plan information for template rendering."""
+    try:
+        conn = get_db_connection()
+        user_plan = conn.execute('SELECT * FROM user_plans WHERE user_id = 1 AND is_active = 1').fetchone()
+        conn.close()
+        
+        if not user_plan:
+            return {
+                'plan_type': 'trial',
+                'plan_name': 'Tailor Trial',
+                'plan_display_name': 'Tailor Trial'
+            }
+        
+        user_plan = dict(user_plan)
+        plan_type = user_plan['plan_type']
+        
+        # Map plan types to display names
+        plan_names = {
+            'trial': 'Tailor Trial',
+            'basic': 'Tailor Basic', 
+            'pro': 'Tailor Pro'
+        }
+        
+        return {
+            'plan_type': plan_type,
+            'plan_name': plan_names.get(plan_type, 'Tailor Trial'),
+            'plan_display_name': plan_names.get(plan_type, 'Tailor Trial')
+        }
+    except Exception as e:
+        print(f"Error getting user plan: {e}")
+        return {
+            'plan_type': 'trial',
+            'plan_name': 'Tailor Trial',
+            'plan_display_name': 'Tailor Trial'
+        }
+
 def init_db():
     need_init = False
     if not os.path.exists(app.config['DATABASE']):
@@ -48,19 +85,23 @@ def init_db():
 
 @app.route('/')
 def index():
-    return render_template('app.html')
+    user_plan_info = get_user_plan_info()
+    return render_template('index.html', user_plan_info=user_plan_info)
 
 @app.route('/landing')
 def landing():
-    return render_template('index.html')
+    user_plan_info = get_user_plan_info()
+    return render_template('landing.html', user_plan_info=user_plan_info)
 
 @app.route('/app')
 def app_page():
-    return render_template('app.html')
+    user_plan_info = get_user_plan_info()
+    return render_template('app.html', user_plan_info=user_plan_info)
 
 @app.route('/pricing')
 def pricing():
-    return render_template('pricing.html')
+    user_plan_info = get_user_plan_info()
+    return render_template('pricing.html', user_plan_info=user_plan_info)
 
 # Product Types API
 @app.route('/api/product-types', methods=['GET'])
@@ -1180,7 +1221,8 @@ def reset_trial():
 @app.route('/debug-plan')
 def debug_plan():
     """Debug page for plan management."""
-    return render_template('debug_plan.html')
+    user_plan_info = get_user_plan_info()
+    return render_template('debug_plan.html', user_plan_info=user_plan_info)
 
 if __name__ == '__main__':
     init_db()

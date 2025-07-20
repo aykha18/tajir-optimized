@@ -2,17 +2,20 @@
 
 A modern, full-featured Point of Sale (POS) system designed specifically for tailoring businesses. Built with Flask, SQLite, and a beautiful modern UI.
 
-**Last Updated: 2025-07-19**
+**Last Updated: 2025-01-19**
+
+**Live Demo:** [https://tailor-pos-production.up.railway.app/](https://tailor-pos-production.up.railway.app/)
 
 ---
 
 ## 🚦 Plan Management & Licensing
 
-Tailor POS now supports a flexible, config-driven licensing system with three plans:
+Tailor POS supports a flexible, config-driven licensing system with four plans:
 
 - **Trial:** All features for 15 days (free)
 - **Basic:** All features for 1 month, then only basic features (billing, product/customer management)
 - **PRO:** Lifetime access to all features
+- **Enterprise:** Custom solutions with additional features
 
 Plan status, expiry, and feature access are managed via `config.json` and enforced in both backend and frontend. Upgrades and plan changes are supported via API and UI.
 
@@ -20,6 +23,24 @@ Plan status, expiry, and feature access are managed via `config.json` and enforc
 - **Trial Expiry:** All features locked after 15 days
 - **Basic Expiry:** PRO features (dashboard, customer search, backup/restore) locked after 1 month
 - **PRO:** Never expires, all features always available
+- **Enterprise:** Custom features and support
+
+---
+
+## 💰 Pricing Structure
+
+| Plan | Price | Duration | Features |
+|------|-------|----------|----------|
+| **Tailor Trial** | Free | 15 days | All PRO features |
+| **Tailor Basic** | AED 3000 | 1 month free, then limited | Basic features + limited PRO features |
+| **Tailor PRO** | AED 5000 | Lifetime | All features + upcoming features |
+| **Enterprise** | Custom | Custom | Everything in PRO + custom features |
+
+### Upcoming Features (Available in PRO & Enterprise)
+- Advanced reporting and analytics
+- Mobile App integration
+- Payment gateway integration
+- Inventory management
 
 ---
 
@@ -30,6 +51,36 @@ All plan details, feature definitions, UI lock styles, and upgrade options are d
 - Which features are enabled/locked per plan
 - UI messages and lock overlays
 - Upgrade pricing and flows
+
+---
+
+## 🚀 Deployment
+
+### Railway Deployment
+The application is currently deployed on Railway:
+- **URL:** https://tailor-pos-production.up.railway.app/
+- **Database:** SQLite (for demo purposes)
+- **Future:** Planning to migrate to Supabase for scalability
+
+### Local Development
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd tailor_pos
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the application**
+   ```bash
+   python app.py
+   ```
+
+4. **Access the application**
+   Open your web browser and navigate to: `http://localhost:5000`
 
 ---
 
@@ -52,9 +103,11 @@ All plan details, feature definitions, UI lock styles, and upgrade options are d
 
 ## 🖥️ Frontend Features
 
+- **Dynamic Plan Titles:** Page titles and navbar show current plan (Tailor Trial, Tailor Basic, Tailor Pro)
 - **UI plan enforcement:** All feature access is locked/unlocked based on plan status
 - **Upgrade prompts:** Users see upgrade modals and lock overlays when features are restricted
 - **Debug page:** `/debug-plan` for interactive plan testing and switching
+- **Modern UI:** Dark theme with Tailwind CSS and Lucide icons
 
 ---
 
@@ -74,26 +127,6 @@ bkpup/
 
 ---
 
-## 3-Tier Product Versions & Pricing
-
-| Feature                | <span title="All features for 15 days">Trial<br><sub>(15 days)</sub></span> | <span title="All features for 1 month, then some features lock">Basic<br><sub>(1 month, then limited)</sub></span> | <span title="Full features, lifetime">PRO<br><sub>(Lifetime)</sub></span> |
-|------------------------|:------:|:----------------------:|:------:|
-| Billing                | ✅     | ✅                     | ✅     |
-| Product/Customer Mgmt  | ✅     | ✅                     | ✅     |
-| Dashboard              | ✅     | <span title="Locked after 1 month">🔒</span> | ✅     |
-| Customer Search        | ✅     | <span title="Locked after 1 month">🔒</span> | ✅     |
-| DB Backup/Restore      | ✅     | <span title="Locked after 1 month">🔒</span> | ✅     |
-
-**Legend:** ✅ = Available, 🔒 = Locked after 1 month in Basic
-
-| Version         | Features                                                                 | Price         |
-|-----------------|--------------------------------------------------------------------------|--------------|
-| **Tailor Trial**| All features for 15 days                                                 | Free         |
-| **Tailor Basic**| All features for 1 month, then locks PRO features (Dashboard, Customer Search, DB backup/Restore) | $X/month     |
-| **Tailor PRO**  | All features, lifetime access                                            | $Y (one-time)|
-
----
-
 ## Features
 
 ### 🎯 Core Features
@@ -102,6 +135,8 @@ bkpup/
 - **Billing System**: Create and print professional bills with VAT calculation
 - **VAT Management**: Configure and manage VAT rates with effective dates
 - **Dashboard Analytics**: Real-time business insights and revenue tracking
+- **Employee Management**: Track masters/employees and their performance
+- **Data Backup/Restore**: Database backup and restore functionality
 
 ### 📊 Product Categories
 The system comes pre-loaded with common tailoring products:
@@ -132,32 +167,6 @@ All products come with pre-configured pricing based on market standards:
 - Lehenga choli: AED 320
 - Coat/Blazer: AED 350
 - And many more...
-
-## Installation
-
-### Prerequisites
-- Python 3.7 or higher
-- pip (Python package installer)
-
-### Setup Instructions
-
-1. **Clone or download the project**
-   ```bash
-   cd tailor_pos
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Run the application**
-   ```bash
-   python app.py
-   ```
-
-4. **Access the application**
-   Open your web browser and navigate to: `http://localhost:5000`
 
 ## Database Structure
 
@@ -204,6 +213,9 @@ The application uses SQLite with the following main tables:
 - `advance_paid`
 - `balance_amount`
 - `status`
+- `master_id` (Employee assigned)
+- `trial_date`
+- `notes`
 - `created_at`
 
 ### `bill_items`
@@ -225,6 +237,22 @@ The application uses SQLite with the following main tables:
 - `effective_to`
 - `is_active`
 - `created_at`
+
+### `employees`
+- `employee_id` (Primary Key)
+- `name`
+- `mobile`
+- `address`
+- `created_at`
+
+### `user_plans`
+- `plan_id` (Primary Key)
+- `user_id`
+- `plan_type` (trial, basic, pro)
+- `plan_start_date`
+- `is_active`
+- `created_at`
+- `updated_at`
 
 ## Usage Guide
 
@@ -254,13 +282,19 @@ The application uses SQLite with the following main tables:
 - Fill in customer details and bill information
 - Select products from the dropdown
 - Adjust quantities, rates, discounts, and advance payments
+- Select a Master (employee) and add trial date
 - Click "Print Receipt" to generate and print the bill
 
 ### 6. Dashboard Analytics
 - Navigate to "Dashboard" in the sidebar
 - View today's revenue, bills, pending orders, and customer count
 - Analyze monthly revenue trends
-- Track top-selling products
+- Track top-selling products and employee performance
+
+### 7. Employee Management
+- Navigate to "Employees" in the sidebar
+- Add, edit, and delete employees (Masters)
+- Track employee performance in dashboard
 
 ## API Endpoints
 
@@ -297,6 +331,19 @@ The application provides RESTful API endpoints for all operations:
 
 ### Dashboard
 - `GET /api/dashboard` - Get dashboard analytics
+- `GET /api/employee-analytics` - Get employee performance data
+
+### Plan Management
+- `GET /api/plan/status` - Get current plan status
+- `POST /api/plan/upgrade` - Upgrade plan
+- `GET /api/plan/features` - Get enabled features
+- `GET /api/plan/check-feature/<feature>` - Check feature access
+
+### Backup/Restore
+- `POST /api/backup/upload` - Upload database backup
+- `GET /api/backups` - List available backups
+- `GET /api/backup/download/<filename>` - Download backup
+- `POST /api/backup/restore/<filename>` - Restore from backup
 
 ## Customization
 
@@ -353,6 +400,10 @@ Edit the `templates/print_bill.html` file to:
    - Ensure pop-up blockers are disabled
    - Check browser print settings
 
+5. **JSON serialization error**
+   - Fixed Infinity values in plan status API
+   - Now returns "Unlimited" instead of float('inf')
+
 ## Future Enhancements
 
 - User authentication and role-based access
@@ -376,7 +427,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Note**: This is a production-ready application designed for small to medium tailoring businesses. The database comes pre-loaded with common tailoring products and pricing, but can be fully customized to meet specific business requirements. 
 
-## New Features (2024)
+## New Features (2024-2025)
 
 ### 👥 Employees Management
 - Add, edit, and delete employees (Masters) from the Employees section
@@ -407,6 +458,14 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Modern toast notifications for errors/info
 - Autocomplete for city, area, and master fields
 - Visual effects on charts (3D, gradients, hover)
+- Dynamic plan-based titles and branding
+
+### 🔐 Plan Management System
+- 3-tier licensing system (Trial, Basic, PRO)
+- Feature access control based on plan status
+- Dynamic UI locking/unlocking
+- Plan upgrade functionality
+- Debug interface for testing
 
 ## How to Push to GitHub
 
@@ -421,7 +480,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
    ```
 3. **Commit your changes:**
    ```bash
-   git commit -m "Add employee management, advanced analytics, and UI improvements"
+   git commit -m "Add plan management, pricing updates, and deployment improvements"
    ```
 4. **Push to GitHub:**
    ```bash
@@ -432,6 +491,14 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 --- 
 
 ## Change Log
+
+### 2025-01-19
+- Added dynamic plan-based titles (Tailor Trial, Tailor Basic, Tailor Pro)
+- Updated pricing structure with upcoming features
+- Fixed JSON serialization issue with Infinity values
+- Added "Inventory management" to upcoming features
+- Centered "Upcoming Features" headings in pricing cards
+- Updated README.md with current deployment and pricing information
 
 ### 2025-07-16
 - Fixed Payment Progress Modal HTML placement and ensured only one instance exists.
