@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 from num2words import num2words
 from plan_manager import plan_manager
+import csv
+from io import StringIO
+from flask import Response
 
 app = Flask(__name__)
 app.config['DATABASE'] = 'pos_tailor.db'
@@ -285,9 +288,9 @@ def add_customer():
     conn = get_db_connection()
     try:
         conn.execute('''
-            INSERT INTO customers (name, phone, city, area, email, address) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (name, phone, city, area, email, address))
+            INSERT INTO customers (name, phone, city, area) 
+            VALUES (?, ?, ?, ?)
+        ''', (name, phone, city, area))
         conn.commit()
         customer_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
         conn.close()
@@ -476,8 +479,8 @@ def create_bill():
             ))
             
             bill_id = cursor.lastrowid
-            print(f"DEBUG: Created bill_id: {bill_id}")
-            print(f"DEBUG: Notes saved to database: '{notes}'")
+            # print(f"DEBUG: Created bill_id: {bill_id}")
+            # print(f"DEBUG: Notes saved to database: '{notes}'")
             
             # Insert bill items
             for item in items_data:
@@ -1223,6 +1226,482 @@ def debug_plan():
     """Debug page for plan management."""
     user_plan_info = get_user_plan_info()
     return render_template('debug_plan.html', user_plan_info=user_plan_info)
+
+@app.route('/api/reports/invoices', methods=['GET'])
+def report_invoices():
+    """
+    Returns filtered invoice data for the Advanced Reports section.
+    Accepts query parameters: from_date, to_date, products, employees, city, area, status
+    """
+    try:
+        # Parse query parameters with defaults
+        from_date = request.args.get('from_date', '')
+        to_date = request.args.get('to_date', '')
+        products = request.args.getlist('products[]')  # Multiple products
+        employees = request.args.getlist('employees[]')  # Multiple employees
+        city = request.args.get('city', '')
+        area = request.args.get('area', '')
+        status = request.args.get('status', '')
+        
+        # Build SQL query with filters
+        base_query = """
+            SELECT 
+                substr(b.bill_number,6) as bill_id,
+                b.bill_date,
+                b.customer_name,
+                b.customer_phone,
+                b.customer_city,
+                b.customer_area,
+                b.delivery_date,
+                round(b.subtotal,0) as subtotal,
+                round(b.vat_amount, 2) as vat_amount,
+                round(b.total_amount, 2) as total_amount,
+                b.status,
+                b.master_id,
+                e.name as employee_name,
+                GROUP_CONCAT(bi.product_name) as products,
+                GROUP_CONCAT(bi.quantity) as quantities,
+                GROUP_CONCAT(bi.rate) as prices
+            FROM bills b
+            LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
+            LEFT JOIN employees e ON b.master_id = e.employee_id
+        """
+        
+        conditions = []
+        params = []
+        
+ # Date range filter
+        if from_date:
+            conditions.append("b.bill_date >= ?")
+            params.append(from_date)
+        if to_date:
+            conditions.append("b.bill_date <= ?")
+            params.append(to_date)
+        
+        # Products filter
+        if products and "All" not in products:
+            placeholders = ','.join(['?' for _ in products])
+            conditions.append(f"bi.product_name IN ({placeholders})")
+            params.extend(products)
+        
+        # Employees filter
+        if employees and "All" not in employees:
+            placeholders = ','.join(['?' for _ in employees])
+            conditions.append(f"e.name IN ({placeholders})")
+            params.extend(employees)
+        # City filter
+        if city and city != "All":
+            conditions.append("b.customer_city = ?")
+            params.append(city)
+        
+        # Area filter
+        if area and area != "All":
+            conditions.append("b.customer_area = ?")
+            params.append(area)
+        
+        # Status filter
+        if status and status != "All":
+            conditions.append("b.status = ?")
+            params.append(status)
+            
+        # Build final query
+        if conditions:
+            base_query += " WHERE " + " AND ".join(conditions)
+            
+        base_query += " GROUP BY b.bill_id ORDER BY b.bill_date DESC LIMIT 50"
+        
+               # Execute query and fetch results
+        cursor = get_db_connection().cursor()
+        cursor.execute(base_query, params)
+        rows = cursor.fetchall()
+        
+        # Format results for JSON response
+        invoices_data = []
+        for row in rows:
+            invoice = {
+                'bill_id': row[0],
+                'bill_date': row[1],
+                'customer_name': row[2],
+                'customer_phone': row[3],
+                'customer_city': row[4],
+                'customer_area': row[5],
+                'delivery_date': row[6],
+                'total_before_vat': round(float(row[7]), 2) if row[7] is not None else 0.0,
+                'vat': round(float(row[8]), 2) if row[8] is not None else 0.0,
+                'total_after_vat': round(float(row[9]), 2) if row[9] is not None else 0.0,
+                'status': row[10],
+                'master_id': row[11],
+                'employee_name': row[12],
+                'products': row[13].split(',') if row[13] else [],
+                'quantities': [int(q) for q in row[14].split(',')] if row[14] else [],
+                'prices': [float(p) for p in row[15].split(',')] if row[15] else []
+            }
+            invoices_data.append(invoice)
+        
+        # Calculate summary statistics
+        total_invoices = len(invoices_data)
+        # total_amount = sum(inv['total_amount'] for inv in invoices_data)
+        total_amount = sum(inv['total_after_vat'] for inv in invoices_data)
+        paid_invoices = len([inv for inv in invoices_data if inv['status'] == 'Paid'])
+        
+        return jsonify({
+            'success': True,
+            'data': invoices_data,
+            'summary': {
+                'total_invoices': total_invoices,
+                'total_amount': total_amount,
+                'paid_invoices': paid_invoices,
+                'pending_invoices': total_invoices - paid_invoices
+            },
+            'filters_applied': {
+                'from_date': from_date,
+                'to_date': to_date,
+                'products': products,
+                'employees': employees,  # Note: Not implemented in SQL yet
+                'city': city,
+                'area': area,
+                'status': status
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/reports/invoices/download', methods=['GET'])
+def download_invoices():
+    """
+    Returns all filtered invoice data as a CSV file for download.
+    Accepts the same query parameters as /api/reports/invoices.
+    """
+    try:
+        from_date = request.args.get('from_date', '')
+        to_date = request.args.get('to_date', '')
+        products = request.args.getlist('products[]')
+        employees = request.args.getlist('employees[]')
+        city = request.args.get('city', '')
+        area = request.args.get('area', '')
+        status = request.args.get('status', '')
+        base_query = """
+            SELECT 
+                b.bill_number as bill_id,
+                b.bill_date,
+                b.customer_name,
+                b.customer_phone,
+                b.customer_city,
+                b.customer_area,
+                b.delivery_date,
+                b.subtotal,
+                b.vat_amount,
+                b.total_amount,
+                b.status,
+                b.master_id,
+                e.name as employee_name,
+                GROUP_CONCAT(bi.product_name) as products,
+                GROUP_CONCAT(bi.quantity) as quantities,
+                GROUP_CONCAT(bi.rate) as prices
+            FROM bills b
+            LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
+            LEFT JOIN employees e ON b.master_id = e.employee_id
+        """
+        conditions = []
+        params = []
+        if from_date:
+            conditions.append("b.bill_date >= ?")
+            params.append(from_date)
+        if to_date:
+            conditions.append("b.bill_date <= ?")
+            params.append(to_date)
+        if products and "All" not in products:
+            placeholders = ','.join(['?' for _ in products])
+            conditions.append(f"bi.product_name IN ({placeholders})")
+            params.extend(products)
+        if employees and "All" not in employees:
+            placeholders = ','.join(['?' for _ in employees])
+            conditions.append(f"e.name IN ({placeholders})")
+            params.extend(employees)
+        if city and city != "All":
+            conditions.append("b.customer_city = ?")
+            params.append(city)
+        if area and area != "All":
+            conditions.append("b.customer_area = ?")
+            params.append(area)
+        if status and status != "All":
+            conditions.append("b.status = ?")
+            params.append(status)
+        if conditions:
+            base_query += " WHERE " + " AND ".join(conditions)
+        base_query += " GROUP BY b.bill_id ORDER BY b.bill_date DESC"
+        cursor = get_db_connection().cursor()
+        cursor.execute(base_query, params)
+        rows = cursor.fetchall()
+        si = StringIO()
+        writer = csv.writer(si)
+        writer.writerow([
+            'Bill#', 'Bill Date', 'Customer Name', 'Delivery Date',
+            'Total Before VAT', 'VAT', 'Total After VAT', 'Status', 'Products'
+        ])
+        for row in rows:
+            products = row[13].split(',') if row[13] else []
+            writer.writerow([
+                row[0], row[1], row[2], row[6],
+                round(float(row[7]), 2) if row[7] is not None else 0.0,
+                round(float(row[8]), 2) if row[8] is not None else 0.0,
+                round(float(row[9]), 2) if row[9] is not None else 0.0,
+                row[10],
+                ', '.join(products)
+            ])
+        output = si.getvalue()
+        si.close()
+        return Response(
+            output,
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment;filename=invoices_report.csv"}
+        )
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/reports/invoices/print')
+def print_invoices():
+    from_date = request.args.get('from_date', '')
+    to_date = request.args.get('to_date', '')
+    products = request.args.getlist('products[]')
+    employees = request.args.getlist('employees[]')
+    city = request.args.get('city', '')
+    area = request.args.get('area', '')
+    status = request.args.get('status', '')
+
+    base_query = """
+        SELECT 
+            b.bill_number as bill_id,
+            b.bill_date,
+            b.customer_name,
+            b.customer_phone,
+            b.customer_city,
+            b.customer_area,
+            b.delivery_date,
+            b.subtotal,
+            b.vat_amount,
+            b.total_amount,
+            b.status,
+            b.master_id,
+            e.name as employee_name,
+            GROUP_CONCAT(bi.product_name) as products,
+            GROUP_CONCAT(bi.quantity) as quantities,
+            GROUP_CONCAT(bi.rate) as prices
+        FROM bills b
+        LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
+        LEFT JOIN employees e ON b.master_id = e.employee_id
+    """
+    conditions = []
+    params = []
+    if from_date:
+        conditions.append("b.bill_date >= ?")
+        params.append(from_date)
+    if to_date:
+        conditions.append("b.bill_date <= ?")
+        params.append(to_date)
+    if products and "All" not in products:
+        placeholders = ','.join(['?' for _ in products])
+        conditions.append(f"bi.product_name IN ({placeholders})")
+        params.extend(products)
+    if employees and "All" not in employees:
+        placeholders = ','.join(['?' for _ in employees])
+        conditions.append(f"e.name IN ({placeholders})")
+        params.extend(employees)
+    if city and city != "All":
+        conditions.append("b.customer_city = ?")
+        params.append(city)
+    if area and area != "All":
+        conditions.append("b.customer_area = ?")
+        params.append(area)
+    if status and status != "All":
+        conditions.append("b.status = ?")
+        params.append(status)
+    if conditions:
+        base_query += " WHERE " + " AND ".join(conditions)
+    base_query += " GROUP BY b.bill_id ORDER BY b.bill_date DESC"
+    cursor = get_db_connection().cursor()
+    cursor.execute(base_query, params)
+    rows = cursor.fetchall()
+    invoices_data = []
+    for row in rows:
+        invoices_data.append({
+            'bill_id': row[0],
+            'bill_date': row[1],
+            'customer_name': row[2],
+            'customer_phone': row[3],
+            'customer_city': row[4],
+            'customer_area': row[5],
+            'delivery_date': row[6],
+            'total_before_vat': round(float(row[7]), 2) if row[7] is not None else 0.0,
+            'vat': round(float(row[8]), 2) if row[8] is not None else 0.0,
+            'total_after_vat': round(float(row[9]), 2) if row[9] is not None else 0.0,
+            'status': row[10],
+            'products': row[13].split(',') if row[13] else []
+        })
+    return render_template('print_invoices.html', invoices=invoices_data)
+
+@app.route('/api/reports/employees', methods=['GET'])
+def report_employees():
+    """
+    Returns filtered employee report data for the Advanced Reports section.
+    Accepts query parameters: from_date, to_date, products, city, area, status
+    """
+    try:
+        from_date = request.args.get('from_date', '')
+        to_date = request.args.get('to_date', '')
+        products = request.args.getlist('products[]')
+        city = request.args.get('city', '')
+        area = request.args.get('area', '')
+        status = request.args.get('status', '')
+
+        base_query = """
+            SELECT 
+                e.employee_id,
+                e.name as employee_name,
+                COUNT(DISTINCT b.bill_id) as bills_handled,
+                SUM(b.total_amount) as total_billed,
+                GROUP_CONCAT(DISTINCT bi.product_name) as products
+            FROM employees e
+            LEFT JOIN bills b ON e.employee_id = b.master_id
+            LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
+        """
+
+        conditions = []
+        params = []
+
+        if from_date:
+            conditions.append("b.bill_date >= ?")
+            params.append(from_date)
+        if to_date:
+            conditions.append("b.bill_date <= ?")
+            params.append(to_date)
+        if products and "All" not in products:
+            placeholders = ','.join(['?' for _ in products])
+            conditions.append(f"bi.product_name IN ({placeholders})")
+            params.extend(products)
+        if city and city != "All":
+            conditions.append("b.customer_city = ?")
+            params.append(city)
+        if area and area != "All":
+            conditions.append("b.customer_area = ?")
+            params.append(area)
+        if status and status != "All":
+            conditions.append("b.status = ?")
+            params.append(status)
+
+        if conditions:
+            base_query += " WHERE " + " AND ".join(conditions)
+        base_query += " GROUP BY e.employee_id, e.name ORDER BY total_billed DESC"
+
+        cursor = get_db_connection().cursor()
+        cursor.execute(base_query, params)
+        rows = cursor.fetchall()
+
+        employees_data = []
+        for row in rows:
+            employees_data.append({
+                'employee_id': row[0],
+                'employee_name': row[1],
+                'bills_handled': row[2] or 0,
+                'total_billed': round(float(row[3]), 2) if row[3] is not None else 0.0,
+                'products': row[4].split(',') if row[4] else []
+            })
+
+        return jsonify({
+            'success': True,
+            'data': employees_data,
+            'filters_applied': {
+                'from_date': from_date,
+                'to_date': to_date,
+                'products': products,
+                'city': city,
+                'area': area,
+                'status': status
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/reports/products', methods=['GET'])
+def report_products():
+    """
+    Returns filtered product report data for the Advanced Reports section.
+    Accepts query parameters: from_date, to_date, product_type, city, area, status
+    """
+    try:
+        from_date = request.args.get('from_date', '')
+        to_date = request.args.get('to_date', '')
+        product_type = request.args.get('product_type', '')
+        city = request.args.get('city', '')
+        area = request.args.get('area', '')
+        status = request.args.get('status', '')
+
+        base_query = """
+            SELECT 
+                p.product_name,
+                pt.type_name,
+                SUM(bi.quantity) as total_quantity,
+                SUM(bi.total_amount) as total_revenue
+            FROM bill_items bi
+            JOIN products p ON bi.product_id = p.product_id
+            JOIN product_types pt ON p.type_id = pt.type_id
+            JOIN bills b ON bi.bill_id = b.bill_id
+        """
+
+        conditions = []
+        params = []
+
+        if from_date:
+            conditions.append("b.bill_date >= ?")
+            params.append(from_date)
+        if to_date:
+            conditions.append("b.bill_date <= ?")
+            params.append(to_date)
+        if product_type and product_type != "All":
+            conditions.append("pt.type_name = ?")
+            params.append(product_type)
+        if city and city != "All":
+            conditions.append("b.customer_city = ?")
+            params.append(city)
+        if area and area != "All":
+            conditions.append("b.customer_area = ?")
+            params.append(area)
+        if status and status != "All":
+            conditions.append("b.status = ?")
+            params.append(status)
+
+        if conditions:
+            base_query += " WHERE " + " AND ".join(conditions)
+        base_query += " GROUP BY p.product_name, pt.type_name ORDER BY total_revenue DESC"
+
+        cursor = get_db_connection().cursor()
+        cursor.execute(base_query, params)
+        rows = cursor.fetchall()
+
+        products_data = []
+        for row in rows:
+            products_data.append({
+                'product_name': row[0],
+                'product_type': row[1],
+                'total_quantity': int(row[2]) if row[2] is not None else 0,
+                'total_revenue': round(float(row[3]), 2) if row[3] is not None else 0.0
+            })
+
+        return jsonify({
+            'success': True,
+            'data': products_data,
+            'filters_applied': {
+                'from_date': from_date,
+                'to_date': to_date,
+                'product_type': product_type,
+                'city': city,
+                'area': area,
+                'status': status
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     init_db()

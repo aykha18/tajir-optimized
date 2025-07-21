@@ -591,25 +591,25 @@
             <div>
               <label class="block text-xs text-neutral-400 mb-1" for="invProducts">Products</label>
               <select id="invProducts" multiple class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60">
-                <option>All</option>
+                <!-- <option>All</option> -->
               </select>
             </div>
             <div>
               <label class="block text-xs text-neutral-400 mb-1" for="invEmployees">Employees</label>
               <select id="invEmployees" multiple class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60">
-                <option>All</option>
+                <!-- <option>All</option> -->
               </select>
             </div>
             <div>
               <label class="block text-xs text-neutral-400 mb-1" for="invCity">City</label>
               <select id="invCity" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
-                <option>All</option>
+                <!-- <option>All</option> -->
               </select>
             </div>
             <div>
               <label class="block text-xs text-neutral-400 mb-1" for="invArea">Area</label>
               <select id="invArea" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
-                <option>All</option>
+                <!-- <option>All</option> -->
               </select>
             </div>
             <div>
@@ -621,39 +621,47 @@
               </select>
             </div>
             <div class="flex gap-2 ml-auto">
-              <button type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
-                <svg data-lucide="search" class="w-4 h-4"></svg> Preview
-              </button>
               <button type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
                 <svg data-lucide="download" class="w-4 h-4"></svg> Download
               </button>
-              <button type="button" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
-                <svg data-lucide="printer" class="w-4 h-4"></svg> Print
+              <button id="invoicePrintBtn" type="button" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                  <svg data-lucide="printer" class="w-4 h-4"></svg> Print
               </button>
             </div>
++           <div id="download-spinner" class="hidden flex items-center gap-2 text-emerald-400 text-sm mt-2">
++             <svg class="animate-spin h-5 w-5 text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
++               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
++               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
++             </svg>
++             Preparing download...
++           </div>
           </form>
           <!-- Data Table -->
           <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80">
             <table class="min-w-full text-sm">
               <thead class="bg-neutral-800/80">
                 <tr>
-                  <th class="px-3 py-2 text-left font-semibold">Bill#</th>
+                  <th class="px-3 py-2 text-left font-semibold whitespace-nowrap min-w-[120px]">Bill#</th>
                   <th class="px-3 py-2 text-left font-semibold">Bill Date</th>
                   <th class="px-3 py-2 text-left font-semibold">Customer Name</th>
                   <th class="px-3 py-2 text-left font-semibold">Delivery Date</th>
-                  <th class="px-3 py-2 text-left font-semibold">Time Spent</th>
-                  <th class="px-3 py-2 text-left font-semibold">Total Before VAT</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total Amt</th>
                   <th class="px-3 py-2 text-left font-semibold">VAT</th>
-                  <th class="px-3 py-2 text-left font-semibold">Total After VAT</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total Billed</th>
                   <th class="px-3 py-2 text-left font-semibold">Status</th>
+                  <th class="px-3 py-2 text-left font-semibold">Products</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="invoices-table-body">
                 <tr>
-                  <td colspan="9" class="text-center text-neutral-500 py-8">No data to display. Use filters and click Preview.</td>
+                  <td colspan="10" class="text-center text-neutral-500 py-8">No data to display. Use filters and click Preview.</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="text-xs text-neutral-400 mt-2">
+            Results are limited to 50 records. Use <b>Download</b> to get all the records.<br>
+            <b>Print</b> will print all records, not just the limited view.
           </div>
         </div>
         <div id="employeesTab" class="report-tab-content hidden">
@@ -669,20 +677,23 @@
             </div>
             <div>
               <label class="block text-xs text-neutral-400 mb-1" for="empProducts">Products</label>
-              <select id="empProducts" multiple class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60">
-                <option>All</option>
-              </select>
+              <select id="empProducts" multiple class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60"></select>
             </div>
-            <div class="flex gap-2 ml-auto">
-              <button type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
-                <svg data-lucide="search" class="w-4 h-4"></svg> Preview
-              </button>
-              <button type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
-                <svg data-lucide="download" class="w-4 h-4"></svg> Download
-              </button>
-              <button type="button" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
-                <svg data-lucide="printer" class="w-4 h-4"></svg> Print
-              </button>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empCity">City</label>
+              <select id="empCity" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empArea">Area</label>
+              <select id="empArea" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empStatus">Status</label>
+              <select id="empStatus" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+                <option>Paid</option>
+                <option>Pending</option>
+              </select>
             </div>
           </form>
           <!-- Data Table -->
@@ -691,15 +702,14 @@
               <thead class="bg-neutral-800/80">
                 <tr>
                   <th class="px-3 py-2 text-left font-semibold">Employee Name</th>
-                  <th class="px-3 py-2 text-left font-semibold">Total Bills</th>
-                  <th class="px-3 py-2 text-left font-semibold">Total Revenue</th>
-                  <th class="px-3 py-2 text-left font-semibold">Top Product</th>
-                  <th class="px-3 py-2 text-left font-semibold">Average Time per Bill</th>
+                  <th class="px-3 py-2 text-left font-semibold">Bills Handled</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total Billed</th>
+                  <th class="px-3 py-2 text-left font-semibold">Products</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="employees-table-body">
                 <tr>
-                  <td colspan="5" class="text-center text-neutral-500 py-8">No data to display. Use filters and click Preview.</td>
+                  <td colspan="4" class="text-center text-neutral-500 py-8">No data to display. Use filters.</td>
                 </tr>
               </tbody>
             </table>
@@ -709,12 +719,6 @@
           <!-- Filter Bar -->
           <form class="flex flex-wrap gap-4 items-end mb-6 bg-neutral-800/60 p-4 rounded-xl border border-neutral-700 shadow">
             <div>
-              <label class="block text-xs text-neutral-400 mb-1" for="prodType">Product Type</label>
-              <select id="prodType" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[140px] focus:ring-2 focus:ring-indigo-400/60">
-                <option>All</option>
-              </select>
-            </div>
-            <div>
               <label class="block text-xs text-neutral-400 mb-1" for="prodFromDate">From Date</label>
               <input type="date" id="prodFromDate" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
             </div>
@@ -722,16 +726,25 @@
               <label class="block text-xs text-neutral-400 mb-1" for="prodToDate">To Date</label>
               <input type="date" id="prodToDate" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
             </div>
-            <div class="flex gap-2 ml-auto">
-              <button type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
-                <svg data-lucide="search" class="w-4 h-4"></svg> Preview
-              </button>
-              <button type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
-                <svg data-lucide="download" class="w-4 h-4"></svg> Download
-              </button>
-              <button type="button" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
-                <svg data-lucide="printer" class="w-4 h-4"></svg> Print
-              </button>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodType">Product Type</label>
+              <select id="prodType" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodCity">City</label>
+              <select id="prodCity" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodArea">Area</label>
+              <select id="prodArea" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodStatus">Status</label>
+              <select id="prodStatus" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+                <option>Paid</option>
+                <option>Pending</option>
+              </select>
             </div>
           </form>
           <!-- Data Table -->
@@ -740,15 +753,14 @@
               <thead class="bg-neutral-800/80">
                 <tr>
                   <th class="px-3 py-2 text-left font-semibold">Product Name</th>
-                  <th class="px-3 py-2 text-left font-semibold">Type</th>
-                  <th class="px-3 py-2 text-left font-semibold">Total Sold</th>
+                  <th class="px-3 py-2 text-left font-semibold">Product Type</th>
+                  <th class="px-3 py-2 text-left font-semibold">Total Quantity</th>
                   <th class="px-3 py-2 text-left font-semibold">Total Revenue</th>
-                  <th class="px-3 py-2 text-left font-semibold">Average Price</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="products-table-body">
                 <tr>
-                  <td colspan="5" class="text-center text-neutral-500 py-8">No data to display. Use filters and click Preview.</td>
+                  <td colspan="4" class="text-center text-neutral-500 py-8">No data to display. Use filters.</td>
                 </tr>
               </tbody>
             </table>
@@ -3542,4 +3554,559 @@
     });
   });
   </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default dates for Invoices filter
+        const fromDateInput = document.getElementById('invFromDate');
+        const toDateInput = document.getElementById('invToDate');
+        if (fromDateInput && toDateInput) {
+            const today = new Date();
+            const toDateStr = today.toISOString().slice(0, 10);
+            const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+            const fromDateStr = sixMonthsAgo.toISOString().slice(0, 10);
+            fromDateInput.value = fromDateStr;
+            toDateInput.value = toDateStr;
+        }
+        populateProducts();
+        populateEmployees();
+        populateCities();
+        populateAreas();
+        
+      function populateProducts() {
+        fetch('/api/products')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('invProducts');
+                console.log('Products select:', select);
+                console.log('Products data:', data);
+
+                if (select && Array.isArray(data)) {
+                    select.innerHTML = '<option value="All">All</option>';
+                    data.forEach(prod => { // <-- CORRECT
+                        if (typeof prod === 'string') {
+                            select.innerHTML += `<option value="${prod}">${prod}</option>`;
+                        } else if (prod.product_name) {
+                            select.innerHTML += `<option value="${prod.product_name}">${prod.product_name}</option>`;
+                        }
+                    });
+                }
+            });
+        }
+      function populateEmployees() {
+        fetch('/api/employees')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('invEmployees');
+                if  (select && Array.isArray(data)) {
+                    select.innerHTML = '<option value="All">All</option>';
+                    data.forEach(emp => {
+                        // If your backend returns an array of names:
+                        if (typeof emp === 'string') {
+                            select.innerHTML += `<option value="${emp}">${emp}</option>`;
+                        }
+                        // If your backend returns objects: {name: "..."}
+                        else if (emp.name) {
+                            select.innerHTML += `<option value="${emp.name}">${emp.name}</option>`;
+                        }
+                    });
+                }
+            });
+        }        
+        
+        function populateCities() {
+          fetch('/api/cities')
+              .then(res => res.json())
+              .then(data => {
+                  const select = document.getElementById('invCity');
+                  if (select && Array.isArray(data)) {
+                      select.innerHTML = '<option value="All">All</option>';
+                      data.forEach(city => {
+                          if (typeof city === 'string') {
+                              select.innerHTML += `<option value="${city}">${city}</option>`;
+                          } else if (city.city_name) {
+                              select.innerHTML += `<option value="${city.city_name}">${city.city_name}</option>`;
+                          }
+                      });
+                  }
+              });
+        }
+        function populateAreas(city) {
+            let url = '/api/areas';
+            if (city && city !== 'All') {
+                url += '?city=' + encodeURIComponent(city);
+            }
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('invArea');
+                    if (select && Array.isArray(data)) {
+                        select.innerHTML = '<option value="All">All</option>';
+                        data.forEach(area => {
+                            if (typeof area === 'string') {
+                                select.innerHTML += `<option value="${area}">${area}</option>`;
+                            } else if (area.area_name) {
+                                select.innerHTML += `<option value="${area.area_name}">${area.area_name}</option>`;
+                            }
+                        });
+                    }
+                });
+        }
+
+        // Fetch and render invoices when the Invoices tab is shown or filters are changed
+        function fetchAndRenderInvoices() {
+            // Collect filter values from the UI
+            const fromDate = document.getElementById('invFromDate')?.value || '';
+            const toDate = document.getElementById('invToDate')?.value || '';
+            // Add more filter selectors as needed
+    
+            // Build query string
+            const params = new URLSearchParams();
+            if (fromDate) params.append('from_date', fromDate);
+            if (toDate) params.append('to_date', toDate);
+            const city = document.getElementById('invCity')?.value || '';
+            if (city && city !== 'All') params.append('city', city);
+
+            const area = document.getElementById('invArea')?.value || '';
+            if (area && area !== 'All') params.append('area', area);
+            const status = document.getElementById('invStatus')?.value || '';
+            if (status && status !== 'All') params.append('status', status);
+            
+            const productsSelect = document.getElementById('invProducts');
+            const selectedProducts = Array.from(productsSelect?.selectedOptions || [])
+                .map(opt => opt.value)
+                .filter(val => val && val !== 'All');
+            selectedProducts.forEach(p => params.append('products[]', p));
+
+            const employeesSelect = document.getElementById('invEmployees');
+            const selectedEmployees = Array.from(employeesSelect?.selectedOptions || [])
+                .map(opt => opt.value)
+                .filter(val => val && val !== 'All');
+            selectedEmployees.forEach(e => params.append('employees[]', e));            // Add more filters to params as needed
+    
+            // Show shimmer/skeleton loader
+            const tableBody = document.getElementById('invoices-table-body');
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="10">
+                  <div class="animate-pulse flex flex-col gap-2">
+                    <div class="h-4 bg-neutral-700 rounded w-full"></div>
+                    <div class="h-4 bg-neutral-700 rounded w-5/6"></div>
+                    <div class="h-4 bg-neutral-700 rounded w-2/3"></div>
+                  </div>
+                </td>
+              </tr>
+            `;
+    
+            fetch('/api/reports/invoices?' + params.toString())
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.data.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="10">No invoices found.</td></tr>';
+                            return;
+                        }
+                        tableBody.innerHTML = '';
+                        data.data.forEach((inv, idx) => {
+                            const row = document.createElement('tr');
+                            row.className = 'opacity-0 transition-opacity duration-500 hover:bg-neutral-800 transition-colors';
+                            row.innerHTML = `
+                                <td class="whitespace-nowrap min-w-[120px]">${inv.bill_id || ''}</td>
+                                <td class="whitespace-nowrap min-w-[100px]">${inv.bill_date || ''}</td>
+                                <td>${inv.customer_name || ''}</td>
+                                <td>${inv.delivery_date || ''}</td>
+                                <td>${inv.total_before_vat || ''}</td>
+                                <td>${inv.vat || ''}</td>
+                                <td>${inv.total_after_vat || ''}</td>
+                                <td>${inv.status || ''}</td>
+                                <td>${inv.products ? inv.products.join(', ') : ''}</td>
+                            `;
+                            tableBody.appendChild(row);
+                            setTimeout(() => {
+                                row.classList.add('opacity-100');
+                            }, 30 + idx * 30);
+                        });
+                    } else {
+                        tableBody.innerHTML = `<tr><td colspan="10">Error: ${data.error}</td></tr>`;
+                    }
+                })
+                .catch(err => {
+                    tableBody.innerHTML = `<tr><td colspan="10">Error: ${err}</td></tr>`;
+                });
+        }
+    
+        // Attach event listeners to filters and tab
+        document.getElementById('invoices-tab-btn')?.addEventListener('click', fetchAndRenderInvoices);
+        document.getElementById('invoices-from-date')?.addEventListener('change', fetchAndRenderInvoices);
+        document.getElementById('invoices-to-date')?.addEventListener('change', fetchAndRenderInvoices);
+        document.getElementById('invCity')?.addEventListener('change', fetchAndRenderInvoices);
+        document.getElementById('invArea')?.addEventListener('change', fetchAndRenderInvoices); 
+        document.getElementById('invProducts')?.addEventListener('change', fetchAndRenderInvoices);
+        document.getElementById('invEmployees')?.addEventListener('change', fetchAndRenderInvoices);  
+        document.getElementById('invStatus')?.addEventListener('change', fetchAndRenderInvoices);
+        // Add more listeners for other filters as needed
+    
+        // Optionally, fetch data on page load if Invoices tab is default
+        // fetchAndRenderInvoices();
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+    // Download button functionality
+        const downloadBtn = document.querySelector('.bg-emerald-600');
+        const spinner = document.getElementById('download-spinner');
+        if (downloadBtn && spinner) {
+            downloadBtn.addEventListener('click', function() {
+                spinner.classList.remove('hidden');
+                setTimeout(() => {
+                    spinner.classList.add('hidden');
+                }, 2000);
+                const fromDate = document.getElementById('invFromDate')?.value || '';
+                const toDate = document.getElementById('invToDate')?.value || '';
+                const city = document.getElementById('invCity')?.value || '';
+                const area = document.getElementById('invArea')?.value || '';
+                const status = document.getElementById('invStatus')?.value || '';
+                const productsSelect = document.getElementById('invProducts');
+                const selectedProducts = Array.from(productsSelect?.selectedOptions || [])
+                    .map(opt => opt.value)
+                    .filter(val => val && val !== 'All');
+                const employeesSelect = document.getElementById('invEmployees');
+                const selectedEmployees = Array.from(employeesSelect?.selectedOptions || [])
+                    .map(opt => opt.value)
+                    .filter(val => val && val !== 'All');
+                const params = new URLSearchParams();
+                if (fromDate) params.append('from_date', fromDate);
+                if (toDate) params.append('to_date', toDate);
+                if (city && city !== 'All') params.append('city', city);
+                if (area && area !== 'All') params.append('area', area);
+                if (status && status !== 'All') params.append('status', status);
+                selectedProducts.forEach(p => params.append('products[]', p));
+                selectedEmployees.forEach(e => params.append('employees[]', e));
+                window.location = '/api/reports/invoices/download?' + params.toString();
+            });
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... existing code ...
+        // Set default dates for Employees filter
+        const empFromDateInput = document.getElementById('empFromDate');
+        const empToDateInput = document.getElementById('empToDate');
+        if (empFromDateInput && empToDateInput) {
+            const today = new Date();
+            const toDateStr = today.toISOString().slice(0, 10);
+            const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+            const fromDateStr = sixMonthsAgo.toISOString().slice(0, 10);
+            empFromDateInput.value = fromDateStr;
+            empToDateInput.value = toDateStr;
+        }
+    });
+
+    // Generalized function to populate products
+    function populateProducts(selectId) {
+        fetch('/api/products')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById(selectId);
+                if (select && Array.isArray(data)) {
+                    select.innerHTML = '<option value="All">All</option>';
+                    data.forEach(prod => {
+                        if (typeof prod === 'string') {
+                            select.innerHTML += `<option value="${prod}">${prod}</option>`;
+                        } else if (prod.product_name) {
+                            select.innerHTML += `<option value="${prod.product_name}">${prod.product_name}</option>`;
+                        }
+                    });
+                }
+            });
+    }
+
+    // Generalized function to populate cities
+    function populateCities(selectId) {
+        fetch('/api/cities')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById(selectId);
+                if (select && Array.isArray(data)) {
+                    select.innerHTML = '<option value="All">All</option>';
+                    data.forEach(city => {
+                        if (typeof city === 'string') {
+                            select.innerHTML += `<option value="${city}">${city}</option>`;
+                        } else if (city.city_name) {
+                            select.innerHTML += `<option value="${city.city_name}">${city.city_name}</option>`;
+                        }
+                    });
+                }
+            });
+    }
+
+    // Generalized function to populate areas
+    function populateAreas(selectId, city) {
+        let url = '/api/areas';
+        if (city && city !== 'All') {
+            url += '?city=' + encodeURIComponent(city);
+        }
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById(selectId);
+                if (select && Array.isArray(data)) {
+                    select.innerHTML = '<option value="All">All</option>';
+                    data.forEach(area => {
+                        if (typeof area === 'string') {
+                            select.innerHTML += `<option value="${area}">${area}</option>`;
+                        } else if (area.area_name) {
+                            select.innerHTML += `<option value="${area.area_name}">${area.area_name}</option>`;
+                        }
+                    });
+                }
+            });
+    }
+
+    // Populate dropdowns for Invoices tab
+    populateProducts('invProducts');
+    populateCities('invCity');
+    populateAreas('invArea');
+    document.getElementById('invCity')?.addEventListener('change', function() {
+        populateAreas('invArea', this.value);
+    });
+
+    // Populate dropdowns for Employees tab
+    populateProducts('empProducts');
+    populateCities('empCity');
+    populateAreas('empArea');
+    document.getElementById('empCity')?.addEventListener('change', function() {
+        populateAreas('empArea', this.value);
+    });
+
+    // Fetch and render Employees report data
+    function fetchAndRenderEmployees() {
+        const fromDate = document.getElementById('empFromDate')?.value || '';
+        const toDate = document.getElementById('empToDate')?.value || '';
+        const city = document.getElementById('empCity')?.value || '';
+        const area = document.getElementById('empArea')?.value || '';
+        const status = document.getElementById('empStatus')?.value || '';
+        const productsSelect = document.getElementById('empProducts');
+        const selectedProducts = Array.from(productsSelect?.selectedOptions || [])
+            .map(opt => opt.value)
+            .filter(val => val && val !== 'All');
+
+        const params = new URLSearchParams();
+        if (fromDate) params.append('from_date', fromDate);
+        if (toDate) params.append('to_date', toDate);
+        if (city && city !== 'All') params.append('city', city);
+        if (area && area !== 'All') params.append('area', area);
+        if (status && status !== 'All') params.append('status', status);
+        selectedProducts.forEach(p => params.append('products[]', p));
+
+        const tableBody = document.getElementById('employees-table-body');
+        tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
+
+        fetch('/api/reports/employees?' + params.toString())
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.data.length === 0) {
+                        tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-neutral-500 py-8">No data to display. Use filters.</td></tr>`;
+                        return;
+                    }
+                    tableBody.innerHTML = '';
+                    data.data.forEach(emp => {
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-neutral-800 transition-colors';
+                        const maxProducts = 5;
+                        const shownProducts = emp.products ? emp.products.slice(0, maxProducts) : [];
+                        const moreCount = emp.products && emp.products.length > maxProducts ? emp.products.length - maxProducts : 0;
+                        row.innerHTML = `
+                            <td>${emp.employee_name || ''}</td>
+                            <td>${emp.bills_handled || 0}</td>
+                            <td>${emp.total_billed || 0}</td>
+                            <td>
+                              ${shownProducts.map(p => `<span class="inline-block bg-neutral-800 text-amber-300 rounded-full px-2 py-1 text-xs font-medium mr-1 mb-1">${p.trim()}</span>`).join('')}
+                              ${moreCount > 0 ? `
+                                <span class="inline-block bg-neutral-700 text-neutral-300 rounded-full px-2 py-1 text-xs font-medium mr-1 mb-1 cursor-pointer relative group">
+                                  +${moreCount} more
+                                  <span class="absolute z-10 left-1/2 -translate-x-1/2 mt-2 w-64 max-h-48 overflow-y-auto p-2 bg-neutral-900 text-neutral-200 text-xs rounded shadow-lg hidden group-hover:block">
+                                    ${emp.products.slice(maxProducts).map(p => `<div>${p.trim()}</div>`).join('')}
+                                  </span>
+                                </span>
+                              ` : ''}
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="4">Error: ${data.error}</td></tr>`;
+                }
+            })
+            .catch(err => {
+                tableBody.innerHTML = `<tr><td colspan="4">Error: ${err}</td></tr>`;
+            });
+    }
+
+    // Attach event listeners to Employees tab filters
+    document.getElementById('empFromDate')?.addEventListener('change', fetchAndRenderEmployees);
+    document.getElementById('empToDate')?.addEventListener('change', fetchAndRenderEmployees);
+    document.getElementById('empProducts')?.addEventListener('change', fetchAndRenderEmployees);
+    document.getElementById('empCity')?.addEventListener('change', fetchAndRenderEmployees);
+    document.getElementById('empArea')?.addEventListener('change', fetchAndRenderEmployees);
+    document.getElementById('empStatus')?.addEventListener('change', fetchAndRenderEmployees);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... existing code ...
+        // Set default dates for Products filter
+        const prodFromDateInput = document.getElementById('prodFromDate');
+        const prodToDateInput = document.getElementById('prodToDate');
+        if (prodFromDateInput && prodToDateInput) {
+            const today = new Date();
+            const toDateStr = today.toISOString().slice(0, 10);
+            const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+            const fromDateStr = sixMonthsAgo.toISOString().slice(0, 10);
+            prodFromDateInput.value = fromDateStr;
+            prodToDateInput.value = toDateStr;
+        }
+        // Populate dropdowns for Products tab
+        // Product types
+        fetch('/api/product-types')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('prodType');
+                if (select && Array.isArray(data)) {
+                    select.innerHTML = '<option value="All">All</option>';
+                    data.forEach(pt => {
+                        if (typeof pt === 'string') {
+                            select.innerHTML += `<option value="${pt}">${pt}</option>`;
+                        } else if (pt.type_name) {
+                            select.innerHTML += `<option value="${pt.type_name}">${pt.type_name}</option>`;
+                        }
+                    });
+                }
+            });
+        // Cities and Areas
+        populateCities('prodCity');
+        populateAreas('prodArea');
+        document.getElementById('prodCity')?.addEventListener('change', function() {
+            populateAreas('prodArea', this.value);
+        });
+    });
+
+    // Fetch and render Products report data
+    function fetchAndRenderProducts() {
+        const fromDate = document.getElementById('prodFromDate')?.value || '';
+        const toDate = document.getElementById('prodToDate')?.value || '';
+        const productType = document.getElementById('prodType')?.value || '';
+        const city = document.getElementById('prodCity')?.value || '';
+        const area = document.getElementById('prodArea')?.value || '';
+        const status = document.getElementById('prodStatus')?.value || '';
+
+        const params = new URLSearchParams();
+        if (fromDate) params.append('from_date', fromDate);
+        if (toDate) params.append('to_date', toDate);
+        if (productType && productType !== 'All') params.append('product_type', productType);
+        if (city && city !== 'All') params.append('city', city);
+        if (area && area !== 'All') params.append('area', area);
+        if (status && status !== 'All') params.append('status', status);
+
+        const tableBody = document.getElementById('products-table-body');
+        tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
+
+        fetch('/api/reports/products?' + params.toString())
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.data.length === 0) {
+                        tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-neutral-500 py-8">No data to display. Use filters.</td></tr>`;
+                        return;
+                    }
+                    tableBody.innerHTML = '';
+                    data.data.forEach(prod => {
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-neutral-800 transition-colors';
+                        row.innerHTML = `
+                            <td>${prod.product_name || ''}</td>
+                            <td>${prod.product_type || ''}</td>
+                            <td>${prod.total_quantity || 0}</td>
+                            <td>${prod.total_revenue || 0}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="4">Error: ${data.error}</td></tr>`;
+                }
+            })
+            .catch(err => {
+                tableBody.innerHTML = `<tr><td colspan="4">Error: ${err}</td></tr>`;
+            });
+    }
+
+    // Attach event listeners to Products tab filters
+    document.getElementById('prodFromDate')?.addEventListener('change', fetchAndRenderProducts);
+    document.getElementById('prodToDate')?.addEventListener('change', fetchAndRenderProducts);
+    document.getElementById('prodType')?.addEventListener('change', fetchAndRenderProducts);
+    document.getElementById('prodCity')?.addEventListener('change', fetchAndRenderProducts);
+    document.getElementById('prodArea')?.addEventListener('change', fetchAndRenderProducts);
+    document.getElementById('prodStatus')?.addEventListener('change', fetchAndRenderProducts);
+
+    // ... existing code ...
+    const printBtn = document.querySelector('.bg-neutral-700');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            console.log('Print clicked');
+            const fromDate = document.getElementById('invFromDate')?.value || '';
+            const toDate = document.getElementById('invToDate')?.value || '';
+            const city = document.getElementById('invCity')?.value || '';
+            const area = document.getElementById('invArea')?.value || '';
+            const status = document.getElementById('invStatus')?.value || '';
+            const productsSelect = document.getElementById('invProducts');
+            const selectedProducts = Array.from(productsSelect?.selectedOptions || [])
+                .map(opt => opt.value)
+                .filter(val => val && val !== 'All');
+            const employeesSelect = document.getElementById('invEmployees');
+            const selectedEmployees = Array.from(employeesSelect?.selectedOptions || [])
+                .map(opt => opt.value)
+                .filter(val => val && val !== 'All');
+            const params = new URLSearchParams();
+            if (fromDate) params.append('from_date', fromDate);
+            if (toDate) params.append('to_date', toDate);
+            if (city && city !== 'All') params.append('city', city);
+            if (area && area !== 'All') params.append('area', area);
+            if (status && status !== 'All') params.append('status', status);
+            selectedProducts.forEach(p => params.append('products[]', p));
+            selectedEmployees.forEach(e => params.append('employees[]', e));
+            window.open('/api/reports/invoices/print?' + params.toString(), '_blank');
+        });
+    }
+    // ... existing code ...
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... existing code ...
+        const printBtn = document.getElementById('invoicePrintBtn');
+        if (printBtn) {
+            printBtn.addEventListener('click', function() {
+                // ... removed console.log('Print clicked'); ...
+                const fromDate = document.getElementById('invFromDate')?.value || '';
+                const toDate = document.getElementById('invToDate')?.value || '';
+                const city = document.getElementById('invCity')?.value || '';
+                const area = document.getElementById('invArea')?.value || '';
+                const status = document.getElementById('invStatus')?.value || '';
+                const productsSelect = document.getElementById('invProducts');
+                const selectedProducts = Array.from(productsSelect?.selectedOptions || [])
+                    .map(opt => opt.value)
+                    .filter(val => val && val !== 'All');
+                const employeesSelect = document.getElementById('invEmployees');
+                const selectedEmployees = Array.from(employeesSelect?.selectedOptions || [])
+                    .map(opt => opt.value)
+                    .filter(val => val && val !== 'All');
+                const params = new URLSearchParams();
+                if (fromDate) params.append('from_date', fromDate);
+                if (toDate) params.append('to_date', toDate);
+                if (city && city !== 'All') params.append('city', city);
+                if (area && area !== 'All') params.append('area', area);
+                if (status && status !== 'All') params.append('status', status);
+                selectedProducts.forEach(p => params.append('products[]', p));
+                selectedEmployees.forEach(e => params.append('employees[]', e));
+                window.open('/api/reports/invoices/print?' + params.toString(), '_blank');
+            });
+        } 
+    });
+</script> 
 {% endblock %} 
