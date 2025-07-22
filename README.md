@@ -101,6 +101,36 @@ The application is currently deployed on Railway:
 
 ---
 
+## 📊 Advanced Reports
+
+The Advanced Reports module provides powerful, filterable reports for Invoices, Employees, and Products.
+
+### Invoices Report
+- Filter by date range, products, employees, city, area, and status.
+- View up to 50 records in the UI (with a note about the limit).
+- Download all filtered records as CSV.
+- Print all filtered records in a print-friendly format.
+
+### Employees Report
+- Filter by date range, products, city, area, and status.
+- See bills handled, total billed, and products handled per employee.
+- Products are displayed as tags, with "+N more" and a tooltip for long lists.
+
+### Products Report
+- Filter by date range, product type, city, area, and status.
+- See total quantity sold and total revenue per product.
+
+### Modern UI Features
+- All reports have animated loading, fade-in rows, and responsive tables.
+- Filter dropdowns are dynamically populated and support multi-select where appropriate.
+- Print and Download buttons are available for each report.
+
+### Print Functionality
+- Print button opens a print-friendly view of all filtered invoices (not just the limited UI view).
+- Print view is styled for clarity and includes all relevant columns.
+
+---
+
 ## 🖥️ Frontend Features
 
 - **Dynamic Plan Titles:** Page titles and navbar show current plan (Tailor Trial, Tailor Basic, Tailor Pro)
@@ -108,6 +138,11 @@ The application is currently deployed on Railway:
 - **Upgrade prompts:** Users see upgrade modals and lock overlays when features are restricted
 - **Debug page:** `/debug-plan` for interactive plan testing and switching
 - **Modern UI:** Dark theme with Tailwind CSS and Lucide icons
+- **Advanced Reports:** Tabbed interface for Invoices, Employees, and Products with modern filters, animated loading, and responsive tables
+- **Animated table row fade-in and skeleton loaders for all reports**
+- **Product tags with "+N more" and tooltips for long lists in employee reports**
+- **Print and Download buttons for all reports**
+- **Print view columns (Bill#, Bill Date, Delivery Date) are styled to prevent wrapping**
 
 ---
 
@@ -345,6 +380,14 @@ The application provides RESTful API endpoints for all operations:
 - `GET /api/backup/download/<filename>` - Download backup
 - `POST /api/backup/restore/<filename>` - Restore from backup
 
+### Advanced Reports APIs
+
+- `GET /api/reports/invoices` — Filtered invoice report (UI, 50 records)
+- `GET /api/reports/invoices/download` — Download all filtered invoices as CSV
+- `GET /api/reports/invoices/print` — Print-friendly HTML of all filtered invoices
+- `GET /api/reports/employees` — Filtered employee report
+- `GET /api/reports/products` — Filtered product report
+
 ## Customization
 
 ### Adding New Products
@@ -506,3 +549,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Improved Mark as Paid logic to use the progress modal and show success only after completion.
 - Introduced 3-tier product structure (Trial, Basic, PRO) with feature matrix.
 - Updated README.md with pricing, features, and last updated date. 
+
+### 2025-07-21
+- Added Advanced Reports: Invoices, Employees, Products tabs with modern filters and tables
+- Implemented print-friendly invoice report with styled columns
+- Added CSV download for all reports
+- Improved product tag display and tooltips in employee report
+- Refactored dropdown population code for reusability
+- Cleaned up debug logs and console statements 
