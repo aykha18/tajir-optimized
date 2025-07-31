@@ -138,9 +138,9 @@
       <button data-go="employeeSec" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-400/60 hover:bg-neutral-700 transition">
         <svg data-lucide="user-cog" class="w-4 h-4"></svg> Employees
       </button>
-      <button data-go="settingsSec" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-400/60 hover:bg-neutral-700 transition">
+      <!-- <button data-go="settingsSec" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-400/60 hover:bg-neutral-700 transition">
         <svg data-lucide="settings" class="w-4 h-4"></svg> Settings
-      </button>
+      </button> -->
       <button data-go="shopSettingsSec" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-400/60 hover:bg-neutral-700 transition">
         <svg data-lucide="store" class="w-4 h-4"></svg> Shop Settings
       </button>
@@ -344,7 +344,7 @@
             <label for="customerPhone" class="text-sm font-medium text-neutral-300 mb-1">Phone</label>
             <input id="customerPhone" placeholder="e.g. 9876543210" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
           </div>
-          <div class="col-span-2 flex flex-col trn-field" style="display: none;">
+          <div class="col-span-2 flex flex-col">
             <label for="customerTRN" class="text-sm font-medium text-neutral-300 mb-1">TRN</label>
             <input id="customerTRN" placeholder="Tax Registration Number" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
           </div>
@@ -520,7 +520,7 @@
       </section>
 
       <!-- SETTINGS -->
-      <section id="settingsSec" class="page hidden space-y-6">
+      <!-- <section id="settingsSec" class="page hidden space-y-6">
         <h3 class="text-2xl font-semibold tracking-tight">Backup & Restore</h3>
         <div class="flex gap-4 mb-4">
           <button id="backupBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium">Backup Now</button>
@@ -534,7 +534,7 @@
           <thead class="bg-neutral-800/70"><tr><th class="px-3 py-2 text-left font-medium">Date</th><th class="px-3 py-2 text-left font-medium">File</th><th class="px-3 py-2 text-left font-medium">Actions</th></tr></thead>
           <tbody id="backupTableBody" class="divide-y divide-neutral-800"></tbody>
         </table>
-      </section>
+      </section> -->
 
       <!-- SHOP SETTINGS -->
       <section id="shopSettingsSec" class="page hidden space-y-6">
@@ -655,7 +655,7 @@
             </div>
             <div class="col-span-3 flex flex-col"><label for="billCustomer">Customer</label><input id="billCustomer" placeholder="Customer name" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60"></div>
             <div class="col-span-3 flex flex-col business-billing-field" style="display: none;"><label for="billBusinessName">Business Name *</label><input id="billBusinessName" placeholder="Legal business name" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60"></div>
-            <div class="col-span-3 flex flex-col trn-billing-field" style="display: none;"><label for="billTRN">TRN</label><input id="billTRN" placeholder="Tax Registration Number" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60"></div>
+            <div class="col-span-3 flex flex-col"><label for="billTRN">TRN</label><input id="billTRN" placeholder="Tax Registration Number" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60"></div>
             <div class="col-span-3 flex flex-col"><label for="paymentMethod">Payment Method</label><select id="paymentMethod" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60"><option>Cash</option><option>Card</option></select></div>
             <div class="col-span-3 flex flex-col"><label for="masterName">Master</label><input id="masterName" placeholder="Master name" autocomplete="off" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60"></div>
             <div class="col-span-3 flex flex-col"><label for="trialDate">Trial Date</label><input id="trialDate" type="date" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60"></div>
@@ -1063,7 +1063,7 @@
     lucide.createIcons();
     
     // Initialize plan management
-
+    console.log('App loaded successfully!');
      initializePlanManagement();
 
     // Navigation functionality
@@ -1122,7 +1122,7 @@
       try {
         const resp = await fetch('/api/product-types');
         const types = await resp.json();
-
+        console.log('Loaded product types:', types); // Debug log
         
         if (!list) return;
         
@@ -1312,7 +1312,7 @@
       try {
         const resp = await fetch('/api/products');
         const prods = await resp.json();
-
+        console.log('Loaded products:', prods); // Debug log
         
         const tbody = table.querySelector('tbody');
         if (!tbody) return;
@@ -1757,15 +1757,12 @@
     document.getElementById('customerType').addEventListener('change', function() {
       const customerType = this.value;
       const businessFields = document.querySelectorAll('.business-field');
-      const trnField = document.querySelector('.trn-field');
       
       if (customerType === 'Business') {
         businessFields.forEach(field => field.style.display = 'flex');
-        trnField.style.display = 'flex';
         document.getElementById('customerBusinessName').required = true;
       } else {
         businessFields.forEach(field => field.style.display = 'none');
-        trnField.style.display = 'none';
         document.getElementById('customerBusinessName').required = false;
       }
     });
@@ -1803,7 +1800,6 @@
       // Reset customer type to Individual and hide business fields
       document.getElementById('customerType').value = 'Individual';
       document.querySelectorAll('.business-field').forEach(field => field.style.display = 'none');
-      document.querySelector('.trn-field').style.display = 'none';
       loadCustomers();
     });
 
@@ -1818,32 +1814,32 @@
       customerAreaDropdown = document.getElementById('customerAreaDropdown');
       
       if (!customerAreaInput || !customerAreaDropdown) {
-
+        // console.error('Area autocomplete elements not found');
         return;
       }
 
-      
+      // console.log('Area autocomplete initialized');
       setupAreaEventListeners();
     }
 
     // Load area suggestions from API
     async function loadAreaSuggestions() {
       try {
-
+        // console.log('Loading area suggestions...');
         const resp = await fetch('/api/areas');
         const areas = await resp.json();
-
+        // console.log('Areas loaded:', areas);
         
         // Check if areas is an array and has the expected structure
         if (!Array.isArray(areas)) {
-  
+          // console.error('Areas is not an array:', areas);
           areaSuggestions = [];
           return;
         }
         
         areaSuggestions = areas
           .map(area => {
-    
+            // console.log('Processing area:', area);
             return area && typeof area === 'object' ? area.area_name : area;
           })
           .filter(areaName => {
@@ -1854,7 +1850,8 @@
             return isValid;
           });
         
-
+        // console.log('Filtered area suggestions:', areaSuggestions);
+        // console.log('Total suggestions available:', areaSuggestions.length);
       } catch (error) {
         console.error('Error loading areas:', error);
         areaSuggestions = [];
@@ -1867,12 +1864,12 @@
 
       // Handle area input events
       customerAreaInput.addEventListener('input', function() {
-
+        // console.log('Area input:', this.value);
         filterAreaSuggestions(this.value);
       });
 
       customerAreaInput.addEventListener('focus', function() {
-
+        // console.log('Area input focused');
         if (this.value && this.value.trim()) {
           filterAreaSuggestions(this.value);
         }
@@ -1948,7 +1945,7 @@
       //     customerAreaInput.value = 'Dubai';
       //     filterAreaSuggestions('Dubai');
       //   } else {
-      
+      //     console.error('Customer Area Input not found!');
       //   }
       // }, 2000);
     }
@@ -1962,22 +1959,33 @@
 
     // Filter and display suggestions
     function filterAreaSuggestions(query) {
+      // console.log('Filtering suggestions for query:', query);
+      // console.log('Available suggestions:', areaSuggestions);
+      
       if (!query || !query.trim()) {
+        // console.log('Empty query, hiding dropdown');
         customerAreaDropdown.classList.add('hidden');
         return;
       }
 
       const queryLower = query.toLowerCase().trim();
+      // console.log('Searching for:', queryLower);
       
       const filtered = areaSuggestions.filter(area => {
         const matches = area && typeof area === 'string' && area.toLowerCase().includes(queryLower);
+        // console.log(`Area "${area}" matches "${queryLower}": ${matches}`);
         return matches;
       });
 
+      // console.log('Filtered results:', filtered);
+
       if (filtered.length === 0) {
+        // console.log('No matches found, hiding dropdown');
         customerAreaDropdown.classList.add('hidden');
         return;
       }
+
+      // console.log('Creating dropdown with', filtered.length, 'suggestions');
       
       customerAreaDropdown.innerHTML = filtered.map((area, index) => `
         <div class="area-suggestion px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors duration-150 ${index === 0 ? 'bg-neutral-700' : ''}" 
@@ -1993,6 +2001,7 @@
         </div>
       `).join('');
 
+      // console.log('Showing dropdown');
       customerAreaDropdown.classList.remove('hidden');
       selectedAreaIndex = 0;
     }
@@ -2035,14 +2044,11 @@
               
               // Show/hide business fields based on customer type
               const businessFields = document.querySelectorAll('.business-field');
-              const trnField = document.querySelector('.trn-field');
               if (customer.customer_type === 'Business') {
                 businessFields.forEach(field => field.style.display = 'flex');
-                trnField.style.display = 'flex';
                 document.getElementById('customerBusinessName').required = true;
               } else {
                 businessFields.forEach(field => field.style.display = 'none');
-                trnField.style.display = 'none';
                 document.getElementById('customerBusinessName').required = false;
               }
               
@@ -2888,143 +2894,42 @@
             onCancel();
           }
         });
-      });
-    }
-
-    // --- BILLING: Product Dropdown Logic ---
-    async function populateBillProductDropdown() {
-      const resp = await fetch('/api/products');
-      const products = await resp.json();
-      const select = document.getElementById('billProduct');
-      if (!select) return;
-      select.innerHTML = '<option hidden selected>Select product</option>' +
-        products.map(p => `<option value="${p.product_id}" data-rate="${p.rate}">${p.product_name}</option>`).join('');
-    }
-    populateBillProductDropdown();
-
-    // When product changes, auto-fill rate
-    document.getElementById('billProduct').addEventListener('change', function(e) {
-      const selected = this.options[this.selectedIndex];
-      const rate = selected.getAttribute('data-rate');
-      if (rate) {
-        document.getElementById('billRate').value = parseFloat(rate).toFixed(2);
       }
     });
 
-    // --- BILLING: Search & Reprint Invoice Modal Logic ---
-    document.getElementById('searchInvoiceBtn').addEventListener('click', () => {
-      document.getElementById('searchInvoiceModal').classList.remove('hidden');
-      document.getElementById('searchInvoiceInput').value = '';
-      document.getElementById('searchInvoiceResults').innerHTML = '';
-      document.getElementById('searchInvoiceInput').focus();
-    });
-    document.getElementById('closeSearchInvoice').addEventListener('click', () => {
-      document.getElementById('searchInvoiceModal').classList.add('hidden');
-    });
-    document.getElementById('searchInvoiceInput').addEventListener('input', async (e) => {
-      const q = e.target.value.trim().toLowerCase();
-      if (!q) {
-        document.getElementById('searchInvoiceResults').innerHTML = '';
-        return;
-      }
-      const resp = await fetch('/api/bills');
-      const allBills = await resp.json();
-      const results = (allBills || []).filter(bill =>
-        (bill.bill_number && bill.bill_number.toLowerCase().includes(q)) ||
-        (bill.customer_name && bill.customer_name.toLowerCase().includes(q)) ||
-        (bill.customer_phone && bill.customer_phone.toLowerCase().includes(q))
-      );
-      document.getElementById('searchInvoiceResults').innerHTML = results.length
-        ? `<table class="min-w-full text-sm">
-            <thead><tr>
-              <th class="px-2 py-1 text-left">Invoice #</th>
-              <th class="px-2 py-1 text-left">Customer</th>
-              <th class="px-2 py-1 text-left">Date</th>
-              <th class="px-2 py-1 text-left">Amount</th>
-              <th class="px-2 py-1 text-left">Status</th>
-              <th></th>
-            </tr></thead>
-            <tbody>
-              ${results.map(bill => `
-                <tr>
-                  <td class="px-2 py-1">${bill.bill_number || bill.bill_id}</td>
-                  <td class="px-2 py-1">${bill.customer_name || ''}</td>
-                  <td class="px-2 py-1">${bill.bill_date || ''}</td>
-                  <td class="px-2 py-1">AED ${parseFloat(bill.total_amount).toFixed(2)}</td>
-                  <td class="px-2 py-1">${bill.status || (bill.balance_amount > 0 ? 'Pending' : 'Paid')}</td>
-                  <td class="px-2 py-1 flex gap-2">
-                    <button class="reprint-btn bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1" data-id="${bill.bill_id}">Reprint</button>
-                    ${(bill.status === 'Pending' || (bill.balance_amount && bill.balance_amount > 0)) ? `<button class="mark-paid-btn bg-green-600 hover:bg-green-500 text-white rounded px-3 py-1" data-id="${bill.bill_id}" data-balance="${bill.balance_amount}">Mark as Paid</button>` : ''}
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>`
-        : '<div class="text-neutral-400 text-center py-4">No invoices found.</div>';
-    });
-    document.getElementById('searchInvoiceResults').addEventListener('click', function(e) {
-      const btn = e.target.closest('.reprint-btn');
-      if (btn) {
-        const billId = btn.getAttribute('data-id');
-        window.open(`/api/bills/${billId}/print`, '_blank');
-      }
-    });
-    // --- BILLING: Mark as Paid Logic ---
-    document.getElementById('searchInvoiceResults').addEventListener('click', async (e) => {
-      const payBtn = e.target.closest('.mark-paid-btn');
-      if (payBtn) {
-        const billId = payBtn.getAttribute('data-id');
-        let balance = parseFloat(payBtn.getAttribute('data-balance'));
-        if (!balance || balance <= 0) {
-          showToast('No balance due.', 'info');
-          return;
-        }
-        // Find bill details from the row
-        const row = payBtn.closest('tr');
-        const billNum = row.children[0].textContent;
-        const customer = row.children[1].textContent;
-        const date = row.children[2].textContent;
-        const total = parseFloat(row.children[3].textContent.replace('AED',''));
-        const status = row.children[4].textContent;
-        // Fetch delivery date from backend (optional, fallback to '-')
-        let delivery = '-';
-        try {
-          const resp = await fetch(`/api/bills/${billId}`);
-          const data = await resp.json();
-          if (data && data.bill && data.bill.delivery_date) delivery = data.bill.delivery_date;
-        } catch {}
-        const paid = total - balance;
-        showPaymentModal({
-          billNum,
-          customer,
-          paid,
-          due: balance,
-          max: balance,
-          total,
-          delivery,
-          status,
-          onOk: async (amount) => {
-            payBtn.disabled = true;
-            payBtn.textContent = 'Processing...';
-            const resp = await fetch(`/api/bills/${billId}/payment`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ amount_paid: amount })
-            });
-            const result = await resp.json();
-            if (result && result.bill && !result.error) {
-              showPaymentProgressModal(() => {
-                showToast('Payment recorded. Bill is now ' + (result.bill.status || 'updated'), 'success');
-                document.getElementById('searchInvoiceInput').dispatchEvent(new Event('input'));
-              });
-            } else {
-              showToast(result?.error || 'Failed to update payment', 'error');
-              payBtn.disabled = false;
-              payBtn.textContent = 'Mark as Paid';
+    // --- SIMPLE INVOICE NUMBER GENERATION ---
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Initializing invoice number generation...');
+        
+        // Simple invoice number generation
+        async function generateInvoiceNumber() {
+            try {
+                const resp = await fetch('/api/next-bill-number');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data && data.bill_number) {
+                        const billNumberInput = document.getElementById('billNumber');
+                        if (billNumberInput) {
+                            billNumberInput.value = data.bill_number;
+                            console.log('Generated invoice number:', data.bill_number);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error generating invoice number:', error);
             }
-          }
-        });
-      }
+        }
+
+        // Generate invoice number when billing section is accessed
+        const billingBtn = document.querySelector('.nav-btn[data-go="billingSec"]');
+        if (billingBtn) {
+            billingBtn.addEventListener('click', generateInvoiceNumber);
+        }
+
+        // Generate invoice number on page load
+        generateInvoiceNumber();
+
+        console.log('Invoice number generation initialized');
     });
 
     // --- BILLING: Payment Modal Logic ---
@@ -3167,15 +3072,12 @@
           
           // Show/hide business fields based on customer type
           const businessFields = document.querySelectorAll('.business-billing-field');
-          const trnField = document.querySelector('.trn-billing-field');
           if (customer.customer_type === 'Business') {
             businessFields.forEach(field => field.style.display = 'flex');
-            trnField.style.display = 'flex';
             document.getElementById('billBusinessName').required = true;
             document.getElementById('billBusinessAddress').required = true;
           } else {
             businessFields.forEach(field => field.style.display = 'none');
-            trnField.style.display = 'none';
             document.getElementById('billBusinessName').required = false;
             document.getElementById('billBusinessAddress').required = false;
           }
@@ -3191,9 +3093,7 @@
           
           // Hide business fields for new customer
           const businessFields = document.querySelectorAll('.business-billing-field');
-          const trnField = document.querySelector('.trn-billing-field');
           businessFields.forEach(field => field.style.display = 'none');
-          trnField.style.display = 'none';
           document.getElementById('billBusinessName').required = false;
           document.getElementById('billBusinessAddress').required = false;
         }
@@ -3204,16 +3104,13 @@
     document.getElementById('billCustomerType').addEventListener('change', function() {
       const customerType = this.value;
       const businessFields = document.querySelectorAll('.business-billing-field');
-      const trnField = document.querySelector('.trn-billing-field');
       
       if (customerType === 'Business') {
         businessFields.forEach(field => field.style.display = 'flex');
-        trnField.style.display = 'flex';
         document.getElementById('billBusinessName').required = true;
         document.getElementById('billBusinessAddress').required = true;
       } else {
         businessFields.forEach(field => field.style.display = 'none');
-        trnField.style.display = 'none';
         document.getElementById('billBusinessName').required = false;
         document.getElementById('billBusinessAddress').required = false;
       }
@@ -3668,9 +3565,6 @@
         document.getElementById('billTRN').value = '';
         document.getElementById('billCity').value = '';
         document.getElementById('billArea').value = '';
-        // Hide business and TRN fields
-        document.querySelectorAll('.business-billing-field').forEach(field => field.style.display = 'none');
-        document.querySelector('.trn-billing-field').style.display = 'none';
         // Auto-generate next Bill # and reset user-edited flag
         const resp = await fetch('/api/next-bill-number');
         if (resp.ok) {
@@ -3744,14 +3638,11 @@
       }
     }
 
-    
-      });
-
     // --- PLAN MANAGEMENT FUNCTIONS ---
     
     async function initializePlanManagement() {
       try {
-    
+        console.log('Initializing plan management...');
         // Load plan status and config
         const [planStatus, configData] = await Promise.all([
           fetch('/api/plan/status').then(r => r.json()),
@@ -3764,13 +3655,12 @@
         lockedFeatures = planStatus.locked_features || [];
         isPlanLoaded = true;
         
-        // Store plan data
-        userPlan = {
+        console.log('Plan loaded:', {
           plan: planStatus.plan,
           expired: planStatus.expired,
           enabledFeatures,
           lockedFeatures
-        };
+        });
         
         // Apply plan restrictions
         applyPlanRestrictions();
@@ -3799,7 +3689,7 @@
     function applyPlanRestrictions() {
       if (!isPlanLoaded) return;
       
-
+      console.log('Applying plan restrictions...');
       
       // Lock navigation buttons for disabled features
       const navButtons = {
@@ -3825,7 +3715,7 @@
       
       // Lock sections based on plan
       if (userPlan.expired && userPlan.plan === 'trial') {
-
+        console.log('Locking all sections for expired trial...');
         // Lock all sections except billing
         const sections = ['productTypeSec', 'productSec', 'customerSec', 'vatSec', 'employeeSec', 'settingsSec', 'dashSec'];
         sections.forEach(sectionId => {
@@ -3853,7 +3743,7 @@
       
       // Lock specific features for basic plan after expiry
       if (userPlan.expired && userPlan.plan === 'basic') {
-
+        console.log('Locking PRO features for expired basic plan...');
         const proFeatures = ['dashboard', 'customer_search', 'db_backup_restore'];
         proFeatures.forEach(feature => {
           if (lockedFeatures.includes(feature)) {
@@ -3890,7 +3780,7 @@
     }
     
     function showUpgradePrompt() {
-      
+      console.log('Showing upgrade prompt...');
       // Create upgrade modal
       const modal = document.createElement('div');
       modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
@@ -3943,7 +3833,7 @@
     
     async function upgradePlan(planType) {
       try {
-
+        console.log('Upgrading to plan:', planType);
         const response = await fetch('/api/plan/upgrade', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -4056,7 +3946,8 @@
             .then(res => res.json())
             .then(data => {
                 const select = document.getElementById('invProducts');
-                
+                console.log('Products select:', select);
+                console.log('Products data:', data);
 
                 if (select && Array.isArray(data)) {
                     select.innerHTML = '<option value="All">All</option>';
@@ -4527,7 +4418,7 @@
     const printBtn = document.querySelector('.bg-neutral-700');
     if (printBtn) {
         printBtn.addEventListener('click', function() {
-    
+            console.log('Print clicked');
             const fromDate = document.getElementById('invFromDate')?.value || '';
             const toDate = document.getElementById('invToDate')?.value || '';
             const city = document.getElementById('invCity')?.value || '';
@@ -4559,7 +4450,7 @@
         const printBtn = document.getElementById('invoicePrintBtn');
         if (printBtn) {
             printBtn.addEventListener('click', function() {
-        
+                // ... removed console.log('Print clicked'); ...
                 const fromDate = document.getElementById('invFromDate')?.value || '';
                 const toDate = document.getElementById('invToDate')?.value || '';
                 const city = document.getElementById('invCity')?.value || '';
@@ -4702,4 +4593,4 @@
         }
     });
 </script>
-{% endblock %} 
+{% endblock %}

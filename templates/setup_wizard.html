@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Setup Wizard - Tajir</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    .wizard-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem;
+    }
+    
+    .wizard-wrapper {
+      max-width: 64rem;
+      width: 100%;
+      margin: 0 auto;
+    }
+    
+    .wizard-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .wizard-title {
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 0.5rem;
+    }
+    
+    .wizard-subtitle {
+      color: #9ca3af;
+      font-size: 1.125rem;
+    }
+    
+    .wizard-card {
+      background-color: rgba(38, 38, 38, 0.6);
+      border-radius: 1rem;
+      border: 1px solid #404040;
+      padding: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    
+    .step-dot {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 50%;
+      background-color: #525252;
+      margin: 0 0.5rem;
+      transition: all 0.3s;
+    }
+    
+    .step-dot.active {
+      background-color: #9333ea;
+      transform: scale(1.25);
+    }
+    
+    .step-dot.completed {
+      background-color: #22c55e;
+    }
+    
+    .wizard-step {
+      display: none;
+    }
+    
+    .wizard-step.active {
+      display: block;
+    }
+    
+    .shop-type-grid {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    @media (min-width: 768px) {
+      .shop-type-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (min-width: 1024px) {
+      .shop-type-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    .shop-type-card {
+      padding: 1.5rem;
+      background-color: rgba(55, 65, 81, 0.5);
+      border: 1px solid #525252;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .shop-type-card:hover {
+      border-color: #9333ea;
+      background-color: rgba(55, 65, 81, 0.7);
+    }
+    
+    .shop-type-card.selected {
+      border-color: #9333ea;
+      background-color: rgba(147, 51, 234, 0.2);
+    }
+    
+    .shop-type-emoji {
+      font-size: 2.25rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .shop-type-name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 0.5rem;
+    }
+    
+    .shop-type-desc {
+      font-size: 0.875rem;
+      color: #9ca3af;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #d1d5db;
+      margin-bottom: 0.75rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      background-color: rgba(55, 65, 81, 0.5);
+      border: 1px solid #525252;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      color: white;
+      font-size: 1.125rem;
+      transition: all 0.2s;
+    }
+    
+    .form-input::placeholder {
+      color: #9ca3af;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    }
+    
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    @media (min-width: 768px) {
+      .plan-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    .plan-card {
+      padding: 1.5rem;
+      background-color: rgba(55, 65, 81, 0.5);
+      border: 1px solid #525252;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .plan-card:hover {
+      border-color: #9333ea;
+      background-color: rgba(55, 65, 81, 0.7);
+    }
+    
+    .plan-card.selected {
+      border-color: #9333ea;
+      background-color: rgba(147, 51, 234, 0.2);
+    }
+    
+    .plan-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 0.5rem;
+    }
+    
+    .plan-price {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #a855f7;
+      margin-bottom: 0.5rem;
+    }
+    
+    .plan-duration {
+      font-size: 0.875rem;
+      color: #9ca3af;
+      margin-bottom: 1rem;
+    }
+    
+    .plan-features {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .plan-feature {
+      font-size: 0.875rem;
+      color: #d1d5db;
+      display: flex;
+      align-items: center;
+    }
+    
+    .plan-feature svg {
+      width: 1rem;
+      height: 1rem;
+      margin-right: 0.5rem;
+      color: #22c55e;
+    }
+    
+    .btn-primary {
+      background-color: #9333ea;
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      transform: scale(1);
+    }
+    
+    .btn-primary:hover {
+      background-color: #a855f7;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(1.02);
+    }
+    
+    .btn-secondary {
+      background-color: #374151;
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      transform: scale(1);
+    }
+    
+    .btn-secondary:hover {
+      background-color: #4b5563;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(1.02);
+    }
+    
+    .btn-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2rem;
+    }
+    
+    .credentials-card {
+      background-color: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .credentials-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #22c55e;
+      margin-bottom: 1rem;
+    }
+    
+    .credential-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    
+    .credential-label {
+      color: #d1d5db;
+      font-weight: 500;
+    }
+    
+    .credential-value {
+      color: white;
+      font-family: monospace;
+      background-color: #1f2937;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.25rem;
+    }
+
+    /* Toast Notification Styles */
+    .toast-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(10px);
+      border: 1px solid;
+      min-width: 300px;
+      max-width: 400px;
+      transform: translateX(100%);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      background-color: rgba(34, 197, 94, 0.1);
+      border-color: rgba(34, 197, 94, 0.3);
+      color: #22c55e;
+    }
+
+    .toast.error {
+      background-color: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    .toast.warning {
+      background-color: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #f59e0b;
+    }
+
+    .toast.info {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.3);
+      color: #3b82f6;
+    }
+
+    .toast-icon {
+      margin-right: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .toast-message {
+      font-size: 0.75rem;
+      opacity: 0.9;
+    }
+
+    .toast-close {
+      margin-left: 0.75rem;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toast-close:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-neutral-900 text-white font-sans antialiased">
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <div class="wizard-container">
+    <div class="wizard-wrapper">
+      <!-- Header -->
+      <div class="wizard-header">
+        <h1 class="wizard-title">Setup Your Shop</h1>
+        <p class="wizard-subtitle">Let's get your business up and running in minutes</p>
+      </div>
+
+      <!-- Setup Wizard Card -->
+      <div class="wizard-card">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+          <div class="step-dot active" data-step="1"></div>
+          <div class="step-dot" data-step="2"></div>
+          <div class="step-dot" data-step="3"></div>
+        </div>
+
+        <!-- Step 1: Shop Type -->
+        <div class="wizard-step active" id="step-1">
+          <h2 class="text-2xl font-bold text-white mb-6">Choose Your Shop Type</h2>
+          <div class="shop-type-grid">
+            <div class="shop-type-card" data-type="tailors">
+              <div class="shop-type-emoji">🧵</div>
+              <div class="shop-type-name">Tailors</div>
+              <div class="shop-type-desc">Traditional tailoring and alterations</div>
+            </div>
+            <div class="shop-type-card" data-type="laundry">
+              <div class="shop-type-emoji">🧼</div>
+              <div class="shop-type-name">Laundry / Dry Cleaners</div>
+              <div class="shop-type-desc">Washing, dry cleaning services</div>
+            </div>
+            <div class="shop-type-card" data-type="salons">
+              <div class="shop-type-emoji">🪒</div>
+              <div class="shop-type-name">Salons & Barbers</div>
+              <div class="shop-type-desc">Hair styling and grooming</div>
+            </div>
+            <div class="shop-type-card" data-type="mobile">
+              <div class="shop-type-emoji">📱</div>
+              <div class="shop-type-name">Mobile/Repair Shops</div>
+              <div class="shop-type-desc">Phone and device repairs</div>
+            </div>
+            <div class="shop-type-card" data-type="electrical">
+              <div class="shop-type-emoji">🧯</div>
+              <div class="shop-type-name">AC/Electrical Repair</div>
+              <div class="shop-type-desc">Electrical and AC services</div>
+            </div>
+            <div class="shop-type-card" data-type="cafes">
+              <div class="shop-type-emoji">🧃</div>
+              <div class="shop-type-name">Small Cafes/Kiosks</div>
+              <div class="shop-type-desc">Food and beverage services</div>
+            </div>
+            <div class="shop-type-card" data-type="cobbler">
+              <div class="shop-type-emoji">👠</div>
+              <div class="shop-type-name">Cobbler / Shoe Repair</div>
+              <div class="shop-type-desc">Shoe repair and maintenance</div>
+            </div>
+            <div class="shop-type-card" data-type="tuition">
+              <div class="shop-type-emoji">📚</div>
+              <div class="shop-type-name">Tuition / Home Classes</div>
+              <div class="shop-type-desc">Educational services</div>
+            </div>
+            <div class="shop-type-card" data-type="warehouse">
+              <div class="shop-type-emoji">📦</div>
+              <div class="shop-type-name">Mini Warehouses</div>
+              <div class="shop-type-desc">Storage and logistics</div>
+            </div>
+            <div class="shop-type-card" data-type="it">
+              <div class="shop-type-emoji">🖥️</div>
+              <div class="shop-type-name">IT Hardware Shops</div>
+              <div class="shop-type-desc">Computer and tech sales</div>
+            </div>
+            <div class="shop-type-card" data-type="perfume">
+              <div class="shop-type-emoji">🧴</div>
+              <div class="shop-type-name">Perfume & Oud Shops</div>
+              <div class="shop-type-desc">Fragrances and cosmetics</div>
+            </div>
+          </div>
+          
+          <div class="btn-group">
+            <div></div>
+            <button class="btn-primary" onclick="nextStep()">
+              Next Step
+              <svg data-lucide="arrow-right" class="w-5 h-5 ml-2"></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Shop Information -->
+        <div class="wizard-step" id="step-2">
+          <h2 class="text-2xl font-bold text-white mb-6">Shop Information</h2>
+          
+          <div class="form-group">
+            <label class="form-label">Shop Name *</label>
+            <input type="text" id="shop-name" class="form-input" placeholder="Enter your shop name" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Contact Number *</label>
+            <input type="tel" id="contact-number" class="form-input" placeholder="Enter your contact number" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Email Address (Optional)</label>
+            <input type="email" id="email-address" class="form-input" placeholder="Enter your email address">
+          </div>
+          
+          <div class="btn-group">
+            <button class="btn-secondary" onclick="prevStep()">
+              <svg data-lucide="arrow-left" class="w-5 h-5 mr-2"></svg>
+              Previous
+            </button>
+            <button class="btn-primary" onclick="nextStep()">
+              Next Step
+              <svg data-lucide="arrow-right" class="w-5 h-5 ml-2"></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Plan Selection -->
+        <div class="wizard-step" id="step-3">
+          <h2 class="text-2xl font-bold text-white mb-6">Choose Your Plan</h2>
+          
+          <div class="plan-grid">
+            <div class="plan-card" data-plan="trial">
+              <div class="plan-name">Trial</div>
+              <div class="plan-price">Free</div>
+              <div class="plan-duration">15 Days</div>
+              <div class="plan-features">
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  All Basic Features
+                </div>
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  Unlimited Bills
+                </div>
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  Advanced Reports
+                </div>
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  WhatsApp Bills
+                </div>
+              </div>
+            </div>
+            
+            <div class="plan-card" data-plan="basic">
+              <div class="plan-name">Basic</div>
+              <div class="plan-price">AED 499</div>
+              <div class="plan-duration">Per Year</div>
+              <div class="plan-features">
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  All Basic Features
+                </div>
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  Unlimited Bills
+                </div>
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  Basic Reports
+                </div>
+                <div class="plan-feature">
+                  <svg data-lucide="x"></svg>
+                  WhatsApp Bills
+                </div>
+              </div>
+            </div>
+            
+            <div class="plan-card" data-plan="pro">
+              <div class="plan-name">Pro</div>
+              <div class="plan-price">AED 799</div>
+              <div class="plan-duration">Per Year</div>
+              <div class="plan-features">
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  Everything in Basic
+                </div>
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  Advanced Reports
+                </div>
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  WhatsApp Bills
+                </div>
+                <div class="plan-feature">
+                  <svg data-lucide="check"></svg>
+                  Priority Support
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="btn-group">
+            <button class="btn-secondary" onclick="prevStep()">
+              <svg data-lucide="arrow-left" class="w-5 h-5 mr-2"></svg>
+              Previous
+            </button>
+            <button class="btn-primary" onclick="submitSetup()">
+              Create Shop
+              <svg data-lucide="check" class="w-5 h-5 ml-2"></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Success Step -->
+        <div class="wizard-step" id="step-success">
+          <h2 class="text-2xl font-bold text-white mb-6">🎉 Shop Created Successfully!</h2>
+          
+          <div class="credentials-card">
+            <div class="credentials-title">Your Login Credentials</div>
+            <div class="credential-item">
+              <span class="credential-label">Shop Code:</span>
+              <span class="credential-value" id="shop-code-display"></span>
+            </div>
+            <div class="credential-item">
+              <span class="credential-label">Password:</span>
+              <span class="credential-value" id="password-display"></span>
+            </div>
+          </div>
+          
+          <div class="text-center">
+            <p class="text-neutral-400 mb-6">Please save these credentials. You'll need them to access your shop.</p>
+            <button class="btn-primary" onclick="goToLogin()">
+              Go to Login
+              <svg data-lucide="log-in" class="w-5 h-5 ml-2"></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  let currentStep = 1;
+  let setupData = {
+    shopType: '',
+    shopName: '',
+    contactNumber: '',
+    emailAddress: '',
+    selectedPlan: ''
+  };
+
+  // Toast Notification System
+  function showToast(type, title, message, duration = 5000) {
+    const container = document.getElementById('toast-container');
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+      success: 'check-circle',
+      error: 'x-circle',
+      warning: 'alert-triangle',
+      info: 'info'
+    };
+    
+    toast.innerHTML = `
+      <svg data-lucide="${icons[type]}" class="toast-icon w-5 h-5"></svg>
+      <div class="toast-content">
+        <div class="toast-title">${title}</div>
+        <div class="toast-message">${message}</div>
+      </div>
+      <svg data-lucide="x" class="toast-close w-4 h-4" onclick="this.parentElement.remove()"></svg>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Reinitialize Lucide icons
+    lucide.createIcons();
+    
+    // Show animation
+    setTimeout(() => {
+      toast.classList.add('show');
+    }, 100);
+    
+    // Auto remove
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.remove();
+        }
+      }, 300);
+    }, duration);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Lucide icons
+    lucide.createIcons();
+    
+    // Shop type selection
+    document.querySelectorAll('.shop-type-card').forEach(card => {
+      card.addEventListener('click', function() {
+        document.querySelectorAll('.shop-type-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        setupData.shopType = this.dataset.type;
+      });
+    });
+
+    // Plan selection
+    document.querySelectorAll('.plan-card').forEach(card => {
+      card.addEventListener('click', function() {
+        document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        setupData.selectedPlan = this.dataset.plan;
+      });
+    });
+  });
+
+  function nextStep() {
+    if (currentStep === 1) {
+      if (!setupData.shopType) {
+        showToast('error', 'Selection Required', 'Please select a shop type');
+        return;
+      }
+    } else if (currentStep === 2) {
+      const shopName = document.getElementById('shop-name').value.trim();
+      const contactNumber = document.getElementById('contact-number').value.trim();
+      
+      if (!shopName || !contactNumber) {
+        showToast('error', 'Validation Error', 'Please fill in all required fields');
+        return;
+      }
+      
+      setupData.shopName = shopName;
+      setupData.contactNumber = contactNumber;
+      setupData.emailAddress = document.getElementById('email-address').value.trim();
+    }
+    
+    showStep(currentStep + 1);
+  }
+
+  function prevStep() {
+    showStep(currentStep - 1);
+  }
+
+  function showStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+    
+    // Show current step
+    document.getElementById(`step-${step}`).classList.add('active');
+    
+    // Update step indicator
+    document.querySelectorAll('.step-dot').forEach((dot, index) => {
+      dot.classList.remove('active', 'completed');
+      if (index + 1 < step) {
+        dot.classList.add('completed');
+      } else if (index + 1 === step) {
+        dot.classList.add('active');
+      }
+    });
+    
+    currentStep = step;
+  }
+
+  function submitSetup() {
+    if (!setupData.selectedPlan) {
+      showToast('error', 'Selection Required', 'Please select a plan');
+      return;
+    }
+
+    // Show loading state
+    const submitBtn = document.querySelector('#step-3 .btn-primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<svg data-lucide="loader-2" class="w-5 h-5 ml-2 animate-spin"></svg> Creating...';
+    submitBtn.disabled = true;
+
+    fetch('/api/setup-wizard', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(setupData)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Display credentials
+        document.getElementById('shop-code-display').textContent = data.shop_code;
+        document.getElementById('password-display').textContent = data.password;
+        showStep('success');
+        showToast('success', 'Shop Created', 'Your shop has been created successfully!');
+      } else {
+        showToast('error', 'Setup Failed', data.message || 'Failed to create shop. Please try again.');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('error', 'Connection Error', 'Unable to connect to server. Please try again.');
+    })
+    .finally(() => {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    });
+  }
+
+  function goToLogin() {
+    showToast('info', 'Redirecting', 'Taking you to the login page...', 2000);
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 2000);
+  }
+  </script>
+</body>
+</html> 

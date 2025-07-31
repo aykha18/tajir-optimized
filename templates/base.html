@@ -1,29 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ get_user_language() }}" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
 <head>
   <meta charset="UTF-8">
-  <title>{% block title %}{{ user_plan_info.plan_display_name if user_plan_info else 'Tailor POS' }}{% endblock %}</title>
+  <title>{% block title %}{{ user_plan_info.plan_display_name if user_plan_info else 'Tajir' }}{% endblock %}</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  
+  <!-- Arabic Font Support -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
   <style>
     @keyframes fade-in{0%{opacity:0;transform:translateY(12px);filter:blur(4px)}100%{opacity:1;transform:none;filter:blur(0)}}
     .fade-in{animation:fade-in .45s cubic-bezier(.33,1,.68,1) forwards}
+    
+    /* Arabic Font Support */
+    [dir="rtl"] {
+      font-family: 'Cairo', sans-serif;
+    }
+    
+    [dir="rtl"] .arabic-text {
+      font-family: 'Cairo', sans-serif;
+      line-height: 1.6;
+    }
+    
+    /* RTL Specific Styles */
+    [dir="rtl"] .rtl-flip {
+      transform: scaleX(-1);
+    }
+    
+    [dir="rtl"] .rtl-mirror {
+      transform: scaleX(-1);
+    }
+    
+    /* Language Switch Button */
+    .language-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 0.5rem;
+      color: #6366f1;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    
+    .language-switch:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+    
+    .language-switch.active {
+      background: rgba(99, 102, 241, 0.3);
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+    
+    /* RTL Layout Adjustments */
+    [dir="rtl"] .flex-row-reverse {
+      flex-direction: row-reverse;
+    }
+    
+    [dir="rtl"] .text-right {
+      text-align: right;
+    }
+    
+    [dir="rtl"] .text-left {
+      text-align: left;
+    }
+    
+    [dir="rtl"] .mr-4 {
+      margin-right: 0;
+      margin-left: 1rem;
+    }
+    
+    [dir="rtl"] .ml-4 {
+      margin-left: 0;
+      margin-right: 1rem;
+    }
+    
+    [dir="rtl"] .space-x-8 > * + * {
+      margin-left: 0;
+      margin-right: 2rem;
+    }
+    
+    [dir="rtl"] .space-x-8 > * + *:last-child {
+      margin-right: 0;
+    }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-screen bg-neutral-900 text-white font-sans antialiased selection:bg-indigo-600 selection:text-white">
+<body class="min-h-screen bg-neutral-900 text-white font-sans antialiased selection:bg-indigo-600 selection:text-white" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
   <!-- NAVBAR -->
   <nav class="bg-neutral-800/60 backdrop-blur border-b border-neutral-700 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
-        <!-- Logo and Brand -->
+        <!-- Logo and App Name -->
         <div class="flex items-center">
-          <img src="{{ url_for('static', filename='dressme_logo.png') }}" alt="DressMe Logo" class="w-10 h-10 rounded-full object-cover border-2 border-neutral-700 mr-3">
-          <div class="flex flex-col">
-            <h1 class="text-xl font-semibold tracking-tight">{{ user_plan_info.plan_display_name if user_plan_info else 'Tailor POS' }}</h1>
-            <p class="text-xs text-neutral-400">Professional Tailoring Management</p>
+          <!-- Tajir Logo (Always shown) -->
+          <div class="flex items-center mr-4">
+            <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+              <span class="text-white font-bold text-lg">ت</span>
+            </div>
+            <div class="flex flex-col">
+              <h1 class="text-xl font-semibold tracking-tight arabic-text">{{ user_plan_info.plan_display_name if user_plan_info else 'Tajir' }}</h1>
+              <p class="text-xs text-neutral-400 arabic-text">{{ get_translated_text('professional_business_management') }}</p>
+            </div>
           </div>
+          
+          <!-- Customer Logo (if available) -->
+          {% if user_plan_info and user_plan_info.shop_settings and user_plan_info.shop_settings.logo_url %}
+          <div class="flex items-center ml-4 pl-4 border-l border-neutral-700">
+            <img src="{{ user_plan_info.shop_settings.logo_url }}" alt="Shop Logo" class="w-8 h-8 rounded-full object-cover border border-neutral-600 mr-2">
+            <span class="text-sm text-neutral-300 arabic-text">{{ user_plan_info.shop_settings.shop_name }}</span>
+          </div>
+          {% endif %}
         </div>
 
         <!-- Navigation Links -->
@@ -31,12 +126,18 @@
           <div class="ml-10 flex items-baseline space-x-8">
             <a href="{{ url_for('app_page') }}" class="nav-link {% if request.endpoint == 'app_page' %}active{% endif %} px-3 py-2 rounded-md text-sm font-medium transition-colors">
               <svg data-lucide="app-window" class="w-4 h-4 inline mr-2"></svg>
-              App
+              {{ get_translated_text('app') }}
             </a>
             <a href="{{ url_for('pricing') }}" class="nav-link {% if request.endpoint == 'pricing' %}active{% endif %} px-3 py-2 rounded-md text-sm font-medium transition-colors">
               <svg data-lucide="credit-card" class="w-4 h-4 inline mr-2"></svg>
-              Pricing
+              {{ get_translated_text('pricing') }}
             </a>
+            
+            <!-- Language Switch -->
+            <button id="language-switch" class="language-switch" onclick="toggleLanguage()">
+              <span id="current-lang">{{ get_user_language().upper() }}</span>
+              <svg data-lucide="globe" class="w-4 h-4"></svg>
+            </button>
           </div>
         </div>
 
@@ -54,12 +155,18 @@
       <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-neutral-800/90">
         <a href="{{ url_for('app_page') }}" class="mobile-nav-link {% if request.endpoint == 'app_page' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
           <svg data-lucide="app-window" class="w-4 h-4 inline mr-2"></svg>
-          App
+          {{ get_translated_text('app') }}
         </a>
         <a href="{{ url_for('pricing') }}" class="mobile-nav-link {% if request.endpoint == 'pricing' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
           <svg data-lucide="credit-card" class="w-4 h-4 inline mr-2"></svg>
-          Pricing
+          {{ get_translated_text('pricing') }}
         </a>
+        
+        <!-- Mobile Language Switch -->
+        <button id="mobile-language-switch" class="mobile-nav-link block w-full text-left px-3 py-2 rounded-md text-base font-medium" onclick="toggleLanguage()">
+          <svg data-lucide="globe" class="w-4 h-4 inline mr-2"></svg>
+          {{ get_translated_text('switch_language') }}
+        </button>
       </div>
     </div>
   </nav>
@@ -97,7 +204,47 @@
           mobileMenu.classList.toggle('hidden');
         });
       }
+      
+      // Initialize language display
+      updateLanguageDisplay();
     });
+    
+    // Language switching functionality
+    function toggleLanguage() {
+      const currentLang = document.documentElement.lang;
+      const newLang = currentLang === 'ar' ? 'en' : 'ar';
+      
+      fetch('/api/language/switch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          language: newLang
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Reload page to apply new language
+          window.location.reload();
+        } else {
+          console.error('Failed to switch language:', data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error switching language:', error);
+      });
+    }
+    
+    function updateLanguageDisplay() {
+      const currentLang = document.documentElement.lang;
+      const langElements = document.querySelectorAll('#current-lang');
+      
+      langElements.forEach(element => {
+        element.textContent = currentLang.toUpperCase();
+      });
+    }
   </script>
   {% block extra_scripts %}{% endblock %}
 </body>

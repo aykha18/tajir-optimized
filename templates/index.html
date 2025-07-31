@@ -1,23 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}Tailor POS - Professional Tailoring Management{% endblock %}
+{% block title %}Tajir - Professional Business Management{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
   <!-- Hero Section -->
   <div class="text-center mb-16">
-    <div class="flex justify-center mb-8">
-      <img src="{{ url_for('static', filename='dressme_logo.png') }}" alt="DressMe Logo" class="w-32 h-32 rounded-full object-cover border-4 border-neutral-700">
-    </div>
-    <h1 class="text-5xl font-bold text-white mb-6">Tailor POS</h1>
+    <div class="text-center mb-8">
+      <div class="w-32 h-32 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-neutral-700">
+        <span class="text-white font-bold text-6xl">ت</span>
+      </div>
+    <h1 class="text-5xl font-bold text-white mb-6">Tajir</h1>
     <p class="text-xl text-neutral-400 mb-8 max-w-3xl mx-auto">
-      Professional Point of Sale system designed specifically for tailoring businesses. 
-      Manage customers, products, billing, and analytics with ease.
+      Professional Point of Sale system designed for UAE businesses. 
+      Streamline your operations with our modern, multi-tenant solution.
     </p>
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <a href="{{ url_for('app_page') }}" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-8 py-4 font-semibold text-lg transition-colors">
-        <svg data-lucide="play" class="w-5 h-5 inline mr-2"></svg>
-        Launch Application
+      <a href="{{ url_for('login') }}" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-8 py-4 font-semibold text-lg transition-colors">
+        <svg data-lucide="log-in" class="w-5 h-5 inline mr-2"></svg>
+        Sign In
+      </a>
+      <a href="{{ url_for('setup_wizard') }}" class="bg-green-600 hover:bg-green-500 text-white rounded-lg px-8 py-4 font-semibold text-lg transition-colors">
+        <svg data-lucide="settings" class="w-5 h-5 inline mr-2"></svg>
+        Setup Wizard
       </a>
       <a href="{{ url_for('pricing') }}" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-8 py-4 font-semibold text-lg transition-colors">
         <svg data-lucide="credit-card" class="w-5 h-5 inline mr-2"></svg>

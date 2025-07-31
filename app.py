@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, session
 import sqlite3
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import json
 from decimal import Decimal
 import dropbox
@@ -14,9 +14,21 @@ from plan_manager import plan_manager
 import csv
 from io import StringIO
 from flask import Response
+import bcrypt
+import random
+import string
+import base64
+import qrcode
+from io import BytesIO
+from PIL import Image
+import hashlib
+import hmac
+import struct
+import uuid
 
 app = Flask(__name__)
 app.config['DATABASE'] = 'pos_tailor.db'
+app.secret_key = 'your-secret-key-here-change-in-production'  # Add secret key for sessions
 
 DROPBOX_ACCESS_TOKEN = os.getenv('DROPBOX_ACCESS_TOKEN')
 
@@ -25,18 +37,25 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def get_current_user_id():
+    """Get current user_id from session, fallback to 1 for backward compatibility."""
+    return session.get('user_id', 1)
+
 def get_user_plan_info():
-    """Get current user plan information for template rendering."""
+    """Get current user plan information and shop settings for template rendering."""
     try:
+        user_id = get_current_user_id()
         conn = get_db_connection()
-        user_plan = conn.execute('SELECT * FROM user_plans WHERE user_id = 1 AND is_active = 1').fetchone()
+        user_plan = conn.execute('SELECT * FROM user_plans WHERE user_id = ? AND is_active = 1', (user_id,)).fetchone()
+        shop_settings = conn.execute('SELECT * FROM shop_settings WHERE user_id = ?', (user_id,)).fetchone()
         conn.close()
         
         if not user_plan:
             return {
                 'plan_type': 'trial',
-                'plan_name': 'Tailor Trial',
-                'plan_display_name': 'Tailor Trial'
+                'plan_name': 'Tajir Trial',
+                'plan_display_name': 'Tajir Trial',
+                'shop_settings': dict(shop_settings) if shop_settings else None
             }
         
         user_plan = dict(user_plan)
@@ -44,22 +63,24 @@ def get_user_plan_info():
         
         # Map plan types to display names
         plan_names = {
-            'trial': 'Tailor Trial',
-            'basic': 'Tailor Basic', 
-            'pro': 'Tailor Pro'
+            'trial': 'Tajir Trial',
+            'basic': 'Tajir Basic', 
+            'pro': 'Tajir Pro'
         }
         
         return {
             'plan_type': plan_type,
-            'plan_name': plan_names.get(plan_type, 'Tailor Trial'),
-            'plan_display_name': plan_names.get(plan_type, 'Tailor Trial')
+            'plan_name': plan_names.get(plan_type, 'Tajir Trial'),
+            'plan_display_name': plan_names.get(plan_type, 'Tajir Trial'),
+            'shop_settings': dict(shop_settings) if shop_settings else None
         }
     except Exception as e:
         print(f"Error getting user plan: {e}")
         return {
             'plan_type': 'trial',
-            'plan_name': 'Tailor Trial',
-            'plan_display_name': 'Tailor Trial'
+            'plan_name': 'Tajir Trial',
+            'plan_display_name': 'Tajir Trial',
+            'shop_settings': None
         }
 
 def init_db():
@@ -89,28 +110,41 @@ def init_db():
 @app.route('/')
 def index():
     user_plan_info = get_user_plan_info()
-    return render_template('index.html', user_plan_info=user_plan_info)
+    return render_template('index.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
 
 @app.route('/landing')
 def landing():
     user_plan_info = get_user_plan_info()
-    return render_template('landing.html', user_plan_info=user_plan_info)
+    return render_template('landing.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
 
 @app.route('/app')
 def app_page():
     user_plan_info = get_user_plan_info()
-    return render_template('app.html', user_plan_info=user_plan_info)
+    return render_template('app.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
 
 @app.route('/pricing')
 def pricing():
     user_plan_info = get_user_plan_info()
-    return render_template('pricing.html', user_plan_info=user_plan_info)
+    return render_template('pricing.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
 
 # Product Types API
 @app.route('/api/product-types', methods=['GET'])
 def get_product_types():
+    user_id = get_current_user_id()
     conn = get_db_connection()
-    types = conn.execute('SELECT * FROM product_types ORDER BY type_name').fetchall()
+    types = conn.execute('SELECT * FROM product_types WHERE user_id = ? ORDER BY type_name', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(type) for type in types])
 
@@ -118,13 +152,14 @@ def get_product_types():
 def add_product_type():
     data = request.get_json()
     name = data.get('name', '').strip()
+    user_id = get_current_user_id()
     
     if not name:
         return jsonify({'error': 'Type name is required'}), 400
     
     conn = get_db_connection()
     try:
-        conn.execute('INSERT INTO product_types (type_name) VALUES (?)', (name,))
+        conn.execute('INSERT INTO product_types (user_id, type_name) VALUES (?, ?)', (user_id, name))
         conn.commit()
         type_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
         conn.close()
@@ -135,14 +170,15 @@ def add_product_type():
 
 @app.route('/api/product-types/<int:type_id>', methods=['DELETE'])
 def delete_product_type(type_id):
+    user_id = get_current_user_id()
     conn = get_db_connection()
     # Check if products exist for this type
-    products = conn.execute('SELECT COUNT(*) FROM products WHERE type_id = ?', (type_id,)).fetchone()[0]
+    products = conn.execute('SELECT COUNT(*) FROM products WHERE type_id = ? AND user_id = ?', (type_id, user_id)).fetchone()[0]
     if products > 0:
         conn.close()
         return jsonify({'error': 'Cannot delete type with existing products'}), 400
     
-    conn.execute('DELETE FROM product_types WHERE type_id = ?', (type_id,))
+    conn.execute('DELETE FROM product_types WHERE type_id = ? AND user_id = ?', (type_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Product type deleted successfully'})
@@ -150,6 +186,7 @@ def delete_product_type(type_id):
 # Products API
 @app.route('/api/products', methods=['GET'])
 def get_products():
+    user_id = get_current_user_id()
     search = request.args.get('search', '').strip()
     conn = get_db_connection()
     if search:
@@ -158,17 +195,17 @@ def get_products():
             SELECT p.*, pt.type_name 
             FROM products p 
             JOIN product_types pt ON p.type_id = pt.type_id 
-            WHERE p.is_active = 1 AND (p.product_name LIKE ? OR pt.type_name LIKE ?)
+            WHERE p.user_id = ? AND pt.user_id = ? AND p.is_active = 1 AND (p.product_name LIKE ? OR pt.type_name LIKE ?)
             ORDER BY pt.type_name, p.product_name
-        ''', (like_search, like_search)).fetchall()
+        ''', (user_id, user_id, like_search, like_search)).fetchall()
     else:
         products = conn.execute('''
             SELECT p.*, pt.type_name 
             FROM products p 
             JOIN product_types pt ON p.type_id = pt.type_id 
-            WHERE p.is_active = 1 
+            WHERE p.user_id = ? AND pt.user_id = ? AND p.is_active = 1 
             ORDER BY pt.type_name, p.product_name
-        ''').fetchall()
+        ''', (user_id, user_id)).fetchall()
     conn.close()
     return jsonify([dict(product) for product in products])
 
@@ -179,6 +216,7 @@ def add_product():
     name = data.get('name', '').strip()
     rate = data.get('rate')
     description = data.get('description', '').strip()
+    user_id = get_current_user_id()
     
     if not all([type_id, name, rate]):
         return jsonify({'error': 'Type, name, and rate are required'}), 400
@@ -192,10 +230,16 @@ def add_product():
     
     conn = get_db_connection()
     try:
+        # Verify the product type belongs to current user
+        type_check = conn.execute('SELECT type_id FROM product_types WHERE type_id = ? AND user_id = ?', (type_id, user_id)).fetchone()
+        if not type_check:
+            conn.close()
+            return jsonify({'error': 'Invalid product type'}), 400
+            
         conn.execute('''
-            INSERT INTO products (type_id, product_name, rate, description) 
-            VALUES (?, ?, ?, ?)
-        ''', (type_id, name, rate, description))
+            INSERT INTO products (user_id, type_id, product_name, rate, description) 
+            VALUES (?, ?, ?, ?, ?)
+        ''', (user_id, type_id, name, rate, description))
         conn.commit()
         product_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
         conn.close()
@@ -206,13 +250,14 @@ def add_product():
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
+    user_id = get_current_user_id()
     conn = get_db_connection()
     product = conn.execute('''
         SELECT p.*, pt.type_name 
         FROM products p 
         JOIN product_types pt ON p.type_id = pt.type_id 
-        WHERE p.product_id = ? AND p.is_active = 1
-    ''', (product_id,)).fetchone()
+        WHERE p.product_id = ? AND p.user_id = ? AND pt.user_id = ? AND p.is_active = 1
+    ''', (product_id, user_id, user_id)).fetchone()
     conn.close()
     
     if product:
@@ -227,6 +272,7 @@ def update_product(product_id):
     rate = data.get('rate')
     type_id = data.get('type_id')
     description = data.get('description', '').strip()
+    user_id = get_current_user_id()
     
     if not all([name, rate, type_id]):
         return jsonify({'error': 'Name, rate, and type are required'}), 400
@@ -239,19 +285,31 @@ def update_product(product_id):
         return jsonify({'error': 'Invalid rate value'}), 400
     
     conn = get_db_connection()
+    # Verify the product and type belong to current user
+    product_check = conn.execute('SELECT product_id FROM products WHERE product_id = ? AND user_id = ?', (product_id, user_id)).fetchone()
+    type_check = conn.execute('SELECT type_id FROM product_types WHERE type_id = ? AND user_id = ?', (type_id, user_id)).fetchone()
+    
+    if not product_check:
+        conn.close()
+        return jsonify({'error': 'Product not found'}), 404
+    if not type_check:
+        conn.close()
+        return jsonify({'error': 'Invalid product type'}), 400
+        
     conn.execute('''
         UPDATE products 
         SET product_name = ?, rate = ?, type_id = ?, description = ? 
-        WHERE product_id = ?
-    ''', (name, rate, type_id, description, product_id))
+        WHERE product_id = ? AND user_id = ?
+    ''', (name, rate, type_id, description, product_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Product updated successfully'})
 
 @app.route('/api/products/<int:product_id>', methods=['DELETE'])
 def delete_product(product_id):
+    user_id = get_current_user_id()
     conn = get_db_connection()
-    conn.execute('UPDATE products SET is_active = 0 WHERE product_id = ?', (product_id,))
+    conn.execute('UPDATE products SET is_active = 0 WHERE product_id = ? AND user_id = ?', (product_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Product deleted successfully'})
@@ -259,16 +317,17 @@ def delete_product(product_id):
 # Customers API
 @app.route('/api/customers', methods=['GET'])
 def get_customers():
+    user_id = get_current_user_id()
     phone = request.args.get('phone')
     search = request.args.get('search', '').strip()
     conn = get_db_connection()
     if phone:
-        customers = conn.execute('SELECT * FROM customers WHERE phone = ?', (phone,)).fetchall()
+        customers = conn.execute('SELECT * FROM customers WHERE phone = ? AND user_id = ?', (phone, user_id)).fetchall()
     elif search:
         like_search = f"%{search}%"
-        customers = conn.execute('SELECT * FROM customers WHERE name LIKE ? OR phone LIKE ? ORDER BY name', (like_search, like_search)).fetchall()
+        customers = conn.execute('SELECT * FROM customers WHERE user_id = ? AND (name LIKE ? OR phone LIKE ?) ORDER BY name', (user_id, like_search, like_search)).fetchall()
     else:
-        customers = conn.execute('SELECT * FROM customers ORDER BY name').fetchall()
+        customers = conn.execute('SELECT * FROM customers WHERE user_id = ? ORDER BY name', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(customer) for customer in customers])
 
@@ -277,55 +336,83 @@ def add_customer():
     data = request.get_json()
     name = data.get('name', '').strip()
     phone = data.get('phone', '').strip()
+    trn = data.get('trn', '').strip()
     city = data.get('city', '').strip()
     area = data.get('area', '').strip()
     email = data.get('email', '').strip()
     address = data.get('address', '').strip()
+    customer_type = data.get('customer_type', 'Individual').strip()
+    business_name = data.get('business_name', '').strip()
+    business_address = data.get('business_address', '').strip()
+    user_id = get_current_user_id()
     
     if not name:
         return jsonify({'error': 'Customer name is required'}), 400
     
+    # Validate customer type
+    if customer_type not in ['Individual', 'Business']:
+        return jsonify({'error': 'Customer type must be Individual or Business'}), 400
+    
+    # For Business customers, require business name
+    if customer_type == 'Business' and not business_name:
+        return jsonify({'error': 'Business name is required for Business customers'}), 400
+    
     conn = get_db_connection()
     try:
         conn.execute('''
-            INSERT INTO customers (name, phone, city, area) 
-            VALUES (?, ?, ?, ?)
-        ''', (name, phone, city, area))
+            INSERT INTO customers (user_id, name, phone, trn, city, area, email, address, customer_type, business_name, business_address) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, name, phone, trn, city, area, email, address, customer_type, business_name, business_address))
         conn.commit()
         customer_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
         conn.close()
         return jsonify({'id': customer_id, 'message': 'Customer added successfully'})
     except sqlite3.IntegrityError:
         conn.close()
-        return jsonify({'error': 'Phone number already exists'}), 400
+        return jsonify({'error': 'Customer already exists'}), 400
 
 @app.route('/api/customers/<int:customer_id>', methods=['PUT'])
 def update_customer(customer_id):
     data = request.get_json()
     name = data.get('name', '').strip()
     phone = data.get('phone', '').strip()
+    trn = data.get('trn', '').strip()
     city = data.get('city', '').strip()
     area = data.get('area', '').strip()
     email = data.get('email', '').strip()
     address = data.get('address', '').strip()
+    customer_type = data.get('customer_type', 'Individual').strip()
+    business_name = data.get('business_name', '').strip()
+    business_address = data.get('business_address', '').strip()
+    user_id = get_current_user_id()
     
     if not name:
         return jsonify({'error': 'Customer name is required'}), 400
     
+    # Validate customer type
+    if customer_type not in ['Individual', 'Business']:
+        return jsonify({'error': 'Customer type must be Individual or Business'}), 400
+    
+    # For Business customers, require business name
+    if customer_type == 'Business' and not business_name:
+        return jsonify({'error': 'Business name is required for Business customers'}), 400
+    
     conn = get_db_connection()
     conn.execute('''
         UPDATE customers 
-        SET name = ?, phone = ?, city = ?, area = ?, email = ?, address = ? 
-        WHERE customer_id = ?
-    ''', (name, phone, city, area, email, address, customer_id))
+        SET name = ?, phone = ?, trn = ?, city = ?, area = ?, email = ?, address = ?, 
+            customer_type = ?, business_name = ?, business_address = ?
+        WHERE customer_id = ? AND user_id = ?
+    ''', (name, phone, trn, city, area, email, address, customer_type, business_name, business_address, customer_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Customer updated successfully'})
 
 @app.route('/api/customers/<int:customer_id>', methods=['DELETE'])
 def delete_customer(customer_id):
+    user_id = get_current_user_id()
     conn = get_db_connection()
-    conn.execute('DELETE FROM customers WHERE customer_id = ?', (customer_id,))
+    conn.execute('DELETE FROM customers WHERE customer_id = ? AND user_id = ?', (customer_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Customer deleted successfully'})
@@ -333,8 +420,9 @@ def delete_customer(customer_id):
 # VAT Rates API
 @app.route('/api/vat-rates', methods=['GET'])
 def get_vat_rates():
+    user_id = get_current_user_id()
     conn = get_db_connection()
-    rates = conn.execute('SELECT * FROM vat_rates WHERE is_active = 1 ORDER BY effective_from DESC').fetchall()
+    rates = conn.execute('SELECT * FROM vat_rates WHERE user_id = ? AND is_active = 1 ORDER BY effective_from DESC', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(rate) for rate in rates])
 
@@ -344,6 +432,7 @@ def add_vat_rate():
     rate_percentage = data.get('rate_percentage')
     effective_from = data.get('effective_from')
     effective_to = data.get('effective_to')
+    user_id = get_current_user_id()
     
     if not all([rate_percentage, effective_from, effective_to]):
         return jsonify({'error': 'Rate percentage and dates are required'}), 400
@@ -358,22 +447,22 @@ def add_vat_rate():
     conn = get_db_connection()
     # Check for duplicate effective_from and effective_to
     exists = conn.execute(
-        'SELECT 1 FROM vat_rates WHERE effective_from = ? AND effective_to = ? AND is_active = 1',
-        (effective_from, effective_to)
+        'SELECT 1 FROM vat_rates WHERE user_id = ? AND effective_from = ? AND effective_to = ? AND is_active = 1',
+        (user_id, effective_from, effective_to)
     ).fetchone()
     if exists:
         conn.close()
         return jsonify({'error': 'A VAT rate with the same effective dates already exists.'}), 400
     # Update previous active row's effective_to if needed
-    prev = conn.execute('SELECT vat_id, effective_to FROM vat_rates WHERE is_active = 1 ORDER BY effective_from DESC LIMIT 1').fetchone()
+    prev = conn.execute('SELECT vat_id, effective_to FROM vat_rates WHERE user_id = ? AND is_active = 1 ORDER BY effective_from DESC LIMIT 1', (user_id,)).fetchone()
     if prev and prev['effective_to'] == '2099-12-31':
         from datetime import datetime, timedelta
         prev_to = (datetime.strptime(effective_from, '%Y-%m-%d') - timedelta(days=1)).strftime('%Y-%m-%d')
-        conn.execute('UPDATE vat_rates SET effective_to = ? WHERE vat_id = ?', (prev_to, prev['vat_id']))
+        conn.execute('UPDATE vat_rates SET effective_to = ? WHERE vat_id = ? AND user_id = ?', (prev_to, prev['vat_id'], user_id))
     conn.execute('''
-        INSERT INTO vat_rates (rate_percentage, effective_from, effective_to) 
-        VALUES (?, ?, ?)
-    ''', (rate_percentage, effective_from, effective_to))
+        INSERT INTO vat_rates (user_id, rate_percentage, effective_from, effective_to) 
+        VALUES (?, ?, ?, ?)
+    ''', (user_id, rate_percentage, effective_from, effective_to))
     conn.commit()
     vat_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
     conn.close()
@@ -381,8 +470,9 @@ def add_vat_rate():
 
 @app.route('/api/vat-rates/<int:vat_id>', methods=['DELETE'])
 def delete_vat_rate(vat_id):
+    user_id = get_current_user_id()
     conn = get_db_connection()
-    conn.execute('UPDATE vat_rates SET is_active = 0 WHERE vat_id = ?', (vat_id,))
+    conn.execute('UPDATE vat_rates SET is_active = 0 WHERE vat_id = ? AND user_id = ?', (vat_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'VAT rate deleted successfully'})
@@ -390,26 +480,29 @@ def delete_vat_rate(vat_id):
 # Bills API
 @app.route('/api/bills', methods=['GET'])
 def get_bills():
+    user_id = get_current_user_id()
     bill_number = request.args.get('bill_number')
     conn = get_db_connection()
     if bill_number:
         bills = conn.execute(
-            'SELECT * FROM bills WHERE bill_number = ?',
-            (bill_number,)
+            'SELECT * FROM bills WHERE bill_number = ? AND user_id = ?',
+            (bill_number, user_id)
         ).fetchall()
     else:
         bills = conn.execute('''
             SELECT b.*, c.name as customer_name 
             FROM bills b 
-            LEFT JOIN customers c ON b.customer_id = c.customer_id 
+            LEFT JOIN customers c ON b.customer_id = c.customer_id AND c.user_id = b.user_id
+            WHERE b.user_id = ?
             ORDER BY b.bill_date DESC, b.bill_id DESC
-        ''').fetchall()
+        ''', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(bill) for bill in bills])
 
 @app.route('/api/bills', methods=['POST'])
 def create_bill():
     print("DEBUG: create_bill endpoint called")
+    user_id = get_current_user_id()
     
     try:
         # Handle both JSON and form data
@@ -442,8 +535,8 @@ def create_bill():
             
             # Check if customer exists
             existing_customer = conn.execute(
-                'SELECT customer_id FROM customers WHERE phone = ?', 
-                (bill_data.get('customer_phone', ''),)
+                'SELECT customer_id FROM customers WHERE phone = ? AND user_id = ?', 
+                (bill_data.get('customer_phone', ''), user_id)
             ).fetchone()
             
             if existing_customer:
@@ -451,28 +544,35 @@ def create_bill():
             else:
                 # Create new customer
                 cursor = conn.execute('''
-                    INSERT INTO customers (name, phone, city, area) 
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO customers (user_id, name, phone, trn, city, area, customer_type, business_name, business_address) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
-                    bill_data.get('customer_name', ''),
+                    user_id, bill_data.get('customer_name', ''),
                     bill_data.get('customer_phone', ''),
+                    bill_data.get('customer_trn', ''),
                     bill_data.get('customer_city', ''),
-                    bill_data.get('customer_area', '')
+                    bill_data.get('customer_area', ''),
+                    bill_data.get('customer_type', 'Individual'),
+                    bill_data.get('business_name', ''),
+                    bill_data.get('business_address', '')
                 ))
                 customer_id = cursor.lastrowid
             
             # Create bill
+            bill_uuid = str(uuid.uuid4())
             cursor = conn.execute('''
                 INSERT INTO bills (
-                    bill_number, customer_id, customer_name, customer_phone, 
-                    customer_city, customer_area, bill_date, delivery_date, 
-                    payment_method, subtotal, vat_amount, total_amount, 
+                    user_id, bill_number, customer_id, customer_name, customer_phone, 
+                    customer_city, customer_area, customer_trn, customer_type, business_name, business_address,
+                    uuid, bill_date, delivery_date, payment_method, subtotal, vat_amount, total_amount, 
                     advance_paid, balance_amount, status, master_id, trial_date, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                bill_data.get('bill_number'), customer_id, bill_data.get('customer_name'),
+                user_id, bill_data.get('bill_number'), customer_id, bill_data.get('customer_name'),
                 bill_data.get('customer_phone'), bill_data.get('customer_city'),
-                bill_data.get('customer_area'), bill_data.get('bill_date'),
+                bill_data.get('customer_area'), bill_data.get('customer_trn', ''),
+                bill_data.get('customer_type', 'Individual'), bill_data.get('business_name', ''),
+                bill_data.get('business_address', ''), bill_uuid, bill_data.get('bill_date'), 
                 bill_data.get('delivery_date'), bill_data.get('payment_method', 'Cash'),
                 subtotal, vat_amount, total_amount, advance_paid, balance_amount,
                 'Pending', bill_data.get('master_id'), bill_data.get('trial_date'), notes
@@ -484,20 +584,29 @@ def create_bill():
             
             # Insert bill items
             for item in items_data:
+                # Calculate VAT for each item
+                item_rate = float(item.get('rate', 0))
+                item_quantity = float(item.get('quantity', 1))
+                item_discount = float(item.get('discount', 0))
+                item_subtotal = (item_rate * item_quantity) - item_discount
+                item_vat_amount = item_subtotal * (vat_percent / 100)
+                item_total_amount = item_subtotal + item_vat_amount
+                
                 conn.execute('''
                 INSERT INTO bill_items (
-                    bill_id, product_id, product_name, quantity, 
-                    rate, discount, advance_paid, total_amount
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    user_id, bill_id, product_id, product_name, quantity, 
+                    rate, discount, vat_amount, advance_paid, total_amount
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                bill_id,
+                user_id, bill_id,
                 item.get('product_id'),
                 item.get('product_name'),
                 item.get('quantity', 1),
                 item.get('rate', 0),
                 item.get('discount', 0),
+                item_vat_amount,
                 item.get('advance_paid', 0),
-                item.get('total_amount', 0)
+                item_total_amount
             ))
             
             conn.commit()
@@ -550,8 +659,8 @@ def create_bill():
             
             # Check if customer exists
             existing_customer = conn.execute(
-                'SELECT customer_id FROM customers WHERE phone = ?', 
-                (customer_phone,)
+                'SELECT customer_id FROM customers WHERE phone = ? AND user_id = ?', 
+                (customer_phone, user_id)
             ).fetchone()
             
             if existing_customer:
@@ -560,23 +669,24 @@ def create_bill():
             else:
                 # Create new customer
                 cursor = conn.execute('''
-                    INSERT INTO customers (name, phone, city, area) 
-                    VALUES (?, ?, ?, ?)
-                ''', (customer_name, customer_phone, customer_city, customer_area))
+                    INSERT INTO customers (user_id, name, phone, city, area) 
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (user_id, customer_name, customer_phone, customer_city, customer_area))
                 customer_id = cursor.lastrowid
                 print(f"DEBUG: Created new customer_id: {customer_id}")
             
             # Create bill
+            bill_uuid = str(uuid.uuid4())
             cursor = conn.execute('''
                 INSERT INTO bills (
-                    bill_number, customer_id, customer_name, customer_phone, 
-                    customer_city, customer_area, bill_date, delivery_date, 
+                    user_id, bill_number, customer_id, customer_name, customer_phone, 
+                    customer_city, customer_area, uuid, bill_date, delivery_date, 
                     payment_method, subtotal, vat_amount, total_amount, 
                     advance_paid, balance_amount, status, master_id, trial_date, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                request.form.get('bill_number'), customer_id, customer_name, customer_phone,
-                customer_city, customer_area, bill_date, delivery_date,
+                user_id, request.form.get('bill_number'), customer_id, customer_name, customer_phone,
+                customer_city, customer_area, bill_uuid, bill_date, delivery_date,
                 payment_method, subtotal, vat_amount, total_amount,
                 advance_paid, balance_amount, 'Pending', master_id, trial_date, notes
             ))
@@ -609,16 +719,17 @@ def create_bill():
 
 @app.route('/api/bills/<int:bill_id>', methods=['GET'])
 def get_bill(bill_id):
+    user_id = get_current_user_id()
     conn = get_db_connection()
     
     # Get bill details
     bill = conn.execute('''
         SELECT b.*, c.name as customer_name, e.name as master_name
         FROM bills b 
-        LEFT JOIN customers c ON b.customer_id = c.customer_id 
-        LEFT JOIN employees e ON b.master_id = e.employee_id
-        WHERE b.bill_id = ?
-    ''', (bill_id,)).fetchone()
+        LEFT JOIN customers c ON b.customer_id = c.customer_id AND c.user_id = b.user_id
+        LEFT JOIN employees e ON b.master_id = e.employee_id AND e.user_id = b.user_id
+        WHERE b.bill_id = ? AND b.user_id = ?
+    ''', (bill_id, user_id)).fetchone()
     
     if not bill:
         conn.close()
@@ -628,8 +739,8 @@ def get_bill(bill_id):
     
     # Get bill items
     items = conn.execute('''
-        SELECT * FROM bill_items WHERE bill_id = ?
-    ''', (bill_id,)).fetchall()
+        SELECT * FROM bill_items WHERE bill_id = ? AND user_id = ?
+    ''', (bill_id, user_id)).fetchall()
     
     conn.close()
     
@@ -640,15 +751,17 @@ def get_bill(bill_id):
 
 @app.route('/api/bills/<int:bill_id>', methods=['DELETE'])
 def delete_bill(bill_id):
+    user_id = get_current_user_id()
     conn = get_db_connection()
-    conn.execute('DELETE FROM bill_items WHERE bill_id = ?', (bill_id,))
-    conn.execute('DELETE FROM bills WHERE bill_id = ?', (bill_id,))
+    conn.execute('DELETE FROM bill_items WHERE bill_id = ? AND user_id = ?', (bill_id, user_id))
+    conn.execute('DELETE FROM bills WHERE bill_id = ? AND user_id = ?', (bill_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Bill deleted successfully'})
 
 @app.route('/api/bills/<int:bill_id>/payment', methods=['PUT'])
 def update_bill_payment(bill_id):
+    user_id = get_current_user_id()
     data = request.get_json()
     amount_paid = data.get('amount_paid')
     if amount_paid is None:
@@ -660,7 +773,7 @@ def update_bill_payment(bill_id):
     except Exception:
         return jsonify({'error': 'Invalid amount.'}), 400
     conn = get_db_connection()
-    bill = conn.execute('SELECT advance_paid, balance_amount, total_amount FROM bills WHERE bill_id = ?', (bill_id,)).fetchone()
+    bill = conn.execute('SELECT advance_paid, balance_amount, total_amount FROM bills WHERE bill_id = ? AND user_id = ?', (bill_id, user_id)).fetchone()
     if not bill:
         conn.close()
         return jsonify({'error': 'Bill not found.'}), 404
@@ -670,60 +783,61 @@ def update_bill_payment(bill_id):
     if new_balance < 0:
         conn.close()
         return jsonify({'error': 'Payment exceeds total amount.'}), 400
-    conn.execute('UPDATE bills SET advance_paid = ?, balance_amount = ?, status = ? WHERE bill_id = ?', (new_advance, new_balance, new_status, bill_id))
+    conn.execute('UPDATE bills SET advance_paid = ?, balance_amount = ?, status = ? WHERE bill_id = ? AND user_id = ?', (new_advance, new_balance, new_status, bill_id, user_id))
     conn.commit()
-    updated = conn.execute('SELECT * FROM bills WHERE bill_id = ?', (bill_id,)).fetchone()
+    updated = conn.execute('SELECT * FROM bills WHERE bill_id = ? AND user_id = ?', (bill_id, user_id)).fetchone()
     conn.close()
     return jsonify({'bill': dict(updated)})
 
 # Dashboard API
 @app.route('/api/dashboard', methods=['GET'])
 def get_dashboard_data():
+    user_id = get_current_user_id()
     conn = get_db_connection()
     
     # Get total revenue
     total_revenue = conn.execute('''
         SELECT COALESCE(SUM(total_amount), 0) as total 
         FROM bills 
-        WHERE DATE(bill_date) = DATE('now')
-    ''').fetchone()['total']
+        WHERE DATE(bill_date) = DATE('now') AND user_id = ?
+    ''', (user_id,)).fetchone()['total']
     
     # Get total bills today
     total_bills_today = conn.execute('''
         SELECT COUNT(*) as count 
         FROM bills 
-        WHERE DATE(bill_date) = DATE('now')
-    ''').fetchone()['count']
+        WHERE DATE(bill_date) = DATE('now') AND user_id = ?
+    ''', (user_id,)).fetchone()['count']
     
     # Get pending bills
     pending_bills = conn.execute('''
         SELECT COUNT(*) as count 
         FROM bills 
-        WHERE status = 'Pending'
-    ''').fetchone()['count']
+        WHERE status = 'Pending' AND user_id = ?
+    ''', (user_id,)).fetchone()['count']
     
     # Get total customers
-    total_customers = conn.execute('SELECT COUNT(*) as count FROM customers').fetchone()['count']
+    total_customers = conn.execute('SELECT COUNT(*) as count FROM customers WHERE user_id = ?', (user_id,)).fetchone()['count']
     
     # Get monthly revenue data
     monthly_revenue = conn.execute('''
         SELECT strftime('%Y-%m', bill_date) as month, 
                SUM(total_amount) as revenue
         FROM bills 
-        WHERE bill_date >= date('now', '-6 months')
+        WHERE bill_date >= date('now', '-6 months') AND user_id = ?
         GROUP BY strftime('%Y-%m', bill_date)
         ORDER BY month
-    ''').fetchall()
+    ''', (user_id,)).fetchall()
 
     # Top 10 regions by sales (for pie chart)
     top_regions = conn.execute('''
         SELECT COALESCE(customer_area, 'Unknown') as area, SUM(total_amount) as sales
         FROM bills
-        WHERE customer_area IS NOT NULL AND customer_area != ''
+        WHERE customer_area IS NOT NULL AND customer_area != '' AND user_id = ?
         GROUP BY customer_area
         ORDER BY sales DESC
         LIMIT 10
-    ''').fetchall()
+    ''', (user_id,)).fetchall()
 
     # Top 10 trending products (by quantity sold)
     trending_products = conn.execute('''
@@ -731,11 +845,11 @@ def get_dashboard_data():
                SUM(quantity) as qty_sold,
                SUM(total_amount) as total_revenue
         FROM bill_items
-        WHERE product_name IS NOT NULL AND product_name != ''
+        WHERE product_name IS NOT NULL AND product_name != '' AND user_id = ?
         GROUP BY product_name
         ORDER BY qty_sold DESC
         LIMIT 10
-    ''').fetchall()
+    ''', (user_id,)).fetchall()
 
     # Top 10 most repeated customers (by invoice count)
     repeated_customers = conn.execute('''
@@ -744,11 +858,11 @@ def get_dashboard_data():
                COUNT(*) as invoice_count,
                SUM(total_amount) as total_revenue
         FROM bills
-        WHERE customer_name IS NOT NULL AND customer_name != ''
+        WHERE customer_name IS NOT NULL AND customer_name != '' AND user_id = ?
         GROUP BY customer_name, customer_phone
         ORDER BY invoice_count DESC
         LIMIT 10
-    ''').fetchall()
+    ''', (user_id,)).fetchall()
 
     conn.close()
     
@@ -766,18 +880,20 @@ def get_dashboard_data():
 # Print bill
 @app.route('/api/bills/<int:bill_id>/print', methods=['GET'])
 def print_bill(bill_id):
+    user_id = get_current_user_id()
     print(f"DEBUG: print_bill called for bill_id: {bill_id}")
     
     conn = get_db_connection()
     bill = conn.execute('''
         SELECT b.*, c.name as customer_name, c.phone as customer_phone, 
                c.city as customer_city, c.area as customer_area,
+               c.customer_type, c.business_name, c.business_address,
                e.name as master_name
         FROM bills b
-        LEFT JOIN customers c ON b.customer_id = c.customer_id 
-        LEFT JOIN employees e ON b.master_id = e.employee_id
-        WHERE b.bill_id = ?
-    ''', (bill_id,)).fetchone()
+        LEFT JOIN customers c ON b.customer_id = c.customer_id AND c.user_id = b.user_id
+        LEFT JOIN employees e ON b.master_id = e.employee_id AND e.user_id = b.user_id
+        WHERE b.bill_id = ? AND b.user_id = ?
+    ''', (bill_id, user_id)).fetchone()
     
     if not bill:
         conn.close()
@@ -785,11 +901,15 @@ def print_bill(bill_id):
     
     # Get bill items
     items = conn.execute('''
-        SELECT * FROM bill_items WHERE bill_id = ?
-    ''', (bill_id,)).fetchall()
+        SELECT * FROM bill_items WHERE bill_id = ? AND user_id = ?
+    ''', (bill_id, user_id)).fetchall()
+    
+    # Get shop settings
+    shop_settings = conn.execute('SELECT * FROM shop_settings WHERE user_id = ?', (user_id,)).fetchone()
     conn.close()
     
     bill = dict(bill)
+    shop_settings = dict(shop_settings) if shop_settings else {}
     print(f"DEBUG: Retrieved bill data: {bill}")
     print(f"DEBUG: Bill notes from database: '{bill.get('notes')}'")
     print(f"DEBUG: Notes type: {type(bill.get('notes'))}")
@@ -803,38 +923,66 @@ def print_bill(bill_id):
             amount_in_words = f"{num2words(dirhams, lang='en').capitalize()} Dirhams and {num2words(fils, lang='en')} Fils Only"
         else:
             amount_in_words = f"{num2words(dirhams, lang='en').capitalize()} Dirhams Only"
+        
+        # Generate Arabic amount in words
+        arabic_amount_in_words = number_to_arabic_words(amount)
     except Exception as e:
         print(f"DEBUG: Error calculating amount in words: {e}")
         amount_in_words = ''
+        arabic_amount_in_words = ''
     
     print(f"DEBUG: Final amount_in_words: {amount_in_words}")
+    print(f"DEBUG: Final arabic_amount_in_words: {arabic_amount_in_words}")
     print(f"DEBUG: Template variables - bill.notes: '{bill.get('notes')}', amount_in_words: '{amount_in_words}'")
+    
+    # Generate QR code for FTA compliance
+    try:
+        seller_name = shop_settings.get('shop_name', 'Tajir')
+        seller_trn = shop_settings.get('trn', 'N/A')
+        invoice_number = bill.get('bill_number', 'N/A')
+        timestamp = bill.get('bill_date', datetime.now().strftime('%Y-%m-%d'))
+        total_with_vat = float(bill.get('total_amount', 0))
+        vat_amount = float(bill.get('vat_amount', 0))
+        
+        qr_code_base64 = generate_zatca_qr_code(
+            seller_name, seller_trn, invoice_number, timestamp, 
+            total_with_vat, vat_amount
+        )
+    except Exception as e:
+        print(f"DEBUG: Error generating QR code: {e}")
+        qr_code_base64 = None
     
     return render_template('print_bill.html', 
                          bill=bill, 
                          items=[dict(item) for item in items],
-                         amount_in_words=amount_in_words)
+                         amount_in_words=amount_in_words,
+                         arabic_amount_in_words=arabic_amount_in_words,
+                         qr_code_base64=qr_code_base64,
+                         shop_settings=shop_settings,
+                         get_user_language=get_user_language,
+                         get_translated_text=get_translated_text)
 
 @app.route('/api/customer-invoice-heatmap', methods=['GET'])
 def customer_invoice_heatmap():
+    user_id = get_current_user_id()
     conn = get_db_connection()
     # Get last 6 months (including current)
     months = [row['month'] for row in conn.execute("""
         SELECT DISTINCT strftime('%Y-%m', bill_date) as month
         FROM bills
-        WHERE bill_date >= date('now', '-5 months', 'start of month')
+        WHERE bill_date >= date('now', '-5 months', 'start of month') AND user_id = ?
         ORDER BY month ASC
-    """).fetchall()]
+    """, (user_id,)).fetchall()]
 
     # Get customers with at least one invoice in the last 6 months
     customers = conn.execute("""
         SELECT c.customer_id, c.name, COUNT(b.bill_id) as total_invoices
         FROM customers c
-        JOIN bills b ON c.customer_id = b.customer_id
-        WHERE b.bill_date >= date('now', '-5 months', 'start of month')
+        JOIN bills b ON c.customer_id = b.customer_id AND c.user_id = b.user_id
+        WHERE b.bill_date >= date('now', '-5 months', 'start of month') AND b.user_id = ?
         GROUP BY c.customer_id, c.name
         ORDER BY total_invoices DESC
-    """).fetchall()
+    """, (user_id,)).fetchall()
     customer_ids = [row['customer_id'] for row in customers]
     customer_names = [row['name'] for row in customers]
 
@@ -845,8 +993,8 @@ def customer_invoice_heatmap():
         for m in months:
             count = conn.execute("""
                 SELECT COUNT(*) FROM bills
-                WHERE customer_id = ? AND strftime('%Y-%m', bill_date) = ?
-            """, (cid, m)).fetchone()[0]
+                WHERE customer_id = ? AND strftime('%Y-%m', bill_date) = ? AND user_id = ?
+            """, (cid, m, user_id)).fetchone()[0]
             row.append(count)
         matrix.append(row)
     conn.close()
@@ -873,8 +1021,9 @@ def get_cities():
 # Employees API
 @app.route('/api/employees', methods=['GET'])
 def get_employees():
+    user_id = get_current_user_id()
     conn = get_db_connection()
-    employees = conn.execute('SELECT * FROM employees ORDER BY name').fetchall()
+    employees = conn.execute('SELECT * FROM employees WHERE user_id = ? ORDER BY name', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(emp) for emp in employees])
 
@@ -884,10 +1033,12 @@ def add_employee():
     name = data.get('name', '').strip()
     mobile = data.get('mobile', '').strip()
     address = data.get('address', '').strip()
+    user_id = get_current_user_id()
+    
     if not name:
         return jsonify({'error': 'Employee name is required'}), 400
     conn = get_db_connection()
-    conn.execute('INSERT INTO employees (name, mobile, address) VALUES (?, ?, ?)', (name, mobile, address))
+    conn.execute('INSERT INTO employees (user_id, name, phone, address) VALUES (?, ?, ?, ?)', (user_id, name, mobile, address))
     conn.commit()
     emp_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
     conn.close()
@@ -899,30 +1050,34 @@ def update_employee(employee_id):
     name = data.get('name', '').strip()
     mobile = data.get('mobile', '').strip()
     address = data.get('address', '').strip()
+    user_id = get_current_user_id()
+    
     if not name:
         return jsonify({'error': 'Employee name is required'}), 400
     conn = get_db_connection()
-    conn.execute('UPDATE employees SET name = ?, mobile = ?, address = ? WHERE employee_id = ?', (name, mobile, address, employee_id))
+    conn.execute('UPDATE employees SET name = ?, phone = ?, address = ? WHERE employee_id = ? AND user_id = ?', (name, mobile, address, employee_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Employee updated successfully'})
 
 @app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
 def delete_employee(employee_id):
+    user_id = get_current_user_id()
     conn = get_db_connection()
-    conn.execute('DELETE FROM employees WHERE employee_id = ?', (employee_id,))
+    conn.execute('DELETE FROM employees WHERE employee_id = ? AND user_id = ?', (employee_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Employee deleted successfully'})
 
 @app.route('/api/next-bill-number', methods=['GET'])
 def get_next_bill_number():
+    user_id = get_current_user_id()
     today = datetime.now().strftime('%Y%m%d')
     conn = get_db_connection()
     # Find all bills for today with the new format
     bills = conn.execute("""
-        SELECT bill_number FROM bills WHERE bill_number LIKE ?
-    """, (f'BILL-{today}-%',)).fetchall()
+        SELECT bill_number FROM bills WHERE bill_number LIKE ? AND user_id = ?
+    """, (f'BILL-{today}-%', user_id)).fetchall()
     conn.close()
     max_seq = 0
     for b in bills:
@@ -937,24 +1092,27 @@ def get_next_bill_number():
 
 @app.route('/api/employee-analytics', methods=['GET'])
 def employee_analytics():
+    user_id = get_current_user_id()
     conn = get_db_connection()
     # Top 5 employees by revenue
     top5 = conn.execute('''
         SELECT e.name, COALESCE(SUM(b.total_amount), 0) as total_revenue
         FROM employees e
-        LEFT JOIN bills b ON e.employee_id = b.master_id
+        LEFT JOIN bills b ON e.employee_id = b.master_id AND b.user_id = e.user_id
+        WHERE e.user_id = ?
         GROUP BY e.employee_id
         ORDER BY total_revenue DESC
         LIMIT 5
-    ''').fetchall()
+    ''', (user_id,)).fetchall()
     # Revenue share for all employees
     shares = conn.execute('''
         SELECT e.name, COALESCE(SUM(b.total_amount), 0) as total_revenue
         FROM employees e
-        LEFT JOIN bills b ON e.employee_id = b.master_id
+        LEFT JOIN bills b ON e.employee_id = b.master_id AND b.user_id = e.user_id
+        WHERE e.user_id = ?
         GROUP BY e.employee_id
         ORDER BY total_revenue DESC
-    ''').fetchall()
+    ''', (user_id,)).fetchall()
     conn.close()
     return jsonify({
         'top5': [dict(row) for row in top5],
@@ -1039,7 +1197,13 @@ def get_plan_status():
     """Get current user plan status and enabled features."""
     try:
         conn = get_db_connection()
-        user_plan = conn.execute('SELECT * FROM user_plans WHERE user_id = 1 AND is_active = 1').fetchone()
+        # Get the most recent active plan for user_id = 1
+        user_plan = conn.execute('''
+            SELECT * FROM user_plans 
+            WHERE user_id = 1 AND is_active = 1 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        ''').fetchone()
         conn.close()
         
         if not user_plan:
@@ -1076,6 +1240,7 @@ def get_plan_status():
         return jsonify(plan_status)
         
     except Exception as e:
+        print(f"Error in get_plan_status: {e}")  # Add logging
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/plan/upgrade', methods=['POST'])
@@ -1113,7 +1278,13 @@ def get_enabled_features():
     """Get list of enabled features for current user."""
     try:
         conn = get_db_connection()
-        user_plan = conn.execute('SELECT * FROM user_plans WHERE user_id = 1 AND is_active = 1').fetchone()
+        # Get the most recent active plan for user_id = 1
+        user_plan = conn.execute('''
+            SELECT * FROM user_plans 
+            WHERE user_id = 1 AND is_active = 1 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        ''').fetchone()
         conn.close()
         
         if not user_plan:
@@ -1133,6 +1304,7 @@ def get_enabled_features():
         })
         
     except Exception as e:
+        print(f"Error in get_enabled_features: {e}")  # Add logging
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/plan/check-feature/<feature>', methods=['GET'])
@@ -1225,7 +1397,284 @@ def reset_trial():
 def debug_plan():
     """Debug page for plan management."""
     user_plan_info = get_user_plan_info()
-    return render_template('debug_plan.html', user_plan_info=user_plan_info)
+    return render_template('debug_plan.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
+
+@app.route('/login')
+def login():
+    """Login page for multi-tenant system."""
+    return render_template('login.html',
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
+
+@app.route('/setup-wizard')
+def setup_wizard():
+    """Setup wizard for new clients."""
+    user_plan_info = get_user_plan_info()
+    return render_template('setup_wizard.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
+
+@app.route('/api/setup-wizard', methods=['POST'])
+def handle_setup_wizard():
+    """Handle setup wizard data submission."""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['shopType', 'shopName', 'contactNumber', 'selectedPlan']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'success': False, 'message': f'Missing required field: {field}'})
+        
+        # Calculate expiry date based on plan
+        from datetime import datetime, timedelta
+        
+        if data['selectedPlan'] == 'trial':
+            expiry_date = datetime.now() + timedelta(days=15)
+            plan_type = 'trial'
+        elif data['selectedPlan'] == 'basic':
+            expiry_date = datetime.now() + timedelta(days=365)
+            plan_type = 'basic'
+        elif data['selectedPlan'] == 'pro':
+            expiry_date = datetime.now() + timedelta(days=365)
+            plan_type = 'pro'
+        else:
+            return jsonify({'success': False, 'message': 'Invalid plan selected'})
+        
+        conn = get_db_connection()
+        
+        # Generate unique shop code
+        import random
+        import string
+        shop_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        
+        # Create new user account
+        default_password = "tailor123"  # Default password
+        password_hash = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt())
+        
+        # Insert new user
+        cursor = conn.execute('''
+            INSERT INTO users (email, mobile, shop_code, password_hash, shop_name, shop_type, contact_number, email_address)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            data.get('emailAddress', f"shop_{shop_code}@tailorpos.com"),
+            data['contactNumber'],
+            shop_code,
+            password_hash.decode('utf-8'),
+            data['shopName'],
+            data['shopType'],
+            data['contactNumber'],
+            data.get('emailAddress', '')
+        ))
+        
+        new_user_id = cursor.lastrowid
+        
+        # Create shop settings for new user
+        conn.execute('''
+            INSERT INTO shop_settings (user_id, shop_name, shop_mobile, invoice_static_info)
+            VALUES (?, ?, ?, ?)
+        ''', (new_user_id, data['shopName'], data['contactNumber'], f"Shop Type: {data['shopType']}"))
+        
+        # Create user plan for new user
+        conn.execute('''
+            INSERT INTO user_plans (user_id, plan_type, plan_start_date, plan_end_date)
+            VALUES (?, ?, CURRENT_DATE, ?)
+        ''', (new_user_id, plan_type, expiry_date.strftime('%Y-%m-%d')))
+        
+        # Create default VAT rate (5% from 2018-01-01)
+        conn.execute('''
+            INSERT INTO vat_rates (user_id, rate_percentage, effective_from, effective_to, is_active)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (new_user_id, 5.00, '2018-01-01', '2099-12-31', 1))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Setup completed successfully',
+            'plan_type': plan_type,
+            'expiry_date': expiry_date.strftime('%Y-%m-%d'),
+            'shop_code': shop_code,
+            'password': default_password
+        })
+        
+    except Exception as e:
+        print(f"Setup wizard error: {e}")
+        return jsonify({'success': False, 'message': 'Setup failed. Please try again.'})
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    """Handle user login with multiple methods."""
+    try:
+        data = request.get_json()
+        method = data.get('method')
+        
+        conn = get_db_connection()
+        
+        if method == 'email':
+            email = data.get('email')
+            password = data.get('password')
+            
+            if not email or not password:
+                return jsonify({'success': False, 'message': 'Email and password required'})
+            
+            user = conn.execute('SELECT * FROM users WHERE email = ? AND is_active = 1', (email,)).fetchone()
+            
+            if not user:
+                return jsonify({'success': False, 'message': 'Invalid email or password'})
+            
+            import bcrypt
+            if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+                return jsonify({'success': False, 'message': 'Invalid email or password'})
+                
+        elif method == 'mobile':
+            mobile = data.get('mobile')
+            otp = data.get('otp')
+            
+            if not mobile or not otp:
+                return jsonify({'success': False, 'message': 'Mobile and OTP required'})
+            
+            # Verify OTP
+            otp_record = conn.execute('''
+                SELECT * FROM otp_codes 
+                WHERE mobile = ? AND otp_code = ? AND is_used = 0 AND expires_at > CURRENT_TIMESTAMP
+                ORDER BY created_at DESC LIMIT 1
+            ''', (mobile, otp)).fetchone()
+            
+            if not otp_record:
+                return jsonify({'success': False, 'message': 'Invalid or expired OTP'})
+            
+            # Mark OTP as used
+            conn.execute('UPDATE otp_codes SET is_used = 1 WHERE id = ?', (otp_record['id'],))
+            
+            user = conn.execute('SELECT * FROM users WHERE mobile = ? AND is_active = 1', (mobile,)).fetchone()
+            
+            if not user:
+                return jsonify({'success': False, 'message': 'No account found with this mobile number'})
+                
+        elif method == 'shop_code':
+            shop_code = data.get('shop_code')
+            password = data.get('password')
+            
+            if not shop_code or not password:
+                return jsonify({'success': False, 'message': 'Shop code and password required'})
+            
+            user = conn.execute('SELECT * FROM users WHERE shop_code = ? AND is_active = 1', (shop_code,)).fetchone()
+            
+            if not user:
+                return jsonify({'success': False, 'message': 'Invalid shop code or password'})
+            
+            import bcrypt
+            if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+                return jsonify({'success': False, 'message': 'Invalid shop code or password'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid login method'})
+        
+        # Set session data (you might want to use Flask-Session or JWT tokens)
+        # For now, we'll store user info in session
+        from flask import session
+        session['user_id'] = user['user_id']
+        session['shop_name'] = user['shop_name']
+        session['shop_code'] = user['shop_code']
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Login successful',
+            'user': {
+                'user_id': user['user_id'],
+                'shop_name': user['shop_name'],
+                'shop_code': user['shop_code']
+            }
+        })
+        
+    except Exception as e:
+        print(f"Login error: {e}")
+        return jsonify({'success': False, 'message': 'Login failed. Please try again.'})
+
+@app.route('/api/auth/send-otp', methods=['POST'])
+def send_otp():
+    """Send OTP to mobile number."""
+    try:
+        data = request.get_json()
+        mobile = data.get('mobile')
+        
+        if not mobile:
+            return jsonify({'success': False, 'message': 'Mobile number required'})
+        
+        # Generate 6-digit OTP
+        import random
+        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        
+        # Store OTP in database (expires in 10 minutes)
+        from datetime import datetime, timedelta
+        expires_at = datetime.now() + timedelta(minutes=10)
+        
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO otp_codes (mobile, otp_code, expires_at)
+            VALUES (?, ?, ?)
+        ''', (mobile, otp, expires_at))
+        conn.commit()
+        conn.close()
+        
+        # In production, you would integrate with SMS service here
+        # For demo purposes, we'll just return the OTP
+        print(f"OTP for {mobile}: {otp}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'OTP sent successfully',
+            'otp': otp  # Remove this in production
+        })
+        
+    except Exception as e:
+        print(f"Send OTP error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to send OTP'})
+
+@app.route('/api/language/switch', methods=['POST'])
+def switch_language():
+    """Switch user language preference"""
+    try:
+        data = request.get_json()
+        language = data.get('language', 'en')
+        
+        if language not in ['en', 'ar']:
+            return jsonify({'error': 'Invalid language'}), 400
+        
+        set_user_language(language)
+        
+        return jsonify({
+            'success': True, 
+            'language': language,
+            'message': get_translated_text('language_switched', language)
+        })
+        
+    except Exception as e:
+        print(f"DEBUG: Error in switch_language: {e}")
+        return jsonify({'error': 'Failed to switch language'}), 500
+
+@app.route('/api/language/current', methods=['GET'])
+def get_current_language():
+    """Get current user language preference"""
+    try:
+        language = get_user_language()
+        return jsonify({
+            'success': True,
+            'language': language,
+            'is_rtl': language == 'ar'
+        })
+        
+    except Exception as e:
+        print(f"DEBUG: Error in get_current_language: {e}")
+        return jsonify({'error': 'Failed to get language preference'}), 500
 
 @app.route('/api/reports/invoices', methods=['GET'])
 def report_invoices():
@@ -1625,83 +2074,672 @@ def report_employees():
 
 @app.route('/api/reports/products', methods=['GET'])
 def report_products():
-    """
-    Returns filtered product report data for the Advanced Reports section.
-    Accepts query parameters: from_date, to_date, product_type, city, area, status
-    """
     try:
-        from_date = request.args.get('from_date', '')
-        to_date = request.args.get('to_date', '')
-        product_type = request.args.get('product_type', '')
-        city = request.args.get('city', '')
-        area = request.args.get('area', '')
-        status = request.args.get('status', '')
-
+        conn = get_db_connection()
+        
+        # Get filter parameters
+        from_date = request.args.get('from_date')
+        to_date = request.args.get('to_date')
+        product_type = request.args.get('product_type')
+        city = request.args.get('city')
+        area = request.args.get('area')
+        status = request.args.get('status')
+        
+        # Build base query
         base_query = """
             SELECT 
                 p.product_name,
-                pt.type_name,
+                pt.type_name as product_type,
                 SUM(bi.quantity) as total_quantity,
                 SUM(bi.total_amount) as total_revenue
             FROM bill_items bi
             JOIN products p ON bi.product_id = p.product_id
             JOIN product_types pt ON p.type_id = pt.type_id
             JOIN bills b ON bi.bill_id = b.bill_id
+            WHERE 1=1
         """
-
-        conditions = []
+        
         params = []
-
+        
+        # Add filters
         if from_date:
-            conditions.append("b.bill_date >= ?")
+            base_query += " AND b.bill_date >= ?"
             params.append(from_date)
+        
         if to_date:
-            conditions.append("b.bill_date <= ?")
+            base_query += " AND b.bill_date <= ?"
             params.append(to_date)
+        
         if product_type and product_type != "All":
-            conditions.append("pt.type_name = ?")
+            base_query += " AND pt.type_name = ?"
             params.append(product_type)
+        
         if city and city != "All":
-            conditions.append("b.customer_city = ?")
+            base_query += " AND b.customer_city = ?"
             params.append(city)
+        
         if area and area != "All":
-            conditions.append("b.customer_area = ?")
+            base_query += " AND b.customer_area = ?"
             params.append(area)
+        
         if status and status != "All":
-            conditions.append("b.status = ?")
+            base_query += " AND b.status = ?"
             params.append(status)
-
-        if conditions:
-            base_query += " WHERE " + " AND ".join(conditions)
-        base_query += " GROUP BY p.product_name, pt.type_name ORDER BY total_revenue DESC"
-
-        cursor = get_db_connection().cursor()
-        cursor.execute(base_query, params)
-        rows = cursor.fetchall()
-
-        products_data = []
-        for row in rows:
-            products_data.append({
-                'product_name': row[0],
-                'product_type': row[1],
-                'total_quantity': int(row[2]) if row[2] is not None else 0,
-                'total_revenue': round(float(row[3]), 2) if row[3] is not None else 0.0
+        
+        base_query += " GROUP BY p.product_id, p.product_name, pt.type_name ORDER BY total_revenue DESC"
+        
+        cursor = conn.execute(base_query, params)
+        products = []
+        
+        for row in cursor:
+            products.append({
+                'product_name': row['product_name'],
+                'product_type': row['product_type'],
+                'total_quantity': row['total_quantity'],
+                'total_revenue': round(float(row['total_revenue']), 2)
             })
-
+        
+        conn.close()
+        
         return jsonify({
             'success': True,
-            'data': products_data,
-            'filters_applied': {
-                'from_date': from_date,
-                'to_date': to_date,
-                'product_type': product_type,
-                'city': city,
-                'area': area,
-                'status': status
-            }
+            'products': products
         })
+        
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/shop-settings', methods=['GET'])
+def get_shop_settings():
+    """Get current shop settings."""
+    try:
+        conn = get_db_connection()
+        settings = conn.execute('SELECT * FROM shop_settings WHERE setting_id = 1').fetchone()
+        conn.close()
+        
+        if settings:
+            return jsonify({
+                'success': True,
+                'settings': dict(settings)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Shop settings not found'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/shop-settings', methods=['PUT'])
+def update_shop_settings():
+    """Update shop settings."""
+    try:
+        data = request.get_json()
+        
+        shop_name = data.get('shop_name', '')
+        address = data.get('address', '')
+        trn = data.get('trn', '')
+        logo_url = data.get('logo_url', '')
+        shop_mobile = data.get('shop_mobile', '')
+        working_hours = data.get('working_hours', '')
+        invoice_static_info = data.get('invoice_static_info', '')
+        use_dynamic_invoice_template = data.get('use_dynamic_invoice_template', False)
+        
+        conn = get_db_connection()
+        
+        # Update shop settings
+        conn.execute('''
+            UPDATE shop_settings 
+            SET shop_name = ?, address = ?, trn = ?, logo_url = ?, 
+                shop_mobile = ?, working_hours = ?, invoice_static_info = ?,
+                use_dynamic_invoice_template = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE setting_id = 1
+        ''', (shop_name, address, trn, logo_url, shop_mobile, working_hours, 
+              invoice_static_info, use_dynamic_invoice_template))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Shop settings updated successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# Arabic Language Support
+def number_to_arabic_words(number):
+    """Convert number to Arabic words"""
+    if number == 0:
+        return "صفر"
+    
+    # Arabic number words
+    ones = {
+        0: "", 1: "واحد", 2: "اثنان", 3: "ثلاثة", 4: "أربعة", 5: "خمسة",
+        6: "ستة", 7: "سبعة", 8: "ثمانية", 9: "تسعة", 10: "عشرة",
+        11: "أحد عشر", 12: "اثنا عشر", 13: "ثلاثة عشر", 14: "أربعة عشر", 15: "خمسة عشر",
+        16: "ستة عشر", 17: "سبعة عشر", 18: "ثمانية عشر", 19: "تسعة عشر"
+    }
+    
+    tens = {
+        2: "عشرون", 3: "ثلاثون", 4: "أربعون", 5: "خمسون",
+        6: "ستون", 7: "سبعون", 8: "ثمانون", 9: "تسعون"
+    }
+    
+    hundreds = {
+        1: "مائة", 2: "مئتان", 3: "ثلاثمائة", 4: "أربعمائة", 5: "خمسمائة",
+        6: "ستمائة", 7: "سبعمائة", 8: "ثمانمائة", 9: "تسعمائة"
+    }
+    
+    def convert_less_than_one_thousand(n):
+        if n == 0:
+            return ""
+        
+        if n < 20:
+            return ones[n]
+        
+        if n < 100:
+            if n % 10 == 0:
+                return tens[n // 10]
+            else:
+                return ones[n % 10] + " و " + tens[n // 10]
+        
+        if n < 1000:
+            if n % 100 == 0:
+                return hundreds[n // 100]
+            else:
+                return hundreds[n // 100] + " و " + convert_less_than_one_thousand(n % 100)
+    
+    # Split into integer and decimal parts
+    integer_part = int(number)
+    decimal_part = round((number - integer_part) * 100)
+    
+    # Convert integer part
+    if integer_part == 0:
+        result = "صفر"
+    elif integer_part < 1000:
+        result = convert_less_than_one_thousand(integer_part)
+    else:
+        # Handle thousands
+        thousands_count = integer_part // 1000
+        remainder = integer_part % 1000
+        
+        if thousands_count == 1:
+            result = "ألف"
+        elif thousands_count == 2:
+            result = "ألفان"
+        elif thousands_count < 11:
+            result = ones[thousands_count] + " آلاف"
+        else:
+            result = convert_less_than_one_thousand(thousands_count) + " ألف"
+        
+        if remainder > 0:
+            result += " و " + convert_less_than_one_thousand(remainder)
+    
+    # Add currency
+    result += " درهم"
+    
+    # Add decimal part if exists
+    if decimal_part > 0:
+        if decimal_part == 1:
+            result += " و فلس واحد"
+        else:
+            result += " و " + convert_less_than_one_thousand(decimal_part) + " فلس"
+    
+    result += " فقط"
+    return result
+
+def get_user_language():
+    """Get user's preferred language from session or default to English"""
+    return session.get('language', 'en')
+
+def set_user_language(language):
+    """Set user's preferred language in session"""
+    session['language'] = language
+
+def translate_text(text, language='en'):
+    """Translate text based on language"""
+    translations = {
+        'en': {
+            # Navigation
+            'app': 'App',
+            'pricing': 'Pricing',
+            'professional_business_management': 'Professional Business Management',
+            'sign_in': 'Sign In',
+            'sign_up': 'Sign Up',
+            'logout': 'Logout',
+            
+            # Dashboard
+            'dashboard': 'Dashboard',
+            'total_revenue': 'Total Revenue',
+            'total_bills': 'Total Bills',
+            'total_customers': 'Total Customers',
+            'total_products': 'Total Products',
+            'recent_bills': 'Recent Bills',
+            'top_products': 'Top Products',
+            'employee_performance': 'Employee Performance',
+            
+            # Operations
+            'operations': 'Operations',
+            'billing': 'Billing',
+            'products': 'Products',
+            'customers': 'Customers',
+            'employees': 'Employees',
+            'vat_rates': 'VAT Rates',
+            'advanced_reports': 'Advanced Reports',
+            'shop_settings': 'Shop Settings',
+            
+            # Common Actions
+            'add': 'Add',
+            'edit': 'Edit',
+            'delete': 'Delete',
+            'save': 'Save',
+            'cancel': 'Cancel',
+            'close': 'Close',
+            'search': 'Search',
+            'filter': 'Filter',
+            'download': 'Download',
+            'print': 'Print',
+            'preview': 'Preview',
+            
+            # Status
+            'pending': 'Pending',
+            'completed': 'Completed',
+            'cancelled': 'Cancelled',
+            'paid': 'Paid',
+            'unpaid': 'Unpaid',
+            
+            # Messages
+            'success': 'Success',
+            'error': 'Error',
+            'warning': 'Warning',
+            'info': 'Information',
+            'loading': 'Loading...',
+            'no_data_found': 'No data found',
+            'are_you_sure': 'Are you sure?',
+            'this_action_cannot_be_undone': 'This action cannot be undone',
+            
+            # Forms
+            'name': 'Name',
+            'phone': 'Phone',
+            'email': 'Email',
+            'address': 'Address',
+            'city': 'City',
+            'area': 'Area',
+            'position': 'Position',
+            'rate': 'Rate',
+            'quantity': 'Quantity',
+            'total': 'Total',
+            'subtotal': 'Subtotal',
+            'vat': 'VAT',
+            'discount': 'Discount',
+            'advance_paid': 'Advance Paid',
+            'balance': 'Balance',
+            'payment_method': 'Payment Method',
+            'cash': 'Cash',
+            'card': 'Card',
+            'bank_transfer': 'Bank Transfer',
+            
+            # Reports
+            'invoices': 'Invoices',
+            'employees': 'Employees',
+            'products': 'Products',
+            'from_date': 'From Date',
+            'to_date': 'To Date',
+            'bill_number': 'Bill #',
+            'bill_date': 'Bill Date',
+            'delivery_date': 'Delivery Date',
+            'customer_name': 'Customer Name',
+            'status': 'Status',
+            'amount': 'Amount',
+            'revenue': 'Revenue',
+            'performance': 'Performance',
+            
+            # Setup Wizard
+            'shop_type': 'Shop Type',
+            'shop_name': 'Shop Name',
+            'contact_number': 'Contact Number',
+            'choose_plan': 'Choose Plan',
+            'trial': 'Trial',
+            'basic': 'Basic',
+            'pro': 'Pro',
+            'days': 'Days',
+            'year': 'Year',
+            'next': 'Next',
+            'previous': 'Previous',
+            'finish': 'Finish',
+            
+            # Plans
+            'trial_plan': 'Trial Plan',
+            'basic_plan': 'Basic Plan',
+            'pro_plan': 'Pro Plan',
+            'enterprise_plan': 'Enterprise Plan',
+            'features': 'Features',
+            'upgrade': 'Upgrade',
+            'current_plan': 'Current Plan',
+            'plan_expires': 'Plan Expires',
+            'unlimited': 'Unlimited',
+            'limited': 'Limited',
+            
+            # Settings
+            'settings': 'Settings',
+            'logo_url': 'Logo URL',
+            'working_hours': 'Working Hours',
+            'static_info': 'Static Information',
+            'invoice_template': 'Invoice Template',
+            'dynamic_template': 'Dynamic Template',
+            'static_template': 'Static Template',
+            
+            # Authentication
+            'login': 'Login',
+            'password': 'Password',
+            'confirm_password': 'Confirm Password',
+            'forgot_password': 'Forgot Password?',
+            'remember_me': 'Remember Me',
+            'dont_have_account': "Don't have an account?",
+            'already_have_account': 'Already have an account?',
+            'sign_up_here': 'Sign up here',
+            'sign_in_here': 'Sign in here',
+            'mobile_login': 'Mobile Login',
+            'otp': 'OTP',
+            'send_otp': 'Send OTP',
+            'verify_otp': 'Verify OTP',
+            'shop_code': 'Shop Code',
+            'enter_shop_code': 'Enter Shop Code',
+            
+            # Currency
+            'aed': 'AED',
+            'dirhams': 'Dirhams',
+            'fils': 'Fils',
+            'only': 'Only',
+            
+            # Time
+            'today': 'Today',
+            'yesterday': 'Yesterday',
+            'this_week': 'This Week',
+            'this_month': 'This Month',
+            'this_year': 'This Year',
+            'last_week': 'Last Week',
+            'last_month': 'Last Month',
+            'last_year': 'Last Year',
+            
+            # Charts
+            'sales': 'Sales',
+            'revenue_chart': 'Revenue Chart',
+            'sales_chart': 'Sales Chart',
+            'performance_chart': 'Performance Chart',
+            'heatmap': 'Heatmap',
+            
+            # Notifications
+            'notification': 'Notification',
+            'notifications': 'Notifications',
+            'new_bill': 'New Bill',
+            'payment_received': 'Payment Received',
+            'low_stock': 'Low Stock',
+            'expiring_plan': 'Expiring Plan',
+            
+            # Help
+            'help': 'Help',
+            'support': 'Support',
+            'documentation': 'Documentation',
+            'contact_us': 'Contact Us',
+            'feedback': 'Feedback',
+            'bug_report': 'Bug Report',
+            'feature_request': 'Feature Request',
+            
+            # Language
+            'language': 'Language',
+            'english': 'English',
+            'arabic': 'Arabic',
+            'switch_language': 'Switch Language',
+            
+            # Default text
+            'default': text
+        },
+        'ar': {
+            # Navigation
+            'app': 'التطبيق',
+            'pricing': 'الأسعار',
+            'professional_business_management': 'إدارة الأعمال الاحترافية',
+            'sign_in': 'تسجيل الدخول',
+            'sign_up': 'إنشاء حساب',
+            'logout': 'تسجيل الخروج',
+            
+            # Dashboard
+            'dashboard': 'لوحة التحكم',
+            'total_revenue': 'إجمالي الإيرادات',
+            'total_bills': 'إجمالي الفواتير',
+            'total_customers': 'إجمالي العملاء',
+            'total_products': 'إجمالي المنتجات',
+            'recent_bills': 'الفواتير الحديثة',
+            'top_products': 'أفضل المنتجات',
+            'employee_performance': 'أداء الموظفين',
+            
+            # Operations
+            'operations': 'العمليات',
+            'billing': 'الفواتير',
+            'products': 'المنتجات',
+            'customers': 'العملاء',
+            'employees': 'الموظفون',
+            'vat_rates': 'معدلات الضريبة',
+            'advanced_reports': 'التقارير المتقدمة',
+            'shop_settings': 'إعدادات المتجر',
+            
+            # Common Actions
+            'add': 'إضافة',
+            'edit': 'تعديل',
+            'delete': 'حذف',
+            'save': 'حفظ',
+            'cancel': 'إلغاء',
+            'close': 'إغلاق',
+            'search': 'بحث',
+            'filter': 'تصفية',
+            'download': 'تحميل',
+            'print': 'طباعة',
+            'preview': 'معاينة',
+            
+            # Status
+            'pending': 'قيد الانتظار',
+            'completed': 'مكتمل',
+            'cancelled': 'ملغي',
+            'paid': 'مدفوع',
+            'unpaid': 'غير مدفوع',
+            
+            # Messages
+            'success': 'نجح',
+            'error': 'خطأ',
+            'warning': 'تحذير',
+            'info': 'معلومات',
+            'loading': 'جاري التحميل...',
+            'no_data_found': 'لم يتم العثور على بيانات',
+            'are_you_sure': 'هل أنت متأكد؟',
+            'this_action_cannot_be_undone': 'لا يمكن التراجع عن هذا الإجراء',
+            
+            # Forms
+            'name': 'الاسم',
+            'phone': 'الهاتف',
+            'email': 'البريد الإلكتروني',
+            'address': 'العنوان',
+            'city': 'المدينة',
+            'area': 'المنطقة',
+            'position': 'المنصب',
+            'rate': 'السعر',
+            'quantity': 'الكمية',
+            'total': 'الإجمالي',
+            'subtotal': 'المجموع الفرعي',
+            'vat': 'الضريبة',
+            'discount': 'الخصم',
+            'advance_paid': 'المدفوع مسبقاً',
+            'balance': 'الرصيد',
+            'payment_method': 'طريقة الدفع',
+            'cash': 'نقداً',
+            'card': 'بطاقة',
+            'bank_transfer': 'تحويل بنكي',
+            
+            # Reports
+            'invoices': 'الفواتير',
+            'employees': 'الموظفون',
+            'products': 'المنتجات',
+            'from_date': 'من تاريخ',
+            'to_date': 'إلى تاريخ',
+            'bill_number': 'رقم الفاتورة',
+            'bill_date': 'تاريخ الفاتورة',
+            'delivery_date': 'تاريخ التسليم',
+            'customer_name': 'اسم العميل',
+            'status': 'الحالة',
+            'amount': 'المبلغ',
+            'revenue': 'الإيرادات',
+            'performance': 'الأداء',
+            
+            # Setup Wizard
+            'shop_type': 'نوع المتجر',
+            'shop_name': 'اسم المتجر',
+            'contact_number': 'رقم الاتصال',
+            'choose_plan': 'اختر الخطة',
+            'trial': 'تجريبي',
+            'basic': 'أساسي',
+            'pro': 'احترافي',
+            'days': 'أيام',
+            'year': 'سنة',
+            'next': 'التالي',
+            'previous': 'السابق',
+            'finish': 'إنهاء',
+            
+            # Plans
+            'trial_plan': 'الخطة التجريبية',
+            'basic_plan': 'الخطة الأساسية',
+            'pro_plan': 'الخطة الاحترافية',
+            'enterprise_plan': 'خطة المؤسسة',
+            'features': 'الميزات',
+            'upgrade': 'ترقية',
+            'current_plan': 'الخطة الحالية',
+            'plan_expires': 'تنتهي الخطة',
+            'unlimited': 'غير محدود',
+            'limited': 'محدود',
+            
+            # Settings
+            'settings': 'الإعدادات',
+            'logo_url': 'رابط الشعار',
+            'working_hours': 'ساعات العمل',
+            'static_info': 'معلومات ثابتة',
+            'invoice_template': 'قالب الفاتورة',
+            'dynamic_template': 'قالب ديناميكي',
+            'static_template': 'قالب ثابت',
+            
+            # Authentication
+            'login': 'تسجيل الدخول',
+            'password': 'كلمة المرور',
+            'confirm_password': 'تأكيد كلمة المرور',
+            'forgot_password': 'نسيت كلمة المرور؟',
+            'remember_me': 'تذكرني',
+            'dont_have_account': 'ليس لديك حساب؟',
+            'already_have_account': 'لديك حساب بالفعل؟',
+            'sign_up_here': 'إنشاء حساب هنا',
+            'sign_in_here': 'تسجيل الدخول هنا',
+            'mobile_login': 'تسجيل الدخول بالجوال',
+            'otp': 'رمز التحقق',
+            'send_otp': 'إرسال رمز التحقق',
+            'verify_otp': 'التحقق من الرمز',
+            'shop_code': 'رمز المتجر',
+            'enter_shop_code': 'أدخل رمز المتجر',
+            
+            # Currency
+            'aed': 'درهم',
+            'dirhams': 'دراهم',
+            'fils': 'فلس',
+            'only': 'فقط',
+            
+            # Time
+            'today': 'اليوم',
+            'yesterday': 'أمس',
+            'this_week': 'هذا الأسبوع',
+            'this_month': 'هذا الشهر',
+            'this_year': 'هذا العام',
+            'last_week': 'الأسبوع الماضي',
+            'last_month': 'الشهر الماضي',
+            'last_year': 'العام الماضي',
+            
+            # Charts
+            'sales': 'المبيعات',
+            'revenue_chart': 'رسم بياني للإيرادات',
+            'sales_chart': 'رسم بياني للمبيعات',
+            'performance_chart': 'رسم بياني للأداء',
+            'heatmap': 'خريطة حرارية',
+            
+            # Notifications
+            'notification': 'إشعار',
+            'notifications': 'الإشعارات',
+            'new_bill': 'فاتورة جديدة',
+            'payment_received': 'تم استلام الدفع',
+            'low_stock': 'المخزون منخفض',
+            'expiring_plan': 'الخطة تنتهي قريباً',
+            
+            # Help
+            'help': 'المساعدة',
+            'support': 'الدعم',
+            'documentation': 'الوثائق',
+            'contact_us': 'اتصل بنا',
+            'feedback': 'التعليقات',
+            'bug_report': 'تقرير خطأ',
+            'feature_request': 'طلب ميزة',
+            
+            # Language
+            'language': 'اللغة',
+            'english': 'الإنجليزية',
+            'arabic': 'العربية',
+            'switch_language': 'تغيير اللغة',
+            
+            # Default text
+            'default': text
+        }
+    }
+    
+    return translations.get(language, {}).get(text, text)
+
+def get_translated_text(text, language=None):
+    """Get translated text for current user language"""
+    if language is None:
+        language = get_user_language()
+    return translate_text(text, language)
+
+def generate_zatca_qr_code(seller_name, seller_trn, invoice_number, timestamp, total_with_vat, vat_amount):
+    """
+    Generate QR code data in ZATCA format for FTA compliance
+    Format: Seller Name, TRN, Timestamp, Total with VAT, VAT Amount
+    """
+    # Create QR data in ZATCA format
+    qr_data = f"{seller_name}\n{seller_trn}\n{timestamp}\n{total_with_vat}\n{vat_amount}"
+    
+    # Generate QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    
+    # Create QR code image
+    qr_image = qr.make_image(fill_color="black", back_color="white")
+    
+    # Convert to base64 for embedding in HTML
+    buffer = BytesIO()
+    qr_image.save(buffer, format='PNG')
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+    
+    return qr_base64
 
 if __name__ == '__main__':
     init_db()
