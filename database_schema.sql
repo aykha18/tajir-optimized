@@ -1,57 +1,142 @@
--- Tailor POS Database Schema
+-- Tailor POS Database Schema - Multi-Tenant Version
 -- Database: pos_tailor
 
--- Product Types Table
-CREATE TABLE IF NOT EXISTS product_types (
-    type_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type_name TEXT NOT NULL UNIQUE,
+-- Users Table (Main tenant table)
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE,
+    mobile TEXT UNIQUE,
+    shop_code TEXT UNIQUE,
+    password_hash TEXT NOT NULL,
+    shop_name TEXT NOT NULL,
+    shop_type TEXT,
+    contact_number TEXT,
+    email_address TEXT,
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Plans Table (for pricing plan management)
+CREATE TABLE IF NOT EXISTS user_plans (
+    plan_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    plan_type TEXT NOT NULL DEFAULT 'trial' CHECK (plan_type IN ('trial', 'basic', 'pro')),
+    plan_start_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    plan_end_date DATE,
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- Shop Settings Table
+CREATE TABLE IF NOT EXISTS shop_settings (
+    setting_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    shop_name TEXT DEFAULT 'Tajir',
+    address TEXT DEFAULT '',
+    trn TEXT DEFAULT '',
+    logo_url TEXT DEFAULT '',
+    shop_mobile TEXT DEFAULT '',
+    working_hours TEXT DEFAULT '',
+    invoice_static_info TEXT DEFAULT '',
+    use_dynamic_invoice_template BOOLEAN DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- OTP Codes Table
+CREATE TABLE IF NOT EXISTS otp_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mobile TEXT NOT NULL,
+    otp_code TEXT NOT NULL,
+    is_used BOOLEAN DEFAULT 0,
+    expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Products Table
+-- Product Types Table (per tenant)
+CREATE TABLE IF NOT EXISTS product_types (
+    type_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    type_name TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    UNIQUE(user_id, type_name)
+);
+
+-- Products Table (per tenant)
 CREATE TABLE IF NOT EXISTS products (
     product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
     type_id INTEGER NOT NULL,
     product_name TEXT NOT NULL,
     rate DECIMAL(10,2) NOT NULL,
     description TEXT,
     is_active BOOLEAN DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (type_id) REFERENCES product_types(type_id)
 );
 
--- Customers Table
+-- Customers Table (per tenant)
 CREATE TABLE IF NOT EXISTS customers (
     customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
-    phone TEXT UNIQUE,
+    phone TEXT,
     city TEXT,
     area TEXT,
-  --landmark TEXT,
     email TEXT,
     address TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    trn TEXT,
+    customer_type TEXT DEFAULT 'Individual' CHECK (customer_type IN ('Individual', 'Business')),
+    business_name TEXT,
+    business_address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
--- VAT Rates Table
+-- VAT Rates Table (per tenant)
 CREATE TABLE IF NOT EXISTS vat_rates (
     vat_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
     rate_percentage DECIMAL(5,2) NOT NULL,
     effective_from DATE NOT NULL,
     effective_to DATE NOT NULL,
     is_active BOOLEAN DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
--- Bills Table
+-- Employees Table (per tenant)
+CREATE TABLE IF NOT EXISTS employees (
+    employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    phone TEXT,
+    address TEXT,
+    email TEXT,
+    position TEXT,
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- Bills Table (per tenant)
 CREATE TABLE IF NOT EXISTS bills (
     bill_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bill_number TEXT UNIQUE,
+    user_id INTEGER NOT NULL,
+    bill_number TEXT,
     customer_id INTEGER,
     customer_name TEXT,
     customer_phone TEXT,
     customer_city TEXT,
     customer_area TEXT,
+    customer_trn TEXT,
+    uuid TEXT,
     bill_date DATE NOT NULL,
     delivery_date DATE,
     payment_method TEXT DEFAULT 'Cash',
@@ -61,37 +146,42 @@ CREATE TABLE IF NOT EXISTS bills (
     advance_paid DECIMAL(10,2) DEFAULT 0,
     balance_amount DECIMAL(10,2) DEFAULT 0,
     status TEXT DEFAULT 'Pending',
-    master_id INTEGER, -- New: references employees
-    trial_date DATE,   -- New: trial date for the bill
+    master_id INTEGER,
+    trial_date DATE,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
-    FOREIGN KEY (master_id) REFERENCES employees(employee_id)
+    FOREIGN KEY (master_id) REFERENCES employees(employee_id),
+    UNIQUE(user_id, bill_number)
 );
 
--- Bill Items Table
+-- Bill Items Table (per tenant)
 CREATE TABLE IF NOT EXISTS bill_items (
     item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
     bill_id INTEGER NOT NULL,
     product_id INTEGER,
     product_name TEXT NOT NULL,
     quantity INTEGER DEFAULT 1,
     rate DECIMAL(10,2) NOT NULL,
     discount DECIMAL(10,2) DEFAULT 0,
+    vat_amount DECIMAL(10,2) DEFAULT 0,
     advance_paid DECIMAL(10,2) DEFAULT 0,
     total_amount DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (bill_id) REFERENCES bills(bill_id),
     FOREIGN KEY (product_id) REFERENCES products(product_id)
 );
 
--- Cities Table
+-- Cities Table (shared across all tenants)
 CREATE TABLE IF NOT EXISTS cities (
     city_id INTEGER PRIMARY KEY AUTOINCREMENT,
     city_name TEXT NOT NULL UNIQUE
 );
 
--- City Areas Table
+-- City Areas Table (shared across all tenants)
 CREATE TABLE IF NOT EXISTS city_area (
     area_id INTEGER PRIMARY KEY AUTOINCREMENT,
     area_name TEXT NOT NULL,
@@ -99,120 +189,12 @@ CREATE TABLE IF NOT EXISTS city_area (
     FOREIGN KEY (city_id) REFERENCES cities(city_id)
 );
 
--- Employees Table
-CREATE TABLE IF NOT EXISTS employees (
-    employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    mobile TEXT,
-    address TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert default product types
-INSERT OR IGNORE INTO product_types (type_name) VALUES 
-('Saree'),
-('Kurti'),
-('Palazzo'),
-('Trouser/Pant'),
-('Shirt'),
-('Salwar Suit'),
-('Blouse'),
-('Kaftan'),
-('Patiala Suit'),
-('Abaya'),
-('Anarkali'),
-('Gown'),
-('Jump Suit'),
-('Lehenga'),
-('Designer Items'),
-('Sharara/Gharara'),
-('Coat/Blazer'),
-('Dress');
-
--- Insert default products based on the provided pricing
-INSERT OR IGNORE INTO products (type_id, product_name, rate, description) VALUES
--- Saree Products
-(1, 'Saree Fall Stitching with Fall Fabric', 30.00, 'Saree fall stitching with fall fabric'),
-(1, 'Saree Petticoat Stitching', 40.00, 'Saree petticoat stitching'),
-(1, 'Saree Belt Stitching', 150.00, 'Saree belt stitching'),
-
--- Kurti Products
-(2, 'Kurti (No Lining)', 55.00, 'Kurti without lining'),
-(2, 'Kurti with Lining', 75.00, 'Kurti with lining'),
-
--- Palazzo Products
-(3, 'Palazzo No Lining', 80.00, 'Palazzo without lining'),
-(3, 'Palazzo with Lining', 105.00, 'Palazzo with lining'),
-
--- Trouser/Pant Products
-(4, 'Trouser or Pant No Lining', 80.00, 'Trouser or pant without lining'),
-(4, 'Trousers Pants with Lining', 100.00, 'Trousers or pants with lining'),
-
--- Shirt Products
-(5, 'Shirt', 100.00, 'Regular shirt'),
-
--- Salwar Suit Products
-(6, 'Salwar Suit No Lining', 100.00, 'Salwar suit without lining'),
-(6, 'Salwar Suit Half/Top Lining', 115.00, 'Salwar suit with half or top lining'),
-(6, 'Salwar Suit with Full Lining', 125.00, 'Salwar suit with full lining'),
-
--- Blouse Products
-(7, 'Blouse Non Padded', 115.00, 'Blouse without padding'),
-(7, 'Blouse Padded', 150.00, 'Blouse with padding'),
-
--- Kaftan Products
-(8, 'Kaftan No Lining', 100.00, 'Kaftan without lining'),
-(8, 'Kaftan with Lining', 125.00, 'Kaftan with lining'),
-
--- Patiala Suit Products
-(9, 'Patiala Suit No Lining', 125.00, 'Patiala suit without lining'),
-(9, 'Patiala Suit with Half/Top Lining', 140.00, 'Patiala suit with half or top lining'),
-(9, 'Patiala Suit with Lining', 150.00, 'Patiala suit with full lining'),
-
--- Abaya Products
-(10, 'Abaya Stitching', 125.00, 'Abaya stitching'),
-
--- Anarkali Products
-(11, 'Anarkali (8 Kaliyan)', 160.00, 'Anarkali with 8 kaliyan'),
-
--- Gown Products
-(12, 'Gown Stitching', 150.00, 'Gown stitching'),
-
--- Jump Suit Products
-(13, 'Jump Suit', 170.00, 'Jump suit'),
-
--- Lehenga Products
-(14, 'Lehenga Stitching', 195.00, 'Lehenga stitching'),
-(14, 'Lehenga Choli', 320.00, 'Lehenga choli'),
-
--- Designer Items
-(15, 'Designer One Piece', 195.00, 'Designer one piece'),
-(15, 'Designer Blouse', 150.00, 'Designer blouse'),
-
--- Sharara/Gharara Products
-(16, 'Sharara/Gharara with Kurti', 240.00, 'Sharara or Gharara with kurti'),
-
--- Coat/Blazer Products
-(17, 'Coat/Blazer', 350.00, 'Coat or blazer'),
-(17, 'Coat Pant/Suit 2 Piece', 450.00, 'Coat pant or suit 2 piece'),
-
--- Dress Products
-(18, 'Dress Indo Western', 150.00, 'Indo western dress'),
-(18, 'Dress Western', 225.00, 'Western dress');
-
--- Insert default VAT rate
-INSERT OR IGNORE INTO vat_rates (rate_percentage, effective_from, effective_to) VALUES
-(5.00, '2018-01-01', '2099-12-31');
-
--- Insert all major UAE cities
+-- Insert default cities
 INSERT OR IGNORE INTO cities (city_name) VALUES
 ('Abu Dhabi'),
 ('Ajman'),
-('Al Ain'),
 ('Dubai'),
 ('Fujairah'),
-('Kalba'),
-('Khor Fakkan'),
 ('Ras Al Khaimah'),
 ('Sharjah'),
 ('Umm Al Quwain');
@@ -241,22 +223,28 @@ INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES
 ('Umm Suqeim', (SELECT city_id FROM cities WHERE city_name = 'Dubai'));
 
 -- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_products_user_id ON products(user_id);
 CREATE INDEX IF NOT EXISTS idx_products_type_id ON products(type_id);
+CREATE INDEX IF NOT EXISTS idx_bills_user_id ON bills(user_id);
 CREATE INDEX IF NOT EXISTS idx_bills_customer_id ON bills(customer_id);
 CREATE INDEX IF NOT EXISTS idx_bills_bill_date ON bills(bill_date);
+CREATE INDEX IF NOT EXISTS idx_bill_items_user_id ON bill_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_bill_items_bill_id ON bill_items(bill_id);
+CREATE INDEX IF NOT EXISTS idx_customers_user_id ON customers(user_id);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+CREATE INDEX IF NOT EXISTS idx_product_types_user_id ON product_types(user_id);
+CREATE INDEX IF NOT EXISTS idx_vat_rates_user_id ON vat_rates(user_id);
+CREATE INDEX IF NOT EXISTS idx_employees_user_id ON employees(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_plans_user_id ON user_plans(user_id);
+CREATE INDEX IF NOT EXISTS idx_shop_settings_user_id ON shop_settings(user_id);
 
--- User Plans Table (for pricing plan management)
-CREATE TABLE IF NOT EXISTS user_plans (
-    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    plan_type TEXT NOT NULL DEFAULT 'trial' CHECK (plan_type IN ('trial', 'basic', 'pro')),
-    plan_start_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    plan_end_date DATE,
-    is_active BOOLEAN DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Insert default user (for backward compatibility)
+INSERT OR IGNORE INTO users (user_id, email, shop_code, password_hash, shop_name, shop_type, contact_number, email_address) VALUES
+(1, 'admin@tailorpos.com', 'SHOP001', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KqKqKq', 'Tajir', 'tailors', '+971 50 123 4567', 'admin@tailorpos.com');
 
--- Insert default user plan (trial)
-INSERT OR IGNORE INTO user_plans (user_id, plan_type, plan_start_date) VALUES (1, 'trial', CURRENT_DATE); 
+-- Insert default user plan
+INSERT OR IGNORE INTO user_plans (user_id, plan_type, plan_start_date) VALUES (1, 'trial', CURRENT_DATE);
+
+-- Insert default shop settings
+INSERT OR IGNORE INTO shop_settings (setting_id, user_id, shop_name, address, trn, logo_url, shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template) VALUES
+(1, 1, 'Tajir', '', '', '', '', '', '', 0); 

@@ -1,6 +1,6 @@
-# Tailor POS System
+# Tajir - Multi-Tenant POS System
 
-A modern, full-featured Point of Sale (POS) system designed specifically for tailoring businesses. Built with Flask, SQLite, and a beautiful modern UI.
+A modern, multi-tenant Point of Sale system designed specifically for UAE businesses and the Gulf region. Tajir (تاجر) means "Merchant" in Arabic, reflecting our commitment to empowering local businesses.
 
 **Last Updated: 2025-01-19**
 
@@ -143,6 +143,7 @@ The Advanced Reports module provides powerful, filterable reports for Invoices, 
 - **Product tags with "+N more" and tooltips for long lists in employee reports**
 - **Print and Download buttons for all reports**
 - **Print view columns (Bill#, Bill Date, Delivery Date) are styled to prevent wrapping**
+- **Shop Settings:** Configure shop name, address, TRN, logo URL, and dynamic invoice template settings
 
 ---
 
@@ -388,6 +389,11 @@ The application provides RESTful API endpoints for all operations:
 - `GET /api/reports/employees` — Filtered employee report
 - `GET /api/reports/products` — Filtered product report
 
+### Shop Settings APIs
+
+- `GET /api/shop-settings` — Get current shop settings
+- `PUT /api/shop-settings` — Update shop settings
+
 ## Customization
 
 ### Adding New Products
@@ -556,4 +562,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Added CSV download for all reports
 - Improved product tag display and tooltips in employee report
 - Refactored dropdown population code for reusability
-- Cleaned up debug logs and console statements 
+- Cleaned up debug logs and console statements
+- Added Shop Settings module with shop name, address, TRN, logo URL, and dynamic invoice template configuration 
