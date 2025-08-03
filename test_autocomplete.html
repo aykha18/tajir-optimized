@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Autocomplete Test</title>
+    <style>
+        body {
+            background: #1e293b;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #e5e7eb;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            background: #334155;
+            color: white;
+        }
+        .dropdown {
+            position: absolute;
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 1000;
+        }
+        .option {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #475569;
+        }
+        .option:hover {
+            background: #475569;
+        }
+        .option:last-child {
+            border-bottom: none;
+        }
+        .debug {
+            margin-top: 20px;
+            padding: 10px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Autocomplete Test</h1>
+        
+        <div class="input-group">
+            <label>Product Search:</label>
+            <input type="text" id="productInput" placeholder="Type to search products...">
+            <div id="productDropdown" class="dropdown" style="display: none;"></div>
+        </div>
+        
+        <div class="input-group">
+            <label>Master Search:</label>
+            <input type="text" id="masterInput" placeholder="Type to search masters...">
+            <div id="masterDropdown" class="dropdown" style="display: none;"></div>
+        </div>
+        
+        <div class="input-group">
+            <label>Selected Product:</label>
+            <input type="text" id="selectedProduct" readonly>
+        </div>
+        
+        <div class="input-group">
+            <label>Selected Master:</label>
+            <input type="text" id="selectedMaster" readonly>
+        </div>
+        
+        <div class="debug" id="debugLog">
+            <strong>Debug Log:</strong><br>
+        </div>
+    </div>
+
+    <script>
+        // Debug logging
+        function log(message) {
+            const debugLog = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `[${timestamp}] ${message}<br>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(message);
+        }
+
+        // Test data
+        const testProducts = [
+            { id: 1, name: "Test Product 1", price: 100 },
+            { id: 2, name: "Test Product 2", price: 200 },
+            { id: 3, name: "Water Dry", price: 95 },
+            { id: 4, name: "Wet Cleaning", price: 75 }
+        ];
+
+        const testMasters = [
+            { id: 1, name: "Ayub Khan", phone: "0501234" },
+            { id: 2, name: "Test Master", phone: "0505678" },
+            { id: 3, name: "Another Master", phone: "0509012" }
+        ];
+
+        // Product autocomplete
+        const productInput = document.getElementById('productInput');
+        const productDropdown = document.getElementById('productDropdown');
+        const selectedProduct = document.getElementById('selectedProduct');
+
+        productInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            log(`Product input: "${query}"`);
+            
+            const filtered = testProducts.filter(p => 
+                p.name.toLowerCase().includes(query)
+            );
+            
+            log(`Filtered products: ${filtered.length}`);
+            
+            if (filtered.length > 0) {
+                productDropdown.innerHTML = filtered.map(p => 
+                    `<div class="option" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}">
+                        ${p.name} - AED ${p.price}
+                    </div>`
+                ).join('');
+                productDropdown.style.display = 'block';
+                log('Product dropdown shown');
+            } else {
+                productDropdown.style.display = 'none';
+                log('Product dropdown hidden');
+            }
+        });
+
+        // Master autocomplete
+        const masterInput = document.getElementById('masterInput');
+        const masterDropdown = document.getElementById('masterDropdown');
+        const selectedMaster = document.getElementById('selectedMaster');
+
+        masterInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            log(`Master input: "${query}"`);
+            
+            const filtered = testMasters.filter(m => 
+                m.name.toLowerCase().includes(query)
+            );
+            
+            log(`Filtered masters: ${filtered.length}`);
+            
+            if (filtered.length > 0) {
+                masterDropdown.innerHTML = filtered.map(m => 
+                    `<div class="option" data-id="${m.id}" data-name="${m.name}" data-phone="${m.phone}">
+                        ${m.name} - ${m.phone}
+                    </div>`
+                ).join('');
+                masterDropdown.style.display = 'block';
+                log('Master dropdown shown');
+            } else {
+                masterDropdown.style.display = 'none';
+                log('Master dropdown hidden');
+            }
+        });
+
+        // Click handlers
+        document.addEventListener('click', function(e) {
+            log(`Click detected on: ${e.target.tagName} (${e.target.className})`);
+            
+            // Product selection
+            const productOption = e.target.closest('.option');
+            if (productOption && productDropdown.contains(productOption)) {
+                log('Product option clicked');
+                const id = productOption.getAttribute('data-id');
+                const name = productOption.getAttribute('data-name');
+                const price = productOption.getAttribute('data-price');
+                
+                log(`Selected product: ${name} (ID: ${id}, Price: ${price})`);
+                
+                productInput.value = name;
+                selectedProduct.value = `${name} - AED ${price}`;
+                productDropdown.style.display = 'none';
+                
+                return;
+            }
+            
+            // Master selection
+            const masterOption = e.target.closest('.option');
+            if (masterOption && masterDropdown.contains(masterOption)) {
+                log('Master option clicked');
+                const id = masterOption.getAttribute('data-id');
+                const name = masterOption.getAttribute('data-name');
+                const phone = masterOption.getAttribute('data-phone');
+                
+                log(`Selected master: ${name} (ID: ${id}, Phone: ${phone})`);
+                
+                masterInput.value = name;
+                selectedMaster.value = `${name} - ${phone}`;
+                masterDropdown.style.display = 'none';
+                
+                return;
+            }
+            
+            // Hide dropdowns when clicking outside
+            if (!productInput.contains(e.target) && !productDropdown.contains(e.target)) {
+                productDropdown.style.display = 'none';
+                log('Product dropdown hidden (outside click)');
+            }
+            
+            if (!masterInput.contains(e.target) && !masterDropdown.contains(e.target)) {
+                masterDropdown.style.display = 'none';
+                log('Master dropdown hidden (outside click)');
+            }
+        });
+
+        log('Test page loaded successfully');
+    </script>
+</body>
+</html> 

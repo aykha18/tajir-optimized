@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Enhancements Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="static/css/main.css">
+</head>
+<body class="bg-neutral-900 text-white">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-6">Mobile Enhancements Test</h1>
+        
+        <div class="space-y-6">
+            <!-- Touch-Friendly Buttons Test -->
+            <div class="bg-neutral-800 p-6 rounded-lg">
+                <h2 class="text-lg font-semibold mb-4">Touch-Friendly Buttons</h2>
+                <div class="flex flex-wrap gap-4">
+                    <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg mobile-btn">
+                        Standard Button
+                    </button>
+                    <button class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg mobile-btn">
+                        Success Button
+                    </button>
+                    <button class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg mobile-btn">
+                        Danger Button
+                    </button>
+                </div>
+            </div>
+
+            <!-- Voice Input Test -->
+            <div class="bg-neutral-800 p-6 rounded-lg">
+                <h2 class="text-lg font-semibold mb-4">Voice Input Test</h2>
+                <div class="relative">
+                    <input type="text" id="voiceTestInput" placeholder="Click the microphone to speak" 
+                           class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-2 text-white">
+                    <button class="voice-input-btn" onclick="testVoiceInput()">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Swipe Actions Test -->
+            <div class="bg-neutral-800 p-6 rounded-lg">
+                <h2 class="text-lg font-semibold mb-4">Swipe Actions Test</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm border border-neutral-700 rounded-lg mobile-table">
+                        <thead class="bg-neutral-800/70">
+                            <tr>
+                                <th class="px-3 py-2 font-medium text-left">Item</th>
+                                <th class="px-3 py-2 font-medium text-left">Price</th>
+                                <th class="px-3 py-2 font-medium text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="swipe-action hover:bg-neutral-800/50 transition-colors" data-index="0">
+                                <td class="px-3 py-3">Test Item 1</td>
+                                <td class="px-3 py-3">AED 100</td>
+                                <td class="px-3 py-3 flex gap-2">
+                                    <button class="text-blue-400 hover:text-blue-300 mobile-btn">Edit</button>
+                                    <button class="text-red-400 hover:text-red-300 mobile-btn">Delete</button>
+                                </td>
+                            </tr>
+                            <tr class="swipe-action hover:bg-neutral-800/50 transition-colors" data-index="1">
+                                <td class="px-3 py-3">Test Item 2</td>
+                                <td class="px-3 py-3">AED 200</td>
+                                <td class="px-3 py-3 flex gap-2">
+                                    <button class="text-blue-400 hover:text-blue-300 mobile-btn">Edit</button>
+                                    <button class="text-red-400 hover:text-red-300 mobile-btn">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-sm text-neutral-400 mt-2">Swipe left or right on table rows to see actions</p>
+            </div>
+
+            <!-- Quick Add Mode Test -->
+            <div class="bg-neutral-800 p-6 rounded-lg">
+                <h2 class="text-lg font-semibold mb-4">Quick Add Mode Test</h2>
+                <button id="quickAddToggle" class="bg-purple-600 hover:bg-purple-500 text-white rounded-lg px-4 py-2 mobile-btn">
+                    Toggle Quick Add Mode
+                </button>
+                <div id="quickAddForm" class="mt-4 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Customer Name</label>
+                            <input type="text" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Product</label>
+                            <input type="text" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Rate</label>
+                            <input type="number" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Quantity</label>
+                            <input type="number" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/js/modules/mobile-enhancements.js"></script>
+    <script>
+        // Test voice input functionality
+        function testVoiceInput() {
+            const input = document.getElementById('voiceTestInput');
+            const button = document.querySelector('.voice-input-btn');
+            
+            if (window.mobileEnhancements && window.mobileEnhancements.recognition) {
+                window.mobileEnhancements.toggleVoiceInput(input, button);
+            } else {
+                alert('Speech recognition not available. Try in a supported browser.');
+            }
+        }
+
+        // Test quick add mode
+        document.getElementById('quickAddToggle').addEventListener('click', function() {
+            const form = document.getElementById('quickAddForm');
+            form.classList.toggle('quick-add-mode');
+        });
+
+        // Initialize mobile enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Mobile enhancements loaded:', window.mobileEnhancements);
+        });
+    </script>
+</body>
+</html> 

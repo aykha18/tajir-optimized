@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Billing Autocomplete Test</title>
+    <style>
+        body {
+            background: #1e293b;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .input-group {
+            margin: 20px 0;
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #e5e7eb;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            background: #334155;
+            color: white;
+        }
+        .product-suggestion, .master-suggestion {
+            position: absolute !important;
+            z-index: 9999 !important;
+            background: rgba(30, 41, 59, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+            max-height: 240px !important;
+            overflow-y: auto !important;
+            margin-top: 4px !important;
+            min-width: 200px !important;
+            width: 100%;
+        }
+        .product-option, .master-option {
+            padding: 12px 16px !important;
+            cursor: pointer !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            transition: all 0.2s ease !important;
+            color: #f8fafc !important;
+        }
+        .product-option:hover, .master-option:hover {
+            background: rgba(99, 102, 241, 0.2) !important;
+            color: #ffffff !important;
+        }
+        .product-option:last-child, .master-option:last-child {
+            border-bottom: none !important;
+        }
+        .debug {
+            margin-top: 20px;
+            padding: 10px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Billing Autocomplete Test</h1>
+        
+        <div class="input-group">
+            <label>Product Search:</label>
+            <input type="text" id="billProduct" placeholder="Search products...">
+        </div>
+        
+        <div class="input-group">
+            <label>Master Search:</label>
+            <input type="text" id="masterName" placeholder="Select master">
+        </div>
+        
+        <div class="input-group">
+            <label>Rate (AED):</label>
+            <input type="number" id="billRate" placeholder="0.00">
+        </div>
+        
+        <div class="debug" id="debugLog">
+            <strong>Debug Log:</strong><br>
+        </div>
+    </div>
+
+    <script>
+        // Debug logging
+        function log(message) {
+            const debugLog = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `[${timestamp}] ${message}<br>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(message);
+        }
+
+        // Test data (same as your API)
+        const testProducts = [
+            { product_id: 10, product_name: "Test Print Function", rate: 200, type_name: "Dry Cleaning" },
+            { product_id: 3, product_name: "Test Product", rate: 100, type_name: "Dry Cleaning" },
+            { product_id: 1, product_name: "Water Dry", rate: 95, type_name: "Dry Cleaning" },
+            { product_id: 2, product_name: "test", rate: 75, type_name: "Wet Cleaning" }
+        ];
+
+        const testEmployees = [
+            { employee_id: 1, name: "Ayub Khan", phone: "0501234" },
+            { employee_id: 2, name: "Test Master", phone: "0505678" },
+            { employee_id: 3, name: "Another Master", phone: "0509012" }
+        ];
+
+        // Product autocomplete setup
+        const billProductInput = document.getElementById('billProduct');
+        const billRateInput = document.getElementById('billRate');
+        let allProducts = testProducts;
+        let productDropdown;
+
+        function createProductDropdown() {
+            log('🔍 Creating product dropdown');
+            productDropdown = document.createElement('div');
+            productDropdown.className = 'product-suggestion absolute z-50 w-full bg-neutral-800 border border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto mt-1';
+            productDropdown.style.display = 'none';
+            billProductInput.parentNode.style.position = 'relative';
+            billProductInput.parentNode.appendChild(productDropdown);
+            
+            productDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+
+        function filterProducts(query) {
+            if (!query.trim()) return [];
+            
+            return allProducts.filter(product =>
+                product.product_name.toLowerCase().includes(query.toLowerCase()) ||
+                (product.type_name && product.type_name.toLowerCase().includes(query.toLowerCase()))
+            );
+        }
+
+        function renderDropdownOptions(filteredProducts) {
+            if (!productDropdown) createProductDropdown();
+            
+            productDropdown.innerHTML = filteredProducts.map(product => `
+                <div class="product-option px-4 py-2 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0" 
+                     data-product-id="${product.product_id}"
+                     data-product-name="${product.product_name}"
+                     data-product-price="${product.rate}"
+                     data-product-type="${product.type_name || ''}">
+                  <div class="flex items-center justify-between">
+                    <span class="text-neutral-200">${product.product_name}</span>
+                    <span class="text-xs text-neutral-400">${product.type_name || ''} - AED ${product.rate}</span>
+                  </div>
+                </div>
+            `).join('');
+        }
+
+        function showDropdown() {
+            log('🔍 Showing product dropdown');
+            if (!productDropdown) createProductDropdown();
+            productDropdown.style.display = 'block';
+            log('🔍 Product dropdown display set to block');
+        }
+
+        function hideDropdown() {
+            log('🔍 Hiding product dropdown');
+            if (productDropdown) {
+                productDropdown.style.display = 'none';
+                log('🔍 Product dropdown display set to none');
+            }
+        }
+
+        // Event listeners
+        billProductInput.addEventListener('input', function() {
+            log('🔍 Product input event triggered, value: ' + this.value);
+            const query = this.value;
+            const filteredProducts = filterProducts(query);
+            log('🔍 Filtered products: ' + filteredProducts.length);
+            
+            if (filteredProducts.length > 0) {
+                renderDropdownOptions(filteredProducts);
+                showDropdown();
+            } else {
+                hideDropdown();
+            }
+        });
+
+        // Handle product selection
+        document.addEventListener('click', function(e) {
+            log('🔍 Click detected on: ' + e.target.tagName + ' (' + e.target.className + ')');
+            
+            const productOption = e.target.closest('.product-option');
+            
+            if (productOption) {
+                log('🔍 Product option found: ' + productOption);
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const productData = {
+                    product_id: productOption.getAttribute('data-product-id'),
+                    name: productOption.getAttribute('data-product-name'),
+                    price: productOption.getAttribute('data-product-price'),
+                    product_type: productOption.getAttribute('data-product-type')
+                };
+                
+                log('🔍 Product selected: ' + JSON.stringify(productData));
+                
+                billProductInput.value = productData.name;
+                
+                if (billRateInput) {
+                    billRateInput.value = productData.price;
+                    log('🔍 Rate field updated with: ' + productData.price);
+                }
+                
+                billProductInput.setAttribute('data-selected-product', JSON.stringify(productData));
+                log('🔍 Product data attribute set: ' + billProductInput.getAttribute('data-selected-product'));
+                
+                hideDropdown();
+            } else {
+                log('🔍 No product option found in click target');
+            }
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!billProductInput.contains(e.target) && (!productDropdown || !productDropdown.contains(e.target))) {
+                hideDropdown();
+            }
+        });
+
+        // Master autocomplete setup
+        const masterInput = document.getElementById('masterName');
+        let employees = testEmployees;
+        let masterDropdown;
+        let selectedMasterId = null;
+
+        function createMasterDropdown() {
+            log('🔍 Creating master dropdown');
+            masterDropdown = document.createElement('div');
+            masterDropdown.className = 'master-suggestion absolute z-50 w-full bg-neutral-800 border border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto mt-1';
+            masterDropdown.style.display = 'none';
+            masterInput.parentNode.style.position = 'relative';
+            masterInput.parentNode.appendChild(masterDropdown);
+            
+            masterDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+
+        function filterEmployees(query) {
+            if (!query.trim()) return [];
+            
+            return employees.filter(employee =>
+                employee.name.toLowerCase().includes(query.toLowerCase()) ||
+                employee.phone?.toLowerCase().includes(query.toLowerCase())
+            );
+        }
+
+        function renderMasterDropdownOptions(filteredEmployees) {
+            if (!masterDropdown) createMasterDropdown();
+            
+            masterDropdown.innerHTML = filteredEmployees.map(employee => `
+                <div class="master-option px-4 py-2 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0" 
+                     data-master-id="${employee.employee_id}"
+                     data-master-name="${employee.name}"
+                     data-master-phone="${employee.phone || ''}">
+                  <div class="flex items-center justify-between">
+                    <span class="text-neutral-200">${employee.name}</span>
+                    <span class="text-xs text-neutral-400">${employee.phone || ''}</span>
+                  </div>
+                </div>
+            `).join('');
+        }
+
+        function showMasterDropdown() {
+            log('🔍 Showing master dropdown');
+            if (!masterDropdown) createMasterDropdown();
+            masterDropdown.style.display = 'block';
+            log('🔍 Master dropdown display set to block');
+        }
+
+        function hideMasterDropdown() {
+            log('🔍 Hiding master dropdown');
+            if (masterDropdown) {
+                masterDropdown.style.display = 'none';
+                log('🔍 Master dropdown display set to none');
+            }
+        }
+
+        // Master event listeners
+        masterInput.addEventListener('input', function() {
+            log('🔍 Master input event triggered, value: ' + this.value);
+            const query = this.value;
+            const filteredEmployees = filterEmployees(query);
+            log('🔍 Filtered employees: ' + filteredEmployees.length);
+            
+            if (filteredEmployees.length > 0) {
+                renderMasterDropdownOptions(filteredEmployees);
+                showMasterDropdown();
+            } else {
+                hideMasterDropdown();
+            }
+        });
+
+        // Handle master selection
+        document.addEventListener('click', function(e) {
+            log('🔍 Master click detected on: ' + e.target.tagName + ' (' + e.target.className + ')');
+            
+            const masterOption = e.target.closest('.master-option');
+            
+            if (masterOption) {
+                log('🔍 Master option found: ' + masterOption);
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const masterId = masterOption.getAttribute('data-master-id');
+                const masterName = masterOption.getAttribute('data-master-name');
+                
+                log('🔍 Master selected: ' + JSON.stringify({ masterId, masterName }));
+                
+                selectedMasterId = masterId;
+                masterInput.value = masterName;
+                
+                masterInput.setAttribute('data-selected-master', JSON.stringify({
+                    master_id: masterId,
+                    master_name: masterName
+                }));
+                
+                hideMasterDropdown();
+            } else {
+                log('🔍 No master option found in click target');
+            }
+        });
+
+        // Hide master dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!masterInput.contains(e.target) && (!masterDropdown || !masterDropdown.contains(e.target))) {
+                hideMasterDropdown();
+            }
+        });
+
+        log('🚀 Billing autocomplete test initialized');
+    </script>
+</body>
+</html> 

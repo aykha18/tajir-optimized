@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Autocomplete</title>
+    <style>
+        body {
+            background: #1e293b;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .input-group {
+            margin: 20px 0;
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #e5e7eb;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            background: #334155;
+            color: white;
+        }
+        .debug {
+            margin-top: 20px;
+            padding: 10px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .test-section {
+            border: 1px solid #475569;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Debug Autocomplete Test</h1>
+        
+        <div class="test-section">
+            <h3>Test 1: Simple Autocomplete</h3>
+            <div class="input-group">
+                <label>Product Search:</label>
+                <input type="text" id="simpleProduct" placeholder="Type to search products...">
+                <div id="simpleProductDropdown" style="display: none; position: absolute; background: #334155; border: 1px solid #475569; border-radius: 5px; max-height: 200px; overflow-y: auto; width: 100%; z-index: 1000;"></div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 2: Billing System Autocomplete</h3>
+            <div class="input-group">
+                <label>Product Search (Billing):</label>
+                <input type="text" id="billProduct" placeholder="Search products...">
+                <div id="billRate" style="margin-top: 10px;">
+                    <label>Rate (AED):</label>
+                    <input type="number" placeholder="0.00">
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 3: Master Autocomplete</h3>
+            <div class="input-group">
+                <label>Master Search:</label>
+                <input type="text" id="masterName" placeholder="Select master">
+            </div>
+        </div>
+        
+        <div class="debug" id="debugLog">
+            <strong>Debug Log:</strong><br>
+        </div>
+    </div>
+
+    <script>
+        // Debug logging
+        function log(message) {
+            const debugLog = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `[${timestamp}] ${message}<br>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(message);
+        }
+
+        // Test data
+        const testProducts = [
+            { product_id: 10, product_name: "Test Print Function", rate: 200, type_name: "Dry Cleaning" },
+            { product_id: 3, product_name: "Test Product", rate: 100, type_name: "Dry Cleaning" },
+            { product_id: 1, product_name: "Water Dry", rate: 95, type_name: "Dry Cleaning" },
+            { product_id: 2, product_name: "test", rate: 75, type_name: "Wet Cleaning" }
+        ];
+
+        const testEmployees = [
+            { employee_id: 1, name: "Ayub Khan", phone: "0501234" },
+            { employee_id: 2, name: "Test Master", phone: "0505678" },
+            { employee_id: 3, name: "Another Master", phone: "0509012" }
+        ];
+
+        // Test 1: Simple autocomplete
+        const simpleProduct = document.getElementById('simpleProduct');
+        const simpleProductDropdown = document.getElementById('simpleProductDropdown');
+
+        simpleProduct.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            log(`Simple Product input: "${query}"`);
+            
+            const filtered = testProducts.filter(p => 
+                p.product_name.toLowerCase().includes(query)
+            );
+            
+            log(`Simple filtered products: ${filtered.length}`);
+            
+            if (filtered.length > 0) {
+                simpleProductDropdown.innerHTML = filtered.map(p => 
+                    `<div class="option" data-id="${p.product_id}" data-name="${p.product_name}" data-price="${p.rate}" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #475569;">
+                        ${p.product_name} - AED ${p.rate}
+                    </div>`
+                ).join('');
+                simpleProductDropdown.style.display = 'block';
+                log('Simple product dropdown shown');
+            } else {
+                simpleProductDropdown.style.display = 'none';
+                log('Simple product dropdown hidden');
+            }
+        });
+
+        // Test 2: Billing system autocomplete
+        const billProduct = document.getElementById('billProduct');
+        const billRate = document.querySelector('#billRate input');
+
+        billProduct.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            log(`Billing Product input: "${query}"`);
+            
+            const filtered = testProducts.filter(p => 
+                p.product_name.toLowerCase().includes(query)
+            );
+            
+            log(`Billing filtered products: ${filtered.length}`);
+            
+            if (filtered.length > 0) {
+                // Create dropdown if it doesn't exist
+                let dropdown = billProduct.parentNode.querySelector('.product-suggestion');
+                if (!dropdown) {
+                    dropdown = document.createElement('div');
+                    dropdown.className = 'product-suggestion';
+                    dropdown.style.cssText = 'position: absolute; z-index: 9999; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; max-height: 240px; overflow-y: auto; margin-top: 4px; min-width: 200px; width: 100%;';
+                    billProduct.parentNode.style.position = 'relative';
+                    billProduct.parentNode.appendChild(dropdown);
+                }
+                
+                dropdown.innerHTML = filtered.map(p => 
+                    `<div class="product-option" data-product-id="${p.product_id}" data-product-name="${p.product_name}" data-product-price="${p.rate}" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #f8fafc;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #e5e7eb;">${p.product_name}</span>
+                            <span style="font-size: 12px; color: #9ca3af;">${p.type_name} - AED ${p.rate}</span>
+                        </div>
+                    </div>`
+                ).join('');
+                dropdown.style.display = 'block';
+                log('Billing product dropdown shown');
+            } else {
+                const dropdown = billProduct.parentNode.querySelector('.product-suggestion');
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                    log('Billing product dropdown hidden');
+                }
+            }
+        });
+
+        // Test 3: Master autocomplete
+        const masterName = document.getElementById('masterName');
+
+        masterName.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            log(`Master input: "${query}"`);
+            
+            const filtered = testEmployees.filter(m => 
+                m.name.toLowerCase().includes(query)
+            );
+            
+            log(`Filtered masters: ${filtered.length}`);
+            
+            if (filtered.length > 0) {
+                // Create dropdown if it doesn't exist
+                let dropdown = masterName.parentNode.querySelector('.master-suggestion');
+                if (!dropdown) {
+                    dropdown = document.createElement('div');
+                    dropdown.className = 'master-suggestion';
+                    dropdown.style.cssText = 'position: absolute; z-index: 9999; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; max-height: 240px; overflow-y: auto; margin-top: 4px; min-width: 200px; width: 100%;';
+                    masterName.parentNode.style.position = 'relative';
+                    masterName.parentNode.appendChild(dropdown);
+                }
+                
+                dropdown.innerHTML = filtered.map(m => 
+                    `<div class="master-option" data-master-id="${m.employee_id}" data-master-name="${m.name}" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #f8fafc;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #e5e7eb;">${m.name}</span>
+                            <span style="font-size: 12px; color: #9ca3af;">${m.phone}</span>
+                        </div>
+                    </div>`
+                ).join('');
+                dropdown.style.display = 'block';
+                log('Master dropdown shown');
+            } else {
+                const dropdown = masterName.parentNode.querySelector('.master-suggestion');
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                    log('Master dropdown hidden');
+                }
+            }
+        });
+
+        // Click handlers
+        document.addEventListener('click', function(e) {
+            log(`Click detected on: ${e.target.tagName} (${e.target.className})`);
+            
+            // Simple product selection
+            const simpleOption = e.target.closest('.option');
+            if (simpleOption && simpleProductDropdown.contains(simpleOption)) {
+                log('Simple product option clicked');
+                const id = simpleOption.getAttribute('data-id');
+                const name = simpleOption.getAttribute('data-name');
+                const price = simpleOption.getAttribute('data-price');
+                
+                log(`Selected simple product: ${name} (ID: ${id}, Price: ${price})`);
+                
+                simpleProduct.value = name;
+                simpleProductDropdown.style.display = 'none';
+                return;
+            }
+            
+            // Billing product selection
+            const productOption = e.target.closest('.product-option');
+            if (productOption) {
+                log('Billing product option clicked');
+                const id = productOption.getAttribute('data-product-id');
+                const name = productOption.getAttribute('data-product-name');
+                const price = productOption.getAttribute('data-product-price');
+                
+                log(`Selected billing product: ${name} (ID: ${id}, Price: ${price})`);
+                
+                billProduct.value = name;
+                if (billRate) {
+                    billRate.value = price;
+                    log(`Rate field updated with: ${price}`);
+                }
+                
+                const dropdown = billProduct.parentNode.querySelector('.product-suggestion');
+                if (dropdown) dropdown.style.display = 'none';
+                return;
+            }
+            
+            // Master selection
+            const masterOption = e.target.closest('.master-option');
+            if (masterOption) {
+                log('Master option clicked');
+                const id = masterOption.getAttribute('data-master-id');
+                const name = masterOption.getAttribute('data-master-name');
+                
+                log(`Selected master: ${name} (ID: ${id})`);
+                
+                masterName.value = name;
+                
+                const dropdown = masterName.parentNode.querySelector('.master-suggestion');
+                if (dropdown) dropdown.style.display = 'none';
+                return;
+            }
+            
+            // Hide dropdowns when clicking outside
+            if (!simpleProduct.contains(e.target) && !simpleProductDropdown.contains(e.target)) {
+                simpleProductDropdown.style.display = 'none';
+            }
+            
+            const billingDropdown = billProduct.parentNode.querySelector('.product-suggestion');
+            if (billingDropdown && !billProduct.contains(e.target) && !billingDropdown.contains(e.target)) {
+                billingDropdown.style.display = 'none';
+            }
+            
+            const masterDropdown = masterName.parentNode.querySelector('.master-suggestion');
+            if (masterDropdown && !masterName.contains(e.target) && !masterDropdown.contains(e.target)) {
+                masterDropdown.style.display = 'none';
+            }
+        });
+
+        log('🚀 Debug autocomplete test initialized');
+    </script>
+</body>
+</html> 

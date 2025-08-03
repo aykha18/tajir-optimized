@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Tajir - Test{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-neutral-900 text-white">
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-neutral-800 border-r border-neutral-700 p-6">
+      <h1 class="text-xl font-bold mb-6">Tajir Test</h1>
+      
+      <nav class="space-y-2">
+        <button data-go="billingSec" class="nav-btn w-full text-left px-3 py-2 rounded hover:bg-neutral-700">
+          Billing
+        </button>
+        <button data-go="customerSec" class="nav-btn w-full text-left px-3 py-2 rounded hover:bg-neutral-700">
+          Customers
+        </button>
+        <button data-go="productSec" class="nav-btn w-full text-left px-3 py-2 rounded hover:bg-neutral-700">
+          Products
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6">
+      <h2 id="pageTitle" class="text-2xl font-bold mb-4">Billing</h2>
+      
+      <div id="billingSec" class="page">
+        <h3>Billing Section</h3>
+        <p>This is the billing section content.</p>
+      </div>
+      
+      <div id="customerSec" class="page hidden">
+        <h3>Customer Section</h3>
+        <p>This is the customer section content.</p>
+      </div>
+      
+      <div id="productSec" class="page hidden">
+        <h3>Product Section</h3>
+        <p>This is the product section content.</p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOMContentLoaded started');
+  
+  const navBtns = document.querySelectorAll('.nav-btn');
+  const pages = document.querySelectorAll('.page');
+  
+  console.log('Found nav buttons:', navBtns.length);
+  console.log('Found pages:', pages.length);
+
+  navBtns.forEach(btn => {
+    console.log('Adding click listener to:', btn.dataset.go);
+    btn.addEventListener('click', () => {
+      console.log('Nav button clicked:', btn.dataset.go);
+      alert('Button clicked: ' + btn.dataset.go);
+      
+      // Remove active class from all buttons
+      navBtns.forEach(b => b.classList.remove('bg-neutral-700'));
+      // Add active class to clicked button
+      btn.classList.add('bg-neutral-700');
+
+      // Hide all pages
+      pages.forEach(p => p.classList.add('hidden'));
+
+      // Show target page
+      const targetPage = document.getElementById(btn.dataset.go);
+      console.log('Target page:', targetPage);
+      if (targetPage) {
+        targetPage.classList.remove('hidden');
+        // Update page title
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) {
+          const titleElement = targetPage.querySelector('h3');
+          if (titleElement) {
+            pageTitle.textContent = titleElement.textContent;
+          }
+        }
+      } else {
+        console.log('Target page not found for:', btn.dataset.go);
+      }
+    });
+  });
+  
+  console.log('DOMContentLoaded completed');
+});
+</script>
+{% endblock %} 
