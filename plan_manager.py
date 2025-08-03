@@ -143,7 +143,7 @@ class PlanManager:
     
     def _get_all_features(self) -> List[str]:
         """Get list of all available features."""
-        return ["billing", "product_management", "customer_management", "dashboard", "customer_search", "db_backup_restore"]
+        return ["billing", "product_management", "customer_management", "dashboard", "customer_search", "db_backup_restore", "email_integration", "whatsapp_integration"]
     
     def is_feature_enabled(self, user_plan: str, plan_start_date: str, feature: str) -> bool:
         """Check if a specific feature is enabled for the user."""
@@ -205,6 +205,12 @@ class PlanManager:
     def get_plan_info(self, plan_name: str) -> Dict:
         """Get information about a specific plan."""
         return self.config.get("pricing_plans", {}).get(plan_name, {})
+    
+    def check_feature_access(self, user_id: int, feature: str) -> bool:
+        """Check if a user has access to a specific feature."""
+        # For now, we'll assume all users have access to all features
+        # In a real implementation, you would check the user's plan from the database
+        return True
 
 # Global instance
 plan_manager = PlanManager() 

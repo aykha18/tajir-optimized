@@ -10,6 +10,10 @@
   <!-- Arabic Font Support -->
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   
+  <!-- Custom CSS Files -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+  
   <style>
     @keyframes fade-in{0%{opacity:0;transform:translateY(12px);filter:blur(4px)}100%{opacity:1;transform:none;filter:blur(0)}}
     .fade-in{animation:fade-in .45s cubic-bezier(.33,1,.68,1) forwards}

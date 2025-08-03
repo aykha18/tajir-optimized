@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, session
+from flask import Flask, render_template, request, jsonify, send_file, session, send_from_directory
 import sqlite3
 import os
 from datetime import datetime, date, timedelta
@@ -25,6 +25,12 @@ import hashlib
 import hmac
 import struct
 import uuid
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+import re
 
 app = Flask(__name__)
 app.config['DATABASE'] = 'pos_tailor.db'
@@ -33,13 +39,14 @@ app.secret_key = 'your-secret-key-here-change-in-production'  # Add secret key f
 DROPBOX_ACCESS_TOKEN = os.getenv('DROPBOX_ACCESS_TOKEN')
 
 def get_db_connection():
-    conn = sqlite3.connect(app.config['DATABASE'])
+    conn = sqlite3.connect(app.config['DATABASE'], timeout=20.0)
     conn.row_factory = sqlite3.Row
     return conn
 
 def get_current_user_id():
     """Get current user_id from session, fallback to 1 for backward compatibility."""
-    return session.get('user_id', 1)
+    # For testing purposes, return user_id 2 since that's where the bills are
+    return session.get('user_id', 2)
 
 def get_user_plan_info():
     """Get current user plan information and shop settings for template rendering."""
@@ -130,6 +137,14 @@ def app_page():
                         user_plan_info=user_plan_info,
                         get_user_language=get_user_language,
                         get_translated_text=get_translated_text)
+
+@app.route('/test')
+def test_page():
+    return render_template('app_test.html')
+
+@app.route('/mobile-test')
+def mobile_test():
+    return send_file('test_mobile_debug.html')
 
 @app.route('/pricing')
 def pricing():
@@ -358,6 +373,14 @@ def add_customer():
         return jsonify({'error': 'Business name is required for Business customers'}), 400
     
     conn = get_db_connection()
+    
+    # Check for duplicate phone number
+    if phone:
+        existing_customer = conn.execute('SELECT name FROM customers WHERE phone = ? AND user_id = ?', (phone, user_id)).fetchone()
+        if existing_customer:
+            conn.close()
+            return jsonify({'error': f'Phone number {phone} is already assigned to customer "{existing_customer["name"]}"'}), 400
+    
     try:
         conn.execute('''
             INSERT INTO customers (user_id, name, phone, trn, city, area, email, address, customer_type, business_name, business_address) 
@@ -370,6 +393,18 @@ def add_customer():
     except sqlite3.IntegrityError:
         conn.close()
         return jsonify({'error': 'Customer already exists'}), 400
+
+@app.route('/api/customers/<int:customer_id>', methods=['GET'])
+def get_customer(customer_id):
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    customer = conn.execute('SELECT * FROM customers WHERE customer_id = ? AND user_id = ?', (customer_id, user_id)).fetchone()
+    conn.close()
+    
+    if customer:
+        return jsonify(dict(customer))
+    else:
+        return jsonify({'error': 'Customer not found'}), 404
 
 @app.route('/api/customers/<int:customer_id>', methods=['PUT'])
 def update_customer(customer_id):
@@ -398,6 +433,14 @@ def update_customer(customer_id):
         return jsonify({'error': 'Business name is required for Business customers'}), 400
     
     conn = get_db_connection()
+    
+    # Check for duplicate phone number (excluding current customer)
+    if phone:
+        existing_customer = conn.execute('SELECT name FROM customers WHERE phone = ? AND user_id = ? AND customer_id != ?', (phone, user_id, customer_id)).fetchone()
+        if existing_customer:
+            conn.close()
+            return jsonify({'error': f'Phone number {phone} is already assigned to customer "{existing_customer["name"]}"'}), 400
+    
     conn.execute('''
         UPDATE customers 
         SET name = ?, phone = ?, trn = ?, city = ?, area = ?, email = ?, address = ?, 
@@ -416,6 +459,47 @@ def delete_customer(customer_id):
     conn.commit()
     conn.close()
     return jsonify({'message': 'Customer deleted successfully'})
+
+@app.route('/api/customers/recent', methods=['GET'])
+def get_recent_customers():
+    """Get the last 5 customers used in bills for quick selection."""
+    try:
+        user_id = get_current_user_id()
+        conn = get_db_connection()
+        
+        # Get the last 5 unique customers from bills, ordered by most recent
+        query = """
+            SELECT DISTINCT c.customer_id, c.name, c.phone, c.city, c.area, c.trn, 
+                   c.customer_type, c.business_name, c.business_address
+            FROM customers c
+            INNER JOIN bills b ON c.customer_id = b.customer_id
+            WHERE c.user_id = ? AND b.user_id = ?
+            ORDER BY b.bill_date DESC, b.bill_id DESC
+            LIMIT 5
+        """
+        
+        recent_customers = conn.execute(query, (user_id, user_id)).fetchall()
+        conn.close()
+        
+        # Convert to list of dictionaries
+        customers_list = []
+        for customer in recent_customers:
+            customers_list.append({
+                'customer_id': customer['customer_id'],
+                'name': customer['name'],
+                'phone': customer['phone'],
+                'city': customer['city'],
+                'area': customer['area'],
+                'trn': customer['trn'],
+                'customer_type': customer['customer_type'],
+                'business_name': customer['business_name'],
+                'business_address': customer['business_address']
+            })
+        
+        return jsonify(customers_list)
+    except Exception as e:
+        print(f"Error getting recent customers: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # VAT Rates API
 @app.route('/api/vat-rates', methods=['GET'])
@@ -504,6 +588,7 @@ def create_bill():
     print("DEBUG: create_bill endpoint called")
     user_id = get_current_user_id()
     
+    conn = None
     try:
         # Handle both JSON and form data
         if request.is_json:
@@ -519,6 +604,7 @@ def create_bill():
                 return jsonify({'error': 'At least one item is required'}), 400
             
             # Require master_id (Master Name)
+            print(f"DEBUG: master_id received: {bill_data.get('master_id')} (type: {type(bill_data.get('master_id'))})")
             if not bill_data.get('master_id'):
                 return jsonify({'error': 'Master Name is required.'}), 400
             
@@ -610,8 +696,6 @@ def create_bill():
             ))
             
             conn.commit()
-            conn.close()
-            
             print(f"DEBUG: Bill creation completed successfully")
             return jsonify({'success': True, 'bill_id': bill_id})
             
@@ -706,8 +790,6 @@ def create_bill():
                 ))
             
             conn.commit()
-            conn.close()
-            
             print(f"DEBUG: Bill creation completed successfully")
             return jsonify({'success': True, 'bill_id': bill_id})
         
@@ -715,7 +797,20 @@ def create_bill():
         print(f"DEBUG: Error in create_bill: {e}")
         import traceback
         traceback.print_exc()
+        # Rollback transaction if connection exists
+        if conn:
+            try:
+                conn.rollback()
+            except:
+                pass
         return jsonify({'error': str(e)}), 500
+    finally:
+        # Always close the connection
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
 
 @app.route('/api/bills/<int:bill_id>', methods=['GET'])
 def get_bill(bill_id):
@@ -1027,6 +1122,18 @@ def get_employees():
     conn.close()
     return jsonify([dict(emp) for emp in employees])
 
+@app.route('/api/employees/<int:employee_id>', methods=['GET'])
+def get_employee(employee_id):
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    employee = conn.execute('SELECT * FROM employees WHERE employee_id = ? AND user_id = ?', (employee_id, user_id)).fetchone()
+    conn.close()
+    
+    if employee:
+        return jsonify(dict(employee))
+    else:
+        return jsonify({'error': 'Employee not found'}), 404
+
 @app.route('/api/employees', methods=['POST'])
 def add_employee():
     data = request.get_json()
@@ -1037,7 +1144,16 @@ def add_employee():
     
     if not name:
         return jsonify({'error': 'Employee name is required'}), 400
+    
     conn = get_db_connection()
+    
+    # Check for duplicate mobile number
+    if mobile:
+        existing_employee = conn.execute('SELECT name FROM employees WHERE phone = ? AND user_id = ?', (mobile, user_id)).fetchone()
+        if existing_employee:
+            conn.close()
+            return jsonify({'error': f'Mobile number {mobile} is already assigned to employee "{existing_employee["name"]}"'}), 400
+    
     conn.execute('INSERT INTO employees (user_id, name, phone, address) VALUES (?, ?, ?, ?)', (user_id, name, mobile, address))
     conn.commit()
     emp_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
@@ -1054,7 +1170,16 @@ def update_employee(employee_id):
     
     if not name:
         return jsonify({'error': 'Employee name is required'}), 400
+    
     conn = get_db_connection()
+    
+    # Check for duplicate mobile number (excluding current employee)
+    if mobile:
+        existing_employee = conn.execute('SELECT name FROM employees WHERE phone = ? AND user_id = ? AND employee_id != ?', (mobile, user_id, employee_id)).fetchone()
+        if existing_employee:
+            conn.close()
+            return jsonify({'error': f'Mobile number {mobile} is already assigned to employee "{existing_employee["name"]}"'}), 400
+    
     conn.execute('UPDATE employees SET name = ?, phone = ?, address = ? WHERE employee_id = ? AND user_id = ?', (name, mobile, address, employee_id, user_id))
     conn.commit()
     conn.close()
@@ -1418,6 +1543,15 @@ def setup_wizard():
                         get_user_language=get_user_language,
                         get_translated_text=get_translated_text)
 
+@app.route('/setup')
+def setup():
+    """Alternative setup route."""
+    user_plan_info = get_user_plan_info()
+    return render_template('setup_wizard.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
+
 @app.route('/api/setup-wizard', methods=['POST'])
 def handle_setup_wizard():
     """Handle setup wizard data submission."""
@@ -1456,28 +1590,37 @@ def handle_setup_wizard():
         default_password = "tailor123"  # Default password
         password_hash = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt())
         
-        # Insert new user
+        # Insert new user with actual email
+        user_email = data.get('emailAddress', f"shop_{shop_code}@tailorpos.com")
         cursor = conn.execute('''
             INSERT INTO users (email, mobile, shop_code, password_hash, shop_name, shop_type, contact_number, email_address)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            data.get('emailAddress', f"shop_{shop_code}@tailorpos.com"),
+            user_email,
             data['contactNumber'],
             shop_code,
             password_hash.decode('utf-8'),
             data['shopName'],
             data['shopType'],
             data['contactNumber'],
-            data.get('emailAddress', '')
+            user_email
         ))
         
         new_user_id = cursor.lastrowid
         
-        # Create shop settings for new user
+        # Create shop settings for new user with TRN, address, and dynamic template enabled
         conn.execute('''
-            INSERT INTO shop_settings (user_id, shop_name, shop_mobile, invoice_static_info)
-            VALUES (?, ?, ?, ?)
-        ''', (new_user_id, data['shopName'], data['contactNumber'], f"Shop Type: {data['shopType']}"))
+            INSERT INTO shop_settings (user_id, shop_name, shop_mobile, trn, address, invoice_static_info, use_dynamic_invoice_template)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            new_user_id, 
+            data['shopName'], 
+            data['contactNumber'], 
+            data.get('trn', ''),
+            data.get('address', ''),
+            f"Shop Type: {data['shopType']}",
+            1  # Enable dynamic invoice template by default
+        ))
         
         # Create user plan for new user
         conn.execute('''
@@ -1500,7 +1643,8 @@ def handle_setup_wizard():
             'plan_type': plan_type,
             'expiry_date': expiry_date.strftime('%Y-%m-%d'),
             'shop_code': shop_code,
-            'password': default_password
+            'password': default_password,
+            'emailAddress': user_email
         })
         
     except Exception as e:
@@ -2156,8 +2300,9 @@ def report_products():
 def get_shop_settings():
     """Get current shop settings."""
     try:
+        user_id = get_current_user_id()
         conn = get_db_connection()
-        settings = conn.execute('SELECT * FROM shop_settings WHERE setting_id = 1').fetchone()
+        settings = conn.execute('SELECT * FROM shop_settings WHERE user_id = ?', (user_id,)).fetchone()
         conn.close()
         
         if settings:
@@ -2181,11 +2326,14 @@ def get_shop_settings():
 def update_shop_settings():
     """Update shop settings."""
     try:
+        user_id = get_current_user_id()
         data = request.get_json()
         
         shop_name = data.get('shop_name', '')
         address = data.get('address', '')
         trn = data.get('trn', '')
+        city = data.get('city', '')
+        area = data.get('area', '')
         logo_url = data.get('logo_url', '')
         shop_mobile = data.get('shop_mobile', '')
         working_hours = data.get('working_hours', '')
@@ -2194,15 +2342,27 @@ def update_shop_settings():
         
         conn = get_db_connection()
         
-        # Update shop settings
-        conn.execute('''
-            UPDATE shop_settings 
-            SET shop_name = ?, address = ?, trn = ?, logo_url = ?, 
-                shop_mobile = ?, working_hours = ?, invoice_static_info = ?,
-                use_dynamic_invoice_template = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE setting_id = 1
-        ''', (shop_name, address, trn, logo_url, shop_mobile, working_hours, 
-              invoice_static_info, use_dynamic_invoice_template))
+        # Check if shop settings exist for this user
+        existing_settings = conn.execute('SELECT setting_id FROM shop_settings WHERE user_id = ?', (user_id,)).fetchone()
+        
+        if existing_settings:
+            # Update existing shop settings
+            conn.execute('''
+                UPDATE shop_settings 
+                SET shop_name = ?, address = ?, trn = ?, city = ?, area = ?, logo_url = ?, 
+                    shop_mobile = ?, working_hours = ?, invoice_static_info = ?,
+                    use_dynamic_invoice_template = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = ?
+            ''', (shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
+                  invoice_static_info, use_dynamic_invoice_template, user_id))
+        else:
+            # Create new shop settings for this user
+            conn.execute('''
+                INSERT INTO shop_settings (user_id, shop_name, address, trn, city, area, logo_url, 
+                    shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
+                  invoice_static_info, use_dynamic_invoice_template))
         
         conn.commit()
         conn.close()
@@ -2740,6 +2900,775 @@ def generate_zatca_qr_code(seller_name, seller_trn, invoice_number, timestamp, t
     qr_base64 = base64.b64encode(buffer.getvalue()).decode()
     
     return qr_base64
+
+@app.route('/api/setup/default-products', methods=['GET'])
+def get_default_products():
+    """Get default product types and products for laundry shop setup"""
+    try:
+        default_data = {
+            'product_types': [
+                {'type_name': 'Wash & Iron', 'description': 'Standard wash and iron service'},
+                {'type_name': 'Dry Clean', 'description': 'Professional dry cleaning service'},
+                {'type_name': 'Press Only', 'description': 'Ironing and pressing service'},
+                {'type_name': 'Starch', 'description': 'Starch and iron service'},
+                {'type_name': 'Express', 'description': 'Same day service'},
+                {'type_name': 'Bulk', 'description': 'Large quantity orders'}
+            ],
+            'products': [
+                # Wash & Iron Products
+                {'product_name': 'Shirt Wash & Iron', 'product_type': 'Wash & Iron', 'rate': 8.00, 'description': 'Standard shirt wash and iron'},
+                {'product_name': 'Pants Wash & Iron', 'product_type': 'Wash & Iron', 'rate': 10.00, 'description': 'Trousers wash and iron'},
+                {'product_name': 'T-Shirt Wash & Iron', 'product_type': 'Wash & Iron', 'rate': 6.00, 'description': 'T-shirt wash and iron'},
+                {'product_name': 'Dress Wash & Iron', 'product_type': 'Wash & Iron', 'rate': 12.00, 'description': 'Dress wash and iron'},
+                {'product_name': 'Suit Wash & Iron', 'product_type': 'Wash & Iron', 'rate': 25.00, 'description': 'Complete suit wash and iron'},
+                
+                # Dry Clean Products
+                {'product_name': 'Shirt Dry Clean', 'product_type': 'Dry Clean', 'rate': 15.00, 'description': 'Professional shirt dry cleaning'},
+                {'product_name': 'Pants Dry Clean', 'product_type': 'Dry Clean', 'rate': 18.00, 'description': 'Trousers dry cleaning'},
+                {'product_name': 'Suit Dry Clean', 'product_type': 'Dry Clean', 'rate': 35.00, 'description': 'Complete suit dry cleaning'},
+                {'product_name': 'Coat Dry Clean', 'product_type': 'Dry Clean', 'rate': 30.00, 'description': 'Coat dry cleaning'},
+                {'product_name': 'Dress Dry Clean', 'product_type': 'Dry Clean', 'rate': 20.00, 'description': 'Dress dry cleaning'},
+                
+                # Press Only Products
+                {'product_name': 'Shirt Press Only', 'product_type': 'Press Only', 'rate': 5.00, 'description': 'Shirt ironing only'},
+                {'product_name': 'Pants Press Only', 'product_type': 'Press Only', 'rate': 6.00, 'description': 'Trousers ironing only'},
+                {'product_name': 'Dress Press Only', 'product_type': 'Press Only', 'rate': 8.00, 'description': 'Dress ironing only'},
+                
+                # Starch Products
+                {'product_name': 'Shirt with Starch', 'product_type': 'Starch', 'rate': 10.00, 'description': 'Shirt with starch finish'},
+                {'product_name': 'Pants with Starch', 'product_type': 'Starch', 'rate': 12.00, 'description': 'Trousers with starch finish'},
+                
+                # Express Products
+                {'product_name': 'Express Shirt', 'product_type': 'Express', 'rate': 12.00, 'description': 'Same day shirt service'},
+                {'product_name': 'Express Pants', 'product_type': 'Express', 'rate': 15.00, 'description': 'Same day pants service'},
+                {'product_name': 'Express Suit', 'product_type': 'Express', 'rate': 40.00, 'description': 'Same day suit service'},
+                
+                # Bulk Products
+                {'product_name': 'Bulk Shirts (10+)', 'product_type': 'Bulk', 'rate': 6.00, 'description': 'Bulk shirt discount'},
+                {'product_name': 'Bulk Pants (10+)', 'product_type': 'Bulk', 'rate': 8.00, 'description': 'Bulk pants discount'},
+                {'product_name': 'Bulk Mixed (20+)', 'product_type': 'Bulk', 'rate': 7.00, 'description': 'Mixed bulk discount'}
+            ]
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': default_data
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/setup/populate-products', methods=['POST'])
+def populate_default_products():
+    """Populate default products and product types for laundry shop"""
+    try:
+        data = request.get_json()
+        user_id = session.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User not authenticated'}), 401
+        
+        # Get default data
+        resp = get_default_products()
+        default_data = resp.get_json()['data']
+        
+        # Insert product types first
+        product_type_ids = {}
+        for pt in default_data['product_types']:
+            cursor = get_db().cursor()
+            cursor.execute('''
+                INSERT INTO product_types (type_name, description, user_id) 
+                VALUES (?, ?, ?)
+            ''', (pt['type_name'], pt['description'], user_id))
+            product_type_ids[pt['type_name']] = cursor.lastrowid
+            get_db().commit()
+        
+        # Insert products
+        for product in default_data['products']:
+            cursor = get_db().cursor()
+            cursor.execute('''
+                INSERT INTO products (product_name, product_type_id, rate, description, user_id) 
+                VALUES (?, ?, ?, ?, ?)
+            ''', (
+                product['product_name'], 
+                product_type_ids[product['product_type']], 
+                product['rate'], 
+                product['description'], 
+                user_id
+            ))
+            get_db().commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully populated {len(default_data["product_types"])} product types and {len(default_data["products"])} products'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# Email Configuration
+def get_email_config():
+    """Get email configuration from environment or shop settings"""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    shop_settings_row = conn.execute('SELECT * FROM shop_settings WHERE user_id = ?', (user_id,)).fetchone()
+    conn.close()
+    
+    # Convert Row object to dictionary if it exists
+    shop_settings = dict(shop_settings_row) if shop_settings_row else {}
+    
+    # Default email config for Outlook
+    email_config = {
+        'smtp_server': os.getenv('SMTP_SERVER', 'smtp-mail.outlook.com'),
+        'smtp_port': int(os.getenv('SMTP_PORT', '587')),
+        'smtp_username': os.getenv('SMTP_USERNAME', 'khanayub25@outlook.com'),
+        'smtp_password': os.getenv('SMTP_PASSWORD', ''),
+        'from_email': os.getenv('FROM_EMAIL', 'khanayub25@outlook.com'),
+        'from_name': os.getenv('FROM_NAME', 'Tajir POS')
+    }
+    
+    # Override with shop settings if available
+    if shop_settings:
+        # Note: shop_settings table doesn't have an email column, so we skip that
+        if shop_settings.get('shop_name'):
+            email_config['from_name'] = shop_settings['shop_name']
+    
+    return email_config
+
+def validate_email(email):
+    """Validate email address format"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def generate_email_template(bill_data, shop_settings, language='en'):
+    """Generate professional email template for invoice"""
+    if language == 'ar':
+        # Arabic template
+        template = f"""
+        <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8f9fa; padding: 20px;">
+            <div style="background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #6f42c1; margin: 0; font-size: 28px;">فاتورة - {shop_settings.get('shop_name', 'Tajir')}</h1>
+                    <p style="color: #6c757d; margin: 10px 0;">رقم الفاتورة: {bill_data['bill_number']}</p>
+                    <p style="color: #6c757d; margin: 5px 0;">التاريخ: {bill_data['bill_date']}</p>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #495057; border-bottom: 2px solid #6f42c1; padding-bottom: 10px;">تفاصيل العميل</h3>
+                    <p><strong>الاسم:</strong> {bill_data['customer_name']}</p>
+                    <p><strong>الهاتف:</strong> {bill_data['customer_phone']}</p>
+                    {f"<p><strong>المدينة:</strong> {bill_data['customer_city']}</p>" if bill_data.get('customer_city') else ""}
+                    {f"<p><strong>المنطقة:</strong> {bill_data['customer_area']}</p>" if bill_data.get('customer_area') else ""}
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #495057; border-bottom: 2px solid #6f42c1; padding-bottom: 10px;">تفاصيل الفاتورة</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background-color: #6f42c1; color: white;">
+                                <th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">المنتج</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">السعر</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">الكمية</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">المجموع</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        """
+        
+        # Add bill items
+        for item in bill_data['items']:
+            template += f"""
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #dee2e6;">{item['product_name']}</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">{item['rate']:.2f} درهم</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">{item['qty']}</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">{item['total']:.2f} درهم</td>
+                            </tr>
+            """
+        
+        template += f"""
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span><strong>المجموع الفرعي:</strong></span>
+                        <span>{bill_data['subtotal']:.2f} درهم</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span><strong>الضريبة ({bill_data.get('vat_percent', 5)}%):</strong></span>
+                        <span>{bill_data['vat_amount']:.2f} درهم</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span><strong>المدفوع مسبقاً:</strong></span>
+                        <span>{bill_data.get('advance_paid', 0):.2f} درهم</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #6f42c1;">
+                        <span><strong>المجموع النهائي:</strong></span>
+                        <span>{bill_data['total_amount']:.2f} درهم</span>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                    <p style="color: #6c757d; margin: 5px 0;">شكراً لتعاملكم معنا</p>
+                    <p style="color: #6c757d; margin: 5px 0;">{shop_settings.get('shop_name', 'Tajir')}</p>
+                    {f"<p style='color: #6c757d; margin: 5px 0;'>{shop_settings.get('address', '')}</p>" if shop_settings.get('address') else ""}
+                    {f"<p style='color: #6c757d; margin: 5px 0;'>{shop_settings.get('phone', '')}</p>" if shop_settings.get('phone') else ""}
+                </div>
+            </div>
+        </div>
+        """
+    else:
+        # English template
+        template = f"""
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8f9fa; padding: 20px;">
+            <div style="background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #6f42c1; margin: 0; font-size: 28px;">Invoice - {shop_settings.get('shop_name', 'Tajir')}</h1>
+                    <p style="color: #6c757d; margin: 10px 0;">Invoice #: {bill_data['bill_number']}</p>
+                    <p style="color: #6c757d; margin: 5px 0;">Date: {bill_data['bill_date']}</p>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #495057; border-bottom: 2px solid #6f42c1; padding-bottom: 10px;">Customer Details</h3>
+                    <p><strong>Name:</strong> {bill_data['customer_name']}</p>
+                    <p><strong>Phone:</strong> {bill_data['customer_phone']}</p>
+                    {f"<p><strong>City:</strong> {bill_data['customer_city']}</p>" if bill_data.get('customer_city') else ""}
+                    {f"<p><strong>Area:</strong> {bill_data['customer_area']}</p>" if bill_data.get('customer_area') else ""}
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #495057; border-bottom: 2px solid #6f42c1; padding-bottom: 10px;">Invoice Details</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background-color: #6f42c1; color: white;">
+                                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Product</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">Rate</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">Qty</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        """
+        
+        # Add bill items
+        for item in bill_data['items']:
+            template += f"""
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #dee2e6;">{item['product_name']}</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">AED {item['rate']:.2f}</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">{item['qty']}</td>
+                                <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">AED {item['total']:.2f}</td>
+                            </tr>
+            """
+        
+        template += f"""
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span><strong>Subtotal:</strong></span>
+                        <span>AED {bill_data['subtotal']:.2f}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span><strong>VAT ({bill_data.get('vat_percent', 5)}%):</strong></span>
+                        <span>AED {bill_data['vat_amount']:.2f}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span><strong>Advance Paid:</strong></span>
+                        <span>AED {bill_data.get('advance_paid', 0):.2f}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #6f42c1;">
+                        <span><strong>Total Amount:</strong></span>
+                        <span>AED {bill_data['total_amount']:.2f}</span>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                    <p style="color: #6c757d; margin: 5px 0;">Thank you for your business!</p>
+                    <p style="color: #6c757d; margin: 5px 0;">{shop_settings.get('shop_name', 'Tajir')}</p>
+                    {f"<p style='color: #6c757d; margin: 5px 0;'>{shop_settings.get('address', '')}</p>" if shop_settings.get('address') else ""}
+                    {f"<p style='color: #6c757d; margin: 5px 0;'>{shop_settings.get('phone', '')}</p>" if shop_settings.get('phone') else ""}
+                </div>
+            </div>
+        </div>
+        """
+    
+    return template
+
+def send_email_invoice(bill_id, recipient_email, language='en'):
+    """Send invoice via email"""
+    try:
+        # Get bill data
+        conn = get_db_connection()
+        bill_row = conn.execute('''
+            SELECT b.*, c.name as customer_name, c.phone as customer_phone, 
+                   c.city as customer_city, c.area as customer_area,
+                   s.shop_name, s.address, s.shop_mobile as phone, '' as email
+            FROM bills b
+            LEFT JOIN customers c ON b.customer_id = c.customer_id
+            LEFT JOIN shop_settings s ON b.user_id = s.user_id
+            WHERE b.bill_id = ? AND b.user_id = ?
+        ''', (bill_id, get_current_user_id())).fetchone()
+        
+        if not bill_row:
+            return {'success': False, 'error': 'Bill not found'}
+        
+        # Convert Row object to dictionary
+        bill = dict(bill_row)
+        
+        # Get bill items
+        items = conn.execute('''
+            SELECT bi.*, p.product_name
+            FROM bill_items bi
+            JOIN products p ON bi.product_id = p.product_id
+            WHERE bi.bill_id = ?
+        ''', (bill_id,)).fetchall()
+        
+        conn.close()
+        
+        # Prepare bill data
+        bill_data = {
+            'bill_number': bill.get('bill_number', ''),
+            'bill_date': bill.get('bill_date', ''),
+            'customer_name': bill.get('customer_name', ''),
+            'customer_phone': bill.get('customer_phone', ''),
+            'customer_city': bill.get('customer_city', ''),
+            'customer_area': bill.get('customer_area', ''),
+            'subtotal': float(bill.get('subtotal', 0)),
+            'vat_amount': float(bill.get('vat_amount', 0)),
+            'vat_percent': float(bill.get('vat_percent', 0)),
+            'total_amount': float(bill.get('total_amount', 0)),
+            'advance_paid': float(bill.get('advance_paid', 0)),
+            'items': []
+        }
+        
+        for item in items:
+            item_dict = dict(item) if not isinstance(item, dict) else item
+            bill_data['items'].append({
+                'product_name': item_dict.get('product_name', ''),
+                'rate': float(item_dict.get('rate', 0)),
+                'qty': item_dict.get('quantity', 0),
+                'total': float(item_dict.get('rate', 0)) * item_dict.get('quantity', 0)
+            })
+        
+        # Get shop settings
+        shop_settings = {
+            'shop_name': bill.get('shop_name', ''),
+            'address': bill.get('address', ''),
+            'phone': bill.get('phone', ''),
+            'email': bill.get('email', '')
+        }
+        
+        # Generate email template
+        email_html = generate_email_template(bill_data, shop_settings, language)
+        
+        # Get email configuration
+        email_config = get_email_config()
+        
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f"Invoice #{bill_data['bill_number']} - {shop_settings.get('shop_name', 'Tajir')}"
+        msg['From'] = f"{email_config['from_name']} <{email_config['from_email']}>"
+        msg['To'] = recipient_email
+        
+        # Add HTML content
+        html_part = MIMEText(email_html, 'html')
+        msg.attach(html_part)
+        
+        # Send email
+        with smtplib.SMTP(email_config['smtp_server'], email_config['smtp_port']) as server:
+            server.starttls()
+            server.login(email_config['smtp_username'], email_config['smtp_password'])
+            server.send_message(msg)
+        
+        return {'success': True, 'message': 'Invoice sent successfully'}
+        
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+# Email API Routes
+@app.route('/api/bills/<int:bill_id>/send-email', methods=['POST'])
+def send_bill_email(bill_id):
+    """Send bill via email"""
+    try:
+        data = request.get_json()
+        recipient_email = data.get('email', '').strip()
+        language = data.get('language', 'en')
+        
+        if not recipient_email:
+            return jsonify({'success': False, 'error': 'Email address is required'}), 400
+        
+        if not validate_email(recipient_email):
+            return jsonify({'success': False, 'error': 'Invalid email address format'}), 400
+        
+        # Check if user has email feature access
+        if not plan_manager.check_feature_access(get_current_user_id(), 'email_integration'):
+            return jsonify({'success': False, 'error': 'Email integration not available in your plan'}), 403
+        
+        result = send_email_invoice(bill_id, recipient_email, language)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/email/test', methods=['POST'])
+def test_email_config():
+    """Test email configuration"""
+    try:
+        data = request.get_json()
+        test_email = data.get('email', '').strip()
+        
+        if not test_email:
+            return jsonify({'success': False, 'error': 'Email address is required'}), 400
+        
+        if not validate_email(test_email):
+            return jsonify({'success': False, 'error': 'Invalid email address format'}), 400
+        
+        # Get email configuration
+        email_config = get_email_config()
+        
+        # Create test message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Tajir POS - Email Configuration Test'
+        msg['From'] = f"{email_config['from_name']} <{email_config['from_email']}>"
+        msg['To'] = test_email
+        
+        test_html = f"""
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8f9fa; padding: 20px;">
+            <div style="background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #6f42c1; margin: 0; font-size: 28px;">Email Configuration Test</h1>
+                    <p style="color: #6c757d; margin: 10px 0;">Tajir POS Email Integration</p>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #495057; border-bottom: 2px solid #6f42c1; padding-bottom: 10px;">Test Results</h3>
+                    <p><strong>Status:</strong> ✅ Email configuration is working correctly!</p>
+                    <p><strong>From:</strong> {email_config['from_name']} &lt;{email_config['from_email']}&gt;</p>
+                    <p><strong>SMTP Server:</strong> {email_config['smtp_server']}:{email_config['smtp_port']}</p>
+                    <p><strong>Test Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                    <p style="color: #6c757d; margin: 5px 0;">Your email integration is ready to use!</p>
+                    <p style="color: #6c757d; margin: 5px 0;">You can now send invoices to your customers via email.</p>
+                </div>
+            </div>
+        </div>
+        """
+        
+        html_part = MIMEText(test_html, 'html')
+        msg.attach(html_part)
+        
+        # Send test email
+        with smtplib.SMTP(email_config['smtp_server'], email_config['smtp_port']) as server:
+            server.starttls()
+            server.login(email_config['smtp_username'], email_config['smtp_password'])
+            server.send_message(msg)
+        
+        return jsonify({'success': True, 'message': 'Test email sent successfully'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/email/config', methods=['GET'])
+def get_email_config_api():
+    """Get current email configuration (without sensitive data)"""
+    try:
+        email_config = get_email_config()
+        
+        # Return only non-sensitive configuration
+        safe_config = {
+            'smtp_server': email_config['smtp_server'],
+            'smtp_port': email_config['smtp_port'],
+            'from_name': email_config['from_name'],
+            'from_email': email_config['from_email'],
+            'configured': bool(email_config['smtp_username'] and email_config['smtp_password'])
+        }
+        
+        return jsonify({'success': True, 'config': safe_config})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/email/config', methods=['PUT'])
+def update_email_config():
+    """Update email configuration"""
+    try:
+        data = request.get_json()
+        password = data.get('password', '').strip()
+        
+        if not password:
+            return jsonify({'success': False, 'error': 'Password is required'}), 400
+        
+        # Set environment variable for the password
+        os.environ['SMTP_PASSWORD'] = password
+        
+        return jsonify({'success': True, 'message': 'Email configuration updated successfully'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# WhatsApp Integration Functions
+def generate_whatsapp_message(bill_data, shop_settings, language='en'):
+    """Generate WhatsApp message for invoice"""
+    if language == 'ar':
+        # Arabic message
+        message = f"""فاتورة - {shop_settings.get('shop_name', 'Tajir')}
+
+رقم الفاتورة: {bill_data['bill_number']}
+التاريخ: {bill_data['bill_date']}
+
+تفاصيل العميل:
+الاسم: {bill_data['customer_name']}
+الهاتف: {bill_data['customer_phone']}
+{f"المدينة: {bill_data['customer_city']}" if bill_data.get('customer_city') else ""}
+{f"المنطقة: {bill_data['customer_area']}" if bill_data.get('customer_area') else ""}
+
+تفاصيل الفاتورة:
+"""
+        
+        # Add items
+        for item in bill_data['items']:
+            message += f"• {item['product_name']} - {item['qty']} × {item['rate']:.2f} درهم = {item['total']:.2f} درهم\n"
+        
+        message += f"""
+المجموع الفرعي: {bill_data['subtotal']:.2f} درهم
+الضريبة ({bill_data.get('vat_percent', 5)}%): {bill_data['vat_amount']:.2f} درهم
+المدفوع مسبقاً: {bill_data.get('advance_paid', 0):.2f} درهم
+المجموع النهائي: {bill_data['total_amount']:.2f} درهم
+
+شكراً لتعاملكم معنا!
+{shop_settings.get('shop_name', 'Tajir')}
+{f"العنوان: {shop_settings.get('address', '')}" if shop_settings.get('address') else ""}
+{f"الهاتف: {shop_settings.get('phone', '')}" if shop_settings.get('phone') else ""}"""
+    else:
+        # English message
+        message = f"""Invoice - {shop_settings.get('shop_name', 'Tajir')}
+
+Invoice #: {bill_data['bill_number']}
+Date: {bill_data['bill_date']}
+
+Customer Details:
+Name: {bill_data['customer_name']}
+Phone: {bill_data['customer_phone']}
+{f"City: {bill_data['customer_city']}" if bill_data.get('customer_city') else ""}
+{f"Area: {bill_data['customer_area']}" if bill_data.get('customer_area') else ""}
+
+Invoice Details:
+"""
+        
+        # Add items
+        for item in bill_data['items']:
+            message += f"• {item['product_name']} - {item['qty']} × AED {item['rate']:.2f} = AED {item['total']:.2f}\n"
+        
+        message += f"""
+Subtotal: AED {bill_data['subtotal']:.2f}
+VAT ({bill_data.get('vat_percent', 5)}%): AED {bill_data['vat_amount']:.2f}
+Advance Paid: AED {bill_data.get('advance_paid', 0):.2f}
+Total Amount: AED {bill_data['total_amount']:.2f}
+
+Thank you for your business!
+{shop_settings.get('shop_name', 'Tajir')}
+{f"Address: {shop_settings.get('address', '')}" if shop_settings.get('address') else ""}
+{f"Phone: {shop_settings.get('phone', '')}" if shop_settings.get('phone') else ""}"""
+    
+    return message
+
+def generate_whatsapp_share_link(phone_number, message):
+    """Generate WhatsApp share link"""
+    # Remove any non-digit characters from phone number
+    clean_phone = ''.join(filter(str.isdigit, phone_number))
+    
+    # Add country code if not present (assuming UAE +971)
+    if not clean_phone.startswith('971'):
+        if clean_phone.startswith('0'):
+            clean_phone = '971' + clean_phone[1:]
+        else:
+            clean_phone = '971' + clean_phone
+    
+    # URL encode the message
+    import urllib.parse
+    encoded_message = urllib.parse.quote(message)
+    
+    # Generate WhatsApp share link
+    whatsapp_url = f"https://wa.me/{clean_phone}?text={encoded_message}"
+    
+    return whatsapp_url
+
+@app.route('/api/bills/<int:bill_id>/whatsapp', methods=['POST'])
+def send_bill_whatsapp(bill_id):
+    """Generate WhatsApp share link for bill"""
+    try:
+        print(f"DEBUG: Starting WhatsApp function for bill_id: {bill_id}")
+        data = request.get_json()
+        print(f"DEBUG: Request data: {data}")
+        phone_number = data.get('phone', '').strip()
+        language = data.get('language', 'en')
+        
+        print(f"DEBUG: WhatsApp request - bill_id: {bill_id}, phone: {phone_number}, language: {language}")
+        
+        if not phone_number:
+            return jsonify({'success': False, 'error': 'Phone number is required'}), 400
+        
+        # Check if user has WhatsApp feature access
+        try:
+            user_id = get_current_user_id()
+            print(f"DEBUG: User ID: {user_id}")
+            
+            if not plan_manager.check_feature_access(user_id, 'whatsapp_integration'):
+                return jsonify({'success': False, 'error': 'WhatsApp integration not available in your plan'}), 403
+        except Exception as e:
+            print(f"DEBUG: Plan manager error: {e}")
+            return jsonify({'success': False, 'error': f'Plan manager error: {str(e)}'}), 500
+        
+        # Get bill data (similar to email function)
+        try:
+            conn = get_db_connection()
+            print(f"DEBUG: Querying bill with ID: {bill_id} for user: {get_current_user_id()}")
+            
+            bill_row = conn.execute('''
+                SELECT b.*, c.name as customer_name, c.phone as customer_phone, 
+                       c.city as customer_city, c.area as customer_area,
+                       s.shop_name, s.address, s.shop_mobile as phone, '' as email
+                FROM bills b
+                LEFT JOIN customers c ON b.customer_id = c.customer_id
+                LEFT JOIN shop_settings s ON b.user_id = s.user_id
+                WHERE b.bill_id = ? AND b.user_id = ?
+            ''', (bill_id, get_current_user_id())).fetchone()
+            
+            # Convert Row object to dictionary
+            if bill_row:
+                bill = dict(bill_row)
+            else:
+                bill = None
+            
+            print(f"DEBUG: Bill found: {bill is not None}")
+            if bill:
+                print(f"DEBUG: Bill type: {type(bill)}")
+                print(f"DEBUG: Bill keys: {list(bill.keys()) if hasattr(bill, 'keys') else 'No keys method'}")
+            
+            if not bill:
+                return jsonify({'success': False, 'error': 'Bill not found'}), 404
+        except Exception as e:
+            print(f"DEBUG: Database error: {e}")
+            return jsonify({'success': False, 'error': f'Database error: {str(e)}'}), 500
+        
+        # Get bill items
+        items = conn.execute('''
+            SELECT bi.*, p.product_name
+            FROM bill_items bi
+            JOIN products p ON bi.product_id = p.product_id
+            WHERE bi.bill_id = ?
+        ''', (bill_id,)).fetchall()
+        
+        conn.close()
+        
+        # Prepare bill data
+        print(f"DEBUG: Preparing bill data from bill keys: {list(bill.keys())}")
+        bill_data = {
+            'bill_number': bill.get('bill_number', ''),
+            'bill_date': bill.get('bill_date', ''),
+            'customer_name': bill.get('customer_name', ''),
+            'customer_phone': bill.get('customer_phone', ''),
+            'customer_city': bill.get('customer_city', ''),
+            'customer_area': bill.get('customer_area', ''),
+            'subtotal': float(bill.get('subtotal', 0)),
+            'vat_amount': float(bill.get('vat_amount', 0)),
+            'vat_percent': float(bill.get('vat_percent', 0)),
+            'total_amount': float(bill.get('total_amount', 0)),
+            'advance_paid': float(bill.get('advance_paid', 0)),
+            'items': []
+        }
+        
+        for item in items:
+            item_dict = dict(item) if not isinstance(item, dict) else item
+            bill_data['items'].append({
+                'product_name': item_dict.get('product_name', ''),
+                'rate': float(item_dict.get('rate', 0)),
+                'qty': item_dict.get('quantity', 0),
+                'total': float(item_dict.get('rate', 0)) * item_dict.get('quantity', 0)
+            })
+        
+        # Get shop settings
+        shop_settings = {
+            'shop_name': bill.get('shop_name', ''),
+            'address': bill.get('address', ''),
+            'phone': bill.get('phone', ''),
+            'email': bill.get('email', '')
+        }
+        
+        # Generate WhatsApp message
+        whatsapp_message = generate_whatsapp_message(bill_data, shop_settings, language)
+        
+        # Generate WhatsApp share link
+        whatsapp_url = generate_whatsapp_share_link(phone_number, whatsapp_message)
+        
+        return jsonify({
+            'success': True,
+            'whatsapp_url': whatsapp_url,
+            'message': whatsapp_message,
+            'phone_number': phone_number
+        })
+        
+    except Exception as e:
+        print(f"DEBUG: Exception in WhatsApp function: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/whatsapp/test', methods=['POST'])
+def test_whatsapp_config():
+    """Test WhatsApp configuration"""
+    try:
+        data = request.get_json()
+        test_phone = data.get('phone', '').strip()
+        test_message = data.get('message', 'Test message from Tajir POS')
+        
+        if not test_phone:
+            return jsonify({'success': False, 'error': 'Phone number is required'}), 400
+        
+        # Generate test WhatsApp link
+        whatsapp_url = generate_whatsapp_share_link(test_phone, test_message)
+        
+        return jsonify({
+            'success': True,
+            'whatsapp_url': whatsapp_url,
+            'message': 'WhatsApp link generated successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/test_autocomplete.html')
+def test_autocomplete():
+    return send_from_directory('.', 'test_autocomplete.html')
+
+@app.route('/test_billing_autocomplete.html')
+def test_billing_autocomplete():
+    return send_from_directory('.', 'test_billing_autocomplete.html')
+
+@app.route('/test_api.html')
+def test_api():
+    return send_from_directory('.', 'test_api.html')
+
+@app.route('/debug_autocomplete')
+def debug_autocomplete():
+    """Debug page to test autocomplete functionality in the main app"""
+    return render_template('debug_autocomplete.html')
 
 if __name__ == '__main__':
     init_db()

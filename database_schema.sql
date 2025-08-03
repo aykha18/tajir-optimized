@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS product_types (
     type_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     type_name TEXT NOT NULL,
+    description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     UNIQUE(user_id, type_name)
