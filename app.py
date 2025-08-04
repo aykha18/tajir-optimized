@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, session, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_file, session, send_from_directory, redirect, url_for
 import sqlite3
 import os
 from datetime import datetime, date, timedelta
@@ -31,6 +31,117 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 import re
+import logging
+import logging.handlers
+import traceback
+import sys
+from pathlib import Path
+
+# Configure comprehensive logging system
+def setup_logging():
+    """Setup comprehensive logging for production."""
+    # Create logs directory if it doesn't exist
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    
+    # Configure file logging
+    file_handler = logging.handlers.RotatingFileHandler(
+        'logs/tajir_pos.log',
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=5
+    )
+    file_handler.setLevel(logging.INFO)
+    
+    # Configure error file logging
+    error_handler = logging.handlers.RotatingFileHandler(
+        'logs/errors.log',
+        maxBytes=5*1024*1024,  # 5MB
+        backupCount=3
+    )
+    error_handler.setLevel(logging.ERROR)
+    
+    # Configure console logging for development
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    
+    # Create formatters
+    file_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    error_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s'
+    )
+    
+    file_handler.setFormatter(file_formatter)
+    error_handler.setFormatter(error_formatter)
+    console_handler.setFormatter(file_formatter)
+    
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(error_handler)
+    root_logger.addHandler(console_handler)
+    
+    return root_logger
+
+# Initialize logging
+logger = setup_logging()
+
+def log_dml_error(operation, table, error, user_id=None, data=None):
+    """Log DML failures to both file and database."""
+    try:
+        # Log to file
+        error_msg = f"DML Error - Operation: {operation}, Table: {table}, Error: {str(error)}"
+        if user_id:
+            error_msg += f", User: {user_id}"
+        if data:
+            error_msg += f", Data: {str(data)[:200]}..."  # Truncate data
+        
+        logger.error(error_msg)
+        
+        # Log to database (if possible)
+        try:
+            conn = get_db_connection()
+            conn.execute('''
+                INSERT INTO error_logs (timestamp, level, operation, table_name, error_message, user_id, data_snapshot)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                datetime.now().isoformat(),
+                'ERROR',
+                operation,
+                table,
+                str(error),
+                user_id,
+                json.dumps(data) if data else None
+            ))
+            conn.commit()
+            conn.close()
+        except Exception as db_log_error:
+            # If database logging fails, log to file only
+            logger.error(f"Failed to log to database: {db_log_error}")
+            
+    except Exception as log_error:
+        # Fallback to basic logging
+        print(f"Logging failed: {log_error}")
+
+def log_user_action(action, user_id=None, details=None):
+    """Log user actions for audit trail."""
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO user_actions (timestamp, action, user_id, details)
+            VALUES (?, ?, ?, ?)
+        ''', (
+            datetime.now().isoformat(),
+            action,
+            user_id,
+            json.dumps(details) if details else None
+        ))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Failed to log user action: {e}")
 
 app = Flask(__name__)
 app.config['DATABASE'] = 'pos_tailor.db'
@@ -109,9 +220,15 @@ def init_db():
         with open('database_schema.sql', 'r') as f:
             schema = f.read()
         conn = get_db_connection()
-        conn.executescript(schema)
-        conn.commit()
-        conn.close()
+        try:
+            conn.executescript(schema)
+            conn.commit()
+            logger.info("Database initialized successfully with logging tables")
+        except Exception as e:
+            log_dml_error("INIT", "database", e)
+            raise e
+        finally:
+            conn.close()
         print("Database initialized successfully!")
 
 @app.route('/')
@@ -588,6 +705,15 @@ def create_bill():
     print("DEBUG: create_bill endpoint called")
     user_id = get_current_user_id()
     
+    # Log user action for bill creation
+    try:
+        log_user_action("CREATE_BILL_ATTEMPT", user_id, {
+            'timestamp': datetime.now().isoformat(),
+            'endpoint': '/api/bills'
+        })
+    except Exception as log_error:
+        print(f"Failed to log user action: {log_error}")
+    
     conn = None
     try:
         # Handle both JSON and form data
@@ -797,6 +923,14 @@ def create_bill():
         print(f"DEBUG: Error in create_bill: {e}")
         import traceback
         traceback.print_exc()
+        
+        # Log DML error
+        log_dml_error("CREATE", "bills", e, user_id, {
+            'customer_name': customer_name if 'customer_name' in locals() else None,
+            'total_amount': total_amount if 'total_amount' in locals() else None,
+            'item_count': len(items) if 'items' in locals() else 0
+        })
+        
         # Rollback transaction if connection exists
         if conn:
             try:
@@ -1658,6 +1792,12 @@ def auth_login():
         data = request.get_json()
         method = data.get('method')
         
+        # Log login attempt
+        log_user_action("LOGIN_ATTEMPT", None, {
+            'method': method,
+            'timestamp': datetime.now().isoformat()
+        })
+        
         conn = get_db_connection()
         
         if method == 'email':
@@ -1725,6 +1865,14 @@ def auth_login():
         session['user_id'] = user['user_id']
         session['shop_name'] = user['shop_name']
         session['shop_code'] = user['shop_code']
+        
+        # Log successful login
+        log_user_action("LOGIN_SUCCESS", user['user_id'], {
+            'shop_name': user['shop_name'],
+            'shop_code': user['shop_code'],
+            'method': method,
+            'timestamp': datetime.now().isoformat()
+        })
         
         conn.commit()
         conn.close()
@@ -2366,6 +2514,15 @@ def update_shop_settings():
         
         conn.commit()
         conn.close()
+        
+        # Log shop settings update
+        log_user_action("UPDATE_SHOP_SETTINGS", user_id, {
+            'shop_name': shop_name,
+            'trn': trn,
+            'city': city,
+            'area': area,
+            'timestamp': datetime.now().isoformat()
+        })
         
         return jsonify({
             'success': True,
@@ -3669,6 +3826,39 @@ def test_api():
 def debug_autocomplete():
     """Debug page to test autocomplete functionality in the main app"""
     return render_template('debug_autocomplete.html')
+
+@app.route('/admin/logs')
+def admin_logs():
+    """Admin interface to view error logs."""
+    try:
+        conn = get_db_connection()
+        
+        # Get recent error logs
+        error_logs = conn.execute('''
+            SELECT el.*, u.shop_name 
+            FROM error_logs el 
+            LEFT JOIN users u ON el.user_id = u.user_id 
+            ORDER BY el.timestamp DESC 
+            LIMIT 100
+        ''').fetchall()
+        
+        # Get recent user actions
+        user_actions = conn.execute('''
+            SELECT ua.*, u.shop_name 
+            FROM user_actions ua 
+            LEFT JOIN users u ON ua.user_id = u.user_id 
+            ORDER BY ua.timestamp DESC 
+            LIMIT 50
+        ''').fetchall()
+        
+        conn.close()
+        
+        return render_template('admin_logs.html', 
+                            error_logs=error_logs, 
+                            user_actions=user_actions)
+    except Exception as e:
+        logger.error(f"Failed to load admin logs: {e}")
+        return jsonify({'error': 'Failed to load logs'}), 500
 
 if __name__ == '__main__':
     init_db()

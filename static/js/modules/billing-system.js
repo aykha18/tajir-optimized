@@ -127,6 +127,12 @@ function initializeBillingSystem() {
 
   // Modern Alert System
   function showModernAlert(message, type = 'info', title = null) {
+    // For "Item added" messages, show a simple toast instead of modal
+    if (message.includes('Item added') && type === 'success') {
+      showSimpleToast('Item Added', 'success');
+      return;
+    }
+    
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
     
@@ -236,6 +242,65 @@ function initializeBillingSystem() {
       }
     };
     document.addEventListener('keydown', handleKeydown);
+  }
+
+  function showSimpleToast(message, type = 'info') {
+    // Remove any existing toasts
+    const existingToasts = document.querySelectorAll('.simple-toast');
+    existingToasts.forEach(toast => toast.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = 'simple-toast fixed top-4 right-4 z-50 transform transition-all duration-300 ease-out translate-x-full';
+    
+    // Determine colors based on type
+    let bgColor, textColor, iconColor;
+    switch (type) {
+      case 'success':
+        bgColor = 'bg-green-600';
+        textColor = 'text-white';
+        iconColor = 'text-green-100';
+        break;
+      case 'error':
+        bgColor = 'bg-red-600';
+        textColor = 'text-white';
+        iconColor = 'text-red-100';
+        break;
+      case 'warning':
+        bgColor = 'bg-yellow-600';
+        textColor = 'text-white';
+        iconColor = 'text-yellow-100';
+        break;
+      default:
+        bgColor = 'bg-blue-600';
+        textColor = 'text-white';
+        iconColor = 'text-blue-100';
+    }
+    
+    toast.innerHTML = `
+      <div class="${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 max-w-sm">
+        <svg class="w-5 h-5 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="text-sm font-medium">${message}</span>
+      </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+      toast.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Auto-remove after 2 seconds
+    setTimeout(() => {
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 300);
+    }, 2000);
   }
 
   function togglePrint() {
@@ -390,6 +455,7 @@ function initializeBillingSystem() {
 
   function populateCustomerFields(customer) {
     const billCustomerElement = document.getElementById('billCustomer');
+    const billMobileElement = document.getElementById('billMobile');
     const billCityElement = document.getElementById('billCity');
     const billAreaElement = document.getElementById('billArea');
     const billTRNElement = document.getElementById('billTRN');
@@ -398,6 +464,7 @@ function initializeBillingSystem() {
     const billBusinessAddressElement = document.getElementById('billBusinessAddress');
     
     if (billCustomerElement) billCustomerElement.value = customer.name || '';
+    if (billMobileElement) billMobileElement.value = customer.phone || '';
     if (billCityElement) billCityElement.value = customer.city || '';
     if (billAreaElement) billAreaElement.value = customer.area || '';
     if (billTRNElement) billTRNElement.value = customer.trn || '';
@@ -424,6 +491,7 @@ function initializeBillingSystem() {
 
   function clearCustomerFields() {
     const billCustomerElement = document.getElementById('billCustomer');
+    const billMobileElement = document.getElementById('billMobile');
     const billCityElement = document.getElementById('billCity');
     const billAreaElement = document.getElementById('billArea');
     const billTRNElement = document.getElementById('billTRN');
@@ -432,6 +500,7 @@ function initializeBillingSystem() {
     const billBusinessAddressElement = document.getElementById('billBusinessAddress');
     
     if (billCustomerElement) billCustomerElement.value = '';
+    if (billMobileElement) billMobileElement.value = '';
     if (billCityElement) billCityElement.value = '';
     if (billAreaElement) billAreaElement.value = '';
     if (billTRNElement) billTRNElement.value = '';
@@ -556,7 +625,7 @@ function initializeBillingSystem() {
 
   // FEATURE 1: Customer Quick Search with Type-ahead
   function setupCustomerQuickSearch() {
-    const customerInput = document.getElementById('customerName');
+    const customerInput = document.getElementById('billCustomer');
     if (!customerInput) return;
 
     let searchTimeout;
@@ -567,8 +636,14 @@ function initializeBillingSystem() {
       dropdown = document.createElement('div');
       dropdown.className = 'customer-suggestion absolute z-50 w-full bg-neutral-800 border border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto mt-1';
       dropdown.style.display = 'none';
-      customerInput.parentNode.style.position = 'relative';
-      customerInput.parentNode.appendChild(dropdown);
+      
+      // Ensure parent has relative positioning
+      if (customerInput.parentNode) {
+        customerInput.parentNode.style.position = 'relative';
+        customerInput.parentNode.appendChild(dropdown);
+      } else {
+        console.error('Customer input parent node not found');
+      }
     }
 
     // Show customer suggestions
@@ -595,6 +670,36 @@ function initializeBillingSystem() {
         </div>
       `).join('');
       
+      // Add click listeners directly to each option
+      const options = dropdown.querySelectorAll('.customer-option');
+      options.forEach(option => {
+        option.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          console.log('Customer option clicked:', this);
+          
+          const customerData = {
+            customer_id: this.getAttribute('data-customer-id'),
+            name: this.getAttribute('data-customer-name'),
+            phone: this.getAttribute('data-customer-phone'),
+            email: this.getAttribute('data-customer-email'),
+            address: this.getAttribute('data-customer-address'),
+            city: this.getAttribute('data-customer-city'),
+            area: this.getAttribute('data-customer-area'),
+            trn: this.getAttribute('data-customer-trn'),
+            customer_type: this.getAttribute('data-customer-type'),
+            business_name: this.getAttribute('data-business-name'),
+            business_address: this.getAttribute('data-business-address')
+          };
+          
+          console.log('Selected customer data:', customerData);
+          populateCustomerFields(customerData);
+          hideCustomerDropdown();
+          customerInput.value = customerData.name;
+        });
+      });
+      
       dropdown.style.display = 'block';
     }
 
@@ -613,10 +718,19 @@ function initializeBillingSystem() {
       }
 
       try {
-        const response = await fetch(`/api/customers/search?q=${encodeURIComponent(query)}`);
-        const customers = await response.json();
+        console.log('Searching customers for:', query);
+        const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
         
-        if (customers.length > 0) {
+        if (!response.ok) {
+          console.error('Customer search failed:', response.status, response.statusText);
+          hideCustomerDropdown();
+          return;
+        }
+        
+        const customers = await response.json();
+        console.log('Found customers:', customers);
+        
+        if (customers && customers.length > 0) {
           showCustomerSuggestions(customers);
         } else {
           hideCustomerDropdown();
@@ -644,34 +758,19 @@ function initializeBillingSystem() {
       }
     });
 
-    // Handle customer selection
+    // Hide dropdown when clicking outside - but NOT when clicking on options
     document.addEventListener('click', function(e) {
-      if (e.target.classList.contains('customer-option')) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const customerData = {
-          customer_id: e.target.getAttribute('data-customer-id'),
-          name: e.target.getAttribute('data-customer-name'),
-          phone: e.target.getAttribute('data-customer-phone'),
-          email: e.target.getAttribute('data-customer-email'),
-          address: e.target.getAttribute('data-customer-address'),
-          city: e.target.getAttribute('data-customer-city'),
-          area: e.target.getAttribute('data-customer-area'),
-          trn: e.target.getAttribute('data-customer-trn'),
-          customer_type: e.target.getAttribute('data-customer-type'),
-          business_name: e.target.getAttribute('data-business-name'),
-          business_address: e.target.getAttribute('data-business-address')
-        };
-        
-        populateCustomerFields(customerData);
-        hideCustomerDropdown();
-        customerInput.value = customerData.name;
+      // Don't hide if clicking on a customer option
+      if (e.target.closest('.customer-option')) {
+        return;
       }
-    });
-
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', function(e) {
+      
+      // Don't hide if clicking on the input itself
+      if (customerInput.contains(e.target)) {
+        return;
+      }
+      
+      // Hide only if clicking outside both input and dropdown
       if (!customerInput.contains(e.target) && (!dropdown || !dropdown.contains(e.target))) {
         hideCustomerDropdown();
       }
@@ -710,6 +809,8 @@ function initializeBillingSystem() {
       try {
         const response = await fetch('/api/products');
         allProducts = await response.json();
+        window.allProducts = allProducts; // Store globally for validation
+        console.log('Loaded products:', allProducts.length);
       } catch (error) {
         console.error('Error loading products:', error);
       }
@@ -777,10 +878,7 @@ function initializeBillingSystem() {
     // Hide dropdown
     function hideDropdown() {
       if (productDropdown) {
-        // Small delay to ensure selection is processed first
-        setTimeout(() => {
-          productDropdown.style.display = 'none';
-        }, 10);
+        productDropdown.style.display = 'none';
       }
     }
 
@@ -966,10 +1064,7 @@ function initializeBillingSystem() {
     // Hide dropdown
     function hideDropdown() {
       if (masterDropdown) {
-        // Small delay to ensure selection is processed first
-        setTimeout(() => {
-          masterDropdown.style.display = 'none';
-        }, 10);
+        masterDropdown.style.display = 'none';
       }
     }
 
@@ -1049,9 +1144,37 @@ function initializeBillingSystem() {
         // Get selected product data
         const selectedProductData = productInput.getAttribute('data-selected-product');
         
+        // Debug logging
+        console.log('Product input value:', productInput.value);
+        console.log('Selected product data:', selectedProductData);
+        
         if (!selectedProductData) {
-          showModernAlert('Please select a product from the search results', 'warning', 'Product Required');
-          return;
+          // Check if we have a valid product name but no data attribute
+          // This might happen if the product was selected but the attribute wasn't set properly
+          const productName = productInput.value.trim();
+          if (productName) {
+            // Try to find the product in our loaded products
+            const allProducts = window.allProducts || [];
+            const foundProduct = allProducts.find(p => p.name === productName || p.product_name === productName);
+            
+            if (foundProduct) {
+              // Set the data attribute now
+              productInput.setAttribute('data-selected-product', JSON.stringify(foundProduct));
+              console.log('Found and set product data:', foundProduct);
+            } else {
+              // Add a small delay to allow for any pending DOM updates
+              setTimeout(() => {
+                const retrySelectedData = productInput.getAttribute('data-selected-product');
+                if (!retrySelectedData) {
+                  showModernAlert('Please select a product from the search results', 'warning', 'Product Required');
+                }
+              }, 100);
+              return;
+            }
+          } else {
+            showModernAlert('Please select a product from the search results', 'warning', 'Product Required');
+            return;
+          }
         }
         
         let productData;
@@ -1386,7 +1509,8 @@ function initializeBillingSystem() {
       business_name: document.getElementById('billBusinessName')?.value || '',
       business_address: document.getElementById('billBusinessAddress')?.value || '',
       bill_date: document.getElementById('billDate')?.value || '',
-      delivery_date: document.getElementById('trialDate')?.value || '',
+      delivery_date: document.getElementById('deliveryDate')?.value || '',
+      trial_date: document.getElementById('trialDate')?.value || '',
       master_id: window.getSelectedMasterId ? window.getSelectedMasterId() : null,
       vat_percent: 5,
       subtotal: subtotal,
@@ -1496,7 +1620,8 @@ function initializeBillingSystem() {
       business_name: document.getElementById('billBusinessName')?.value || '',
       business_address: document.getElementById('billBusinessAddress')?.value || '',
       bill_date: document.getElementById('billDate')?.value || '',
-      delivery_date: document.getElementById('trialDate')?.value || '',
+      delivery_date: document.getElementById('deliveryDate')?.value || '',
+      trial_date: document.getElementById('trialDate')?.value || '',
       master_id: window.getSelectedMasterId ? window.getSelectedMasterId() : null,
       vat_percent: 5,
       subtotal: subtotal,
@@ -1604,7 +1729,8 @@ function initializeBillingSystem() {
       business_name: document.getElementById('billBusinessName')?.value || '',
       business_address: document.getElementById('billBusinessAddress')?.value || '',
       bill_date: document.getElementById('billDate')?.value || '',
-      delivery_date: document.getElementById('trialDate')?.value || '',
+      delivery_date: document.getElementById('deliveryDate')?.value || '',
+      trial_date: document.getElementById('trialDate')?.value || '',
       master_id: window.getSelectedMasterId ? window.getSelectedMasterId() : null,
       vat_percent: 5,
       subtotal: subtotal,
