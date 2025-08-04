@@ -239,6 +239,39 @@ CREATE INDEX IF NOT EXISTS idx_employees_user_id ON employees(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_plans_user_id ON user_plans(user_id);
 CREATE INDEX IF NOT EXISTS idx_shop_settings_user_id ON shop_settings(user_id);
 
+-- Create error_logs table for DML error logging
+CREATE TABLE IF NOT EXISTS error_logs (
+    log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    level TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    table_name TEXT NOT NULL,
+    error_message TEXT NOT NULL,
+    user_id INTEGER,
+    data_snapshot TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- Create user_actions table for audit trail
+CREATE TABLE IF NOT EXISTS user_actions (
+    action_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    action TEXT NOT NULL,
+    user_id INTEGER,
+    details TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- Create indexes for logging tables
+CREATE INDEX IF NOT EXISTS idx_error_logs_timestamp ON error_logs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_error_logs_user_id ON error_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_error_logs_operation ON error_logs(operation);
+CREATE INDEX IF NOT EXISTS idx_user_actions_timestamp ON user_actions(timestamp);
+CREATE INDEX IF NOT EXISTS idx_user_actions_user_id ON user_actions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_actions_action ON user_actions(action);
+
 -- Insert default user (for backward compatibility)
 INSERT OR IGNORE INTO users (user_id, email, shop_code, password_hash, shop_name, shop_type, contact_number, email_address) VALUES
 (1, 'admin@tailorpos.com', 'SHOP001', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KqKqKq', 'Tajir', 'tailors', '+971 50 123 4567', 'admin@tailorpos.com');
