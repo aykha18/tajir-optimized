@@ -779,27 +779,47 @@ function initializeBillingSystem() {
 
   // FEATURE 2: Product Quick Add with Search
   function setupProductQuickAdd() {
+    // Setup desktop product quick add
     const billProductInput = document.getElementById('billProduct');
     const billRateInput = document.getElementById('billRate');
     
-    if (!billProductInput) {
+    if (billProductInput) {
+      setupProductQuickAddForInput(billProductInput, billRateInput, 'desktop');
+    }
+
+    // Setup mobile product quick add
+    const billProductInputMobile = document.getElementById('billProductMobile');
+    const billRateInputMobile = document.getElementById('billRateMobile');
+    
+    if (billProductInputMobile) {
+      setupProductQuickAddForInput(billProductInputMobile, billRateInputMobile, 'mobile');
+    }
+  }
+
+  function setupProductQuickAddForInput(productInput, rateInput, formType) {
+    if (!productInput) {
       return;
     }
 
     let allProducts = [];
     let productDropdown;
 
-    // Create product dropdown
+    // Create product dropdown with mobile-optimized styling
     function createProductDropdown() {
       productDropdown = document.createElement('div');
-      productDropdown.className = 'product-suggestion';
-      productDropdown.style.cssText = 'position: absolute; z-index: 9999; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; max-height: 240px; overflow-y: auto; margin-top: 4px; min-width: 200px; width: 100%;';
+      productDropdown.className = 'product-suggestion-mobile';
+      productDropdown.style.cssText = 'position: absolute; z-index: 9999; background: white; border: 1px solid #e5e7eb; border-radius: 8px; max-height: 240px; overflow-y: auto; margin-top: 4px; min-width: 200px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);';
       productDropdown.style.display = 'none';
-      billProductInput.parentNode.style.position = 'relative';
-      billProductInput.parentNode.appendChild(productDropdown);
+      productInput.parentNode.style.position = 'relative';
+      productInput.parentNode.appendChild(productDropdown);
       
       // Prevent dropdown from hiding when clicking inside it
       productDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+
+      // Add touch event handling for mobile
+      productDropdown.addEventListener('touchstart', function(e) {
         e.stopPropagation();
       });
     }
@@ -813,36 +833,54 @@ function initializeBillingSystem() {
         console.log('Loaded products:', allProducts.length);
       } catch (error) {
         console.error('Error loading products:', error);
+        // Show user-friendly error message
+        showModernAlert('Failed to load products. Please check your connection.', 'error', 'Loading Error');
       }
     }
 
-    // Filter products
+    // Filter products with improved search
     function filterProducts(query) {
       if (!query.trim()) return [];
       
-      return allProducts.filter(product =>
-        product.product_name.toLowerCase().includes(query.toLowerCase()) ||
-        (product.type_name && product.type_name.toLowerCase().includes(query.toLowerCase()))
-      );
+      const searchTerm = query.toLowerCase();
+      return allProducts.filter(product => {
+        const productName = product.product_name.toLowerCase();
+        const typeName = (product.type_name || '').toLowerCase();
+        
+        return productName.includes(searchTerm) || 
+               typeName.includes(searchTerm) ||
+               productName.split(' ').some(word => word.startsWith(searchTerm));
+      }).slice(0, 10); // Limit to 10 results for better performance
     }
 
-    // Render dropdown options
+    // Render dropdown options with mobile-optimized styling
     function renderDropdownOptions(filteredProducts) {
       if (!productDropdown) createProductDropdown();
       
-      productDropdown.innerHTML = filteredProducts.map(product => `
-        <div class="product-option" data-product-id="${product.product_id}" data-product-name="${product.product_name}" data-product-price="${product.rate}" data-product-type="${product.type_name || ''}" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #f8fafc;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #e5e7eb;">${product.product_name}</span>
-            <span style="font-size: 12px; color: #9ca3af;">${product.type_name || ''} - <span style="color: #10b981; font-weight: bold;">AED ${product.rate}</span></span>
+      if (filteredProducts.length === 0) {
+        productDropdown.innerHTML = `
+          <div class="product-option-mobile" style="color: #6b7280; text-align: center; padding: 16px;">
+            <div>No products found</div>
+            <div style="font-size: 12px; margin-top: 4px;">Try a different search term</div>
           </div>
+        `;
+        return;
+      }
+      
+      productDropdown.innerHTML = filteredProducts.map(product => `
+        <div class="product-option-mobile" data-product-id="${product.product_id}" data-product-name="${product.product_name}" data-product-price="${product.rate}" data-product-type="${product.type_name || ''}">
+          <div style="flex: 1;">
+            <div class="product-name">${product.product_name}</div>
+            <div class="product-details">${product.type_name || ''}</div>
+          </div>
+          <div class="product-price">AED ${product.rate}</div>
         </div>
       `).join('');
       
-      // Add click listeners directly to each option
-      const options = productDropdown.querySelectorAll('.product-option');
+      // Add click listeners with improved touch handling
+      const options = productDropdown.querySelectorAll('.product-option-mobile');
       options.forEach(option => {
-        option.addEventListener('click', function(e) {
+        const handleSelection = function(e) {
           e.preventDefault();
           e.stopPropagation();
           
@@ -854,36 +892,66 @@ function initializeBillingSystem() {
           };
           
           // Set the input value
-          billProductInput.value = productData.name;
+          productInput.value = productData.name;
           
           // Auto-fill the rate field
-          if (billRateInput) {
-            billRateInput.value = productData.price;
+          if (rateInput) {
+            rateInput.value = productData.price;
+            // Trigger change event to update any dependent fields
+            rateInput.dispatchEvent(new Event('change', { bubbles: true }));
           }
           
           // Set data attribute for validation
-          billProductInput.setAttribute('data-selected-product', JSON.stringify(productData));
+          productInput.setAttribute('data-selected-product', JSON.stringify(productData));
+          
+          // Add visual feedback
+          productInput.style.borderColor = '#10b981';
+          setTimeout(() => {
+            productInput.style.borderColor = '';
+          }, 1000);
           
           hideDropdown();
-        });
+          
+          // Show success feedback
+          showSimpleToast(`${productData.name} selected`, 'success');
+        };
+        
+        // Handle both click and touch events
+        option.addEventListener('click', handleSelection);
+        option.addEventListener('touchend', handleSelection);
       });
     }
 
-    // Show dropdown
+    // Show dropdown with animation
     function showDropdown() {
       if (!productDropdown) createProductDropdown();
       productDropdown.style.display = 'block';
+      productDropdown.style.opacity = '0';
+      productDropdown.style.transform = 'translateY(-10px)';
+      
+      // Animate in
+      setTimeout(() => {
+        productDropdown.style.transition = 'all 0.2s ease';
+        productDropdown.style.opacity = '1';
+        productDropdown.style.transform = 'translateY(0)';
+      }, 10);
     }
 
-    // Hide dropdown
+    // Hide dropdown with animation
     function hideDropdown() {
       if (productDropdown) {
-        productDropdown.style.display = 'none';
+        productDropdown.style.transition = 'all 0.2s ease';
+        productDropdown.style.opacity = '0';
+        productDropdown.style.transform = 'translateY(-10px)';
+        
+        setTimeout(() => {
+          productDropdown.style.display = 'none';
+        }, 200);
       }
     }
 
-    // Event listeners
-    billProductInput.addEventListener('input', function() {
+    // Enhanced input event handling
+    productInput.addEventListener('input', function() {
       const query = this.value;
       const filteredProducts = filterProducts(query);
       
@@ -895,7 +963,8 @@ function initializeBillingSystem() {
       }
     });
 
-    billProductInput.addEventListener('focus', function() {
+    // Enhanced focus event handling
+    productInput.addEventListener('focus', function() {
       if (this.value.trim()) {
         const filteredProducts = filterProducts(this.value);
         if (filteredProducts.length > 0) {
@@ -905,20 +974,63 @@ function initializeBillingSystem() {
       }
     });
 
-    // Hide dropdown when clicking outside - but NOT when clicking on options
+    // Enhanced blur event handling
+    productInput.addEventListener('blur', function() {
+      // Delay hiding to allow for option selection
+      setTimeout(() => {
+        hideDropdown();
+      }, 200);
+    });
+
+    // Improved click outside handling
     document.addEventListener('click', function(e) {
       // Don't hide if clicking on a product option
-      if (e.target.closest('.product-option')) {
+      if (e.target.closest('.product-option-mobile')) {
         return;
       }
       
       // Don't hide if clicking on the input itself
-      if (billProductInput.contains(e.target)) {
+      if (productInput.contains(e.target)) {
         return;
       }
       
       // Hide only if clicking outside both input and dropdown
-      if (!billProductInput.contains(e.target) && (!productDropdown || !productDropdown.contains(e.target))) {
+      if (!productInput.contains(e.target) && (!productDropdown || !productDropdown.contains(e.target))) {
+        hideDropdown();
+      }
+    });
+
+    // Add keyboard navigation
+    productInput.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const options = productDropdown?.querySelectorAll('.product-option-mobile');
+        if (!options || options.length === 0) return;
+        
+        const currentIndex = Array.from(options).findIndex(option => 
+          option.classList.contains('selected')
+        );
+        
+        let newIndex;
+        if (e.key === 'ArrowDown') {
+          newIndex = currentIndex < options.length - 1 ? currentIndex + 1 : 0;
+        } else {
+          newIndex = currentIndex > 0 ? currentIndex - 1 : options.length - 1;
+        }
+        
+        // Remove previous selection
+        options.forEach(option => option.classList.remove('selected'));
+        
+        // Add new selection
+        options[newIndex].classList.add('selected');
+        options[newIndex].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const selectedOption = productDropdown?.querySelector('.product-option-mobile.selected');
+        if (selectedOption) {
+          selectedOption.click();
+        }
+      } else if (e.key === 'Escape') {
         hideDropdown();
       }
     });
@@ -1122,129 +1234,267 @@ function initializeBillingSystem() {
 
     // Setup Add Item button functionality
   function setupAddItemHandler() {
+    // Setup desktop add item handler
     const addItemBtn = document.getElementById('addItemBtn');
     if (addItemBtn) {
+      addItemBtn.classList.add('add-item-btn-mobile');
       addItemBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        
-        // Use the same element reference method as setupProductQuickAdd
-        const productInput = document.getElementById('billProduct');
-        const quantityInput = document.getElementById('billQty');
-        const priceInput = document.getElementById('billRate');
-        const discountInput = document.getElementById('billDiscount');
-        const advanceInput = document.getElementById('billAdvPaid');
-        const vatInput = document.getElementById('vatPercent');
-        
-        // Validate required fields
-        if (!productInput || !productInput.value.trim()) {
-          showModernAlert('Please select a product', 'warning', 'Product Required');
-          return;
-        }
-        
-        // Get selected product data
-        const selectedProductData = productInput.getAttribute('data-selected-product');
-        
-        // Debug logging
-        console.log('Product input value:', productInput.value);
-        console.log('Selected product data:', selectedProductData);
-        
-        if (!selectedProductData) {
-          // Check if we have a valid product name but no data attribute
-          // This might happen if the product was selected but the attribute wasn't set properly
-          const productName = productInput.value.trim();
-          if (productName) {
-            // Try to find the product in our loaded products
-            const allProducts = window.allProducts || [];
-            const foundProduct = allProducts.find(p => p.name === productName || p.product_name === productName);
-            
-            if (foundProduct) {
-              // Set the data attribute now
-              productInput.setAttribute('data-selected-product', JSON.stringify(foundProduct));
-              console.log('Found and set product data:', foundProduct);
-            } else {
-              // Add a small delay to allow for any pending DOM updates
-              setTimeout(() => {
-                const retrySelectedData = productInput.getAttribute('data-selected-product');
-                if (!retrySelectedData) {
-                  showModernAlert('Please select a product from the search results', 'warning', 'Product Required');
-                }
-              }, 100);
-              return;
-            }
-          } else {
-            showModernAlert('Please select a product from the search results', 'warning', 'Product Required');
-            return;
-          }
-        }
-        
-        let productData;
-        try {
-          productData = JSON.parse(selectedProductData);
-        } catch (error) {
-          console.error('Error parsing product data:', error);
-          showModernAlert('Invalid product data. Please select a product again.', 'error', 'Product Error');
-          return;
-        }
-        
-        if (!quantityInput || !quantityInput.value || quantityInput.value <= 0) {
-          showModernAlert('Please enter a valid quantity', 'warning', 'Quantity Required');
-          return;
-        }
-        
-        if (!priceInput || !priceInput.value || priceInput.value <= 0) {
-          showModernAlert('Please enter a valid price', 'warning', 'Price Required');
-          return;
-        }
-        
-        // Get values
-        const productId = productData.product_id;
-        const productName = productData.name || productData.product_name;
-        const quantity = parseFloat(quantityInput.value) || 0;
-        const price = parseFloat(priceInput.value) || 0;
-        const discount = parseFloat(discountInput?.value) || 0;
-        const advance = parseFloat(advanceInput?.value) || 0;
-        const vatPercent = parseFloat(vatInput?.value) || 5;
-        
-        // Calculate total
-        const subtotal = quantity * price;
-        const total = subtotal - discount; // Price - Discount
-        const vatAmount = total * (vatPercent / 100); // VAT on final amount
-        
-        // Add item to bill
-        const item = {
-          product_id: productId,
-          product_name: productName,
-          quantity: quantity,
-          price: price,
-          discount: discount,
-          advance: advance,
-          vat_percent: vatPercent,
-          vat_amount: vatAmount,
-          subtotal: subtotal, // Store subtotal (before discount)
-          total: total // Store final total (after discount)
-        };
-        
-        bill.push(item);
-        
-        // Update display
-        renderBillTable();
-        updateTotals();
-        
-        // Clear form fields
-        if (productInput) {
-          productInput.value = '';
-          productInput.removeAttribute('data-selected-product');
-        }
-        if (quantityInput) quantityInput.value = '1';
-        if (priceInput) priceInput.value = '0.00';
-        if (discountInput) discountInput.value = '0';
-        if (advanceInput) advanceInput.value = '0';
-        if (vatInput) vatInput.value = '5';
-        
-        // Show success message
-        showModernAlert('Item added to bill successfully', 'success');
+        handleAddItem('desktop');
       });
     }
+
+    // Setup mobile add item handler
+    const addItemBtnMobile = document.getElementById('addItemBtnMobile');
+    if (addItemBtnMobile) {
+      addItemBtnMobile.addEventListener('click', function(e) {
+        e.preventDefault();
+        handleAddItem('mobile');
+      });
+    }
+  }
+
+  function handleAddItem(formType) {
+    // Get form elements based on form type
+    let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput;
+    
+    if (formType === 'mobile') {
+      productInput = document.getElementById('billProductMobile');
+      quantityInput = document.getElementById('billQtyMobile');
+      priceInput = document.getElementById('billRateMobile');
+      discountInput = document.getElementById('billDiscountMobile');
+      advanceInput = document.getElementById('billAdvPaidMobile');
+      vatInput = document.getElementById('vatPercentMobile');
+    } else {
+      productInput = document.getElementById('billProduct');
+      quantityInput = document.getElementById('billQty');
+      priceInput = document.getElementById('billRate');
+      discountInput = document.getElementById('billDiscount');
+      advanceInput = document.getElementById('billAdvPaid');
+      vatInput = document.getElementById('vatPercent');
+    }
+    
+    // Clear previous error states
+    [productInput, quantityInput, priceInput].forEach(input => {
+      if (input) {
+        input.classList.remove('billing-input-error');
+        const errorMsg = input.parentNode.querySelector('.billing-error-message');
+        if (errorMsg) errorMsg.remove();
+      }
+    });
+    
+    // Validate required fields with better error handling
+    let hasErrors = false;
+    
+    if (!productInput || !productInput.value.trim()) {
+      showFieldError(productInput, 'Please select a product');
+      hasErrors = true;
+    }
+    
+    // Get selected product data
+    const selectedProductData = productInput?.getAttribute('data-selected-product');
+    
+    // Debug logging
+    console.log('Product input value:', productInput?.value);
+    console.log('Selected product data:', selectedProductData);
+    
+    if (!selectedProductData && productInput?.value.trim()) {
+      // Check if we have a valid product name but no data attribute
+      // This might happen if the product was selected but the attribute wasn't set properly
+      const productName = productInput.value.trim();
+      if (productName) {
+        // Try to find the product in our loaded products
+        const allProducts = window.allProducts || [];
+        const foundProduct = allProducts.find(p => p.name === productName || p.product_name === productName);
+        
+        if (foundProduct) {
+          // Set the data attribute now
+          productInput.setAttribute('data-selected-product', JSON.stringify(foundProduct));
+          console.log('Found and set product data:', foundProduct);
+        } else {
+          // Add a small delay to allow for any pending DOM updates
+          setTimeout(() => {
+            const retrySelectedData = productInput.getAttribute('data-selected-product');
+            if (!retrySelectedData) {
+              showFieldError(productInput, 'Please select a product from the search results');
+              hasErrors = true;
+            }
+          }, 100);
+          return;
+        }
+      } else {
+        showFieldError(productInput, 'Please select a product from the search results');
+        hasErrors = true;
+      }
+    }
+    
+    let productData;
+    try {
+      productData = JSON.parse(selectedProductData);
+    } catch (error) {
+      console.error('Error parsing product data:', error);
+      showFieldError(productInput, 'Invalid product data. Please select a product again.');
+      hasErrors = true;
+    }
+    
+    if (!quantityInput || !quantityInput.value || quantityInput.value <= 0) {
+      showFieldError(quantityInput, 'Please enter a valid quantity');
+      hasErrors = true;
+    }
+    
+    if (!priceInput || !priceInput.value || priceInput.value <= 0) {
+      showFieldError(priceInput, 'Please enter a valid price');
+      hasErrors = true;
+    }
+    
+    if (hasErrors) {
+      // Show overall error message
+      showModernAlert('Please fix the errors above before adding the item', 'warning', 'Validation Error');
+      return;
+    }
+    
+    // Get values with better parsing
+    const productId = productData.product_id;
+    const productName = productData.name || productData.product_name;
+    const quantity = parseFloat(quantityInput.value) || 0;
+    const price = parseFloat(priceInput.value) || 0;
+    const discount = parseFloat(discountInput?.value) || 0;
+    const advance = parseFloat(advanceInput?.value) || 0;
+    const vatPercent = parseFloat(vatInput?.value) || 5;
+    
+    // Calculate total with better precision
+    const subtotal = Math.round(quantity * price * 100) / 100;
+    const total = Math.round((subtotal - discount) * 100) / 100;
+    const vatAmount = Math.round(total * (vatPercent / 100) * 100) / 100;
+    
+    // Add item to bill
+    const item = {
+      product_id: productId,
+      product_name: productName,
+      quantity: quantity,
+      price: price,
+      discount: discount,
+      advance: advance,
+      vat_percent: vatPercent,
+      vat_amount: vatAmount,
+      subtotal: subtotal, // Store subtotal (before discount)
+      total: total // Store final total (after discount)
+    };
+    
+    bill.push(item);
+    
+    // Update display
+    renderBillTable();
+    updateTotals();
+    
+    // Clear form fields with better UX
+    clearBillingForm(formType);
+    
+    // Show success message with better feedback
+    showBillingSuccess(`${productName} added successfully`);
+    
+         // Focus back to product input for quick addition of next item
+     setTimeout(() => {
+       if (productInput) {
+         productInput.focus();
+       }
+     }, 500);
+   }
+
+  // Helper function to show field-specific errors
+  function showFieldError(input, message) {
+    if (!input) return;
+    
+    input.classList.add('billing-input-error');
+    
+    // Remove existing error message
+    const existingError = input.parentNode.querySelector('.billing-error-message');
+    if (existingError) {
+      existingError.remove();
+    }
+    
+    // Add new error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'billing-error-message';
+    errorDiv.textContent = message;
+    input.parentNode.appendChild(errorDiv);
+  }
+
+  // Helper function to clear billing form
+  function clearBillingForm(formType = 'desktop') {
+    let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput;
+    
+    if (formType === 'mobile') {
+      productInput = document.getElementById('billProductMobile');
+      quantityInput = document.getElementById('billQtyMobile');
+      priceInput = document.getElementById('billRateMobile');
+      discountInput = document.getElementById('billDiscountMobile');
+      advanceInput = document.getElementById('billAdvPaidMobile');
+      vatInput = document.getElementById('vatPercentMobile');
+    } else {
+      productInput = document.getElementById('billProduct');
+      quantityInput = document.getElementById('billQty');
+      priceInput = document.getElementById('billRate');
+      discountInput = document.getElementById('billDiscount');
+      advanceInput = document.getElementById('billAdvPaid');
+      vatInput = document.getElementById('vatPercent');
+    }
+    
+    if (productInput) {
+      productInput.value = '';
+      productInput.removeAttribute('data-selected-product');
+      productInput.classList.remove('billing-input-error');
+    }
+    if (quantityInput) {
+      quantityInput.value = '1';
+      quantityInput.classList.remove('billing-input-error');
+    }
+    if (priceInput) {
+      priceInput.value = '0.00';
+      priceInput.classList.remove('billing-input-error');
+    }
+    if (discountInput) {
+      discountInput.value = '0';
+      discountInput.classList.remove('billing-input-error');
+    }
+    if (advanceInput) {
+      advanceInput.value = '0';
+      advanceInput.classList.remove('billing-input-error');
+    }
+    if (vatInput) {
+      vatInput.value = '5';
+      vatInput.classList.remove('billing-input-error');
+    }
+    
+    // Remove any error messages
+    const errorMessages = document.querySelectorAll('.billing-error-message');
+    errorMessages.forEach(msg => msg.remove());
+  }
+
+  // Helper function to show billing success feedback
+  function showBillingSuccess(message) {
+    // Create success notification
+    const successDiv = document.createElement('div');
+    successDiv.className = 'billing-success';
+    successDiv.innerHTML = `
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span>${message}</span>
+    `;
+    
+    // Insert after the add item button
+    const addItemBtn = document.getElementById('addItemBtn');
+    if (addItemBtn && addItemBtn.parentNode) {
+      addItemBtn.parentNode.insertBefore(successDiv, addItemBtn.nextSibling);
+    }
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+      if (successDiv.parentNode) {
+        successDiv.parentNode.removeChild(successDiv);
+      }
+    }, 3000);
   }
 
   // Setup Search & Reprint functionality
@@ -1372,425 +1622,20 @@ function initializeBillingSystem() {
     });
   }
 
-  // Payment Modal Logic
-  function showPaymentModal({billNum, customer, paid, due, max, total, delivery, status, onOk}) {
-    console.log('DEBUG: showPaymentModal received - due:', due, 'max:', max, 'total:', total);
-    const modal = document.getElementById('paymentModal');
-    document.getElementById('payBillNum').textContent = billNum;
-    document.getElementById('payCustomer').textContent = customer;
-    document.getElementById('payPaid').textContent = `AED ${parseFloat(paid).toFixed(2)}`;
-    document.getElementById('payDue').textContent = `AED ${parseFloat(due).toFixed(2)}`;
-    document.getElementById('payTotal').textContent = `AED ${parseFloat(total).toFixed(2)}`;
-    document.getElementById('payDelivery').textContent = delivery || '-';
-    document.getElementById('payStatus').textContent = status || '-';
-    const input = document.getElementById('payAmountInput');
-    input.value = parseFloat(due).toFixed(2);
-    input.max = max;
-    console.log('DEBUG: Payment input set - value:', input.value, 'max:', input.max);
-    input.focus();
-    modal.classList.remove('hidden');
-    function cleanup() {
-      modal.classList.add('hidden');
-      okBtn.removeEventListener('click', onOkClick);
-      cancelBtn.removeEventListener('click', onCancelClick);
+  // Setup Mobile Billing Toggle
+  function setupMobileBillingToggle() {
+    const mobileBillingToggle = document.getElementById('mobileBillingToggle');
+    if (mobileBillingToggle) {
+      mobileBillingToggle.addEventListener('click', function() {
+        // Show mobile billing interface
+        if (window.TajirPWA && window.TajirPWA.mobileBilling) {
+          window.TajirPWA.mobileBilling.showMobileBilling();
+        } else {
+          showModernAlert('Mobile billing is not available. Please refresh the page.', 'warning', 'Feature Unavailable');
+        }
+      });
     }
-    function onOkClick() {
-      let val = parseFloat(input.value);
-      console.log('DEBUG: Payment validation - val:', val, 'max:', max, 'input.value:', input.value);
-      if (isNaN(val) || val <= 0 || val > max) {
-        console.log('DEBUG: Payment validation failed - isNaN:', isNaN(val), 'val <= 0:', val <= 0, 'val > max:', val > max);
-        showModernAlert(`Enter a valid amount (max AED ${parseFloat(max).toFixed(2)})`, 'error');
-        input.focus();
-        return;
-      }
-      cleanup();
-      onOk(val);
-    }
-    function onCancelClick() {
-      cleanup();
-    }
-    const okBtn = document.getElementById('payModalOk');
-    const cancelBtn = document.getElementById('payModalCancel');
-    okBtn.addEventListener('click', onOkClick);
-    cancelBtn.addEventListener('click', onCancelClick);
   }
-
-  // Payment Progress Modal Logic
-  function showPaymentProgressModal(onDone) {
-    const modal = document.getElementById('paymentProgressModal');
-    const arc = document.getElementById('progressArc');
-    const check = document.getElementById('progressCheck');
-    const msg = document.getElementById('progressStepMsg');
-    const okBtn = document.getElementById('progressOkBtn');
-    modal.classList.remove('hidden');
-    arc.style.strokeDashoffset = 226.194;
-    check.style.opacity = 0;
-    okBtn.classList.add('hidden');
-    msg.textContent = 'Updating Total Amount Paid...';
-    let step = 0;
-    const steps = [
-      { text: 'Updating Total Amount Paid...', percent: 0.33 },
-      { text: 'Updating Payment...', percent: 0.66 },
-      { text: 'Update Status.', percent: 1.0 }
-    ];
-    function animateStep() {
-      if (step < steps.length) {
-        msg.textContent = steps[step].text;
-        arc.style.strokeDashoffset = 226.194 * (1 - steps[step].percent);
-        setTimeout(() => {
-          step++;
-          animateStep();
-        }, 600);
-      } else {
-        arc.style.strokeDashoffset = 0;
-        check.style.opacity = 1;
-        msg.textContent = 'Payment Complete!';
-        okBtn.classList.remove('hidden');
-        okBtn.onclick = () => {
-          modal.classList.add('hidden');
-          if (onDone) onDone();
-        };
-      }
-    }
-    animateStep();
-  }
-
-  // Bill table click handler
-  document.getElementById('billTable')?.querySelector('tbody')?.addEventListener('click', async function(e) {
-    if (e.target.closest('button')) {
-      const row = e.target.closest('tr');
-      const index = Array.from(row.parentNode.children).indexOf(row);
-      
-      if (e.target.closest('button').textContent.includes('Edit')) {
-        editBillItem(index);
-      } else if (e.target.closest('button').textContent.includes('Delete')) {
-        deleteBillItem(index);
-      }
-    }
-  });
-
-      // WhatsApp button event listener
-  document.getElementById('whatsappBtn')?.addEventListener('click', async function() {
-    if (bill.length === 0) {
-      showModernAlert('Please add items to the bill before sharing.', 'warning', 'No Items');
-      return;
-    }
-    
-    if (!document.getElementById('billDate')?.value) {
-      showModernAlert('Please select a Bill Date.', 'warning', 'Bill Date Required');
-      return;
-    }
-    
-    // Validate master is selected
-    const selectedMasterId = window.getSelectedMasterId ? window.getSelectedMasterId() : null;
-    console.log('DEBUG: WhatsApp - selectedMasterId:', selectedMasterId);
-    if (!selectedMasterId) {
-      showModernAlert('Please select a Master from the dropdown.', 'warning', 'Master Required');
-      return;
-    }
-    
-    // Calculate totals
-    const subtotal = bill.reduce((sum, item) => sum + item.total, 0);
-    const totalAdvance = bill.reduce((sum, item) => sum + (item.advance || 0), 0);
-    const vatRate = 0.05; // 5% VAT
-    const vat = subtotal * vatRate;
-    const totalBeforeAdvance = subtotal + vat;
-    const amountDue = totalBeforeAdvance - totalAdvance;
-    
-    // Gather bill data
-    const billData = {
-      bill_number: document.getElementById('billNumber')?.value || '',
-      customer_name: document.getElementById('billCustomer')?.value || '',
-      customer_phone: document.getElementById('billMobile')?.value || '',
-      customer_city: document.getElementById('billCity')?.value || '',
-      customer_area: document.getElementById('billArea')?.value || '',
-      customer_trn: document.getElementById('billTRN')?.value || '',
-      customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
-      business_name: document.getElementById('billBusinessName')?.value || '',
-      business_address: document.getElementById('billBusinessAddress')?.value || '',
-      bill_date: document.getElementById('billDate')?.value || '',
-      delivery_date: document.getElementById('deliveryDate')?.value || '',
-      trial_date: document.getElementById('trialDate')?.value || '',
-      master_id: window.getSelectedMasterId ? window.getSelectedMasterId() : null,
-      vat_percent: 5,
-      subtotal: subtotal,
-      vat_amount: vat,
-      total_amount: totalBeforeAdvance,
-      advance_paid: totalAdvance,
-      balance_amount: amountDue
-    };
-
-    // Prepare items data separately
-    const itemsData = bill.map(item => ({
-      product_id: item.product_id,
-      product_name: item.product_name,
-      quantity: item.quantity,
-      rate: item.price,
-      discount: item.discount || 0,
-      advance_paid: item.advance || 0,
-      total_amount: item.total
-    }));
-    
-    try {
-      // Save bill to backend
-      const response = await fetch('/api/bills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bill: billData, items: itemsData })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        const billId = result.bill_id || result.id;
-        
-        if (billId) {
-          // Send WhatsApp message
-          const whatsappResponse = await fetch(`/api/bills/${billId}/whatsapp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              phone: document.getElementById('billMobile')?.value || '',
-              language: 'en'
-            })
-          });
-          
-          if (whatsappResponse.ok) {
-            const whatsappResult = await whatsappResponse.json();
-            if (whatsappResult.whatsapp_link) {
-              window.open(whatsappResult.whatsapp_link, '_blank');
-            }
-            
-            // Reset form after successful WhatsApp
-            if (window.resetBillingForm) {
-              await window.resetBillingForm();
-            }
-          } else {
-            const errorData = await whatsappResponse.json();
-            showModernAlert(`Error sending WhatsApp: ${errorData.error || 'Unknown error'}`, 'error', 'WhatsApp Error');
-          }
-        } else {
-          showModernAlert('Error: Could not get bill ID from server response.', 'error', 'Server Error');
-        }
-      } else {
-        const errorData = await response.json();
-        showModernAlert(`Error saving bill: ${errorData.error || 'Unknown error'}`, 'error', 'Save Error');
-      }
-    } catch (error) {
-      console.error('Error sending WhatsApp:', error);
-      showModernAlert('Error sending WhatsApp. Please try again.', 'error', 'Network Error');
-    }
-  });
-
-  // Email button event listener
-  document.getElementById('emailBtn')?.addEventListener('click', async function() {
-    if (bill.length === 0) {
-      showModernAlert('Please add items to the bill before sending email.', 'warning', 'No Items');
-      return;
-    }
-    
-    if (!document.getElementById('billDate')?.value) {
-      showModernAlert('Please select a Bill Date.', 'warning', 'Bill Date Required');
-      return;
-    }
-    
-    // Validate master is selected
-    const selectedMasterId = window.getSelectedMasterId ? window.getSelectedMasterId() : null;
-    if (!selectedMasterId) {
-      showModernAlert('Please select a Master from the dropdown.', 'warning', 'Master Required');
-      return;
-    }
-    
-    // Calculate totals
-    const subtotal = bill.reduce((sum, item) => sum + item.total, 0);
-    const totalAdvance = bill.reduce((sum, item) => sum + (item.advance || 0), 0);
-    const vatRate = 0.05; // 5% VAT
-    const vat = subtotal * vatRate;
-    const totalBeforeAdvance = subtotal + vat;
-    const amountDue = totalBeforeAdvance - totalAdvance;
-    
-    // Gather bill data
-    const billData = {
-      bill_number: document.getElementById('billNumber')?.value || '',
-      customer_name: document.getElementById('billCustomer')?.value || '',
-      customer_phone: document.getElementById('billMobile')?.value || '',
-      customer_city: document.getElementById('billCity')?.value || '',
-      customer_area: document.getElementById('billArea')?.value || '',
-      customer_trn: document.getElementById('billTRN')?.value || '',
-      customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
-      business_name: document.getElementById('billBusinessName')?.value || '',
-      business_address: document.getElementById('billBusinessAddress')?.value || '',
-      bill_date: document.getElementById('billDate')?.value || '',
-      delivery_date: document.getElementById('deliveryDate')?.value || '',
-      trial_date: document.getElementById('trialDate')?.value || '',
-      master_id: window.getSelectedMasterId ? window.getSelectedMasterId() : null,
-      vat_percent: 5,
-      subtotal: subtotal,
-      vat_amount: vat,
-      total_amount: totalBeforeAdvance,
-      advance_paid: totalAdvance,
-      balance_amount: amountDue
-    };
-
-    // Prepare items data separately
-    const itemsData = bill.map(item => ({
-      product_id: item.product_id,
-      product_name: item.product_name,
-      quantity: item.quantity,
-      rate: item.price,
-      discount: item.discount || 0,
-      advance_paid: item.advance || 0,
-      total_amount: item.total
-    }));
-    
-    try {
-      // Save bill to backend
-      const response = await fetch('/api/bills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bill: billData, items: itemsData })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        const billId = result.bill_id || result.id;
-        
-        if (billId) {
-          // Send email
-          const emailResponse = await fetch(`/api/bills/${billId}/send-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: prompt('Please enter customer email address:') || '',
-              language: 'en'
-            })
-          });
-          
-                     if (emailResponse.ok) {
-             const emailResult = await emailResponse.json();
-             showModernAlert('Email sent successfully!', 'success', 'Success');
-            
-            // Reset form after successful email
-            if (window.resetBillingForm) {
-              await window.resetBillingForm();
-            }
-          } else {
-            const errorData = await emailResponse.json();
-            showModernAlert(`Error sending email: ${errorData.error || 'Unknown error'}`, 'error', 'Email Error');
-          }
-        } else {
-          showModernAlert('Error: Could not get bill ID from server response.', 'error', 'Server Error');
-        }
-      } else {
-        const errorData = await response.json();
-        showModernAlert(`Error saving bill: ${errorData.error || 'Unknown error'}`, 'error', 'Save Error');
-      }
-    } catch (error) {
-      console.error('Error sending email:', error);
-      showModernAlert('Error sending email. Please try again.', 'error', 'Network Error');
-    }
-  });
-
-  // Print button event listener
-  document.getElementById('printBtn')?.addEventListener('click', async function() {
-    if (bill.length === 0) {
-      showModernAlert('Please add items to the bill before printing.', 'warning', 'No Items');
-      return;
-    }
-    
-    if (!document.getElementById('billDate')?.value) {
-      showModernAlert('Please select a Bill Date.', 'warning', 'Bill Date Required');
-      return;
-    }
-    
-    // Validate master is selected
-    const selectedMasterId = window.getSelectedMasterId ? window.getSelectedMasterId() : null;
-    if (!selectedMasterId) {
-      showModernAlert('Please select a Master from the dropdown.', 'warning', 'Master Required');
-      return;
-    }
-    
-    // Calculate totals
-    const subtotal = bill.reduce((sum, item) => sum + item.total, 0);
-    const totalAdvance = bill.reduce((sum, item) => sum + (item.advance || 0), 0);
-    const vatRate = 0.05; // 5% VAT
-    const vat = subtotal * vatRate;
-    const totalBeforeAdvance = subtotal + vat;
-    const amountDue = totalBeforeAdvance - totalAdvance;
-    
-    // Gather bill data
-    const billData = {
-      bill_number: document.getElementById('billNumber')?.value || '',
-      customer_name: document.getElementById('billCustomer')?.value || '',
-      customer_phone: document.getElementById('billMobile')?.value || '',
-      customer_city: document.getElementById('billCity')?.value || '',
-      customer_area: document.getElementById('billArea')?.value || '',
-      customer_trn: document.getElementById('billTRN')?.value || '',
-      customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
-      business_name: document.getElementById('billBusinessName')?.value || '',
-      business_address: document.getElementById('billBusinessAddress')?.value || '',
-      bill_date: document.getElementById('billDate')?.value || '',
-      delivery_date: document.getElementById('deliveryDate')?.value || '',
-      trial_date: document.getElementById('trialDate')?.value || '',
-      master_id: window.getSelectedMasterId ? window.getSelectedMasterId() : null,
-      vat_percent: 5,
-      subtotal: subtotal,
-      vat_amount: vat,
-      total_amount: totalBeforeAdvance,
-      advance_paid: totalAdvance,
-      balance_amount: amountDue
-    };
-
-    // Prepare items data separately
-    const itemsData = bill.map(item => ({
-      product_id: item.product_id,
-      product_name: item.product_name,
-      quantity: item.quantity,
-      rate: item.price,
-      discount: item.discount || 0,
-      advance_paid: item.advance || 0,
-      total_amount: item.total
-    }));
-    
-    try {
-      console.log('DEBUG: Attempting to save bill with data:', billData);
-      
-      // Save bill to backend
-      const response = await fetch('/api/bills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bill: billData, items: itemsData })
-      });
-      
-      console.log('DEBUG: Response status:', response.status);
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('DEBUG: Backend response:', result);
-        const billId = result.bill_id || result.id;
-        
-        if (billId) {
-          console.log('DEBUG: Bill ID received:', billId);
-          // Open print page in new tab
-          window.open(`/api/bills/${billId}/print`, '_blank');
-          
-          // Reset form after successful print
-          if (window.resetBillingForm) {
-            await window.resetBillingForm();
-          }
-        } else {
-          console.log('DEBUG: No bill ID in response');
-          showModernAlert('Error: Could not get bill ID from server response.', 'error', 'Server Error');
-        }
-      } else {
-        const errorData = await response.json();
-        console.log('DEBUG: Backend error:', errorData);
-        showModernAlert(`Error saving bill: ${errorData.error || 'Unknown error'}`, 'error', 'Save Error');
-      }
-    } catch (error) {
-      console.error('Error printing bill:', error);
-      showModernAlert('Error printing bill. Please try again.', 'error', 'Network Error');
-    }
-  });
 
   // Initialize billing system
   setDefaultBillingDates(); // This is now async but we don't need to await it
@@ -1803,6 +1648,7 @@ function initializeBillingSystem() {
   setupCustomerQuickSearch();
   setupProductQuickAdd();
   setupSmartDefaults();
+  setupMobileBillingToggle();
   
   console.log('🚀 Billing system initialized successfully!');
   

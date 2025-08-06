@@ -2,6 +2,19 @@
 
 let editingCustomerId = null;
 
+// Debounce function for search
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 // Load and render customers with loading effects
 async function loadCustomers() {
   // Show loading overlay
@@ -127,8 +140,132 @@ async function loadCustomers() {
       setupCustomerTableHandlers();
       setupCustomerFormHandler();
       setupCustomerTypeHandler();
-    }
+      
+      // Add a small delay to ensure search input is available
+      setTimeout(() => {
+        setupCustomerSearch();
+      }, 100);
+      }
+}
+
+// Search customers function
+async function searchCustomers(query) {
+  console.log('searchCustomers called with query:', query);
+  
+  const overlay = document.getElementById('customerLoadingOverlay');
+  const skeleton = document.getElementById('customerSkeleton');
+  const table = document.getElementById('customerTable');
+  const form = document.getElementById('customerForm');
+  
+  if (overlay) overlay.classList.remove('hidden');
+  if (skeleton) skeleton.classList.remove('hidden');
+  if (table) table.classList.add('opacity-0', 'translate-y-4');
+  if (form) form.classList.add('opacity-0', 'translate-y-4');
+  
+  try {
+    const url = query ? `/api/customers?search=${encodeURIComponent(query)}` : '/api/customers';
+    console.log('Fetching URL:', url);
+    const resp = await fetch(url);
+    const customers = await resp.json();
+    console.log('Search results:', customers.length, 'customers found');
+    
+    // Store customers globally for bill creation
+    window.customers = customers;
+    
+    const tbody = document.getElementById('customerTableBody');
+    if (!tbody) return;
+      
+    // Simulate loading delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    tbody.innerHTML = customers.length
+        ? customers.map((c, index) => `
+          <tr class="customer-item group hover:bg-neutral-800/50 transition-all duration-200 transform hover:scale-[1.01] hover:shadow-sm" style="animation-delay: ${index * 0.1}s;">
+            <td class="px-3 py-3">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${c.customer_type === 'Business' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}">
+                ${c.customer_type || 'Individual'}
+              </span>
+            </td>
+            <td class="px-3 py-3">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-indigo-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <span class="font-medium text-neutral-200 group-hover:text-white transition-colors duration-200">${c.name || ''}</span>
+              </div>
+            </td>
+            <td class="px-3 py-3">
+              <span class="text-neutral-200 group-hover:text-white transition-colors duration-200">${c.business_name || ''}</span>
+            </td>
+            <td class="px-3 py-3">
+              <span class="text-neutral-200 group-hover:text-white transition-colors duration-200">${c.phone || ''}</span>
+            </td>
+            <td class="px-3 py-3">
+              <span class="text-neutral-200 group-hover:text-white transition-colors duration-200">${c.trn || ''}</span>
+            </td>
+            <td class="px-3 py-3">
+              <span class="text-neutral-200 group-hover:text-white transition-colors duration-200">${c.city || ''}</span>
+            </td>
+            <td class="px-3 py-3">
+              <span class="text-neutral-200 group-hover:text-white transition-colors duration-200">${c.area || ''}</span>
+            </td>
+            <td class="px-3 py-3 flex gap-2">
+              <button class="edit-customer-btn text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 px-3 py-2 rounded transition-all duration-200 transform hover:scale-110 hover:shadow-sm" data-id="${c.customer_id}">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+              </button>
+              <button class="delete-customer-btn text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded transition-all duration-200 transform hover:scale-110 hover:shadow-sm" data-id="${c.customer_id}">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+          </td>
+        </tr>
+      `).join('')
+        : `
+          <tr>
+            <td colspan="8" class="px-6 py-8 text-center">
+              <div class="w-16 h-16 mx-auto mb-4 bg-neutral-800/50 rounded-full flex items-center justify-center">
+                <svg class="w-8 h-8 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              <p class="text-neutral-400 font-medium">No customers found</p>
+              <p class="text-neutral-500 text-sm mt-1">${query ? 'Try a different search term' : 'Create your first customer above'}</p>
+            </td>
+          </tr>
+        `;
+      
+      // Animate in the content
+      setTimeout(() => {
+        if (form) {
+          form.classList.remove('opacity-0', 'translate-y-4');
+          form.classList.add('opacity-100', 'translate-y-0');
+        }
+      }, 200);
+      
+      setTimeout(() => {
+        if (table) {
+          table.classList.remove('opacity-0', 'translate-y-4');
+          table.classList.add('opacity-100', 'translate-y-0');
+        }
+      }, 400);
+      
+      // Setup event handlers for the new rows
+      setupCustomerTableHandlers();
+      
+      // Re-setup search after updating table
+      setTimeout(() => {
+        setupCustomerSearch();
+      }, 100);
+      
+  } catch (error) {
+    console.error('Error searching customers:', error);
+  } finally {
+    // Hide loading overlay
+    if (overlay) overlay.classList.add('hidden');
+    if (skeleton) skeleton.classList.add('hidden');
   }
+}
 
 // Setup customer table event handlers
 function setupCustomerTableHandlers() {
@@ -181,21 +318,10 @@ async function handleCustomerFormSubmit(e) {
   e.preventDefault();
   
   const customerData = {
-    customer_type: document.getElementById('customerType').value,
     name: document.getElementById('customerName').value,
-    phone: document.getElementById('customerPhone').value,
-    city: document.getElementById('customerCity').value,
-    area: document.getElementById('customerArea').value,
-    address: document.getElementById('customerAddress').value,
-    email: document.getElementById('customerEmail').value
+    phone: document.getElementById('customerMobile').value,
+    city: document.getElementById('customerCity').value
   };
-  
-  // Add business fields if customer type is Business
-  if (customerData.customer_type === 'Business') {
-    customerData.business_name = document.getElementById('customerBusinessName').value;
-    customerData.business_address = document.getElementById('customerBusinessAddress').value;
-    customerData.trn = document.getElementById('customerTRN').value;
-  }
   
   if (!customerData.name || !customerData.phone) {
     alert('Name and phone are required');
@@ -284,25 +410,14 @@ async function editCustomer(id) {
     const customer = await response.json();
     
     if (customer) {
-      document.getElementById('customerType').value = customer.customer_type || 'Individual';
+      // Populate only the fields that exist in the form
       document.getElementById('customerName').value = customer.name || '';
-      document.getElementById('customerPhone').value = customer.phone || '';
+      document.getElementById('customerMobile').value = customer.phone || '';
       document.getElementById('customerCity').value = customer.city || '';
-      document.getElementById('customerArea').value = customer.area || '';
-      document.getElementById('customerAddress').value = customer.address || '';
-      document.getElementById('customerEmail').value = customer.email || '';
-      
-      // Set business fields if customer type is Business
-      if (customer.customer_type === 'Business') {
-        document.getElementById('customerBusinessName').value = customer.business_name || '';
-        document.getElementById('customerBusinessAddress').value = customer.business_address || '';
-        document.getElementById('customerTRN').value = customer.trn || '';
-      }
       
       editingCustomerId = id;
       
-      // Trigger customer type change to show/hide business fields
-      handleCustomerTypeChange();
+      console.log('Customer data populated for editing:', customer);
     }
   } catch (error) {
     console.error('Error editing customer:', error);
@@ -315,13 +430,6 @@ function resetCustomerForm() {
   
   if (form) {
     form.reset();
-    
-    // Hide business fields
-    const businessFields = document.querySelectorAll('.business-field');
-    const trnField = document.querySelector('.trn-field');
-    
-    businessFields.forEach(field => field.style.display = 'none');
-    if (trnField) trnField.style.display = 'none';
   }
   
   editingCustomerId = null;
@@ -453,11 +561,41 @@ async function initializeAreaAutocompleteWithData() {
 
 
 
+// Setup customer search handler
+function setupCustomerSearch() {
+  const customerSearch = document.getElementById('customerSearch');
+  
+  if (customerSearch) {
+    // Remove existing event listener if any
+    customerSearch.removeEventListener('input', debouncedCustomerSearch);
+    customerSearch.addEventListener('input', debouncedCustomerSearch);
+  }
+}
+
+// Debounced customer search
+const debouncedCustomerSearch = debounce(handleCustomerSearch, 300);
+
+// Handle customer search
+async function handleCustomerSearch(e) {
+  const searchTerm = e.target.value.trim();
+  
+  if (searchTerm.length < 2) {
+    // If search term is too short, show all customers
+    await loadCustomers();
+    return;
+  }
+  
+  await searchCustomers(searchTerm);
+}
+
 // Make functions globally available
 window.loadCustomers = loadCustomers;
+window.searchCustomers = searchCustomers;
+window.setupCustomerSearch = setupCustomerSearch;
 window.initializeAreaAutocompleteWithData = initializeAreaAutocompleteWithData;
 window.editCustomer = editCustomer;
 window.resetCustomerForm = resetCustomerForm;
+window.setupCustomerTableHandlers = setupCustomerTableHandlers;
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {

@@ -1,0 +1,509 @@
+/* Mobile Enhancements for Tajir POS PWA - PROPERLY SCOPED */
+
+/* Touch-friendly button sizes - MOBILE ONLY */
+@media (max-width: 768px) {
+  .btn-mobile {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+    border-radius: 8px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Mobile-optimized input fields */
+  .input-mobile {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    transition: border-color 0.2s ease;
+  }
+
+  .input-mobile:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Mobile navigation */
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #374151;
+    padding: 8px 0;
+    z-index: 1000;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 12px;
+    min-height: 60px;
+    color: #9ca3af;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    border-radius: 8px;
+    min-width: 60px;
+    justify-content: center;
+  }
+
+  .mobile-nav-item:hover {
+    color: #f9fafb;
+    background: rgba(99, 102, 241, 0.1);
+  }
+
+  .mobile-nav-item.active {
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.2);
+  }
+
+  .mobile-nav-item svg {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+    stroke-width: 2;
+  }
+
+  .mobile-nav-item span {
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  /* Ensure mobile nav is visible on mobile devices */
+  .mobile-nav {
+    display: flex !important;
+  }
+  
+  /* Add bottom padding to main content to account for mobile nav */
+  main {
+    padding-bottom: 80px !important;
+  }
+  
+  /* Hide desktop sidebar on mobile */
+  aside {
+    display: none !important;
+  }
+
+  /* Product Section Mobile Styles */
+  #productSec .page {
+    padding: 16px;
+  }
+
+  #productSec .modern-card {
+    margin-bottom: 20px;
+    border-radius: 12px;
+    background: rgba(17, 24, 39, 0.9);
+    border: 1px solid #374151;
+  }
+
+  /* Mobile Product Search */
+  #productSearch {
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 16px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #374151 !important;
+    background-color: rgba(17, 24, 39, 0.7) !important;
+    color: #f9fafb !important;
+    margin-bottom: 16px !important;
+  }
+
+  #productSearch:focus {
+    outline: none !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+  }
+
+  /* Mobile Product Form Layout */
+  #productForm {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  #productForm .grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  #productForm .col-span-3,
+  #productForm .col-span-5,
+  #productForm .col-span-2 {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Mobile Product Form Inputs */
+  #productForm input,
+  #productForm select {
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 16px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #374151 !important;
+    background-color: rgba(17, 24, 39, 0.7) !important;
+    color: #f9fafb !important;
+  }
+
+  #productForm input:focus,
+  #productForm select:focus {
+    outline: none !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+  }
+
+  /* Mobile Product Form Labels */
+  #productForm label {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #d1d5db !important;
+    margin-bottom: 6px !important;
+    display: block !important;
+  }
+
+  /* Mobile Product Submit Button */
+  #productForm button[type="submit"] {
+    width: 100% !important;
+    min-height: 52px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    padding: 16px 24px !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+    transition: all 0.3s ease !important;
+    margin-top: 8px !important;
+  }
+
+  #productForm button[type="submit"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4) !important;
+  }
+
+  #productForm button[type="submit"]:active {
+    transform: translateY(0) !important;
+  }
+
+  /* Customer Section Mobile Styles */
+  #customerSec .page {
+    padding: 16px;
+  }
+
+  #customerSec .modern-card {
+    margin-bottom: 20px;
+    border-radius: 12px;
+    background: rgba(17, 24, 39, 0.9);
+    border: 1px solid #374151;
+  }
+
+  #customerSearch {
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 16px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #374151 !important;
+    background-color: rgba(17, 24, 39, 0.7) !important;
+    color: #f9fafb !important;
+    margin-bottom: 16px !important;
+  }
+
+  #customerSearch:focus {
+    outline: none !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+  }
+
+  #customerForm {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  #customerForm .grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  #customerForm .col-span-4,
+  #customerForm .col-span-2 {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+
+  #customerForm input {
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 16px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #374151 !important;
+    background-color: rgba(17, 24, 39, 0.7) !important;
+    color: #f9fafb !important;
+  }
+
+  #customerForm input:focus {
+    outline: none !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+  }
+
+  #customerForm label {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #d1d5db !important;
+    margin-bottom: 6px !important;
+    display: block !important;
+  }
+
+  #customerForm button[type="submit"] {
+    width: 100% !important;
+    min-height: 52px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    padding: 16px 24px !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+    transition: all 0.3s ease !important;
+    margin-top: 8px !important;
+  }
+
+  #customerForm button[type="submit"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4) !important;
+  }
+
+  #customerForm button[type="submit"]:active {
+    transform: translateY(0) !important;
+  }
+
+  /* Customer Table Mobile Styles */
+  #customerTable {
+    overflow-x: auto !important;
+    display: block !important;
+    white-space: nowrap !important;
+  }
+  
+  #customerTable thead,
+  #customerTable tbody {
+    display: table !important;
+    width: 100% !important;
+    min-width: 600px !important;
+  }
+  
+  #customerTable th,
+  #customerTable td {
+    white-space: nowrap !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  /* Mobile Cards Container */
+  .mobile-cards-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .product-card-mobile,
+  .customer-card-mobile,
+  .employee-card-mobile,
+  .vat-card-mobile {
+    background: rgba(17, 24, 39, 0.8);
+    border: 1px solid #374151;
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .product-card-mobile:hover,
+  .customer-card-mobile:hover,
+  .employee-card-mobile:hover,
+  .vat-card-mobile:hover {
+    background: rgba(17, 24, 39, 0.9);
+    border-color: #6366f1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  }
+
+  .product-card-content,
+  .customer-card-content,
+  .employee-card-content,
+  .vat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .product-name,
+  .customer-name,
+  .employee-name,
+  .vat-rate {
+    font-size: 16px;
+    font-weight: 600;
+    color: #f9fafb;
+    margin-bottom: 4px;
+  }
+
+  .product-type,
+  .customer-type,
+  .employee-role,
+  .vat-description {
+    font-size: 14px;
+    color: #9ca3af;
+    margin-bottom: 4px;
+  }
+
+  .product-price,
+  .customer-phone,
+  .employee-mobile,
+  .vat-effective {
+    font-size: 14px;
+    color: #6366f1;
+    font-weight: 500;
+  }
+
+  .product-card-actions,
+  .customer-card-actions,
+  .employee-card-actions,
+  .vat-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .edit-product-btn,
+  .edit-customer-btn,
+  .edit-employee-btn,
+  .edit-vat-btn,
+  .delete-product-btn,
+  .delete-customer-btn,
+  .delete-employee-btn,
+  .delete-vat-btn {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    min-height: 36px;
+    min-width: 36px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .edit-product-btn:hover,
+  .edit-customer-btn:hover,
+  .edit-employee-btn:hover,
+  .edit-vat-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+  }
+
+  .delete-product-btn:hover,
+  .delete-customer-btn:hover,
+  .delete-employee-btn:hover,
+  .delete-vat-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  /* Mobile View Toggle */
+  .mobile-view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(17, 24, 39, 0.8);
+    border: 1px solid #374151;
+    border-radius: 8px;
+    color: #d1d5db;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 16px;
+  }
+
+  .mobile-view-toggle:hover {
+    background: rgba(17, 24, 39, 0.9);
+    border-color: #6366f1;
+    color: #f9fafb;
+  }
+
+  /* Mobile Search Inputs */
+  #customerSearch,
+  #productSearch,
+  #employeeSearch {
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 16px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #374151 !important;
+    background-color: rgba(17, 24, 39, 0.7) !important;
+    color: #f9fafb !important;
+    margin-bottom: 16px !important;
+  }
+
+  #customerSearch:focus,
+  #productSearch:focus,
+  #employeeSearch:focus {
+    outline: none !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+  }
+}
+
+/* Additional mobile-specific styles for smaller screens */
+@media (max-width: 480px) {
+  .mobile-nav-item {
+    min-width: 50px;
+    padding: 6px 8px;
+  }
+
+  .mobile-nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-nav-item span {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .container-mobile {
+    padding: 12px;
+  }
+
+  .card-mobile-body {
+    padding: 12px;
+  }
+
+  .modal-mobile-content {
+    margin: 12px;
+    padding: 16px;
+  }
+} 

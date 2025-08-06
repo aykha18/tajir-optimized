@@ -19,7 +19,8 @@
   <script src="{{ url_for('static', filename='js/modules/shop-settings.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/dashboard.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/billing-system.js') }}"></script>
-<script src="{{ url_for('static', filename='js/modules/mobile-enhancements.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/mobile-enhancements.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/mobile-screens.js') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -104,10 +105,6 @@
         <div class="flex justify-between items-center">
           <h3 class="text-2xl font-semibold tracking-tight">Billing</h3>
           <div class="flex gap-2">
-            <button id="quickAddModeBtn" class="modern-btn modern-btn-primary mobile-btn">
-              <svg data-lucide="zap" class="w-4 h-4"></svg>
-              Quick Add Mode
-          </button>
             <button id="searchInvoiceBtn" class="modern-btn modern-btn-secondary mobile-btn">
               <svg data-lucide="search" class="w-4 h-4"></svg>
               Search & Reprint
@@ -203,8 +200,19 @@
 
         <!-- ITEM ENTRY -->
         <div class="modern-card">
-          <h4 class="text-xs font-medium text-neutral-300 mb-2">Add Product</h4>
-          <div class="grid grid-cols-12 gap-3 compact-form">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="text-xs font-medium text-neutral-300">Add Product</h4>
+            <!-- Mobile Billing Toggle (only visible on mobile) -->
+            <button id="mobileBillingToggle" class="md:hidden bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700 transition-colors">
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+              </svg>
+              Mobile Billing
+            </button>
+          </div>
+          
+          <!-- Desktop Layout (hidden on mobile) -->
+          <div class="hidden md:grid grid-cols-12 gap-3 compact-form">
             <div class="col-span-6 flex flex-col">
               <label for="billProduct">Product</label>
               <input id="billProduct" type="text" placeholder="Search products..." required class="compact-form">
@@ -230,6 +238,53 @@
               <input id="vatPercent" type="number" min="0" step=".01" value="5" class="compact-form">
             </div>
             <button id="addItemBtn" class="col-span-1 modern-btn modern-btn-primary self-end">Add</button>
+          </div>
+
+          <!-- Mobile Layout (visible only on mobile) -->
+          <div class="md:hidden space-y-4">
+            <!-- Product Row -->
+            <div class="flex flex-col">
+              <label for="billProductMobile" class="text-sm font-medium text-neutral-300 mb-1">Product</label>
+              <input id="billProductMobile" type="text" placeholder="Search products..." required class="w-full px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60">
+            </div>
+
+            <!-- Rate and Quantity Row -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col">
+                <label for="billRateMobile" class="text-sm font-medium text-neutral-300 mb-1">Rate (AED)</label>
+                <input id="billRateMobile" type="number" min="0" step=".01" placeholder="0.00" required class="w-full px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60">
+              </div>
+              <div class="flex flex-col">
+                <label for="billQtyMobile" class="text-sm font-medium text-neutral-300 mb-1">Quantity</label>
+                <input id="billQtyMobile" type="number" min="1" value="1" required class="w-full px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60">
+              </div>
+            </div>
+
+            <!-- Discount and Advance Row -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col">
+                <label for="billDiscountMobile" class="text-sm font-medium text-neutral-300 mb-1">Discount</label>
+                <input id="billDiscountMobile" type="number" min="0" step=".01" value="0" class="w-full px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60">
+              </div>
+              <div class="flex flex-col">
+                <label for="billAdvPaidMobile" class="text-sm font-medium text-neutral-300 mb-1">Advance</label>
+                <input id="billAdvPaidMobile" type="number" min="0" value="0" class="w-full px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60">
+              </div>
+            </div>
+
+            <!-- VAT Row -->
+            <div class="flex flex-col">
+              <label for="vatPercentMobile" class="text-sm font-medium text-neutral-300 mb-1">VAT %</label>
+              <input id="vatPercentMobile" type="number" min="0" step=".01" value="5" class="w-full px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60">
+            </div>
+
+            <!-- Add Button -->
+            <button id="addItemBtnMobile" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              Add Item
+            </button>
           </div>
         </div>
 
@@ -1078,5 +1133,25 @@
 {{ super() }}
 <!-- JavaScript moved to external files: app.js and modules/ -->
 
+<script>
     let editingCustomerId = null;
+    
+    // Initialize MobileScreens module
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.innerWidth <= 768) {
+            const mobileScreens = new MobileScreens();
+            
+            
+            // Expose mobileScreens globally for debugging
+            window.mobileScreens = mobileScreens;
+            
+            // Add manual trigger for view toggles
+            window.setupMobileViewToggles = function() {
+                if (window.mobileScreens) {
+                    window.mobileScreens.setupViewToggles();
+                }
+            };
+        }
+    });
+</script>
 {% endblock %} 
