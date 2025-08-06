@@ -71,18 +71,21 @@ class MobileEnhancements {
         billTable.removeEventListener('touchmove', this.handleTouchMove.bind(this));
         billTable.removeEventListener('touchend', this.handleTouchEnd.bind(this));
 
-        // Add swipe functionality to table rows
+        // Add swipe functionality to table rows ONLY
         billTable.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
         billTable.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
         billTable.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: true });
-        console.log('MobileEnhancements: Swipe event listeners added');
+        console.log('MobileEnhancements: Swipe event listeners added for billing table only');
     }
 
     handleTouchStart(e) {
         const row = e.target.closest('tr');
         if (!row || row.parentElement.tagName === 'THEAD') return;
 
-        console.log('MobileEnhancements: Touch start on row:', row);
+        // Prevent event bubbling to avoid conflicts with other swipe systems
+        e.stopPropagation();
+        
+        console.log('MobileEnhancements: Touch start on billing row:', row);
         this.touchStartX = e.touches[0].clientX;
         this.touchStartY = e.touches[0].clientY;
         this.currentRow = row;
@@ -91,6 +94,9 @@ class MobileEnhancements {
 
     handleTouchMove(e) {
         if (!this.currentRow) return;
+
+        // Prevent event bubbling to avoid conflicts
+        e.stopPropagation();
 
         const touchX = e.touches[0].clientX;
         const touchY = e.touches[0].clientY;
@@ -108,17 +114,20 @@ class MobileEnhancements {
             const transform = deltaX > 0 ? -swipeDistance : swipeDistance;
             
             this.currentRow.style.transform = `translateX(${transform}px)`;
-            console.log('MobileEnhancements: Swiping row, transform:', transform);
+            console.log('MobileEnhancements: Swiping billing row, transform:', transform);
         }
     }
 
     handleTouchEnd(e) {
         if (!this.currentRow || !this.isSwiping) return;
 
+        // Prevent event bubbling to avoid conflicts
+        e.stopPropagation();
+
         const touchX = e.changedTouches[0].clientX;
         const deltaX = this.touchStartX - touchX;
 
-        console.log('MobileEnhancements: Touch end, deltaX:', deltaX);
+        console.log('MobileEnhancements: Touch end on billing row, deltaX:', deltaX);
 
         // If swipe distance is sufficient, show actions
         if (Math.abs(deltaX) > 60) {

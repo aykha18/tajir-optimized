@@ -2,8 +2,20 @@
 <html lang="{{ get_user_language() }}" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#3b82f6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tajir">
+  <meta name="description" content="Professional Point of Sale system for UAE businesses">
+  
   <title>{% block title %}{{ user_plan_info.plan_display_name if user_plan_info else 'Tajir' }}{% endblock %}</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="apple-touch-icon" href="/static/icons/icon-152.png">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   
@@ -13,6 +25,10 @@
   <!-- Custom CSS Files -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-enhancements.css') }}">
+  
+  <!-- PWA Initialization -->
+  <script src="{{ url_for('static', filename='js/pwa-init.js') }}"></script>
   
   <style>
     @keyframes fade-in{0%{opacity:0;transform:translateY(12px);filter:blur(4px)}100%{opacity:1;transform:none;filter:blur(0)}}

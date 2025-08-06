@@ -259,14 +259,39 @@ def app_page():
 def test_page():
     return render_template('app_test.html')
 
-@app.route('/mobile-test')
-def mobile_test():
-    return send_file('test_mobile_debug.html')
+
+
+
+
+
 
 @app.route('/pricing')
 def pricing():
     user_plan_info = get_user_plan_info()
     return render_template('pricing.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('static', 'manifest.json')
+
+@app.route('/sw.js')
+def service_worker():
+    response = send_from_directory('.', 'sw.js')
+    response.headers['Content-Type'] = 'application/javascript'
+    response.headers['Service-Worker-Allowed'] = '/'
+    return response
+
+@app.route('/app-template')
+def app_template():
+    return send_from_directory('templates', 'app.html')
+
+@app.route('/pwa-status')
+def pwa_status():
+    user_plan_info = get_user_plan_info()
+    return render_template('pwa-status.html', 
                         user_plan_info=user_plan_info,
                         get_user_language=get_user_language,
                         get_translated_text=get_translated_text)
@@ -457,7 +482,7 @@ def get_customers():
         customers = conn.execute('SELECT * FROM customers WHERE phone = ? AND user_id = ?', (phone, user_id)).fetchall()
     elif search:
         like_search = f"%{search}%"
-        customers = conn.execute('SELECT * FROM customers WHERE user_id = ? AND (name LIKE ? OR phone LIKE ?) ORDER BY name', (user_id, like_search, like_search)).fetchall()
+        customers = conn.execute('SELECT * FROM customers WHERE user_id = ? AND (name LIKE ? OR phone LIKE ? OR business_name LIKE ?) ORDER BY name', (user_id, like_search, like_search, like_search)).fetchall()
     else:
         customers = conn.execute('SELECT * FROM customers WHERE user_id = ? ORDER BY name', (user_id,)).fetchall()
     conn.close()
