@@ -890,6 +890,26 @@ textarea.compact-form:hover {
     width: 100%;
     min-height: 48px;
   }
+  
+  /* Horizontal scrolling for bill table on mobile */
+  #billTable {
+    overflow-x: auto !important;
+    display: block !important;
+    white-space: nowrap !important;
+  }
+  
+  #billTable thead,
+  #billTable tbody {
+    display: table !important;
+    width: 100% !important;
+    min-width: 600px !important; /* Ensure minimum width for all columns */
+  }
+  
+  #billTable th,
+  #billTable td {
+    white-space: nowrap !important;
+    padding: 0.5rem 0.75rem !important;
+  }
 }
 
 /* Select Dropdown Styling */
@@ -1022,10 +1042,23 @@ select.compact-form option:checked {
 } 
 
 /* Autocomplete Dropdown Styling */
-.product-suggestion,
-.master-suggestion {
+.product-suggestion {
   position: absolute !important;
   z-index: 9999 !important;
+  background: rgba(30, 41, 59, 0.95) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  max-height: 240px !important;
+  overflow-y: auto !important;
+  margin-top: 4px !important;
+  min-width: 200px !important;
+}
+
+.master-suggestion {
+  position: fixed !important;
+  z-index: 99999 !important;
   background: rgba(30, 41, 59, 0.95) !important;
   backdrop-filter: blur(10px) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -1055,4 +1088,202 @@ select.compact-form option:checked {
 .product-option:last-child,
 .master-option:last-child {
   border-bottom: none !important;
+} 
+
+/* Billing Success Message Styling */
+.billing-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.billing-success svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+} 
+
+/* Mobile dropdown autocomplete styling */
+#mobileDropdown {
+  position: fixed !important;
+  z-index: 99999 !important;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-height: 200px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+.mobile-suggestion-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.mobile-suggestion-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+}
+
+.mobile-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.mobile-suggestion-item:active {
+  background: rgba(59, 130, 246, 0.2);
+  transform: scale(0.98);
+}
+
+/* Mobile dropdown scrollbar styling */
+#mobileDropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+#mobileDropdown::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+#mobileDropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+#mobileDropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+} 
+
+/* Employee mobile dropdown autocomplete styling */
+#employeeMobileDropdown {
+  position: fixed !important;
+  z-index: 99999 !important;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-height: 200px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+.employee-mobile-suggestion-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.employee-mobile-suggestion-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+}
+
+.employee-mobile-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.employee-mobile-suggestion-item:active {
+  background: rgba(59, 130, 246, 0.2);
+  transform: scale(0.98);
+}
+
+/* Employee mobile dropdown scrollbar styling */
+#employeeMobileDropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+#employeeMobileDropdown::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+#employeeMobileDropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+#employeeMobileDropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+} 
+
+/* Customer mobile dropdown autocomplete styling */
+#customerMobileDropdown {
+  position: fixed !important;
+  z-index: 99999 !important;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-height: 200px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+.customer-mobile-suggestion-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.customer-mobile-suggestion-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+}
+
+.customer-mobile-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.customer-mobile-suggestion-item:active {
+  background: rgba(59, 130, 246, 0.2);
+  transform: scale(0.98);
+}
+
+/* Customer mobile dropdown scrollbar styling */
+#customerMobileDropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+#customerMobileDropdown::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+#customerMobileDropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+#customerMobileDropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 } 

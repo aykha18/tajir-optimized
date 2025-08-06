@@ -255,9 +255,7 @@ def app_page():
                         get_user_language=get_user_language,
                         get_translated_text=get_translated_text)
 
-@app.route('/test')
-def test_page():
-    return render_template('app_test.html')
+
 
 
 
@@ -754,18 +752,33 @@ def create_bill():
             if not items_data:
                 return jsonify({'error': 'At least one item is required'}), 400
             
-            # Require master_id (Master Name)
+            # Check for master_id (Master Name) - make it optional for now
             print(f"DEBUG: master_id received: {bill_data.get('master_id')} (type: {type(bill_data.get('master_id'))})")
-            if not bill_data.get('master_id'):
-                return jsonify({'error': 'Master Name is required.'}), 400
+            master_id = bill_data.get('master_id')
             
-            # Calculate totals
-            subtotal = sum(float(item.get('rate', 0)) * float(item.get('quantity', 1)) for item in items_data)
-            vat_percent = 5.0
-            vat_amount = subtotal * (vat_percent / 100)
-            total_amount = subtotal + vat_amount
+            # If no master is selected, try to get the first available employee as default
+            if not master_id:
+                try:
+                    conn = get_db_connection()
+                    default_employee = conn.execute('SELECT employee_id FROM employees WHERE user_id = ? ORDER BY name LIMIT 1', (user_id,)).fetchone()
+                    conn.close()
+                    
+                    if default_employee:
+                        master_id = default_employee['employee_id']
+                        print(f"DEBUG: Using default master_id: {master_id}")
+                    else:
+                        print("DEBUG: No employees found, master_id will be None")
+                except Exception as e:
+                    print(f"DEBUG: Error getting default master: {e}")
+                    master_id = None
+            
+            # Use totals calculated by frontend instead of recalculating
+            subtotal = float(bill_data.get('subtotal', 0))
+            vat_amount = float(bill_data.get('vat_amount', 0))
+            total_amount = float(bill_data.get('total_amount', 0))
             advance_paid = float(bill_data.get('advance_paid', 0))
-            balance_amount = total_amount - advance_paid
+            balance_amount = float(bill_data.get('balance_amount', 0))
+            vat_percent = 5.0  # Keep this for bill item calculations
             
             # Get or create customer
             conn = get_db_connection()
@@ -812,7 +825,7 @@ def create_bill():
                 bill_data.get('business_address', ''), bill_uuid, bill_data.get('bill_date'), 
                 bill_data.get('delivery_date'), bill_data.get('payment_method', 'Cash'),
                 subtotal, vat_amount, total_amount, advance_paid, balance_amount,
-                'Pending', bill_data.get('master_id'), bill_data.get('trial_date'), notes
+                'Pending', master_id, bill_data.get('trial_date'), notes
             ))
             
             bill_id = cursor.lastrowid
@@ -1276,8 +1289,15 @@ def get_cities():
 @app.route('/api/employees', methods=['GET'])
 def get_employees():
     user_id = get_current_user_id()
+    search = request.args.get('search', '').strip()
     conn = get_db_connection()
-    employees = conn.execute('SELECT * FROM employees WHERE user_id = ? ORDER BY name', (user_id,)).fetchall()
+    
+    if search:
+        like_search = f"%{search}%"
+        employees = conn.execute('SELECT * FROM employees WHERE user_id = ? AND (name LIKE ? OR phone LIKE ? OR address LIKE ?) ORDER BY name', (user_id, like_search, like_search, like_search)).fetchall()
+    else:
+        employees = conn.execute('SELECT * FROM employees WHERE user_id = ? ORDER BY name', (user_id,)).fetchall()
+    
     conn.close()
     return jsonify([dict(emp) for emp in employees])
 
@@ -3835,22 +3855,7 @@ def test_whatsapp_config():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/test_autocomplete.html')
-def test_autocomplete():
-    return send_from_directory('.', 'test_autocomplete.html')
 
-@app.route('/test_billing_autocomplete.html')
-def test_billing_autocomplete():
-    return send_from_directory('.', 'test_billing_autocomplete.html')
-
-@app.route('/test_api.html')
-def test_api():
-    return send_from_directory('.', 'test_api.html')
-
-@app.route('/debug_autocomplete')
-def debug_autocomplete():
-    """Debug page to test autocomplete functionality in the main app"""
-    return render_template('debug_autocomplete.html')
 
 @app.route('/admin/logs')
 def admin_logs():

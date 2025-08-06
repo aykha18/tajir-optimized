@@ -35,9 +35,9 @@ class PWAInitializer {
         this.mobileNavigation = new MobileNavigation();
         await this.mobileNavigation.init();
         
-        // Initialize Mobile Billing
-        this.mobileBilling = new MobileBilling();
-        await this.mobileBilling.init();
+        // Initialize Mobile Billing - DISABLED to prevent conflicts with main billing system
+        // this.mobileBilling = new MobileBilling();
+        // await this.mobileBilling.init();
       }
 
       // Set up global PWA object
@@ -46,7 +46,7 @@ class PWAInitializer {
         syncManager: this.syncManager,
         offlineStorage: this.offlineStorage,
         mobileNavigation: this.mobileNavigation,
-        mobileBilling: this.mobileBilling,
+        // mobileBilling: this.mobileBilling, // DISABLED to prevent conflicts
         getStatus: () => this.getStatus(),
         saveOfflineBill: (data) => this.syncManager.saveOfflineBill(data),
         saveOfflineCustomer: (data) => this.syncManager.saveOfflineCustomer(data),
@@ -54,8 +54,8 @@ class PWAInitializer {
         loadOfflineData: () => this.syncManager.loadOfflineData(),
         getPendingSyncCount: () => this.syncManager.getPendingSyncCount(),
         promptInstall: () => this.pwaManager.promptInstall(),
-        showNotification: (title, options) => this.pwaManager.showNotification(title, options),
-        testMobileBillingSync: () => this.mobileBilling?.testSync()
+        showNotification: (title, options) => this.pwaManager.showNotification(title, options)
+        // testMobileBillingSync: () => this.mobileBilling?.testSync() // DISABLED
       };
 
       // Initialize offline data loading

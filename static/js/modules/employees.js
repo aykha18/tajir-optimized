@@ -2,6 +2,157 @@
 
 let editingEmployeeId = null;
 
+// Setup employee mobile autocomplete
+function setupEmployeeMobileAutocomplete() {
+  const employeeMobileElement = document.getElementById('employeeMobile');
+  if (employeeMobileElement) {
+    let employeeMobileDropdown = null;
+    let debounceTimer = null;
+
+    // Create employee mobile dropdown
+    function createEmployeeMobileDropdown() {
+      if (employeeMobileDropdown) {
+        document.body.removeChild(employeeMobileDropdown);
+      }
+      
+      employeeMobileDropdown = document.createElement('div');
+      employeeMobileDropdown.id = 'employeeMobileDropdown';
+      employeeMobileDropdown.className = 'fixed bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-99999';
+      employeeMobileDropdown.style.display = 'none';
+      document.body.appendChild(employeeMobileDropdown);
+      
+      return employeeMobileDropdown;
+    }
+
+    // Show employee mobile suggestions
+    function showEmployeeMobileSuggestions(employees) {
+      if (!employeeMobileDropdown) {
+        employeeMobileDropdown = createEmployeeMobileDropdown();
+      }
+      
+      if (employees.length === 0) {
+        employeeMobileDropdown.style.display = 'none';
+        return;
+      }
+
+      const rect = employeeMobileElement.getBoundingClientRect();
+      employeeMobileDropdown.style.left = rect.left + 'px';
+      employeeMobileDropdown.style.top = (rect.bottom + 5) + 'px';
+      employeeMobileDropdown.style.width = rect.width + 'px';
+      employeeMobileDropdown.style.display = 'block';
+
+      employeeMobileDropdown.innerHTML = employees.map(employee => `
+        <div class="employee-mobile-suggestion-item px-3 py-2 hover:bg-neutral-800 cursor-pointer border-b border-neutral-700 last:border-b-0" 
+             data-phone="${employee.phone}" 
+             data-employee='${JSON.stringify(employee)}'>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-white font-medium">${employee.name}</div>
+              <div class="text-neutral-400 text-sm">${employee.phone}</div>
+              <div class="text-neutral-500 text-xs">${employee.role || 'Employee'}</div>
+            </div>
+            <div class="text-xs text-neutral-500">
+              ${employee.address || ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Add click handlers
+      employeeMobileDropdown.querySelectorAll('.employee-mobile-suggestion-item').forEach(item => {
+        item.addEventListener('click', function() {
+          const employee = JSON.parse(this.dataset.employee);
+          populateEmployeeFields(employee);
+          employeeMobileElement.value = employee.phone;
+          hideEmployeeMobileDropdown();
+        });
+      });
+    }
+
+    // Hide employee mobile dropdown
+    function hideEmployeeMobileDropdown() {
+      if (employeeMobileDropdown) {
+        employeeMobileDropdown.style.display = 'none';
+      }
+    }
+
+    // Search employees by mobile number
+    async function searchEmployeesByMobile(query) {
+      try {
+        const response = await fetch(`/api/employees?search=${encodeURIComponent(query)}`);
+        if (response.ok) {
+          const employees = await response.json();
+          // Filter employees whose phone number starts with the query
+          const filteredEmployees = employees.filter(employee => 
+            employee.phone && employee.phone.startsWith(query)
+          );
+          return filteredEmployees.slice(0, 5); // Limit to 5 suggestions
+        }
+        return [];
+      } catch (error) {
+        console.error('Error searching employees by mobile:', error);
+        return [];
+      }
+    }
+
+    // Debounced search function
+    function debouncedEmployeeMobileSearch(query) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        if (query.length >= 5) {
+          const employees = await searchEmployeesByMobile(query);
+          showEmployeeMobileSuggestions(employees);
+        } else {
+          hideEmployeeMobileDropdown();
+        }
+      }, 300);
+    }
+
+    // Input event for real-time autocomplete
+    employeeMobileElement.addEventListener('input', function(e) {
+      const phone = e.target.value.trim();
+      if (phone.length >= 5) {
+        debouncedEmployeeMobileSearch(phone);
+      } else {
+        hideEmployeeMobileDropdown();
+      }
+    });
+
+    // Focus event to show suggestions if there's a value
+    employeeMobileElement.addEventListener('focus', function(e) {
+      const phone = e.target.value.trim();
+      if (phone.length >= 5) {
+        debouncedEmployeeMobileSearch(phone);
+      }
+    });
+
+    // Handle escape key
+    employeeMobileElement.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        hideEmployeeMobileDropdown();
+      }
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (employeeMobileDropdown && !employeeMobileElement.contains(e.target) && !employeeMobileDropdown.contains(e.target)) {
+        hideEmployeeMobileDropdown();
+      }
+    });
+  }
+}
+
+// Populate employee fields
+function populateEmployeeFields(employee) {
+  const employeeNameElement = document.getElementById('employeeName');
+  const employeeMobileElement = document.getElementById('employeeMobile');
+  const employeeRoleElement = document.getElementById('employeeRole');
+  
+  if (employeeNameElement) employeeNameElement.value = employee.name || '';
+  if (employeeMobileElement) employeeMobileElement.value = employee.phone || '';
+  if (employeeRoleElement) employeeRoleElement.value = employee.role || 'Tailor';
+}
+
 // Load and render employees with loading effects
 async function loadEmployees() {
   // Show loading overlay
@@ -131,6 +282,9 @@ function setupEmployeeFormHandler() {
     employeeForm.removeEventListener('submit', handleEmployeeFormSubmit);
     employeeForm.addEventListener('submit', handleEmployeeFormSubmit);
   }
+  
+  // Setup employee mobile autocomplete
+  setupEmployeeMobileAutocomplete();
 }
 
 // Handle employee form submission
