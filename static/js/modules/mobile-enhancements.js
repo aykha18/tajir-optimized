@@ -477,6 +477,9 @@ class MobileEnhancements {
 // Initialize mobile enhancements
 window.mobileEnhancements = new MobileEnhancements();
 
+// Make setupSwipeActions publicly accessible
+window.mobileEnhancements.setupSwipeActions = window.mobileEnhancements.setupSwipeActions.bind(window.mobileEnhancements);
+
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = MobileEnhancements;

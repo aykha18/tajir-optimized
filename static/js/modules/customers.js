@@ -287,6 +287,9 @@ function setupCustomerFormHandler() {
     customerForm.removeEventListener('submit', handleCustomerFormSubmit);
     customerForm.addEventListener('submit', handleCustomerFormSubmit);
   }
+  
+  // Setup customer mobile autocomplete
+  setupCustomerMobileAutocomplete();
 }
 
 // Setup customer type change handler
@@ -559,7 +562,168 @@ async function initializeAreaAutocompleteWithData() {
   initializeAreaAutocomplete();
 }
 
+// Setup customer mobile autocomplete
+function setupCustomerMobileAutocomplete() {
+  const customerMobileElement = document.getElementById('customerMobile');
+  if (customerMobileElement) {
+    let customerMobileDropdown = null;
+    let debounceTimer = null;
 
+    // Create customer mobile dropdown
+    function createCustomerMobileDropdown() {
+      if (customerMobileDropdown) {
+        document.body.removeChild(customerMobileDropdown);
+      }
+      
+      customerMobileDropdown = document.createElement('div');
+      customerMobileDropdown.id = 'customerMobileDropdown';
+      customerMobileDropdown.className = 'fixed bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-99999';
+      customerMobileDropdown.style.display = 'none';
+      document.body.appendChild(customerMobileDropdown);
+      
+      return customerMobileDropdown;
+    }
+
+    // Show customer mobile suggestions
+    function showCustomerMobileSuggestions(customers) {
+      if (!customerMobileDropdown) {
+        customerMobileDropdown = createCustomerMobileDropdown();
+      }
+      
+      if (customers.length === 0) {
+        customerMobileDropdown.style.display = 'none';
+        return;
+      }
+
+      const rect = customerMobileElement.getBoundingClientRect();
+      customerMobileDropdown.style.left = rect.left + 'px';
+      customerMobileDropdown.style.top = (rect.bottom + 5) + 'px';
+      customerMobileDropdown.style.width = rect.width + 'px';
+      customerMobileDropdown.style.display = 'block';
+
+      customerMobileDropdown.innerHTML = customers.map(customer => `
+        <div class="customer-mobile-suggestion-item px-3 py-2 hover:bg-neutral-800 cursor-pointer border-b border-neutral-700 last:border-b-0" 
+             data-phone="${customer.phone}" 
+             data-customer='${JSON.stringify(customer)}'>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-white font-medium">${customer.name}</div>
+              <div class="text-neutral-400 text-sm">${customer.phone}</div>
+              ${customer.business_name ? `<div class="text-neutral-500 text-xs">${customer.business_name}</div>` : ''}
+            </div>
+            <div class="text-xs text-neutral-500">
+              ${customer.city || ''} ${customer.area ? `- ${customer.area}` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Add click handlers
+      customerMobileDropdown.querySelectorAll('.customer-mobile-suggestion-item').forEach(item => {
+        item.addEventListener('click', function() {
+          const customer = JSON.parse(this.dataset.customer);
+          populateCustomerFields(customer);
+          customerMobileElement.value = customer.phone;
+          hideCustomerMobileDropdown();
+        });
+      });
+    }
+
+    // Hide customer mobile dropdown
+    function hideCustomerMobileDropdown() {
+      if (customerMobileDropdown) {
+        customerMobileDropdown.style.display = 'none';
+      }
+    }
+
+    // Search customers by mobile number
+    async function searchCustomersByMobile(query) {
+      try {
+        const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
+        if (response.ok) {
+          const customers = await response.json();
+          // Filter customers whose phone number starts with the query
+          const filteredCustomers = customers.filter(customer => 
+            customer.phone && customer.phone.startsWith(query)
+          );
+          return filteredCustomers.slice(0, 5); // Limit to 5 suggestions
+        }
+        return [];
+      } catch (error) {
+        console.error('Error searching customers by mobile:', error);
+        return [];
+      }
+    }
+
+    // Debounced search function
+    function debouncedCustomerMobileSearch(query) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        if (query.length >= 5) {
+          const customers = await searchCustomersByMobile(query);
+          showCustomerMobileSuggestions(customers);
+        } else {
+          hideCustomerMobileDropdown();
+        }
+      }, 300);
+    }
+
+    // Input event for real-time autocomplete
+    customerMobileElement.addEventListener('input', function(e) {
+      const phone = e.target.value.trim();
+      if (phone.length >= 5) {
+        debouncedCustomerMobileSearch(phone);
+      } else {
+        hideCustomerMobileDropdown();
+      }
+    });
+
+    // Focus event to show suggestions if there's a value
+    customerMobileElement.addEventListener('focus', function(e) {
+      const phone = e.target.value.trim();
+      if (phone.length >= 5) {
+        debouncedCustomerMobileSearch(phone);
+      }
+    });
+
+    // Handle escape key
+    customerMobileElement.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        hideCustomerMobileDropdown();
+      }
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (customerMobileDropdown && !customerMobileElement.contains(e.target) && !customerMobileDropdown.contains(e.target)) {
+        hideCustomerMobileDropdown();
+      }
+    });
+  }
+}
+
+// Populate customer fields
+function populateCustomerFields(customer) {
+  const customerNameElement = document.getElementById('customerName');
+  const customerMobileElement = document.getElementById('customerMobile');
+  const customerCityElement = document.getElementById('customerCity');
+  const customerTypeElement = document.getElementById('customerType');
+  const customerBusinessNameElement = document.getElementById('customerBusinessName');
+  const customerTRNElement = document.getElementById('customerTRN');
+  
+  if (customerNameElement) customerNameElement.value = customer.name || '';
+  if (customerMobileElement) customerMobileElement.value = customer.phone || '';
+  if (customerCityElement) customerCityElement.value = customer.city || '';
+  if (customerTypeElement) customerTypeElement.value = customer.customer_type || 'Individual';
+  if (customerBusinessNameElement) customerBusinessNameElement.value = customer.business_name || '';
+  if (customerTRNElement) customerTRNElement.value = customer.trn || '';
+  
+  // Handle customer type change to show/hide business fields
+  if (customerTypeElement) {
+    const event = new Event('change');
+    customerTypeElement.dispatchEvent(event);
+  }
+}
 
 // Setup customer search handler
 function setupCustomerSearch() {

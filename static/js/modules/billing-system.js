@@ -44,13 +44,19 @@ function initializeBillingSystem() {
             <span class="text-neutral-400">Status:</span>
             <span class="font-medium ${status === 'Completed' ? 'text-green-400' : 'text-yellow-400'}">${status}</span>
           </div>
+          <div class="mt-4 pt-4 border-t border-neutral-700">
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Payment Amount:</label>
+            <input type="number" step="0.01" min="0" max="${due}" value="${due}" 
+                   class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:ring-2 focus:ring-indigo-400/60 focus:border-transparent payment-amount-input"
+                   placeholder="Enter payment amount">
+          </div>
         </div>
         <div class="flex gap-3 mt-6">
           <button class="flex-1 px-4 py-2 rounded-lg border border-neutral-600 hover:bg-neutral-800 transition-colors cancel-btn">
             Cancel
           </button>
           <button class="flex-1 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors ok-btn">
-            OK
+            Mark as Paid
           </button>
         </div>
       </div>
@@ -63,8 +69,9 @@ function initializeBillingSystem() {
     }
     
     function onOkClick() {
+      const paymentAmount = parseFloat(modal.querySelector('.payment-amount-input').value) || 0;
       cleanup();
-      if (onOk) onOk();
+      if (onOk) onOk(paymentAmount);
     }
     
     function onCancelClick() {
@@ -318,9 +325,9 @@ function initializeBillingSystem() {
       <tr class="hover:bg-neutral-800/50 transition-colors swipe-action" data-index="${index}">
         <td class="px-3 py-3">${item.product_name}</td>
         <td class="px-3 py-3">${item.quantity}</td>
-        <td class="px-3 py-3">AED ${item.price}</td>
+        <td class="px-3 py-3">AED ${item.rate}</td>
         <td class="px-3 py-3">AED ${item.discount || 0}</td>
-        <td class="px-3 py-3">AED ${item.advance || 0}</td>
+        <td class="px-3 py-3">AED ${item.advance_paid || 0}</td>
         <td class="px-3 py-3">AED ${item.vat_amount.toFixed(2)}</td>
         <td class="px-3 py-3">AED ${item.total.toFixed(2)}</td>
         <td class="px-3 py-3 flex gap-2">
@@ -333,14 +340,20 @@ function initializeBillingSystem() {
         </td>
       </tr>
     `).join('');
+    
+    // Reinitialize swipe actions for mobile after rendering table
+    if (window.mobileEnhancements && window.mobileEnhancements.setupSwipeActions) {
+      setTimeout(() => {
+        window.mobileEnhancements.setupSwipeActions();
+      }, 100);
+    }
   }
 
   function updateTotals() {
     const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
-    const totalAdvance = bill.reduce((sum, item) => sum + (item.advance || 0), 0); // Total advance paid
-    const vatRate = 0.05; // 5% VAT
-    const vat = subtotal * vatRate;
-    const totalBeforeAdvance = subtotal + vat;
+    const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0); // Total advance paid
+    const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
+    const totalBeforeAdvance = subtotal + totalVat;
     const amountDue = totalBeforeAdvance - totalAdvance; // Deduct advance from total
     
     // Enable/disable action buttons based on bill items
@@ -392,7 +405,7 @@ function initializeBillingSystem() {
        subtotalElement.textContent = `AED ${subtotal.toFixed(2)}`;
      }
      if (vatElement) {
-       vatElement.textContent = `AED ${vat.toFixed(2)}`;
+       vatElement.textContent = `AED ${totalVat.toFixed(2)}`;
      }
      if (totalElement) {
        totalElement.textContent = `AED ${amountDue.toFixed(2)}`;
@@ -521,7 +534,133 @@ function initializeBillingSystem() {
   function setupMobileCustomerFetch() {
     const billMobileElement = document.getElementById('billMobile');
     if (billMobileElement) {
-      billMobileElement.addEventListener('blur', async (e) => {
+      let mobileDropdown = null;
+      let debounceTimer = null;
+
+      // Create mobile dropdown
+      function createMobileDropdown() {
+        if (mobileDropdown) {
+          document.body.removeChild(mobileDropdown);
+        }
+        
+        mobileDropdown = document.createElement('div');
+        mobileDropdown.id = 'mobileDropdown';
+        mobileDropdown.className = 'fixed bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-99999';
+        mobileDropdown.style.display = 'none';
+        document.body.appendChild(mobileDropdown);
+        
+        return mobileDropdown;
+      }
+
+      // Show mobile suggestions
+      function showMobileSuggestions(customers) {
+        if (!mobileDropdown) {
+          mobileDropdown = createMobileDropdown();
+        }
+        
+        if (customers.length === 0) {
+          mobileDropdown.style.display = 'none';
+          return;
+        }
+
+        const rect = billMobileElement.getBoundingClientRect();
+        mobileDropdown.style.left = rect.left + 'px';
+        mobileDropdown.style.top = (rect.bottom + 5) + 'px';
+        mobileDropdown.style.width = rect.width + 'px';
+        mobileDropdown.style.display = 'block';
+
+        mobileDropdown.innerHTML = customers.map(customer => `
+          <div class="mobile-suggestion-item px-3 py-2 hover:bg-neutral-800 cursor-pointer border-b border-neutral-700 last:border-b-0" 
+               data-phone="${customer.phone}" 
+               data-customer='${JSON.stringify(customer)}'>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-white font-medium">${customer.name}</div>
+                <div class="text-neutral-400 text-sm">${customer.phone}</div>
+                ${customer.business_name ? `<div class="text-neutral-500 text-xs">${customer.business_name}</div>` : ''}
+              </div>
+              <div class="text-xs text-neutral-500">
+                ${customer.city || ''} ${customer.area ? `- ${customer.area}` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        // Add click handlers
+        mobileDropdown.querySelectorAll('.mobile-suggestion-item').forEach(item => {
+          item.addEventListener('click', function() {
+            const customer = JSON.parse(this.dataset.customer);
+            populateCustomerFields(customer);
+            billMobileElement.value = customer.phone;
+            hideMobileDropdown();
+          });
+        });
+      }
+
+      // Hide mobile dropdown
+      function hideMobileDropdown() {
+        if (mobileDropdown) {
+          mobileDropdown.style.display = 'none';
+        }
+      }
+
+      // Search customers by mobile number
+      async function searchCustomersByMobile(query) {
+        try {
+          const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
+          if (response.ok) {
+            const customers = await response.json();
+            // Filter customers whose phone number starts with the query
+            const filteredCustomers = customers.filter(customer => 
+              customer.phone && customer.phone.startsWith(query)
+            );
+            return filteredCustomers.slice(0, 5); // Limit to 5 suggestions
+          }
+          return [];
+        } catch (error) {
+          console.error('Error searching customers by mobile:', error);
+          return [];
+        }
+      }
+
+      // Debounced search function
+      function debouncedMobileSearch(query) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+          if (query.length >= 5) {
+            const customers = await searchCustomersByMobile(query);
+            showMobileSuggestions(customers);
+          } else {
+            hideMobileDropdown();
+          }
+        }, 300);
+      }
+
+      // Input event for real-time autocomplete
+      billMobileElement.addEventListener('input', function(e) {
+        const phone = e.target.value.trim();
+        if (phone.length >= 5) {
+          debouncedMobileSearch(phone);
+        } else {
+          hideMobileDropdown();
+        }
+      });
+
+      // Focus event to show suggestions if there's a value
+      billMobileElement.addEventListener('focus', function(e) {
+        const phone = e.target.value.trim();
+        if (phone.length >= 5) {
+          debouncedMobileSearch(phone);
+        }
+      });
+
+      // Blur event for existing functionality
+      billMobileElement.addEventListener('blur', async function(e) {
+        // Delay hiding dropdown to allow click events
+        setTimeout(() => {
+          hideMobileDropdown();
+        }, 200);
+        
         const phone = e.target.value.trim();
         if (!phone) return;
         
@@ -530,6 +669,20 @@ function initializeBillingSystem() {
           populateCustomerFields(customer);
         } else {
           clearCustomerFields();
+        }
+      });
+
+      // Handle escape key
+      billMobileElement.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          hideMobileDropdown();
+        }
+      });
+
+      // Hide dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (mobileDropdown && !billMobileElement.contains(e.target) && !mobileDropdown.contains(e.target)) {
+          hideMobileDropdown();
         }
       });
     }
@@ -634,21 +787,27 @@ function initializeBillingSystem() {
     // Create dropdown container
     function createCustomerDropdown() {
       dropdown = document.createElement('div');
-      dropdown.className = 'customer-suggestion absolute z-50 w-full bg-neutral-800 border border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto mt-1';
+      dropdown.className = 'customer-suggestion';
+      dropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
       dropdown.style.display = 'none';
+      document.body.appendChild(dropdown);
       
-      // Ensure parent has relative positioning
-      if (customerInput.parentNode) {
-        customerInput.parentNode.style.position = 'relative';
-        customerInput.parentNode.appendChild(dropdown);
-      } else {
-        console.error('Customer input parent node not found');
-      }
+      // Prevent dropdown from hiding when clicking inside it
+      dropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
     }
 
     // Show customer suggestions
     function showCustomerSuggestions(customers) {
       if (!dropdown) createCustomerDropdown();
+      
+      // Calculate position relative to input
+      const inputRect = customerInput.getBoundingClientRect();
+      dropdown.style.left = inputRect.left + 'px';
+      dropdown.style.top = (inputRect.bottom + 4) + 'px';
+      dropdown.style.width = inputRect.width + 'px';
+      dropdown.style.minWidth = '200px'; // Ensure minimum width
       
       dropdown.innerHTML = customers.map(customer => `
         <div class="customer-option px-4 py-2 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0" 
@@ -706,7 +865,18 @@ function initializeBillingSystem() {
     // Hide customer dropdown
     function hideCustomerDropdown() {
       if (dropdown) {
-        dropdown.style.display = 'none';
+        dropdown.style.transition = 'all 0.2s ease';
+        dropdown.style.opacity = '0';
+        dropdown.style.transform = 'translateY(-10px)';
+        
+        setTimeout(() => {
+          dropdown.style.display = 'none';
+          // Remove from DOM to prevent memory leaks
+          if (dropdown.parentNode) {
+            dropdown.parentNode.removeChild(dropdown);
+          }
+          dropdown = null;
+        }, 200);
       }
     }
 
@@ -808,10 +978,9 @@ function initializeBillingSystem() {
     function createProductDropdown() {
       productDropdown = document.createElement('div');
       productDropdown.className = 'product-suggestion-mobile';
-      productDropdown.style.cssText = 'position: absolute; z-index: 9999; background: white; border: 1px solid #e5e7eb; border-radius: 8px; max-height: 240px; overflow-y: auto; margin-top: 4px; min-width: 200px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);';
+      productDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
       productDropdown.style.display = 'none';
-      productInput.parentNode.style.position = 'relative';
-      productInput.parentNode.appendChild(productDropdown);
+      document.body.appendChild(productDropdown);
       
       // Prevent dropdown from hiding when clicking inside it
       productDropdown.addEventListener('click', function(e) {
@@ -859,27 +1028,36 @@ function initializeBillingSystem() {
       
       if (filteredProducts.length === 0) {
         productDropdown.innerHTML = `
-          <div class="product-option-mobile" style="color: #6b7280; text-align: center; padding: 16px;">
-            <div>No products found</div>
-            <div style="font-size: 12px; margin-top: 4px;">Try a different search term</div>
+          <div class="product-option-mobile" style="color: #9ca3af; text-align: center; padding: 16px;">
+            <div style="color: #f3f4f6;">No products found</div>
+            <div style="font-size: 12px; margin-top: 4px; color: #6b7280;">Try a different search term</div>
           </div>
         `;
         return;
       }
       
       productDropdown.innerHTML = filteredProducts.map(product => `
-        <div class="product-option-mobile" data-product-id="${product.product_id}" data-product-name="${product.product_name}" data-product-price="${product.rate}" data-product-type="${product.type_name || ''}">
+        <div class="product-option-mobile" data-product-id="${product.product_id}" data-product-name="${product.product_name}" data-product-price="${product.rate}" data-product-type="${product.type_name || ''}" style="padding: 12px 16px; border-bottom: 1px solid #374151; cursor: pointer; transition: background-color 0.2s; display: flex; justify-content: space-between; align-items: center; color: #f3f4f6;">
           <div style="flex: 1;">
-            <div class="product-name">${product.product_name}</div>
-            <div class="product-details">${product.type_name || ''}</div>
+            <div class="product-name" style="font-weight: 500; color: #f9fafb;">${product.product_name}</div>
+            <div class="product-details" style="font-size: 12px; color: #9ca3af; margin-top: 2px;">${product.type_name || ''}</div>
           </div>
-          <div class="product-price">AED ${product.rate}</div>
+          <div class="product-price" style="font-weight: 600; color: #10b981;">AED ${product.rate}</div>
         </div>
       `).join('');
       
       // Add click listeners with improved touch handling
       const options = productDropdown.querySelectorAll('.product-option-mobile');
       options.forEach(option => {
+        // Add hover effects
+        option.addEventListener('mouseenter', function() {
+          this.style.backgroundColor = '#374151';
+        });
+        
+        option.addEventListener('mouseleave', function() {
+          this.style.backgroundColor = 'transparent';
+        });
+        
         const handleSelection = function(e) {
           e.preventDefault();
           e.stopPropagation();
@@ -925,6 +1103,14 @@ function initializeBillingSystem() {
     // Show dropdown with animation
     function showDropdown() {
       if (!productDropdown) createProductDropdown();
+      
+      // Calculate position relative to input
+      const inputRect = productInput.getBoundingClientRect();
+      productDropdown.style.left = inputRect.left + 'px';
+      productDropdown.style.top = (inputRect.bottom + 4) + 'px';
+      productDropdown.style.width = inputRect.width + 'px';
+      productDropdown.style.minWidth = '200px';
+      
       productDropdown.style.display = 'block';
       productDropdown.style.opacity = '0';
       productDropdown.style.transform = 'translateY(-10px)';
@@ -946,6 +1132,11 @@ function initializeBillingSystem() {
         
         setTimeout(() => {
           productDropdown.style.display = 'none';
+          // Remove from DOM to prevent memory leaks
+          if (productDropdown.parentNode) {
+            productDropdown.parentNode.removeChild(productDropdown);
+          }
+          productDropdown = null;
         }, 200);
       }
     }
@@ -1085,9 +1276,15 @@ function initializeBillingSystem() {
 
   // FEATURE 3: Master Autocomplete
   function setupMasterAutocomplete() {
+    console.log('🔍 Setting up master autocomplete...');
     const masterInput = document.getElementById('masterName');
+    const masterInputMobile = document.getElementById('masterNameMobile');
     
-    if (!masterInput) {
+    console.log('💻 Desktop master input found:', !!masterInput);
+    console.log('📱 Mobile master input found:', !!masterInputMobile);
+    
+    if (!masterInput && !masterInputMobile) {
+      console.log('❌ No master inputs found');
       return;
     }
 
@@ -1099,10 +1296,9 @@ function initializeBillingSystem() {
       console.log('🔍 Creating master dropdown');
       masterDropdown = document.createElement('div');
       masterDropdown.className = 'master-suggestion';
-      masterDropdown.style.cssText = 'position: absolute; z-index: 9999; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; max-height: 240px; overflow-y: auto; margin-top: 4px; min-width: 200px; width: 100%;';
+      masterDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
       masterDropdown.style.display = 'none';
-      masterInput.parentNode.style.position = 'relative';
-      masterInput.parentNode.appendChild(masterDropdown);
+      document.body.appendChild(masterDropdown);
       
       // Prevent dropdown from hiding when clicking inside it
       masterDropdown.addEventListener('click', function(e) {
@@ -1113,10 +1309,17 @@ function initializeBillingSystem() {
     // Load employees
     async function loadEmployees() {
       try {
+        console.log('🔍 Loading employees...');
         const response = await fetch('/api/employees');
         employees = await response.json();
+        console.log('✅ Employees loaded:', employees.length);
+        console.log('📋 Sample employees:', employees.slice(0, 3));
+        
+        // Make employees available globally for debugging
+        window.allEmployees = employees;
+        console.log('🌐 Global allEmployees set:', window.allEmployees.length);
       } catch (error) {
-        console.error('Error loading employees:', error);
+        console.error('❌ Error loading employees:', error);
       }
     }
 
@@ -1154,13 +1357,25 @@ function initializeBillingSystem() {
           const masterName = this.getAttribute('data-master-name');
           
           window.selectedMasterId = masterId;
-          masterInput.value = masterName;
+          console.log('🎯 Master selected - ID:', masterId, 'Name:', masterName);
+          console.log('🌐 Global selectedMasterId set to:', window.selectedMasterId);
           
-          // Set data attribute for validation
-          masterInput.setAttribute('data-selected-master', JSON.stringify({
-            master_id: masterId,
-            master_name: masterName
-          }));
+          // Update both inputs if they exist
+          if (masterInput) {
+            masterInput.value = masterName;
+            masterInput.setAttribute('data-selected-master', JSON.stringify({
+              master_id: masterId,
+              master_name: masterName
+            }));
+          }
+          
+          if (masterInputMobile) {
+            masterInputMobile.value = masterName;
+            masterInputMobile.setAttribute('data-selected-master', JSON.stringify({
+              master_id: masterId,
+              master_name: masterName
+            }));
+          }
           
           hideDropdown();
         });
@@ -1168,40 +1383,119 @@ function initializeBillingSystem() {
     }
 
     // Show dropdown
-    function showDropdown() {
+    function showDropdown(activeInput) {
+      console.log('🔍 showDropdown called for:', activeInput.id);
+      
       if (!masterDropdown) createMasterDropdown();
+      
+      // Calculate position relative to input
+      const inputRect = activeInput.getBoundingClientRect();
+      console.log('📐 Input rect:', inputRect);
+      
+      masterDropdown.style.left = inputRect.left + 'px';
+      masterDropdown.style.top = (inputRect.bottom + 4) + 'px';
+      masterDropdown.style.width = inputRect.width + 'px';
+      masterDropdown.style.minWidth = '200px'; // Ensure minimum width
+      
+      console.log('📍 Dropdown position set to:', {
+        left: inputRect.left + 'px',
+        top: (inputRect.bottom + 4) + 'px',
+        width: inputRect.width + 'px'
+      });
+      
       masterDropdown.style.display = 'block';
+      masterDropdown.style.opacity = '0';
+      masterDropdown.style.transform = 'translateY(-10px)';
+      
+      // Animate in
+      setTimeout(() => {
+        masterDropdown.style.transition = 'all 0.2s ease';
+        masterDropdown.style.opacity = '1';
+        masterDropdown.style.transform = 'translateY(0)';
+        console.log('✅ Dropdown animation started');
+      }, 10);
     }
 
     // Hide dropdown
     function hideDropdown() {
       if (masterDropdown) {
-        masterDropdown.style.display = 'none';
+        masterDropdown.style.transition = 'all 0.2s ease';
+        masterDropdown.style.opacity = '0';
+        masterDropdown.style.transform = 'translateY(-10px)';
+        
+        setTimeout(() => {
+          masterDropdown.style.display = 'none';
+          // Remove from DOM to prevent memory leaks
+          if (masterDropdown.parentNode) {
+            masterDropdown.parentNode.removeChild(masterDropdown);
+          }
+          masterDropdown = null;
+        }, 200);
       }
     }
 
-    // Event listeners
-    masterInput.addEventListener('input', function() {
-      const query = this.value;
-      const filteredEmployees = filterEmployees(query);
-      
-      if (filteredEmployees.length > 0) {
-        renderDropdownOptions(filteredEmployees);
-        showDropdown();
-      } else {
-        hideDropdown();
-      }
-    });
-
-    masterInput.addEventListener('focus', function() {
-      if (this.value.trim()) {
-        const filteredEmployees = filterEmployees(this.value);
+    // Event listeners for desktop
+    if (masterInput) {
+      console.log('🔍 Setting up desktop master input event listeners');
+      masterInput.addEventListener('input', function() {
+        console.log('💻 Desktop master input event triggered, value:', this.value);
+        const query = this.value;
+        const filteredEmployees = filterEmployees(query);
+        console.log('🔍 Filtered employees:', filteredEmployees.length);
+        
         if (filteredEmployees.length > 0) {
           renderDropdownOptions(filteredEmployees);
-          showDropdown();
+          showDropdown(this);
+        } else {
+          hideDropdown();
         }
-      }
-    });
+      });
+
+      masterInput.addEventListener('focus', function() {
+        if (this.value.trim()) {
+          const filteredEmployees = filterEmployees(this.value);
+          if (filteredEmployees.length > 0) {
+            renderDropdownOptions(filteredEmployees);
+            showDropdown(this);
+          }
+        }
+      });
+    }
+
+    // Event listeners for mobile
+    if (masterInputMobile) {
+      console.log('🔍 Setting up mobile master input event listeners');
+      
+      masterInputMobile.addEventListener('input', function() {
+        console.log('📱 Mobile master input event triggered, value:', this.value);
+        const query = this.value;
+        const filteredEmployees = filterEmployees(query);
+        console.log('🔍 Filtered employees:', filteredEmployees.length);
+        
+        if (filteredEmployees.length > 0) {
+          renderDropdownOptions(filteredEmployees);
+          showDropdown(this);
+        } else {
+          hideDropdown();
+        }
+      });
+
+      masterInputMobile.addEventListener('focus', function() {
+        console.log('📱 Mobile master input focused, value:', this.value);
+        if (this.value.trim()) {
+          const filteredEmployees = filterEmployees(this.value);
+          console.log('🔍 Focus filtered employees:', filteredEmployees.length);
+          if (filteredEmployees.length > 0) {
+            renderDropdownOptions(filteredEmployees);
+            showDropdown(this);
+          }
+        }
+      });
+      
+      console.log('✅ Mobile master input event listeners attached');
+    } else {
+      console.log('❌ Mobile master input not found');
+    }
     
     console.log('✅ Master input event listeners attached');
 
@@ -1212,18 +1506,22 @@ function initializeBillingSystem() {
         return;
       }
       
-      // Don't hide if clicking on the input itself
-      if (masterInput.contains(e.target)) {
+      // Don't hide if clicking on either input
+      if ((masterInput && masterInput.contains(e.target)) || 
+          (masterInputMobile && masterInputMobile.contains(e.target))) {
         return;
       }
       
-      // Hide only if clicking outside both input and dropdown
-      if (!masterInput.contains(e.target) && (!masterDropdown || !masterDropdown.contains(e.target))) {
+      // Hide only if clicking outside both inputs and dropdown
+      if ((!masterInput || !masterInput.contains(e.target)) && 
+          (!masterInputMobile || !masterInputMobile.contains(e.target)) && 
+          (!masterDropdown || !masterDropdown.contains(e.target))) {
         hideDropdown();
       }
     });
 
     // Load employees on initialization
+    console.log('🔍 Loading employees on initialization...');
     loadEmployees();
   }
 
@@ -1232,14 +1530,58 @@ function initializeBillingSystem() {
     return window.selectedMasterId;
   };
 
+  // Test function for master dropdown
+  window.testMasterDropdown = function() {
+    console.log('🧪 Testing master dropdown...');
+    console.log('📱 Mobile master input:', masterInputMobile);
+    console.log('💻 Desktop master input:', masterInput);
+    console.log('👥 Employees loaded:', employees.length);
+    
+    if (masterInputMobile) {
+      console.log('📱 Triggering mobile master input focus...');
+      masterInputMobile.focus();
+      masterInputMobile.value = 'test';
+      masterInputMobile.dispatchEvent(new Event('input'));
+    }
+  };
+
+  // Test function to check master selection status
+  window.testMasterSelection = function() {
+    console.log('🧪 Testing master selection status...');
+    
+    const masterNameElement = document.getElementById('masterName');
+    const masterNameMobileElement = document.getElementById('masterNameMobile');
+    
+    console.log('💻 Desktop master element:', masterNameElement);
+    console.log('📱 Mobile master element:', masterNameMobileElement);
+    
+    if (masterNameElement) {
+      console.log('💻 Desktop master value:', masterNameElement.value);
+      console.log('💻 Desktop master data-selected-master:', masterNameElement.getAttribute('data-selected-master'));
+    }
+    
+    if (masterNameMobileElement) {
+      console.log('📱 Mobile master value:', masterNameMobileElement.value);
+      console.log('📱 Mobile master data-selected-master:', masterNameMobileElement.getAttribute('data-selected-master'));
+    }
+    
+    // Also check global selectedMasterId
+    console.log('🌐 Global selectedMasterId:', window.selectedMasterId);
+  };
+
     // Setup Add Item button functionality
   function setupAddItemHandler() {
     // Setup desktop add item handler
     const addItemBtn = document.getElementById('addItemBtn');
     if (addItemBtn) {
-      addItemBtn.classList.add('add-item-btn-mobile');
-      addItemBtn.addEventListener('click', function(e) {
+      // Remove existing event listeners by cloning the element
+      const newAddItemBtn = addItemBtn.cloneNode(true);
+      addItemBtn.parentNode.replaceChild(newAddItemBtn, addItemBtn);
+      
+      newAddItemBtn.classList.add('add-item-btn-mobile');
+      newAddItemBtn.addEventListener('click', function(e) {
         e.preventDefault();
+        console.log('Desktop add item button clicked');
         handleAddItem('desktop');
       });
     }
@@ -1247,14 +1589,21 @@ function initializeBillingSystem() {
     // Setup mobile add item handler
     const addItemBtnMobile = document.getElementById('addItemBtnMobile');
     if (addItemBtnMobile) {
-      addItemBtnMobile.addEventListener('click', function(e) {
+      // Remove existing event listeners by cloning the element
+      const newAddItemBtnMobile = addItemBtnMobile.cloneNode(true);
+      addItemBtnMobile.parentNode.replaceChild(newAddItemBtnMobile, addItemBtnMobile);
+      
+      newAddItemBtnMobile.addEventListener('click', function(e) {
         e.preventDefault();
+        console.log('Mobile add item button clicked');
         handleAddItem('mobile');
       });
     }
   }
 
-  function handleAddItem(formType) {
+  async function handleAddItem(formType) {
+    console.log('handleAddItem called with formType:', formType);
+    
     // Get form elements based on form type
     let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput;
     
@@ -1362,6 +1711,78 @@ function initializeBillingSystem() {
     const advance = parseFloat(advanceInput?.value) || 0;
     const vatPercent = parseFloat(vatInput?.value) || 5;
     
+    // Check if this product already exists in the bill
+    const existingItemIndex = bill.findIndex(item => item.product_id === productId);
+    console.log('Checking for duplicate product. Product ID:', productId, 'Existing index:', existingItemIndex);
+    
+    if (existingItemIndex !== -1) {
+      // Product already exists, show confirmation dialog
+      const existingItem = bill[existingItemIndex];
+      const newQuantity = existingItem.quantity + quantity;
+      const newSubtotal = Math.round(newQuantity * price * 100) / 100;
+      const newTotal = Math.round((newSubtotal - discount) * 100) / 100;
+      const newVatAmount = Math.round(newTotal * (vatPercent / 100) * 100) / 100;
+      
+      console.log('Duplicate found. Existing quantity:', existingItem.quantity, 'New quantity:', quantity, 'Total will be:', newQuantity);
+      
+      // Show modern confirmation dialog
+      console.log('Showing confirmation dialog for duplicate product');
+      console.log('showConfirmDialog available:', typeof showConfirmDialog);
+      
+      let confirmed;
+      if (typeof showConfirmDialog !== 'function') {
+        console.error('showConfirmDialog is not available!');
+        // Fallback to simple confirm
+        confirmed = confirm(`"${productName}" is already in the bill. Would you like to increase the quantity?`);
+        console.log('Fallback confirm result:', confirmed);
+      } else {
+        confirmed = await showConfirmDialog(
+          `"${productName}" is already in the bill with quantity ${existingItem.quantity}.<br><br>Would you like to increase the quantity to ${newQuantity} instead of adding a duplicate item?`,
+          'Product Already Added',
+          'info'
+        );
+        console.log('User response to duplicate dialog:', confirmed);
+      }
+      
+      if (confirmed) {
+        console.log('User confirmed to update quantity. Updating existing item...');
+        // Update existing item with new quantity and recalculate totals
+        bill[existingItemIndex] = {
+          ...existingItem,
+          quantity: newQuantity,
+          rate: price, // Update rate in case it changed (changed from 'price' to 'rate')
+          discount: discount,
+          advance_paid: advance, // Changed from 'advance' to 'advance_paid' to match backend expectation
+          vat_percent: vatPercent,
+          vat_amount: newVatAmount,
+          subtotal: newSubtotal,
+          total: newTotal
+        };
+        
+        console.log('Updated existing item:', bill[existingItemIndex]);
+        
+        // Update display
+        renderBillTable();
+        updateTotals();
+        
+        // Clear form fields
+        clearBillingForm(formType);
+        
+        // Show success message
+        showBillingSuccess('Quantity updated');
+        
+        // Focus back to product input
+        setTimeout(() => {
+          if (productInput) {
+            productInput.focus();
+          }
+        }, 500);
+      } else {
+        console.log('User cancelled duplicate dialog. Not adding item.');
+      }
+      return;
+    }
+    
     // Calculate total with better precision
     const subtotal = Math.round(quantity * price * 100) / 100;
     const total = Math.round((subtotal - discount) * 100) / 100;
@@ -1372,15 +1793,16 @@ function initializeBillingSystem() {
       product_id: productId,
       product_name: productName,
       quantity: quantity,
-      price: price,
+      rate: price, // Changed from 'price' to 'rate' to match backend expectation
       discount: discount,
-      advance: advance,
+      advance_paid: advance, // Changed from 'advance' to 'advance_paid' to match backend expectation
       vat_percent: vatPercent,
       vat_amount: vatAmount,
       subtotal: subtotal, // Store subtotal (before discount)
       total: total // Store final total (after discount)
     };
     
+    console.log('Adding new item to bill:', item);
     bill.push(item);
     
     // Update display
@@ -1391,7 +1813,7 @@ function initializeBillingSystem() {
     clearBillingForm(formType);
     
     // Show success message with better feedback
-    showBillingSuccess(`${productName} added successfully`);
+    showBillingSuccess('Item added');
     
          // Focus back to product input for quick addition of next item
      setTimeout(() => {
@@ -1418,6 +1840,78 @@ function initializeBillingSystem() {
     errorDiv.className = 'billing-error-message';
     errorDiv.textContent = message;
     input.parentNode.appendChild(errorDiv);
+  }
+
+  // Helper function to reset the entire billing form after successful bill creation
+  function resetBillingForm() {
+    // Clear the bill array
+    bill.length = 0;
+    
+    // Clear customer fields
+    clearCustomerFields();
+    
+    // Clear billing form fields (both desktop and mobile)
+    clearBillingForm('desktop');
+    clearBillingForm('mobile');
+    
+    // Clear master fields
+    const masterNameElement = document.getElementById('masterName');
+    const masterNameMobileElement = document.getElementById('masterNameMobile');
+    if (masterNameElement) {
+      masterNameElement.value = '';
+      masterNameElement.removeAttribute('data-selected-master');
+    }
+    if (masterNameMobileElement) {
+      masterNameMobileElement.value = '';
+      masterNameMobileElement.removeAttribute('data-selected-master');
+    }
+    
+    // Clear bill details
+    const billNumberElement = document.getElementById('billNumber');
+    const billCustomerElement = document.getElementById('billCustomer');
+    const billMobileElement = document.getElementById('billMobile');
+    const billDateElement = document.getElementById('billDate');
+    const deliveryDateElement = document.getElementById('deliveryDate');
+    const trialDateElement = document.getElementById('trialDate');
+    const billNotesElement = document.getElementById('billNotes');
+    
+    if (billNumberElement) billNumberElement.value = '';
+    if (billCustomerElement) billCustomerElement.value = '';
+    if (billMobileElement) billMobileElement.value = '';
+    if (billDateElement) billDateElement.value = '';
+    if (deliveryDateElement) deliveryDateElement.value = '';
+    if (trialDateElement) trialDateElement.value = '';
+    if (billNotesElement) billNotesElement.value = '';
+    
+    // Update the bill table display and totals
+    renderBillTable();
+    updateTotals();
+    
+    // Set default dates and bill number
+    setDefaultBillingDates();
+    
+    // Disable action buttons
+    const whatsappBtn = document.getElementById('whatsappBtn');
+    const emailBtn = document.getElementById('emailBtn');
+    const printBtn = document.getElementById('printBtn');
+    
+    if (whatsappBtn) {
+      whatsappBtn.disabled = true;
+      whatsappBtn.classList.add('opacity-50', 'pointer-events-none', 'bg-green-600/40', 'text-white/60');
+      whatsappBtn.classList.remove('bg-green-600', 'text-white', 'hover:bg-green-500');
+    }
+    if (emailBtn) {
+      emailBtn.disabled = true;
+      emailBtn.classList.add('opacity-50', 'pointer-events-none', 'bg-blue-600/40', 'text-white/60');
+      emailBtn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-500');
+    }
+    if (printBtn) {
+      printBtn.disabled = true;
+      printBtn.classList.add('opacity-50', 'pointer-events-none', 'bg-indigo-600/40', 'text-white/60');
+      printBtn.classList.remove('bg-indigo-600', 'text-white', 'hover:bg-indigo-500');
+    }
+    
+    console.log('✅ Billing form reset successfully');
   }
 
   // Helper function to clear billing form
@@ -1483,10 +1977,19 @@ function initializeBillingSystem() {
       <span>${message}</span>
     `;
     
-    // Insert after the add item button
+    // Try to insert after desktop add item button first
     const addItemBtn = document.getElementById('addItemBtn');
     if (addItemBtn && addItemBtn.parentNode) {
       addItemBtn.parentNode.insertBefore(successDiv, addItemBtn.nextSibling);
+    } else {
+      // If desktop button not found, try mobile button
+      const addItemBtnMobile = document.getElementById('addItemBtnMobile');
+      if (addItemBtnMobile && addItemBtnMobile.parentNode) {
+        addItemBtnMobile.parentNode.insertBefore(successDiv, addItemBtnMobile.nextSibling);
+      } else {
+        // If neither button found, append to body as fallback
+        document.body.appendChild(successDiv);
+      }
     }
     
     // Remove after 3 seconds
@@ -1637,6 +2140,139 @@ function initializeBillingSystem() {
     }
   }
 
+  // Setup Print Button functionality
+  function setupPrintButton() {
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) {
+      printBtn.addEventListener('click', async function() {
+        console.log('Print button clicked');
+        
+        if (bill.length === 0) {
+          showModernAlert('Please add items to the bill first', 'warning', 'No Items');
+          return;
+        }
+
+        // Generate bill number if not exists
+        const billNumberInput = document.getElementById('billNumber');
+        if (billNumberInput && !billNumberInput.value.trim()) {
+          const timestamp = Date.now();
+          billNumberInput.value = `BILL-${timestamp}`;
+        }
+
+        // Collect bill data
+        const masterNameElement = document.getElementById('masterName');
+        const masterNameMobileElement = document.getElementById('masterNameMobile');
+        let masterId = null;
+        
+        console.log('🔍 Debugging master selection:');
+        console.log('💻 Desktop master element:', masterNameElement);
+        console.log('📱 Mobile master element:', masterNameMobileElement);
+        console.log('🌐 Global selectedMasterId:', window.selectedMasterId);
+        
+        if (masterNameElement) {
+          console.log('💻 Desktop master value:', masterNameElement.value);
+          console.log('💻 Desktop master data-selected-master:', masterNameElement.getAttribute('data-selected-master'));
+        }
+        
+        if (masterNameMobileElement) {
+          console.log('📱 Mobile master value:', masterNameMobileElement.value);
+          console.log('📱 Mobile master data-selected-master:', masterNameMobileElement.getAttribute('data-selected-master'));
+        }
+        
+        // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
+        let selectedMasterElement = masterNameElement;
+        if (!selectedMasterElement || !selectedMasterElement.getAttribute('data-selected-master')) {
+          selectedMasterElement = masterNameMobileElement;
+        }
+        
+        console.log('🎯 Selected master element:', selectedMasterElement);
+        
+        if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
+          try {
+            const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
+            masterId = selectedMaster.master_id;
+            console.log('✅ Successfully parsed master data:', selectedMaster);
+            console.log('🆔 Master ID extracted:', masterId);
+          } catch (e) {
+            console.warn('Failed to parse selected master data:', e);
+          }
+        } else {
+          console.log('❌ No master selected or data-selected-master attribute not found');
+          // Try to use global selectedMasterId as fallback
+          if (window.selectedMasterId) {
+            masterId = window.selectedMasterId;
+            console.log('🔄 Using global selectedMasterId as fallback:', masterId);
+          }
+        }
+        
+        // Calculate totals from bill array (same logic as updateTotals function)
+        const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
+        const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
+        const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
+        const totalBeforeAdvance = subtotal + totalVat;
+        const amountDue = totalBeforeAdvance - totalAdvance;
+        
+        const billData = {
+          bill: {
+            bill_number: document.getElementById('billNumber')?.value || '',
+            customer_name: document.getElementById('billCustomer')?.value || '',
+            customer_phone: document.getElementById('billMobile')?.value || '',
+            bill_date: document.getElementById('billDate')?.value || '',
+            delivery_date: document.getElementById('deliveryDate')?.value || '',
+            trial_date: document.getElementById('trialDate')?.value || '',
+            master_id: masterId,
+            master_name: document.getElementById('masterName')?.value || '',
+            notes: document.getElementById('billNotes')?.value || '',
+            subtotal: subtotal,
+            discount: 0, // No discount field in current UI
+            vat_amount: totalVat,
+            total_amount: amountDue,
+            advance_paid: totalAdvance,
+            balance_amount: amountDue
+          },
+          items: bill
+        };
+
+        try {
+          console.log('📋 Bill data being sent:', billData);
+          console.log('🔍 Master ID:', masterId);
+          
+          // Save bill first
+          const saveResponse = await fetch('/api/bills', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(billData)
+          });
+
+          const saveResult = await saveResponse.json();
+          
+          if (saveResult.error) {
+            showModernAlert(saveResult.error, 'error', 'Save Failed');
+            return;
+          }
+
+          if (saveResult.bill_id) {
+            // Open print window
+            window.open(`/api/bills/${saveResult.bill_id}/print`, '_blank');
+            
+            // Reset the billing form
+            resetBillingForm();
+            
+            // Show success message
+            showSimpleToast('Bill saved and print window opened', 'success');
+          } else {
+            showModernAlert('Failed to save bill', 'error', 'Save Failed');
+          }
+        } catch (error) {
+          console.error('Error saving bill:', error);
+          showModernAlert('Failed to save bill. Please try again.', 'error', 'Save Failed');
+        }
+      });
+    }
+  }
+
   // Initialize billing system
   setDefaultBillingDates(); // This is now async but we don't need to await it
   setupMobileCustomerFetch();
@@ -1649,14 +2285,20 @@ function initializeBillingSystem() {
   setupProductQuickAdd();
   setupSmartDefaults();
   setupMobileBillingToggle();
+  setupPrintButton(); // Add print button setup
+  
+
   
   console.log('🚀 Billing system initialized successfully!');
+  console.log('showConfirmDialog available during init:', typeof showConfirmDialog);
+  console.log('showSimpleToast available during init:', typeof showSimpleToast);
   
   // Make functions globally available
   window.initializeBillingSystem = initializeBillingSystem;
   window.showPaymentModal = showPaymentModal;
   window.showPaymentProgressModal = showPaymentProgressModal;
   window.showModernAlert = showModernAlert; // Expose modern alert globally
+  window.showSimpleToast = showSimpleToast; // Expose simple toast globally
   window.togglePrint = togglePrint;
   window.renderBillTable = renderBillTable;
   window.updateTotals = updateTotals;
@@ -1667,6 +2309,8 @@ function initializeBillingSystem() {
   window.populateCustomerFields = populateCustomerFields; // Expose for manual use
   window.clearCustomerFields = clearCustomerFields; // Expose for manual use
   window.setupAddItemHandler = setupAddItemHandler; // Expose for manual use
+  
+
   
   // Function to reset billing form with fresh defaults
   window.resetBillingForm = async function() {
@@ -1686,9 +2330,15 @@ function initializeBillingSystem() {
   };
   
   window.editBillItem = function(index) {
+    console.log('editBillItem called with index:', index);
     const item = bill[index];
-    if (!item) return;
+    if (!item) {
+      console.log('No item found at index:', index);
+      return;
+    }
+    console.log('Editing item:', item);
     
+    // Desktop form elements
     const billProductElement = document.getElementById('billProduct');
     const billQuantityElement = document.getElementById('billQty');
     const billPriceElement = document.getElementById('billRate');
@@ -1696,64 +2346,86 @@ function initializeBillingSystem() {
     const billAdvanceElement = document.getElementById('billAdvPaid');
     const billVatElement = document.getElementById('vatPercent');
     
+    // Mobile form elements
+    const billProductMobileElement = document.getElementById('billProductMobile');
+    const billQuantityMobileElement = document.getElementById('billQtyMobile');
+    const billPriceMobileElement = document.getElementById('billRateMobile');
+    const billDiscountMobileElement = document.getElementById('billDiscountMobile');
+    const billAdvanceMobileElement = document.getElementById('billAdvPaidMobile');
+    const billVatMobileElement = document.getElementById('vatPercentMobile');
+    
+    // Populate desktop form elements
     if (billProductElement) {
       billProductElement.value = item.product_name;
       billProductElement.setAttribute('data-selected-product', JSON.stringify({
         product_id: item.product_id,
         name: item.product_name,
-        price: item.price,
+        price: item.rate, // Changed from item.price to item.rate
         product_type: 'Unknown'
       }));
     }
     if (billQuantityElement) billQuantityElement.value = item.quantity;
-    if (billPriceElement) billPriceElement.value = item.price;
+    if (billPriceElement) billPriceElement.value = item.rate; // Changed from item.price to item.rate
     if (billDiscountElement) billDiscountElement.value = item.discount || 0;
-    if (billAdvanceElement) billAdvanceElement.value = item.advance || 0;
+    if (billAdvanceElement) billAdvanceElement.value = item.advance_paid || 0;
     if (billVatElement) billVatElement.value = item.vat_percent || 5;
+    
+    // Populate mobile form elements
+    if (billProductMobileElement) {
+      billProductMobileElement.value = item.product_name;
+      billProductMobileElement.setAttribute('data-selected-product', JSON.stringify({
+        product_id: item.product_id,
+        name: item.product_name,
+        price: item.rate, // Changed from item.price to item.rate
+        product_type: 'Unknown'
+      }));
+      console.log('Mobile product element populated:', item.product_name);
+    } else {
+      console.log('Mobile product element not found');
+    }
+    if (billQuantityMobileElement) {
+      billQuantityMobileElement.value = item.quantity;
+      console.log('Mobile quantity element populated:', item.quantity);
+    } else {
+      console.log('Mobile quantity element not found');
+    }
+    if (billPriceMobileElement) {
+      billPriceMobileElement.value = item.rate; // Changed from item.price to item.rate
+      console.log('Mobile price element populated:', item.rate);
+    } else {
+      console.log('Mobile price element not found');
+    }
+    if (billDiscountMobileElement) billDiscountMobileElement.value = item.discount || 0;
+    if (billAdvanceMobileElement) billAdvanceMobileElement.value = item.advance || 0;
+    if (billVatMobileElement) billVatMobileElement.value = item.vat_percent || 5;
     
     bill.splice(index, 1);
     renderBillTable();
     updateTotals();
-  };
-  window.deleteBillItem = function(index) {
-    // Show confirmation dialog
-    const confirmModal = document.getElementById('confirmModal');
-    const confirmModalTitle = document.getElementById('confirmModalTitle');
-    const confirmModalMsg = document.getElementById('confirmModalMsg');
-    const confirmModalOk = document.getElementById('confirmModalOk');
-    const confirmModalCancel = document.getElementById('confirmModalCancel');
     
-    if (confirmModal && confirmModalTitle && confirmModalMsg && confirmModalOk && confirmModalCancel) {
-      confirmModalTitle.textContent = 'Delete Item';
-      confirmModalMsg.textContent = 'Are you sure you want to delete this item? This action cannot be undone.';
+    // Show success message
+    if (window.showSimpleToast) {
+      window.showSimpleToast('Item loaded for editing!', 'info');
+    }
+    
+    console.log('Edit operation completed');
+  };
+  
+  window.deleteBillItem = async function(index) {
+    const confirmed = await showConfirmDialog(
+      'Are you sure you want to delete this item? This action cannot be undone.',
+      'Delete Item',
+      'delete'
+    );
+    
+    if (confirmed) {
+      bill.splice(index, 1);
+      renderBillTable();
+      updateTotals();
       
-      // Show modal
-      confirmModal.classList.remove('hidden');
-      
-      // Handle confirmation
-      const handleConfirm = () => {
-        bill.splice(index, 1);
-        renderBillTable();
-        updateTotals();
-        confirmModal.classList.add('hidden');
-        confirmModalOk.removeEventListener('click', handleConfirm);
-        confirmModalCancel.removeEventListener('click', handleCancel);
-      };
-      
-      const handleCancel = () => {
-        confirmModal.classList.add('hidden');
-        confirmModalOk.removeEventListener('click', handleConfirm);
-        confirmModalCancel.removeEventListener('click', handleCancel);
-      };
-      
-      confirmModalOk.addEventListener('click', handleConfirm);
-      confirmModalCancel.addEventListener('click', handleCancel);
-    } else {
-      // Fallback to simple alert if modal not available
-      if (confirm('Are you sure you want to delete this item?')) {
-        bill.splice(index, 1);
-        renderBillTable();
-        updateTotals();
+      // Show success toast
+      if (window.showSimpleToast) {
+        window.showSimpleToast('Item deleted successfully!', 'success');
       }
     }
   };
