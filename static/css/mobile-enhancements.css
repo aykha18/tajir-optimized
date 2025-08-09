@@ -320,6 +320,119 @@
     padding: 0.5rem 0.75rem !important;
   }
 
+  /* Employee Section Mobile Enhancements - Mirroring Products */
+  #employeeSec .page {
+    padding: 16px;
+  }
+
+  #employeeSec .modern-card {
+    background: rgba(17, 24, 39, 0.9);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  #employeeSearch {
+    background: rgba(17, 24, 39, 0.9);
+    border: 2px solid #374151;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 16px;
+    color: #f9fafb;
+    width: 100%;
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+  }
+
+  #employeeSearch:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    outline: none;
+  }
+
+  #employeeForm {
+    background: rgba(17, 24, 39, 0.9);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  #employeeForm .grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  #employeeForm .col-span-4,
+  #employeeForm .col-span-3,
+  #employeeForm .col-span-2 {
+    grid-column: span 1;
+  }
+
+  #employeeForm input,
+  #employeeForm select {
+    background: rgba(31, 41, 55, 0.9);
+    border: 2px solid #374151;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 16px;
+    color: #f9fafb;
+    width: 100%;
+    transition: all 0.3s ease;
+  }
+
+  #employeeForm input:focus,
+  #employeeForm select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    outline: none;
+  }
+
+  #employeeForm label {
+    color: #d1d5db;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  #employeeForm button[type="submit"] {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 16px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+  }
+
+  #employeeForm button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  }
+
+  #employeeForm button[type="submit"]:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  }
+
+  #employeeTable {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  #employeeTable thead,
+  #employeeTable tbody {
+    background: rgba(17, 24, 39, 0.9);
+  }
+
+  #employeeTable th,
+  #employeeTable td {
+    padding: 16px 12px;
+    font-size: 14px;
+  }
+
   /* Mobile Cards Container */
   .mobile-cards-container {
     display: grid;
