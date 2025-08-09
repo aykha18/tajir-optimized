@@ -1319,6 +1319,8 @@ def add_employee():
     name = data.get('name', '').strip()
     mobile = data.get('mobile', '').strip()
     address = data.get('address', '').strip()
+    # Accept optional role/position
+    position = (data.get('position') or data.get('role') or '').strip()
     user_id = get_current_user_id()
     
     if not name:
@@ -1333,8 +1335,21 @@ def add_employee():
             conn.close()
             return jsonify({'error': f'Mobile number {mobile} is already assigned to employee "{existing_employee["name"]}"'}), 400
     
-    conn.execute('INSERT INTO employees (user_id, name, phone, address) VALUES (?, ?, ?, ?)', (user_id, name, mobile, address))
-    conn.commit()
+    # Insert with optional position; fallback if legacy DB lacks column
+    try:
+        conn.execute('INSERT INTO employees (user_id, name, phone, address, position) VALUES (?, ?, ?, ?, ?)', (user_id, name, mobile, address, position))
+        conn.commit()
+    except Exception as e:
+        if 'no such column' in str(e).lower() and 'position' in str(e).lower():
+            # Legacy DB without position column
+            conn.rollback()
+            conn.execute('INSERT INTO employees (user_id, name, phone, address) VALUES (?, ?, ?, ?)', (user_id, name, mobile, address))
+            conn.commit()
+        else:
+            conn.rollback()
+            log_dml_error('INSERT', 'employees', e, user_id=user_id, data=data)
+            conn.close()
+            return jsonify({'error': 'Failed to add employee'}), 500
     emp_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
     conn.close()
     return jsonify({'id': emp_id, 'message': 'Employee added successfully'})
@@ -1345,6 +1360,8 @@ def update_employee(employee_id):
     name = data.get('name', '').strip()
     mobile = data.get('mobile', '').strip()
     address = data.get('address', '').strip()
+    # Accept optional role/position
+    position = (data.get('position') or data.get('role') or '').strip()
     user_id = get_current_user_id()
     
     if not name:
@@ -1359,8 +1376,20 @@ def update_employee(employee_id):
             conn.close()
             return jsonify({'error': f'Mobile number {mobile} is already assigned to employee "{existing_employee["name"]}"'}), 400
     
-    conn.execute('UPDATE employees SET name = ?, phone = ?, address = ? WHERE employee_id = ? AND user_id = ?', (name, mobile, address, employee_id, user_id))
-    conn.commit()
+    try:
+        conn.execute('UPDATE employees SET name = ?, phone = ?, address = ?, position = ? WHERE employee_id = ? AND user_id = ?', (name, mobile, address, position, employee_id, user_id))
+        conn.commit()
+    except Exception as e:
+        if 'no such column' in str(e).lower() and 'position' in str(e).lower():
+            # Legacy DB without position column
+            conn.rollback()
+            conn.execute('UPDATE employees SET name = ?, phone = ?, address = ? WHERE employee_id = ? AND user_id = ?', (name, mobile, address, employee_id, user_id))
+            conn.commit()
+        else:
+            conn.rollback()
+            log_dml_error('UPDATE', 'employees', e, user_id=user_id, data=data)
+            conn.close()
+            return jsonify({'error': 'Failed to update employee'}), 500
     conn.close()
     return jsonify({'message': 'Employee updated successfully'})
 
@@ -1766,7 +1795,7 @@ def handle_setup_wizard():
         shop_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         
         # Create new user account
-        default_password = "tailor123"  # Default password
+        default_password = "kyuaykha123"  # Default password
         password_hash = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt())
         
         # Insert new user with actual email
