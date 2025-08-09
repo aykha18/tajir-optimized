@@ -477,7 +477,17 @@ def get_customers():
     search = request.args.get('search', '').strip()
     conn = get_db_connection()
     if phone:
-        customers = conn.execute('SELECT * FROM customers WHERE phone = ? AND user_id = ?', (phone, user_id)).fetchall()
+        # Normalize phone by removing common non-digit characters for comparison
+        import re as _re
+        phone_digits = _re.sub(r'\D', '', phone)
+        customers = conn.execute(
+            """
+            SELECT * FROM customers 
+            WHERE user_id = ? AND 
+                  REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = ?
+            """,
+            (user_id, phone_digits)
+        ).fetchall()
     elif search:
         like_search = f"%{search}%"
         customers = conn.execute('SELECT * FROM customers WHERE user_id = ? AND (name LIKE ? OR phone LIKE ? OR business_name LIKE ?) ORDER BY name', (user_id, like_search, like_search, like_search)).fetchall()
@@ -503,6 +513,12 @@ def add_customer():
     
     if not name:
         return jsonify({'error': 'Customer name is required'}), 400
+    if not phone:
+        return jsonify({'error': 'Customer mobile is required'}), 400
+    # Enforce 9-10 digits for mobile
+    phone_digits = re.sub(r'\D', '', phone)
+    if len(phone_digits) < 9 or len(phone_digits) > 10:
+        return jsonify({'error': 'Customer mobile must be 9-10 digits'}), 400
     
     # Validate customer type
     if customer_type not in ['Individual', 'Business']:
@@ -514,9 +530,16 @@ def add_customer():
     
     conn = get_db_connection()
     
-    # Check for duplicate phone number
-    if phone:
-        existing_customer = conn.execute('SELECT name FROM customers WHERE phone = ? AND user_id = ?', (phone, user_id)).fetchone()
+    # Check for duplicate phone number (normalize stored values)
+    if phone_digits:
+        existing_customer = conn.execute(
+            """
+            SELECT name FROM customers 
+            WHERE user_id = ? AND 
+                  REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = ?
+            """,
+            (user_id, phone_digits)
+        ).fetchone()
         if existing_customer:
             conn.close()
             return jsonify({'error': f'Phone number {phone} is already assigned to customer "{existing_customer["name"]}"'}), 400
@@ -525,7 +548,7 @@ def add_customer():
         conn.execute('''
             INSERT INTO customers (user_id, name, phone, trn, city, area, email, address, customer_type, business_name, business_address) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, name, phone, trn, city, area, email, address, customer_type, business_name, business_address))
+        ''', (user_id, name, phone_digits, trn, city, area, email, address, customer_type, business_name, business_address))
         conn.commit()
         customer_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
         conn.close()
@@ -574,9 +597,22 @@ def update_customer(customer_id):
     
     conn = get_db_connection()
     
-    # Check for duplicate phone number (excluding current customer)
-    if phone:
-        existing_customer = conn.execute('SELECT name FROM customers WHERE phone = ? AND user_id = ? AND customer_id != ?', (phone, user_id, customer_id)).fetchone()
+    # Enforce 9-10 digits for mobile
+    phone_digits = re.sub(r'\D', '', phone)
+    if phone and (len(phone_digits) < 9 or len(phone_digits) > 10):
+        conn.close()
+        return jsonify({'error': 'Customer mobile must be 9-10 digits'}), 400
+
+    # Check for duplicate phone number (excluding current customer, normalized)
+    if phone_digits:
+        existing_customer = conn.execute(
+            """
+            SELECT name FROM customers 
+            WHERE user_id = ? AND customer_id != ? AND 
+                  REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = ?
+            """,
+            (user_id, customer_id, phone_digits)
+        ).fetchone()
         if existing_customer:
             conn.close()
             return jsonify({'error': f'Phone number {phone} is already assigned to customer "{existing_customer["name"]}"'}), 400
@@ -586,7 +622,7 @@ def update_customer(customer_id):
         SET name = ?, phone = ?, trn = ?, city = ?, area = ?, email = ?, address = ?, 
             customer_type = ?, business_name = ?, business_address = ?
         WHERE customer_id = ? AND user_id = ?
-    ''', (name, phone, trn, city, area, email, address, customer_type, business_name, business_address, customer_id, user_id))
+    ''', (name, phone_digits, trn, city, area, email, address, customer_type, business_name, business_address, customer_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Customer updated successfully'})
@@ -752,6 +788,11 @@ def create_bill():
             if not items_data:
                 return jsonify({'error': 'At least one item is required'}), 400
             
+            # Validate required customer mobile
+            customer_phone = (bill_data.get('customer_phone') or '').strip()
+            if not customer_phone:
+                return jsonify({'error': 'Customer mobile is required'}), 400
+
             # Check for master_id (Master Name) - make it optional for now
             print(f"DEBUG: master_id received: {bill_data.get('master_id')} (type: {type(bill_data.get('master_id'))})")
             master_id = bill_data.get('master_id')
@@ -786,7 +827,7 @@ def create_bill():
             # Check if customer exists
             existing_customer = conn.execute(
                 'SELECT customer_id FROM customers WHERE phone = ? AND user_id = ?', 
-                (bill_data.get('customer_phone', ''), user_id)
+                (re.sub(r'\D', '', customer_phone), user_id)
             ).fetchone()
             
             if existing_customer:
@@ -798,7 +839,7 @@ def create_bill():
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     user_id, bill_data.get('customer_name', ''),
-                    bill_data.get('customer_phone', ''),
+                    re.sub(r'\D', '', customer_phone),
                     bill_data.get('customer_trn', ''),
                     bill_data.get('customer_city', ''),
                     bill_data.get('customer_area', ''),
@@ -819,7 +860,7 @@ def create_bill():
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 user_id, bill_data.get('bill_number'), customer_id, bill_data.get('customer_name'),
-                bill_data.get('customer_phone'), bill_data.get('customer_city'),
+                re.sub(r'\D', '', customer_phone), bill_data.get('customer_city'),
                 bill_data.get('customer_area'), bill_data.get('customer_trn', ''),
                 bill_data.get('customer_type', 'Individual'), bill_data.get('business_name', ''),
                 bill_data.get('business_address', ''), bill_uuid, bill_data.get('bill_date'), 
@@ -891,6 +932,10 @@ def create_bill():
             
             if not items:
                 return jsonify({'error': 'At least one item is required'}), 400
+
+            # Validate required customer mobile for form submission
+            if not customer_phone:
+                return jsonify({'error': 'Customer mobile is required'}), 400
             
             # Calculate totals
             subtotal = sum(float(item.get('rate', 0)) * float(item.get('quantity', 1)) for item in items)
@@ -907,8 +952,12 @@ def create_bill():
             
             # Check if customer exists
             existing_customer = conn.execute(
-                'SELECT customer_id FROM customers WHERE phone = ? AND user_id = ?', 
-                (customer_phone, user_id)
+                """
+                SELECT customer_id FROM customers 
+                WHERE user_id = ? AND 
+                      REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = ?
+                """,
+                (user_id, re.sub(r'\D', '', customer_phone))
             ).fetchone()
             
             if existing_customer:
@@ -1789,30 +1838,66 @@ def handle_setup_wizard():
         
         conn = get_db_connection()
         
-        # Generate unique shop code
+        # Generate unique shop code (retry to avoid rare collisions)
         import random
         import string
-        shop_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        def generate_shop_code():
+            return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         
-        # Create new user account
+        # Prepare inputs
+        contact_number_raw = (data.get('contactNumber') or '').strip()
+        contact_number_digits = re.sub(r'\D', '', contact_number_raw)
+        if not contact_number_digits:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Contact number must contain digits'}), 400
+        
         default_password = "kyuaykha123"  # Default password
         password_hash = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt())
         
-        # Insert new user with actual email
-        user_email = data.get('emailAddress', f"shop_{shop_code}@tailorpos.com")
-        cursor = conn.execute('''
-            INSERT INTO users (email, mobile, shop_code, password_hash, shop_name, shop_type, contact_number, email_address)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            user_email,
-            data['contactNumber'],
-            shop_code,
-            password_hash.decode('utf-8'),
-            data['shopName'],
-            data['shopType'],
-            data['contactNumber'],
-            user_email
-        ))
+        # Normalize email: if empty, use fallback
+        provided_email = (data.get('emailAddress') or '').strip()
+        # Shop code may be needed for fallback email; generate with collision check
+        attempts = 0
+        while True:
+            attempts += 1
+            shop_code = generate_shop_code()
+            # Check uniqueness of shop_code
+            existing = conn.execute('SELECT 1 FROM users WHERE shop_code = ?', (shop_code,)).fetchone()
+            if not existing:
+                break
+            if attempts > 5:
+                conn.close()
+                return jsonify({'success': False, 'message': 'Failed to generate unique shop code. Please try again.'}), 500
+        
+        user_email = provided_email if provided_email else f"shop_{shop_code}@tailorpos.com"
+        
+        # Insert new user
+        try:
+            cursor = conn.execute('''
+                INSERT INTO users (email, mobile, shop_code, password_hash, shop_name, shop_type, contact_number, email_address)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                user_email,
+                contact_number_digits,
+                shop_code,
+                password_hash.decode('utf-8'),
+                data['shopName'],
+                data['shopType'],
+                contact_number_digits,
+                user_email
+            ))
+        except sqlite3.IntegrityError as ie:
+            # Determine which unique constraint failed
+            message = str(ie)
+            friendly = 'Setup failed due to duplicate data.'
+            if 'users.email' in message:
+                friendly = 'This email is already registered. Please use a different email.'
+            elif 'users.mobile' in message:
+                friendly = 'This contact number is already registered. Please use a different number.'
+            elif 'users.shop_code' in message:
+                friendly = 'Generated shop code collided. Please try again.'
+            conn.close()
+            return jsonify({'success': False, 'message': friendly}), 400
         
         new_user_id = cursor.lastrowid
         
@@ -1823,7 +1908,7 @@ def handle_setup_wizard():
         ''', (
             new_user_id, 
             data['shopName'], 
-            data['contactNumber'], 
+            contact_number_digits, 
             data.get('trn', ''),
             data.get('address', ''),
             f"Shop Type: {data['shopType']}",
@@ -1857,6 +1942,10 @@ def handle_setup_wizard():
         
     except Exception as e:
         print(f"Setup wizard error: {e}")
+        try:
+            conn.close()
+        except:
+            pass
         return jsonify({'success': False, 'message': 'Setup failed. Please try again.'})
 
 @app.route('/api/auth/login', methods=['POST'])

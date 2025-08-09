@@ -286,6 +286,8 @@ function setupCustomerFormHandler() {
     // Remove existing event listener if any
     customerForm.removeEventListener('submit', handleCustomerFormSubmit);
     customerForm.addEventListener('submit', handleCustomerFormSubmit);
+    // Ensure editingCustomerId resets on form reset
+    customerForm.addEventListener('reset', () => { editingCustomerId = null; });
   }
   
   // Setup customer mobile autocomplete
@@ -319,11 +321,12 @@ function handleCustomerTypeChange() {
 // Handle customer form submission
 async function handleCustomerFormSubmit(e) {
   e.preventDefault();
+  const form = e.target;
   
   const customerData = {
-    name: document.getElementById('customerName').value,
-    phone: document.getElementById('customerMobile').value,
-    city: document.getElementById('customerCity').value
+    name: (form.querySelector('#customerName') || {}).value || '',
+    phone: (form.querySelector('#customerMobile') || {}).value || '',
+    city: (form.querySelector('#customerCity') || {}).value || ''
   };
   
   if (!customerData.name || !customerData.phone) {
@@ -332,10 +335,12 @@ async function handleCustomerFormSubmit(e) {
   }
   
   // Basic phone number validation
-  if (customerData.phone && !/^\d{10,11}$/.test(customerData.phone.replace(/\s/g, ''))) {
-    alert('Please enter a valid phone number (10-11 digits)');
+  const phoneDigits = (customerData.phone || '').replace(/\D/g, '');
+  if (phoneDigits && (phoneDigits.length < 9 || phoneDigits.length > 10)) {
+    alert('Please enter a valid phone number (9-10 digits)');
     return;
   }
+  customerData.phone = phoneDigits;
   
   try {
     const url = editingCustomerId ? `/api/customers/${editingCustomerId}` : '/api/customers';
@@ -412,11 +417,20 @@ async function editCustomer(id) {
     const response = await fetch(`/api/customers/${id}`);
     const customer = await response.json();
     
-    if (customer) {
+    if (customer && !customer.error) {
+      const form = document.getElementById('customerForm');
+      if (!form) return;
       // Populate only the fields that exist in the form
-      document.getElementById('customerName').value = customer.name || '';
-      document.getElementById('customerMobile').value = customer.phone || '';
-      document.getElementById('customerCity').value = customer.city || '';
+      const setValue = (selector, value) => {
+        const el = form.querySelector(selector);
+        if (el) el.value = value || '';
+      };
+      setValue('#customerName', customer.name);
+      setValue('#customerMobile', customer.phone);
+      setValue('#customerCity', customer.city);
+      setValue('#customerType', customer.customer_type || 'Individual');
+      setValue('#customerBusinessName', customer.business_name);
+      setValue('#customerTRN', customer.trn);
       
       editingCustomerId = id;
       

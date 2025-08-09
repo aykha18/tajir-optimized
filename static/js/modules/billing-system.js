@@ -638,7 +638,12 @@ function initializeBillingSystem() {
 
       // Input event for real-time autocomplete
       billMobileElement.addEventListener('input', function(e) {
-        const phone = e.target.value.trim();
+        // Keep only digits and enforce max length 10
+        const sanitized = (e.target.value || '').replace(/\D/g, '').slice(0, 10);
+        if (e.target.value !== sanitized) {
+          e.target.value = sanitized;
+        }
+        const phone = sanitized;
         if (phone.length >= 5) {
           debouncedMobileSearch(phone);
         } else {
@@ -654,21 +659,29 @@ function initializeBillingSystem() {
         }
       });
 
-      // Blur event for existing functionality
+      // Blur event: validate length and optionally fetch existing customer
       billMobileElement.addEventListener('blur', async function(e) {
         // Delay hiding dropdown to allow click events
         setTimeout(() => {
           hideMobileDropdown();
         }, 200);
         
-        const phone = e.target.value.trim();
+        const phone = (e.target.value || '').trim();
         if (!phone) return;
+
+        // Enforce min length 9 digits
+        if (phone.length > 0 && phone.replace(/\D/g, '').length < 9) {
+          if (typeof showModernAlert === 'function') {
+            showModernAlert('Please enter at least 9 digits for mobile number', 'warning', 'Invalid Mobile');
+          }
+          // Refocus the field to correct input
+          e.target.focus();
+          return;
+        }
         
         const customer = await fetchCustomerByMobile(phone);
         if (customer) {
           populateCustomerFields(customer);
-        } else {
-          clearCustomerFields();
         }
       });
 
@@ -2152,6 +2165,15 @@ function initializeBillingSystem() {
           return;
         }
 
+        // Require customer mobile
+        const billMobileInput = document.getElementById('billMobile');
+        const customerMobile = billMobileInput?.value?.trim() || '';
+        if (!customerMobile) {
+          showModernAlert('Please enter customer mobile number', 'warning', 'Mobile Required');
+          if (billMobileInput) billMobileInput.focus();
+          return;
+        }
+
         // Generate bill number if not exists
         const billNumberInput = document.getElementById('billNumber');
         if (billNumberInput && !billNumberInput.value.trim()) {
@@ -2217,6 +2239,12 @@ function initializeBillingSystem() {
             bill_number: document.getElementById('billNumber')?.value || '',
             customer_name: document.getElementById('billCustomer')?.value || '',
             customer_phone: document.getElementById('billMobile')?.value || '',
+            customer_city: document.getElementById('billCity')?.value || '',
+            customer_area: document.getElementById('billArea')?.value || '',
+            customer_trn: document.getElementById('billTRN')?.value || '',
+            customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
+            business_name: document.getElementById('billBusinessName')?.value || '',
+            business_address: document.getElementById('billBusinessAddress')?.value || '',
             bill_date: document.getElementById('billDate')?.value || '',
             delivery_date: document.getElementById('deliveryDate')?.value || '',
             trial_date: document.getElementById('trialDate')?.value || '',

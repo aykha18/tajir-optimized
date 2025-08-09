@@ -2,6 +2,45 @@
 
 let editingEmployeeId = null;
 
+// Detect mobile/tablet
+function isMobileOrTablet() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 1024;
+}
+
+// Mobile-only: enhance employee mobile input UX (digits-only, 9–10 length, no clearing)
+function setupEmployeeMobileInputEnhancements() {
+  if (!isMobileOrTablet()) return;
+  const employeeMobileElement = document.getElementById('employeeMobile');
+  if (!employeeMobileElement) return;
+
+  // Set mobile-friendly attributes without affecting desktop markup
+  employeeMobileElement.setAttribute('inputmode', 'numeric');
+  employeeMobileElement.setAttribute('maxlength', '10');
+  employeeMobileElement.setAttribute('pattern', '\\d{9,10}');
+
+  // Sanitize input to digits only and cap to 10
+  employeeMobileElement.addEventListener('input', function(e) {
+    const sanitized = (e.target.value || '').replace(/\D/g, '').slice(0, 10);
+    if (e.target.value !== sanitized) {
+      e.target.value = sanitized;
+    }
+  });
+
+  // Validate on blur: require at least 9 digits; do not clear value
+  employeeMobileElement.addEventListener('blur', function(e) {
+    const digits = (e.target.value || '').replace(/\D/g, '');
+    if (digits && digits.length < 9) {
+      if (window.showToast) {
+        window.showToast('Please enter at least 9 digits for mobile number', 'warning');
+      } else {
+        alert('Please enter at least 9 digits for mobile number');
+      }
+      // Refocus to let user correct
+      setTimeout(() => e.target.focus(), 0);
+    }
+  });
+}
+
 // Setup employee mobile autocomplete
 function setupEmployeeMobileAutocomplete() {
   const employeeMobileElement = document.getElementById('employeeMobile');
@@ -159,11 +198,13 @@ async function loadEmployees() {
   const overlay = document.getElementById('employeeLoadingOverlay');
   const skeleton = document.getElementById('employeeSkeleton');
   const table = document.getElementById('employeeTable');
+  const tableWrapper = document.getElementById('employeeTableWrapper');
   const form = document.getElementById('employeeForm');
   
   if (overlay) overlay.classList.remove('hidden');
   if (skeleton) skeleton.classList.remove('hidden');
-  if (table) table.classList.add('opacity-0', 'translate-y-4');
+  const tableContainer = tableWrapper || table;
+  if (tableContainer) tableContainer.classList.add('opacity-0', 'translate-y-4');
   if (form) form.classList.add('opacity-0', 'translate-y-4');
   
   try {
@@ -177,7 +218,7 @@ async function loadEmployees() {
     
     tbody.innerHTML = employees.length
       ? employees.map((e, index) => `
-        <tr class="employee-item group hover:bg-neutral-800/50 transition-all duration-200 transform hover:scale-[1.01] hover:shadow-sm" style="animation-delay: ${index * 0.1}s;">
+        <tr class="employee-item group hover:bg-neutral-800/50 transition-all duration-200 transform hover:scale-[1.01] hover:shadow-sm" data-id="${e.employee_id}" style="animation-delay: ${index * 0.1}s;">
           <td class="px-3 py-3">
             <div class="flex items-center gap-2">
               <div class="w-2 h-2 bg-indigo-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
@@ -230,9 +271,9 @@ async function loadEmployees() {
     }, 200);
     
     setTimeout(() => {
-      if (table) {
-        table.classList.remove('opacity-0', 'translate-y-4');
-        table.classList.add('opacity-100', 'translate-y-0');
+      if (tableContainer) {
+        tableContainer.classList.remove('opacity-0', 'translate-y-4');
+        tableContainer.classList.add('opacity-100', 'translate-y-0');
       }
     }, 400);
     
@@ -262,17 +303,59 @@ async function loadEmployees() {
     // Setup event handlers after employees are loaded
     setupEmployeeTableHandlers();
     setupEmployeeFormHandler();
+    setupEmployeeSwipeActions();
   }
 }
 
 // Setup employee table event handlers
 function setupEmployeeTableHandlers() {
   const employeeTable = document.getElementById('employeeTable');
+  const wrapper = document.getElementById('employeeTableWrapper');
   
   if (employeeTable) {
     // Remove existing event listener if any
     employeeTable.removeEventListener('click', employeeTableClickHandler);
-    employeeTable.addEventListener('click', employeeTableClickHandler);
+    employeeTable.addEventListener('click', employeeTableClickHandler, { passive: true });
+    // Also delegate touchend for mobile to mirror customers behavior
+    employeeTable.removeEventListener('touchend', employeeTableClickHandler);
+    employeeTable.addEventListener('touchend', employeeTableClickHandler, { passive: true });
+
+    // Additionally, bind handlers directly to buttons (helps on some mobile browsers)
+    employeeTable.querySelectorAll('.edit-employee-btn').forEach(btn => {
+      btn.removeEventListener('click', directEditEmployeeClick);
+      btn.addEventListener('click', directEditEmployeeClick);
+    });
+    employeeTable.querySelectorAll('.delete-employee-btn').forEach(btn => {
+      btn.removeEventListener('click', directDeleteEmployeeClick);
+      btn.addEventListener('click', directDeleteEmployeeClick);
+    });
+
+    // Ensure horizontal scroll container has momentum on iOS
+    if (wrapper) {
+      wrapper.style.overflowX = 'auto';
+      wrapper.style.webkitOverflowScrolling = 'touch';
+    }
+  }
+}
+
+function directEditEmployeeClick(e) {
+  e.preventDefault();
+  const id = e.currentTarget.getAttribute('data-id');
+  if (id) editEmployee(id);
+}
+
+async function directDeleteEmployeeClick(e) {
+  e.preventDefault();
+  const id = e.currentTarget.getAttribute('data-id');
+  if (!id) return;
+  let confirmed = true;
+  if (typeof showConfirmDialog === 'function') {
+    confirmed = await showConfirmDialog('Are you sure you want to delete this employee? This action cannot be undone.', 'Delete Employee', 'delete');
+  } else {
+    confirmed = window.confirm('Delete this employee?');
+  }
+  if (confirmed) {
+    fetch(`/api/employees/${id}`, { method: 'DELETE' }).then(() => loadEmployees());
   }
 }
 
@@ -288,19 +371,155 @@ function setupEmployeeFormHandler() {
   
   // Setup employee mobile autocomplete
   setupEmployeeMobileAutocomplete();
+
+  // Mobile/tablet-only enhancements for mobile input
+  setupEmployeeMobileInputEnhancements();
+
+  // Mobile/tablet-only responsive layout adjustments
+  setupEmployeeMobileLayout();
+}
+
+// Make employee form stack on mobile/tablet without changing desktop
+function setupEmployeeMobileLayout() {
+  if (!isMobileOrTablet()) return;
+  const form = document.getElementById('employeeForm');
+  if (!form) return;
+
+  // Force single-column grid on mobile/tablet
+  form.style.display = 'grid';
+  form.style.gridTemplateColumns = '1fr';
+  form.style.gap = '12px';
+
+  // Make each child take full width (one per row)
+  Array.from(form.children).forEach(child => {
+    if (child.tagName === 'DIV' || child.tagName === 'BUTTON') {
+      child.style.gridColumn = '1 / -1';
+    }
+  });
+
+  // Make submit button full width
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.style.width = '100%';
+  }
+}
+
+// Mobile/tablet-only: swipe-to-edit/delete on employee rows
+function setupEmployeeSwipeActions() {
+  // Temporarily disabled to mirror customers behavior (buttons only)
+  return; // No-op for now on all devices
+  const table = document.getElementById('employeeTable');
+  if (!table) return;
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let activeRow = null;
+  let isSwiping = false;
+
+  const removeActions = (row) => {
+    const existing = row && row.querySelector('.emp-swipe-actions');
+    if (existing) existing.remove();
+    if (row) row.style.transform = '';
+  };
+
+  table.addEventListener('touchstart', (e) => {
+    const row = e.target.closest('tr.employee-item');
+    if (!row || e.target.closest('button')) return;
+    activeRow = row;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    isSwiping = false;
+  }, { passive: true });
+
+  table.addEventListener('touchmove', (e) => {
+    if (!activeRow) return;
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    if (Math.abs(dx) > 10 && dy < 50) {
+      e.preventDefault();
+      isSwiping = true;
+      const max = 120;
+      const transform = Math.max(-max, Math.min(dx, max));
+      activeRow.style.transform = `translateX(${transform}px)`;
+    }
+  }, { passive: false });
+
+  table.addEventListener('touchend', async (e) => {
+    if (!activeRow || !isSwiping) { activeRow = null; return; }
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 60) {
+      // Show actions
+      removeActions(activeRow);
+      const actions = document.createElement('div');
+      actions.className = 'emp-swipe-actions';
+      actions.style.position = 'absolute';
+      actions.style.right = '8px';
+      actions.style.top = '50%';
+      actions.style.transform = 'translateY(-50%)';
+      actions.style.display = 'flex';
+      actions.style.gap = '8px';
+      actions.style.zIndex = '10';
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.style.padding = '6px 10px';
+      editBtn.style.background = 'rgba(59,130,246,0.15)';
+      editBtn.style.color = '#93c5fd';
+      editBtn.style.border = '1px solid #3b82f6';
+      editBtn.style.borderRadius = '8px';
+      editBtn.addEventListener('click', () => {
+        const id = activeRow.getAttribute('data-id');
+        if (id) editEmployee(id);
+        removeActions(activeRow);
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.style.padding = '6px 10px';
+      delBtn.style.background = 'rgba(239,68,68,0.15)';
+      delBtn.style.color = '#fca5a5';
+      delBtn.style.border = '1px solid #ef4444';
+      delBtn.style.borderRadius = '8px';
+      delBtn.addEventListener('click', async () => {
+        const id = activeRow.getAttribute('data-id');
+        if (!id) return;
+        const confirmed = await showConfirmDialog(
+          'Are you sure you want to delete this employee? This action cannot be undone.',
+          'Delete Employee',
+          'delete'
+        );
+        if (confirmed) {
+          fetch(`/api/employees/${id}`, { method: 'DELETE' }).then(() => loadEmployees());
+        }
+        removeActions(activeRow);
+      });
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      // Ensure row has positioning context
+      activeRow.style.position = 'relative';
+      activeRow.appendChild(actions);
+      activeRow.style.transform = 'translateX(-120px)';
+    } else {
+      removeActions(activeRow);
+    }
+    activeRow = null;
+    isSwiping = false;
+  }, { passive: true });
 }
 
 // Handle employee form submission
 async function handleEmployeeFormSubmit(e) {
   e.preventDefault();
+  const form = e.target;
   
   const employeeData = {
-    name: (document.getElementById('employeeName') || {}).value || '',
-    mobile: (document.getElementById('employeeMobile') || {}).value || '',
-    address: (document.getElementById('employeeAddress') || {}).value || ''
+    name: (form.querySelector('#employeeName') || {}).value || '',
+    mobile: (form.querySelector('#employeeMobile') || {}).value || '',
+    address: (form.querySelector('#employeeAddress') || {}).value || ''
   };
   // Optional role -> send as position if provided
-  const roleEl = document.getElementById('employeeRole');
+  const roleEl = form.querySelector('#employeeRole');
   if (roleEl && roleEl.value) {
     employeeData.position = roleEl.value;
   }
@@ -311,10 +530,12 @@ async function handleEmployeeFormSubmit(e) {
   }
   
   // Basic mobile number validation
-  if (employeeData.mobile && !/^\d{10,11}$/.test(employeeData.mobile.replace(/\s/g, ''))) {
-    alert('Please enter a valid mobile number (10-11 digits)');
+  const mobileDigits = (employeeData.mobile || '').replace(/\D/g, '');
+  if (mobileDigits && (mobileDigits.length < 9 || mobileDigits.length > 10)) {
+    alert('Please enter a valid mobile number (9-10 digits)');
     return;
   }
+  employeeData.mobile = mobileDigits;
   
   try {
     const url = editingEmployeeId ? `/api/employees/${editingEmployeeId}` : '/api/employees';
@@ -364,8 +585,9 @@ async function handleEmployeeFormSubmit(e) {
 
 // Employee table click handler function
 async function employeeTableClickHandler(e) {
-  const editBtn = e.target.closest('.edit-employee-btn');
-  const deleteBtn = e.target.closest('.delete-employee-btn');
+  const target = e.target.closest('button');
+  const editBtn = target && target.classList.contains('edit-employee-btn') ? target : e.target.closest('.edit-employee-btn');
+  const deleteBtn = target && target.classList.contains('delete-employee-btn') ? target : e.target.closest('.delete-employee-btn');
   
   if (editBtn) {
     const id = editBtn.getAttribute('data-id');

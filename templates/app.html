@@ -123,7 +123,7 @@
           </div>
           <div class="col-span-2 flex flex-col">
               <label for="billMobile">Mobile</label>
-              <input id="billMobile" placeholder="Mobile no." class="compact-form">
+             <input id="billMobile" placeholder="Mobile no." maxlength="10" inputmode="numeric" pattern="\d{9,10}" class="compact-form">
           </div>
           <div class="col-span-2 flex flex-col">
               <label for="billCustomerType">Customer Type</label>
@@ -916,7 +916,8 @@
 
         <ul id="employeeList" class="text-sm divide-y divide-neutral-800 border border-neutral-700 rounded-lg overflow-hidden transform transition-all duration-300 opacity-0 translate-y-4" aria-live="polite"></ul>
         
-        <table id="employeeTable" class="min-w-full text-sm border border-neutral-700 rounded-lg overflow-hidden transform transition-all duration-300 opacity-0 translate-y-4" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
+        <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80 transform transition-all duration-300 opacity-0 translate-y-4" id="employeeTableWrapper">
+          <table id="employeeTable" class="min-w-full text-sm" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
           <thead class="bg-neutral-800/70">
             <tr>
               <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Name</th>
@@ -927,7 +928,8 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-neutral-800" id="employeeTableBody"></tbody>
-        </table>
+          </table>
+        </div>
       </section>
 
       <!-- VAT -->

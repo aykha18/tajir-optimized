@@ -1,8 +1,6 @@
 import os
 import pytest
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 
 
@@ -14,7 +12,8 @@ def _build_chrome(headless: bool = True) -> webdriver.Chrome:
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
-    return webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
+    # Rely on Selenium Manager to resolve the correct driver automatically
+    return webdriver.Chrome(options=chrome_options)
 
 
 @pytest.fixture(scope="session")

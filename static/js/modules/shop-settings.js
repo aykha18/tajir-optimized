@@ -5,6 +5,7 @@ function initializeShopSettings() {
   const shopSettingsLoadingOverlay = document.getElementById('shopSettingsLoadingOverlay');
   const shopSettingsDisplay = document.getElementById('shopSettingsDisplay');
   const shopSettingsContent = document.getElementById('shopSettingsContent');
+  const isMobile = window.innerWidth <= 1024;
 
   // Load shop settings on page load
   function loadShopSettings() {
@@ -95,14 +96,24 @@ function initializeShopSettings() {
     event.preventDefault();
     
     const formData = {
-      shop_name: document.getElementById('shopName')?.value || '',
-      shop_mobile: document.getElementById('shopMobile')?.value || '',
-      city: document.getElementById('shopCity')?.value || '',
-      area: document.getElementById('shopArea')?.value || '',
-      address: document.getElementById('shopAddress')?.value || '',
-      trn: document.getElementById('shopTRN')?.value || '',
-      use_dynamic_invoice_template: document.getElementById('useDynamicInvoiceTemplate')?.checked || false
+      shop_name: shopSettingsForm?.querySelector('#shopName')?.value || '',
+      shop_mobile: (shopSettingsForm?.querySelector('#shopMobile')?.value || '').replace(/\D/g, ''),
+      city: shopSettingsForm?.querySelector('#shopCity')?.value || '',
+      area: shopSettingsForm?.querySelector('#shopArea')?.value || '',
+      address: shopSettingsForm?.querySelector('#shopAddress')?.value || '',
+      trn: shopSettingsForm?.querySelector('#shopTRN')?.value || '',
+      use_dynamic_invoice_template: shopSettingsForm?.querySelector('#useDynamicInvoiceTemplate')?.checked || false
     };
+
+    // Mobile-friendly inline validation
+    if (!formData.shop_name) {
+      showModernAlert('Shop name is required', 'warning');
+      return;
+    }
+    if (formData.shop_mobile && (formData.shop_mobile.length < 9 || formData.shop_mobile.length > 10)) {
+      showModernAlert('Shop mobile must be 9-10 digits', 'warning');
+      return;
+    }
 
     fetch('/api/shop-settings', {
       method: 'PUT',
