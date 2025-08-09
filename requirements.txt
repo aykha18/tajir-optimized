@@ -10,3 +10,6 @@ python-dotenv
 num2words==0.5.12
 bcrypt==4.0.1
 qrcode[pil]==7.4.2
+selenium==4.23.1
+pytest==8.3.2
+pytest-html==3.2.0

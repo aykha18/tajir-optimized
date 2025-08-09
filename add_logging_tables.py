@@ -5,6 +5,7 @@ Script to add logging tables to existing database
 
 import sqlite3
 import os
+import re
 
 def add_logging_tables():
     """Add logging tables to existing database."""
@@ -69,6 +70,58 @@ def add_logging_tables():
         
         conn.commit()
         print("✅ Logging tables added successfully!")
+
+        # Seed city areas for all cities (idempotent)
+        try:
+            print("Seeding default city areas (idempotent)...")
+            cursor = conn.cursor()
+            cursor.execute("SELECT city_id, city_name FROM cities")
+            rows = cursor.fetchall()
+            cities = {row['city_name']: row['city_id'] for row in rows}
+
+            city_to_areas = {
+                'Dubai': [
+                    'Al Barsha','Al Karama','Al Nahda','Al Qusais','Bur Dubai','Business Bay','Deira',
+                    'Discovery Gardens','Downtown Dubai','Dubai Marina','International City','Jumeirah',
+                    'Jumeirah Lake Towers','Jumeirah Village Circle','Mirdif','Palm Jumeirah','Satwa',
+                    'Silicon Oasis','Tecom','Umm Suqeim'
+                ],
+                'Abu Dhabi': [
+                    'Al Khalidiyah','Al Reem Island','Khalifa City','Mohammed Bin Zayed City','Mussafah',
+                    'Al Mushrif','Al Bateen','Al Raha Beach','Al Shamkha','Saadiyat Island','Yas Island'
+                ],
+                'Sharjah': [
+                    'Al Nahda','Al Taawun','Al Majaz','Al Qasimia','Al Khan','Rolla','Muweilah','Al Nabba',
+                    'Al Yarmook','Al Jazzat','Al Ghubaiba'
+                ],
+                'Ajman': [
+                    'Al Nuaimia','Al Rashidiya','Al Jurf','Al Mowaihat','Ajman Industrial Area','Al Hamidiya',
+                    'Al Rawda','Al Bustan'
+                ],
+                'Ras Al Khaimah': [
+                    'Al Nakheel','Al Dhait','Al Hamra Village','Mina Al Arab','Julfar','Al Qurm','Al Mamourah','Al Rams'
+                ],
+                'Fujairah': [
+                    'Al Faseel','Al Ittihad','Sakamkam','Murbah','Al Gurfa','Al Hayl'
+                ],
+                'Umm Al Quwain': [
+                    'Al Maidan','Al Raas','Al Salamah','Al Haditha','Al Ramlah','Al Hawiyah'
+                ]
+            }
+
+            for city_name, areas in city_to_areas.items():
+                city_id = cities.get(city_name)
+                if not city_id:
+                    continue
+                for area in areas:
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES (?, ?)",
+                        (area, city_id)
+                    )
+            conn.commit()
+            print("✅ City areas seeding done.")
+        except Exception as seed_err:
+            print(f"⚠️ Failed to seed city areas: {seed_err}")
         
         # Verify tables were created
         cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('error_logs', 'user_actions')")

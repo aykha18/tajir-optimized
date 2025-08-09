@@ -200,6 +200,8 @@ INSERT OR IGNORE INTO cities (city_name) VALUES
 ('Sharjah'),
 ('Umm Al Quwain');
 
+delete from city_area where area_id not IN
+(select MAX(area_id) from city_area group by area_name);
 -- Insert Dubai Areas (DUBAI_AREAS)
 INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES
 ('Al Barsha', (SELECT city_id FROM cities WHERE city_name = 'Dubai')),
@@ -222,6 +224,74 @@ INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES
 ('Silicon Oasis', (SELECT city_id FROM cities WHERE city_name = 'Dubai')),
 ('Tecom', (SELECT city_id FROM cities WHERE city_name = 'Dubai')),
 ('Umm Suqeim', (SELECT city_id FROM cities WHERE city_name = 'Dubai'));
+
+-- Insert Abu Dhabi Areas (ABU_DHABI_AREAS)
+INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES
+('Al Khalidiyah', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Al Reem Island', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Khalifa City', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Mohammed Bin Zayed City', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Mussafah', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Al Mushrif', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Al Bateen', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Al Raha Beach', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Al Shamkha', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Saadiyat Island', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi')),
+('Yas Island', (SELECT city_id FROM cities WHERE city_name = 'Abu Dhabi'));
+
+-- Insert Sharjah Areas (SHARJAH_AREAS)
+INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES
+('Al Nahda', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Al Taawun', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Al Majaz', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Al Qasimia', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Al Khan', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Rolla', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Muweilah', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Al Nabba', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Al Yarmook', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Al Jazzat', (SELECT city_id FROM cities WHERE city_name = 'Sharjah')),
+('Al Ghubaiba', (SELECT city_id FROM cities WHERE city_name = 'Sharjah'));
+
+-- Insert Ajman Areas (AJMAN_AREAS)
+INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES
+('Al Nuaimia', (SELECT city_id FROM cities WHERE city_name = 'Ajman')),
+('Al Rashidiya', (SELECT city_id FROM cities WHERE city_name = 'Ajman')),
+('Al Jurf', (SELECT city_id FROM cities WHERE city_name = 'Ajman')),
+('Al Mowaihat', (SELECT city_id FROM cities WHERE city_name = 'Ajman')),
+('Ajman Industrial Area', (SELECT city_id FROM cities WHERE city_name = 'Ajman')),
+('Al Hamidiya', (SELECT city_id FROM cities WHERE city_name = 'Ajman')),
+('Al Rawda', (SELECT city_id FROM cities WHERE city_name = 'Ajman')),
+('Al Bustan', (SELECT city_id FROM cities WHERE city_name = 'Ajman'));
+
+-- Insert Ras Al Khaimah Areas (RAK_AREAS)
+INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES
+('Al Nakheel', (SELECT city_id FROM cities WHERE city_name = 'Ras Al Khaimah')),
+('Al Dhait', (SELECT city_id FROM cities WHERE city_name = 'Ras Al Khaimah')),
+('Al Hamra Village', (SELECT city_id FROM cities WHERE city_name = 'Ras Al Khaimah')),
+('Mina Al Arab', (SELECT city_id FROM cities WHERE city_name = 'Ras Al Khaimah')),
+('Julfar', (SELECT city_id FROM cities WHERE city_name = 'Ras Al Khaimah')),
+('Al Qurm', (SELECT city_id FROM cities WHERE city_name = 'Ras Al Khaimah')),
+('Al Mamourah', (SELECT city_id FROM cities WHERE city_name = 'Ras Al Khaimah')),
+('Al Rams', (SELECT city_id FROM cities WHERE city_name = 'Ras Al Khaimah'));
+
+-- Insert Fujairah Areas (FUJAIRAH_AREAS)
+INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES
+('Al Faseel', (SELECT city_id FROM cities WHERE city_name = 'Fujairah')),
+('Al Ittihad', (SELECT city_id FROM cities WHERE city_name = 'Fujairah')),
+('Sakamkam', (SELECT city_id FROM cities WHERE city_name = 'Fujairah')),
+('Murbah', (SELECT city_id FROM cities WHERE city_name = 'Fujairah')),
+('Al Gurfa', (SELECT city_id FROM cities WHERE city_name = 'Fujairah')),
+('Al Hayl', (SELECT city_id FROM cities WHERE city_name = 'Fujairah'));
+
+-- Insert Umm Al Quwain Areas (UAQ_AREAS)
+INSERT OR IGNORE INTO city_area (area_name, city_id) VALUES
+('Al Maidan', (SELECT city_id FROM cities WHERE city_name = 'Umm Al Quwain')),
+('Al Raas', (SELECT city_id FROM cities WHERE city_name = 'Umm Al Quwain')),
+('Al Salamah', (SELECT city_id FROM cities WHERE city_name = 'Umm Al Quwain')),
+('Al Haditha', (SELECT city_id FROM cities WHERE city_name = 'Umm Al Quwain')),
+('Al Ramlah', (SELECT city_id FROM cities WHERE city_name = 'Umm Al Quwain')),
+('Al Hawiyah', (SELECT city_id FROM cities WHERE city_name = 'Umm Al Quwain'));
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_products_user_id ON products(user_id);

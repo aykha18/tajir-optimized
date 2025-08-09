@@ -6,7 +6,8 @@
 class MobileNavigation {
   constructor() {
     this.currentSection = 'dashboard';
-    this.sections = ['dashboard', 'billing', 'products', 'customers', 'reports'];
+    // Replace Customers with Employees; move Customers/Reports/Settings under More
+    this.sections = ['dashboard', 'billing', 'products', 'employees', 'more'];
     this.touchStartX = 0;
     this.touchStartY = 0;
     this.touchEndX = 0;
@@ -71,17 +72,17 @@ class MobileNavigation {
           </svg>
           <span>Products</span>
         </a>
-        <a href="#customers" class="mobile-nav-item" data-section="customers">
+        <a href="#employees" class="mobile-nav-item" data-section="employees">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
           </svg>
-          <span>Customers</span>
+          <span>Employees</span>
         </a>
-        <a href="#reports" class="mobile-nav-item" data-section="reports">
+        <a href="#more" class="mobile-nav-item" data-section="more">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z"></path>
           </svg>
-          <span>Reports</span>
+          <span>More</span>
         </a>
       </div>
     `;
@@ -200,11 +201,14 @@ class MobileNavigation {
         'dashboard': 'dashSec',
         'billing': 'billingSec',
         'products': 'productSec',
-        'customers': 'customerSec',
-        'reports': 'advancedReportsSec'
+        'employees': 'employeeSec'
       };
       
       const targetSection = sectionMap[section];
+      if (section === 'more') {
+        this.showMoreMenu();
+        return;
+      }
       if (targetSection) {
         // Use the existing app navigation
         const navButton = document.querySelector(`[data-go="${targetSection}"]`);
@@ -221,6 +225,67 @@ class MobileNavigation {
         detail: { section: section }
       }));
     }
+  }
+
+  showMoreMenu() {
+    // Build lightweight bottom sheet with inline styles (no external CSS dependency)
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.background = 'rgba(0,0,0,0.5)';
+    overlay.style.zIndex = '99999';
+
+    const sheet = document.createElement('div');
+    sheet.style.position = 'absolute';
+    sheet.style.left = '0';
+    sheet.style.right = '0';
+    sheet.style.bottom = '0';
+    sheet.style.background = '#111827'; // neutral-900
+    sheet.style.borderTop = '1px solid #374151'; // neutral-700
+    sheet.style.borderRadius = '12px 12px 0 0';
+    sheet.style.padding = '16px';
+    sheet.style.color = '#e5e7eb';
+
+    sheet.innerHTML = `
+      <div style="text-align:center;font-weight:600;margin-bottom:8px;">More</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button data-action="customers" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Customers</button>
+        <button data-action="reports" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Reports</button>
+        <button data-action="settings" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Shop Settings</button>
+        <button data-action="product-types" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Product Types</button>
+        <button data-action="close" style="padding:12px;border:1px solid #4b5563;border-radius:8px;background:#111827;color:#9ca3af;text-align:center;">Close</button>
+      </div>
+    `;
+
+    overlay.appendChild(sheet);
+    document.body.appendChild(overlay);
+
+    const handleClose = () => {
+      if (overlay && overlay.parentElement) overlay.parentElement.removeChild(overlay);
+    };
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) handleClose();
+    });
+
+    sheet.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+      if (action === 'close') { handleClose(); return; }
+      const map = {
+        customers: 'customerSec',
+        reports: 'advancedReportsSec',
+        settings: 'shopSettingsSec',
+        'product-types': 'productTypeSec'
+      };
+      const target = map[action];
+      if (target) {
+        const navButton = document.querySelector(`[data-go="${target}"]`);
+        if (navButton) navButton.click();
+      }
+      handleClose();
+    });
   }
 
   updateActiveSection() {
