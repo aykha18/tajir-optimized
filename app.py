@@ -2054,6 +2054,43 @@ def auth_login():
         print(f"Login error: {e}")
         return jsonify({'success': False, 'message': 'Login failed. Please try again.'})
 
+@app.route('/api/account/password', methods=['PUT'])
+def change_password():
+    """Change current user's password (requires current password)."""
+    try:
+        data = request.get_json() or {}
+        current_password = (data.get('current_password') or '').strip()
+        new_password = (data.get('new_password') or '').strip()
+
+        user_id = get_current_user_id()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+
+        if not current_password or not new_password:
+            return jsonify({'success': False, 'message': 'Current and new password are required'}), 400
+
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'message': 'New password must be at least 6 characters'}), 400
+
+        conn = get_db_connection()
+        user = conn.execute('SELECT user_id, password_hash FROM users WHERE user_id = ? AND is_active = 1', (user_id,)).fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+
+        if not bcrypt.checkpw(current_password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+            conn.close()
+            return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
+
+        new_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        conn.execute('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?', (new_hash, user_id))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Password updated successfully'})
+    except Exception as e:
+        print(f"Change password error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to change password'}), 500
+
 @app.route('/api/auth/send-otp', methods=['POST'])
 def send_otp():
     """Send OTP to mobile number."""
