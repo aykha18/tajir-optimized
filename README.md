@@ -151,6 +151,7 @@ The Advanced Reports module provides powerful, filterable reports for Invoices, 
 
 - **Debug Page:** `/debug-plan` — Test plan status, expiry, and switch between plans instantly
 - **Backend Test Script:** `python test_plan_manager.py` — Run backend plan logic tests
+- **Regression Tests (Selenium):** See `tests/selenium/README.md` to run the end-to-end test suite
 
 ---
 
