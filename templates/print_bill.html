@@ -36,14 +36,14 @@
         }
         
         .bill-info {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            align-items: start;
             margin-bottom: 20px;
         }
         
-        .customer-info, .bill-details {
-            flex: 1;
-        }
+        .customer-info, .bill-details { }
         
         .customer-info h3, .bill-details h3 {
             margin: 0 0 10px 0;
@@ -61,7 +61,9 @@
             color: #000;
             font-size: 13px;
             display: inline-block;
-            width: 90px;
+            /* Keep labels on one line and allow a wider column */
+            white-space: nowrap;
+            min-width: 170px;
             font-family: Calibri, Arial, sans-serif;
         }
         
@@ -84,15 +86,19 @@
         
         .totals {
             margin-left: auto;
-            width: 300px;
+            width: 420px; /* wider to keep items on one line */
+            max-width: 100%;
             font-size: 13px;
         }
         
         .total-row {
             display: flex;
             justify-content: space-between;
+            align-items: baseline;
             margin-bottom: 5px;
+            white-space: nowrap; /* keep row contents on a single line */
         }
+        .total-row span { white-space: nowrap; }
         
         .total-row.final {
             font-weight: bold;
@@ -198,10 +204,10 @@
             </div>
         </div>
         
-        <div class="bill-details" style="margin-left: -200px;">
+        <div class="bill-details">
             <h3 style="display: flex; justify-content: space-between; align-items: flex-end;">
                 SELLER / البائع
-                <span style="font-size: 13px; font-weight: bold; text-align: left; margin-left: -200px;">TRN: {{ shop_settings.trn or 'N/A' }}</span>
+                <span style="font-size: 13px; font-weight: bold; text-align: left;">TRN: {{ shop_settings.trn or 'N/A' }}</span>
             </h3>
                          <div class="info-row">
                  <span class="label">Bill # / رقم الفاتورة:</span>
@@ -217,7 +223,7 @@
             </div>
             <div class="info-row">
                 <span class="label">Delivery / التسليم:</span>
-                <span style="font-size: 14px;">{{ bill.delivery_date or 'N/A' }}</span>
+                <span style="font-size: 14px; white-space: nowrap;">{{ bill.delivery_date or 'N/A' }}</span>
             </div>
             <div class="info-row">
                 <span class="label">Payment / الدفع:</span>
@@ -277,10 +283,7 @@
             <span>Amount Due / المبلغ المستحق:</span>
             <span>AED {{ "%.2f"|format(bill.balance_amount) }}</span>
         </div>
-        <div class="total-row" style="font-weight: bold; margin-top: 8px; font-size: 1.1em;">
-            <span>Payment Method / طريقة الدفع:</span>
-            <span>{{ bill.payment_method }}</span>
-        </div>
+        
         <div class="amount-in-words" style="font-weight: bold; margin-top: 12px;">
             {{ amount_in_words }}
         </div>

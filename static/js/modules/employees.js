@@ -49,7 +49,7 @@ function setupEmployeeMobileAutocomplete() {
             <div>
               <div class="text-white font-medium">${employee.name}</div>
               <div class="text-neutral-400 text-sm">${employee.phone}</div>
-              <div class="text-neutral-500 text-xs">${employee.role || 'Employee'}</div>
+              <div class="text-neutral-500 text-xs">${employee.position || 'Employee'}</div>
             </div>
             <div class="text-xs text-neutral-500">
               ${employee.address || ''}
@@ -150,7 +150,7 @@ function populateEmployeeFields(employee) {
   
   if (employeeNameElement) employeeNameElement.value = employee.name || '';
   if (employeeMobileElement) employeeMobileElement.value = employee.phone || '';
-  if (employeeRoleElement) employeeRoleElement.value = employee.role || 'Tailor';
+  if (employeeRoleElement) employeeRoleElement.value = employee.position || '';
 }
 
 // Load and render employees with loading effects
@@ -188,6 +188,9 @@ async function loadEmployees() {
             <span class="text-neutral-200 group-hover:text-white transition-colors duration-200">${e.phone || ''}</span>
           </td>
           <td class="px-3 py-3">
+            <span class="text-neutral-200 group-hover:text-white transition-colors duration-200">${e.position || ''}</span>
+          </td>
+          <td class="px-3 py-3">
             <span class="text-neutral-200 group-hover:text-white transition-colors duration-200">${e.address || ''}</span>
           </td>
           <td class="px-3 py-3 flex gap-2">
@@ -206,7 +209,7 @@ async function loadEmployees() {
       `).join('')
       : `
         <tr>
-          <td colspan="4" class="px-6 py-8 text-center">
+          <td colspan="5" class="px-6 py-8 text-center">
             <div class="w-16 h-16 mx-auto mb-4 bg-neutral-800/50 rounded-full flex items-center justify-center">
               <svg class="w-8 h-8 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -292,10 +295,15 @@ async function handleEmployeeFormSubmit(e) {
   e.preventDefault();
   
   const employeeData = {
-    name: document.getElementById('employeeName').value,
-    mobile: document.getElementById('employeeMobile').value,
-    address: document.getElementById('employeeAddress').value
+    name: (document.getElementById('employeeName') || {}).value || '',
+    mobile: (document.getElementById('employeeMobile') || {}).value || '',
+    address: (document.getElementById('employeeAddress') || {}).value || ''
   };
+  // Optional role -> send as position if provided
+  const roleEl = document.getElementById('employeeRole');
+  if (roleEl && roleEl.value) {
+    employeeData.position = roleEl.value;
+  }
   
   if (!employeeData.name) {
     alert('Employee name is required');
@@ -384,9 +392,14 @@ async function editEmployee(id) {
     const employee = await response.json();
     
     if (employee) {
-      document.getElementById('employeeName').value = employee.name || '';
-      document.getElementById('employeeMobile').value = employee.phone || '';
-      document.getElementById('employeeAddress').value = employee.address || '';
+      const nameEl = document.getElementById('employeeName');
+      const mobileEl = document.getElementById('employeeMobile');
+      const addressEl = document.getElementById('employeeAddress');
+      if (nameEl) nameEl.value = employee.name || '';
+      if (mobileEl) mobileEl.value = employee.phone || '';
+      if (addressEl) addressEl.value = employee.address || '';
+      const roleEl = document.getElementById('employeeRole');
+      if (roleEl) roleEl.value = employee.position || '';
       
       editingEmployeeId = id;
       
