@@ -424,7 +424,7 @@
 
   #employeeTable thead,
   #employeeTable tbody {
-    background: rgba(17, 24, 39, 0.9);
+    background: transparent;
   }
 
   #employeeTable th,
