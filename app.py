@@ -4042,6 +4042,283 @@ def test_whatsapp_config():
 
 
 
+@app.route('/admin')
+def admin_dashboard():
+    """Admin dashboard for plan management."""
+    return render_template('admin.html')
+
+# Admin API Endpoints
+@app.route('/api/admin/stats')
+def admin_stats():
+    """Get admin dashboard statistics."""
+    try:
+        conn = get_db_connection()
+        
+        # Total shops
+        total_shops = conn.execute('SELECT COUNT(*) FROM users WHERE is_active = 1').fetchone()[0]
+        
+        # Active plans (not expired)
+        active_plans = conn.execute('''
+            SELECT COUNT(*) FROM user_plans up
+            JOIN users u ON up.user_id = u.user_id
+            WHERE up.is_active = 1 AND u.is_active = 1
+            AND (up.plan_type = 'pro' OR up.plan_end_date > DATE('now'))
+        ''').fetchone()[0]
+        
+        # Expiring soon (within 7 days)
+        expiring_soon = conn.execute('''
+            SELECT COUNT(*) FROM user_plans up
+            JOIN users u ON up.user_id = u.user_id
+            WHERE up.is_active = 1 AND u.is_active = 1
+            AND up.plan_type != 'pro'
+            AND up.plan_end_date BETWEEN DATE('now') AND DATE('now', '+7 days')
+        ''').fetchone()[0]
+        
+        # Expired plans
+        expired_plans = conn.execute('''
+            SELECT COUNT(*) FROM user_plans up
+            JOIN users u ON up.user_id = u.user_id
+            WHERE up.is_active = 1 AND u.is_active = 1
+            AND up.plan_type != 'pro'
+            AND up.plan_end_date < DATE('now')
+        ''').fetchone()[0]
+        
+        conn.close()
+        
+        return jsonify({
+            'total_shops': total_shops,
+            'active_plans': active_plans,
+            'expiring_soon': expiring_soon,
+            'expired_plans': expired_plans
+        })
+    except Exception as e:
+        logger.error(f"Failed to load admin stats: {e}")
+        return jsonify({'error': 'Failed to load stats'}), 500
+
+@app.route('/api/admin/shops')
+def admin_shops():
+    """Get all shops with their plan information."""
+    try:
+        conn = get_db_connection()
+        
+        shops = conn.execute('''
+            SELECT u.user_id, u.shop_name, u.email, u.mobile, u.created_at,
+                   up.plan_type, up.plan_start_date, up.plan_end_date,
+                   CASE 
+                       WHEN up.plan_type = 'pro' THEN 'Unlimited'
+                       WHEN up.plan_end_date IS NULL THEN 0
+                       ELSE CAST(JULIANDAY(up.plan_end_date) - JULIANDAY('now') AS INTEGER)
+                   END as days_remaining,
+                   CASE 
+                       WHEN up.plan_type = 'pro' THEN 0
+                       WHEN up.plan_end_date IS NULL THEN 1
+                       ELSE CASE WHEN up.plan_end_date < DATE('now') THEN 1 ELSE 0 END
+                   END as expired
+            FROM users u
+            LEFT JOIN user_plans up ON u.user_id = up.user_id AND up.is_active = 1
+            WHERE u.is_active = 1
+            ORDER BY u.created_at DESC
+        ''').fetchall()
+        
+        conn.close()
+        
+        return jsonify([dict(shop) for shop in shops])
+    except Exception as e:
+        logger.error(f"Failed to load shops: {e}")
+        return jsonify({'error': 'Failed to load shops'}), 500
+
+@app.route('/api/admin/shops/<int:user_id>/plan')
+def admin_shop_plan(user_id):
+    """Get plan details for a specific shop."""
+    try:
+        conn = get_db_connection()
+        
+        plan = conn.execute('''
+            SELECT up.plan_type as plan, up.plan_start_date as start_date, 
+                   up.plan_end_date as expiry_date,
+                   CASE 
+                       WHEN up.plan_type = 'pro' THEN 'Unlimited'
+                       WHEN up.plan_end_date IS NULL THEN 0
+                       ELSE CAST(JULIANDAY(up.plan_end_date) - JULIANDAY('now') AS INTEGER)
+                   END as days_remaining,
+                   CASE 
+                       WHEN up.plan_type = 'pro' THEN 0
+                       WHEN up.plan_end_date IS NULL THEN 1
+                       ELSE CASE WHEN up.plan_end_date < DATE('now') THEN 1 ELSE 0 END
+                   END as expired
+            FROM user_plans up
+            WHERE up.user_id = ? AND up.is_active = 1
+        ''', (user_id,)).fetchone()
+        
+        conn.close()
+        
+        if plan:
+            return jsonify(dict(plan))
+        else:
+            return jsonify({'error': 'Plan not found'}), 404
+    except Exception as e:
+        logger.error(f"Failed to load shop plan: {e}")
+        return jsonify({'error': 'Failed to load plan'}), 500
+
+@app.route('/api/admin/plans/upgrade', methods=['POST'])
+def admin_upgrade_plan():
+    """Upgrade or change plan for a shop."""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        plan_type = data.get('plan_type')
+        duration_months = data.get('duration_months')
+        
+        if not all([user_id, plan_type]):
+            return jsonify({'error': 'User ID and plan type are required'}), 400
+        
+        if plan_type not in ['trial', 'basic', 'pro']:
+            return jsonify({'error': 'Invalid plan type'}), 400
+        
+        conn = get_db_connection()
+        
+        # Check if user exists
+        user = conn.execute('SELECT user_id, shop_name FROM users WHERE user_id = ? AND is_active = 1', (user_id,)).fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Deactivate current plan
+        conn.execute('UPDATE user_plans SET is_active = 0 WHERE user_id = ?', (user_id,))
+        
+        # Calculate new plan dates
+        start_date = datetime.now().date()
+        end_date = None
+        
+        if plan_type == 'pro':
+            end_date = None  # Lifetime
+        elif plan_type == 'trial':
+            end_date = start_date + timedelta(days=15)
+        elif plan_type == 'basic':
+            if duration_months:
+                end_date = start_date + timedelta(days=30 * duration_months)
+            else:
+                end_date = start_date + timedelta(days=365)  # Default 1 year
+        
+        # Insert new plan
+        conn.execute('''
+            INSERT INTO user_plans (user_id, plan_type, plan_start_date, plan_end_date, is_active)
+            VALUES (?, ?, ?, ?, 1)
+        ''', (user_id, plan_type, start_date, end_date))
+        
+        # Log the action
+        log_user_action('plan_upgrade', user_id, {
+            'plan_type': plan_type,
+            'duration_months': duration_months,
+            'start_date': start_date.isoformat(),
+            'end_date': end_date.isoformat() if end_date else None
+        })
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Plan upgraded to {plan_type.upper()} successfully',
+            'shop_name': user['shop_name']
+        })
+    except Exception as e:
+        logger.error(f"Failed to upgrade plan: {e}")
+        return jsonify({'error': 'Failed to upgrade plan'}), 500
+
+@app.route('/api/admin/plans/expire', methods=['POST'])
+def admin_expire_plan():
+    """Expire a shop's plan immediately."""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': 'User ID is required'}), 400
+        
+        conn = get_db_connection()
+        
+        # Check if user exists
+        user = conn.execute('SELECT user_id, shop_name FROM users WHERE user_id = ? AND is_active = 1', (user_id,)).fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Get current plan
+        current_plan = conn.execute('SELECT plan_type FROM user_plans WHERE user_id = ? AND is_active = 1', (user_id,)).fetchone()
+        if not current_plan:
+            conn.close()
+            return jsonify({'error': 'No active plan found'}), 404
+        
+        # Expire the plan by setting end date to yesterday
+        expire_date = datetime.now().date() - timedelta(days=1)
+        conn.execute('''
+            UPDATE user_plans 
+            SET plan_end_date = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ? AND is_active = 1
+        ''', (expire_date, user_id))
+        
+        # Log the action
+        log_user_action('plan_expire', user_id, {
+            'plan_type': current_plan['plan_type'],
+            'expire_date': expire_date.isoformat()
+        })
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Plan expired successfully',
+            'shop_name': user['shop_name']
+        })
+    except Exception as e:
+        logger.error(f"Failed to expire plan: {e}")
+        return jsonify({'error': 'Failed to expire plan'}), 500
+
+@app.route('/api/admin/activity')
+def admin_activity():
+    """Get recent admin activity."""
+    try:
+        conn = get_db_connection()
+        
+        activities = conn.execute('''
+            SELECT ua.action, ua.details, ua.timestamp, u.shop_name
+            FROM user_actions ua
+            LEFT JOIN users u ON ua.user_id = u.user_id
+            WHERE ua.action IN ('plan_upgrade', 'plan_expire', 'plan_renew')
+            ORDER BY ua.timestamp DESC
+            LIMIT 20
+        ''').fetchall()
+        
+        conn.close()
+        
+        # Format activities
+        formatted_activities = []
+        for activity in activities:
+            details = json.loads(activity['details']) if activity['details'] else {}
+            
+            if activity['action'] == 'plan_upgrade':
+                description = f"Upgraded to {details.get('plan_type', 'Unknown').upper()}"
+                if details.get('duration_months'):
+                    description += f" for {details['duration_months']} months"
+            elif activity['action'] == 'plan_expire':
+                description = f"Expired {details.get('plan_type', 'Unknown').upper()} plan"
+            else:
+                description = "Plan action performed"
+            
+            formatted_activities.append({
+                'action': activity['action'],
+                'description': description,
+                'shop_name': activity['shop_name'] or 'Unknown Shop',
+                'timestamp': activity['timestamp']
+            })
+        
+        return jsonify(formatted_activities)
+    except Exception as e:
+        logger.error(f"Failed to load activity: {e}")
+        return jsonify({'error': 'Failed to load activity'}), 500
+
 @app.route('/admin/logs')
 def admin_logs():
     """Admin interface to view error logs."""
