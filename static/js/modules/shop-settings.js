@@ -208,8 +208,12 @@ function initializeShopSettings() {
       // Handle city selection
       cityDropdown.addEventListener('click', function(e) {
         if (e.target.classList.contains('city-option')) {
-          cityInput.value = e.target.getAttribute('data-city');
+          const selectedCity = e.target.getAttribute('data-city');
+          cityInput.value = selectedCity;
           cityDropdown.classList.add('hidden');
+          
+          // Clear area when city changes
+          areaInput.value = '';
         }
       });
 
@@ -231,7 +235,9 @@ function initializeShopSettings() {
         }
 
         try {
-          const response = await fetch('/api/areas');
+          const cityValue = cityInput.value.trim();
+          const url = cityValue ? `/api/areas?city=${encodeURIComponent(cityValue)}` : '/api/areas';
+          const response = await fetch(url);
           const areas = await response.json();
           const filteredAreas = areas.filter(area => 
             area.toLowerCase().includes(query.toLowerCase())
@@ -255,10 +261,30 @@ function initializeShopSettings() {
       // Handle area selection
       areaDropdown.addEventListener('click', function(e) {
         if (e.target.classList.contains('area-option')) {
-          areaInput.value = e.target.getAttribute('data-area');
+          const selectedArea = e.target.getAttribute('data-area');
+          areaInput.value = selectedArea;
           areaDropdown.classList.add('hidden');
+          
+          // If no city is selected, try to find the city for this area
+          if (!cityInput.value.trim()) {
+            findCityForArea(selectedArea);
+          }
         }
       });
+      
+      // Find city for selected area
+      async function findCityForArea(area) {
+        try {
+          const response = await fetch(`/api/cities?area=${encodeURIComponent(area)}`);
+          const cities = await response.json();
+          
+          if (cities.length > 0) {
+            cityInput.value = cities[0]; // Use the first city found
+          }
+        } catch (error) {
+          console.error('Error finding city for area:', error);
+        }
+      }
 
       // Hide dropdown when clicking outside
       document.addEventListener('click', function(e) {
