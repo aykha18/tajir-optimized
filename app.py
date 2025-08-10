@@ -4042,13 +4042,102 @@ def test_whatsapp_config():
 
 
 
+# Admin authentication decorator
+def admin_required(f):
+    """Decorator to require admin authentication."""
+    def decorated_function(*args, **kwargs):
+        if 'admin_logged_in' not in session:
+            return redirect('/admin/login')
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+@app.route('/admin/login')
+def admin_login():
+    """Admin login page."""
+    if 'admin_logged_in' in session:
+        return redirect('/admin')
+    return render_template('admin_login.html')
+
+@app.route('/api/admin/login', methods=['POST'])
+def admin_auth_login():
+    """Handle admin login."""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({'success': False, 'message': 'Email and password required'})
+        
+        conn = get_db_connection()
+        
+        # Check if user exists and is admin (user_id = 1 is the admin user)
+        user = conn.execute('SELECT * FROM users WHERE email = ? AND user_id = 1 AND is_active = 1', (email,)).fetchone()
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'Invalid credentials'})
+        
+        import bcrypt
+        if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+            return jsonify({'success': False, 'message': 'Invalid credentials'})
+        
+        # Set admin session
+        session['admin_logged_in'] = True
+        session['admin_user_id'] = user['user_id']
+        session['admin_email'] = user['email']
+        
+        # Log admin login
+        log_user_action("ADMIN_LOGIN", user['user_id'], {
+            'email': user['email'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Admin login successful'
+        })
+        
+    except Exception as e:
+        logger.error(f"Admin login error: {e}")
+        return jsonify({'success': False, 'message': 'Login failed. Please try again.'}), 500
+
+@app.route('/api/admin/logout', methods=['POST'])
+def admin_logout():
+    """Handle admin logout."""
+    try:
+        # Log admin logout
+        if 'admin_user_id' in session:
+            log_user_action("ADMIN_LOGOUT", session['admin_user_id'], {
+                'email': session.get('admin_email'),
+                'timestamp': datetime.now().isoformat()
+            })
+        
+        # Clear admin session
+        session.pop('admin_logged_in', None)
+        session.pop('admin_user_id', None)
+        session.pop('admin_email', None)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Logged out successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Admin logout error: {e}")
+        return jsonify({'success': False, 'message': 'Logout failed'}), 500
+
 @app.route('/admin')
+@admin_required
 def admin_dashboard():
     """Admin dashboard for plan management."""
     return render_template('admin.html')
 
 # Admin API Endpoints
 @app.route('/api/admin/stats')
+@admin_required
 def admin_stats():
     """Get admin dashboard statistics."""
     try:
@@ -4096,6 +4185,7 @@ def admin_stats():
         return jsonify({'error': 'Failed to load stats'}), 500
 
 @app.route('/api/admin/shops')
+@admin_required
 def admin_shops():
     """Get all shops with their plan information."""
     try:
@@ -4105,12 +4195,12 @@ def admin_shops():
             SELECT u.user_id, u.shop_name, u.email, u.mobile, u.created_at,
                    up.plan_type, up.plan_start_date, up.plan_end_date,
                    CASE 
-                       WHEN up.plan_type = 'pro' THEN 'Unlimited'
+                       WHEN up.plan_type = 'pro' AND up.plan_end_date IS NULL THEN 'Unlimited'
                        WHEN up.plan_end_date IS NULL THEN 0
                        ELSE CAST(JULIANDAY(up.plan_end_date) - JULIANDAY('now') AS INTEGER)
                    END as days_remaining,
                    CASE 
-                       WHEN up.plan_type = 'pro' THEN 0
+                       WHEN up.plan_type = 'pro' AND up.plan_end_date IS NULL THEN 0
                        WHEN up.plan_end_date IS NULL THEN 1
                        ELSE CASE WHEN up.plan_end_date < DATE('now') THEN 1 ELSE 0 END
                    END as expired
@@ -4128,6 +4218,7 @@ def admin_shops():
         return jsonify({'error': 'Failed to load shops'}), 500
 
 @app.route('/api/admin/shops/<int:user_id>/plan')
+@admin_required
 def admin_shop_plan(user_id):
     """Get plan details for a specific shop."""
     try:
@@ -4137,12 +4228,12 @@ def admin_shop_plan(user_id):
             SELECT up.plan_type as plan, up.plan_start_date as start_date, 
                    up.plan_end_date as expiry_date,
                    CASE 
-                       WHEN up.plan_type = 'pro' THEN 'Unlimited'
+                       WHEN up.plan_type = 'pro' AND up.plan_end_date IS NULL THEN 'Unlimited'
                        WHEN up.plan_end_date IS NULL THEN 0
                        ELSE CAST(JULIANDAY(up.plan_end_date) - JULIANDAY('now') AS INTEGER)
                    END as days_remaining,
                    CASE 
-                       WHEN up.plan_type = 'pro' THEN 0
+                       WHEN up.plan_type = 'pro' AND up.plan_end_date IS NULL THEN 0
                        WHEN up.plan_end_date IS NULL THEN 1
                        ELSE CASE WHEN up.plan_end_date < DATE('now') THEN 1 ELSE 0 END
                    END as expired
@@ -4161,6 +4252,7 @@ def admin_shop_plan(user_id):
         return jsonify({'error': 'Failed to load plan'}), 500
 
 @app.route('/api/admin/plans/upgrade', methods=['POST'])
+@admin_required
 def admin_upgrade_plan():
     """Upgrade or change plan for a shop."""
     try:
@@ -4190,15 +4282,18 @@ def admin_upgrade_plan():
         start_date = datetime.now().date()
         end_date = None
         
-        if plan_type == 'pro':
-            end_date = None  # Lifetime
-        elif plan_type == 'trial':
+        if plan_type == 'trial':
             end_date = start_date + timedelta(days=15)
         elif plan_type == 'basic':
             if duration_months:
                 end_date = start_date + timedelta(days=30 * duration_months)
             else:
                 end_date = start_date + timedelta(days=365)  # Default 1 year
+        elif plan_type == 'pro':
+            if duration_months:
+                end_date = start_date + timedelta(days=30 * duration_months)
+            else:
+                end_date = None  # Lifetime (default for PRO)
         
         # Insert new plan
         conn.execute('''
@@ -4227,6 +4322,7 @@ def admin_upgrade_plan():
         return jsonify({'error': 'Failed to upgrade plan'}), 500
 
 @app.route('/api/admin/plans/expire', methods=['POST'])
+@admin_required
 def admin_expire_plan():
     """Expire a shop's plan immediately."""
     try:
@@ -4277,6 +4373,7 @@ def admin_expire_plan():
         return jsonify({'error': 'Failed to expire plan'}), 500
 
 @app.route('/api/admin/activity')
+@admin_required
 def admin_activity():
     """Get recent admin activity."""
     try:
@@ -4320,6 +4417,7 @@ def admin_activity():
         return jsonify({'error': 'Failed to load activity'}), 500
 
 @app.route('/admin/logs')
+@admin_required
 def admin_logs():
     """Admin interface to view error logs."""
     try:
