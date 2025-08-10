@@ -1287,6 +1287,167 @@ function initializeBillingSystem() {
     }
   }
 
+  // FEATURE 4: City and Area Autocomplete
+  function setupCityAreaAutocomplete() {
+    console.log('🌍 Setting up city and area autocomplete...');
+    
+    const cityInput = document.getElementById('billCity');
+    const areaInput = document.getElementById('billArea');
+    const cityDropdown = document.getElementById('billCityDropdown');
+    const areaDropdown = document.getElementById('billAreaDropdown');
+    
+    if (!cityInput || !areaInput || !cityDropdown || !areaDropdown) {
+      console.warn('City/Area autocomplete elements not found');
+      return;
+    }
+    
+    let cityDebounceTimer = null;
+    let areaDebounceTimer = null;
+    
+    // City autocomplete
+    cityInput.addEventListener('input', function() {
+      clearTimeout(cityDebounceTimer);
+      const query = this.value.trim();
+      
+      if (query.length < 2) {
+        cityDropdown.classList.add('hidden');
+        return;
+      }
+      
+      cityDebounceTimer = setTimeout(async () => {
+        try {
+          const response = await fetch('/api/cities');
+          const cities = await response.json();
+          const filteredCities = cities.filter(city => 
+            city.toLowerCase().includes(query.toLowerCase())
+          );
+          
+          if (filteredCities.length > 0) {
+            cityDropdown.innerHTML = filteredCities.map(city => `
+              <div class="city-option px-3 py-2 hover:bg-neutral-700 cursor-pointer text-sm border-b border-neutral-700 last:border-b-0" data-city="${city}">
+                ${city}
+              </div>
+            `).join('');
+            cityDropdown.classList.remove('hidden');
+          } else {
+            cityDropdown.classList.add('hidden');
+          }
+        } catch (error) {
+          console.error('Error loading cities:', error);
+        }
+      }, 300);
+    });
+    
+    // Area autocomplete
+    areaInput.addEventListener('input', function() {
+      clearTimeout(areaDebounceTimer);
+      const query = this.value.trim();
+      
+      if (query.length < 2) {
+        areaDropdown.classList.add('hidden');
+        return;
+      }
+      
+      areaDebounceTimer = setTimeout(async () => {
+        try {
+          const cityValue = cityInput.value.trim();
+          const url = cityValue ? `/api/areas?city=${encodeURIComponent(cityValue)}` : '/api/areas';
+          const response = await fetch(url);
+          const areas = await response.json();
+          const filteredAreas = areas.filter(area => 
+            area.toLowerCase().includes(query.toLowerCase())
+          );
+          
+          if (filteredAreas.length > 0) {
+            areaDropdown.innerHTML = filteredAreas.map(area => `
+              <div class="area-option px-3 py-2 hover:bg-neutral-700 cursor-pointer text-sm border-b border-neutral-700 last:border-b-0" data-area="${area}">
+                ${area}
+              </div>
+            `).join('');
+            areaDropdown.classList.remove('hidden');
+          } else {
+            areaDropdown.classList.add('hidden');
+          }
+        } catch (error) {
+          console.error('Error loading areas:', error);
+        }
+      }, 300);
+    });
+    
+    // Handle city selection
+    cityDropdown.addEventListener('click', function(e) {
+      if (e.target.classList.contains('city-option')) {
+        const selectedCity = e.target.getAttribute('data-city');
+        cityInput.value = selectedCity;
+        cityDropdown.classList.add('hidden');
+        
+        // Clear area when city changes
+        areaInput.value = '';
+        
+        // Update area dropdown to show areas for selected city
+        updateAreaDropdownForCity(selectedCity);
+      }
+    });
+    
+    // Handle area selection
+    areaDropdown.addEventListener('click', function(e) {
+      if (e.target.classList.contains('area-option')) {
+        const selectedArea = e.target.getAttribute('data-area');
+        areaInput.value = selectedArea;
+        areaDropdown.classList.add('hidden');
+        
+        // If no city is selected, try to find the city for this area
+        if (!cityInput.value.trim()) {
+          findCityForArea(selectedArea);
+        }
+      }
+    });
+    
+    // Hide dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!cityInput.contains(e.target) && !cityDropdown.contains(e.target)) {
+        cityDropdown.classList.add('hidden');
+      }
+      if (!areaInput.contains(e.target) && !areaDropdown.contains(e.target)) {
+        areaDropdown.classList.add('hidden');
+      }
+    });
+    
+    // Update area dropdown for specific city
+    async function updateAreaDropdownForCity(city) {
+      try {
+        const response = await fetch(`/api/areas?city=${encodeURIComponent(city)}`);
+        const areas = await response.json();
+        
+        if (areas.length > 0) {
+          areaDropdown.innerHTML = areas.map(area => `
+            <div class="area-option px-3 py-2 hover:bg-neutral-700 cursor-pointer text-sm border-b border-neutral-700 last:border-b-0" data-area="${area}">
+              ${area}
+            </div>
+          `).join('');
+        } else {
+          areaDropdown.innerHTML = '<div class="px-3 py-2 text-neutral-400 text-sm">No areas found for this city</div>';
+        }
+      } catch (error) {
+        console.error('Error updating areas for city:', error);
+      }
+    }
+    
+    // Find city for selected area
+    async function findCityForArea(area) {
+      try {
+        const response = await fetch(`/api/cities?area=${encodeURIComponent(area)}`);
+        const cities = await response.json();
+        
+        if (cities.length > 0) {
+          cityInput.value = cities[0]; // Use the first city found
+        }
+      } catch (error) {
+        console.error('Error finding city for area:', error);
+      }
+    }
+  }
+
   // FEATURE 3: Master Autocomplete
   function setupMasterAutocomplete() {
     console.log('🔍 Setting up master autocomplete...');
@@ -2307,6 +2468,9 @@ function initializeBillingSystem() {
   setupCustomerTypeHandler();
   loadRecentCustomers(); // Load recent customers for quick selection
   setupMasterAutocomplete();
+  
+  // Setup city and area autocomplete
+  setupCityAreaAutocomplete();
   setupAddItemHandler();
   setupSearchAndReprint();
   setupCustomerQuickSearch();

@@ -1322,15 +1322,43 @@ def customer_invoice_heatmap():
 
 @app.route('/api/areas', methods=['GET'])
 def get_areas():
+    city = request.args.get('city', '').strip()
     conn = get_db_connection()
-    areas = conn.execute('SELECT area_name FROM city_area ORDER BY area_name').fetchall()
+    
+    if city:
+        # Get areas for specific city
+        areas = conn.execute('''
+            SELECT ca.area_name 
+            FROM city_area ca 
+            JOIN cities c ON ca.city_id = c.city_id 
+            WHERE c.city_name = ? 
+            ORDER BY ca.area_name
+        ''', (city,)).fetchall()
+    else:
+        # Get all areas
+        areas = conn.execute('SELECT area_name FROM city_area ORDER BY area_name').fetchall()
+    
     conn.close()
     return jsonify([row['area_name'] for row in areas])
 
 @app.route('/api/cities', methods=['GET'])
 def get_cities():
+    area = request.args.get('area', '').strip()
     conn = get_db_connection()
-    cities = conn.execute('SELECT city_name FROM cities ORDER BY city_name').fetchall()
+    
+    if area:
+        # Get cities for specific area
+        cities = conn.execute('''
+            SELECT DISTINCT c.city_name 
+            FROM cities c 
+            JOIN city_area ca ON c.city_id = ca.city_id 
+            WHERE ca.area_name = ? 
+            ORDER BY c.city_name
+        ''', (area,)).fetchall()
+    else:
+        # Get all cities
+        cities = conn.execute('SELECT city_name FROM cities ORDER BY city_name').fetchall()
+    
     conn.close()
     return jsonify([row['city_name'] for row in cities])
 

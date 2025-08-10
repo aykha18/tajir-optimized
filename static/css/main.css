@@ -1286,4 +1286,32 @@ select.compact-form option:checked {
 
 #customerMobileDropdown::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* City and Area Autocomplete Dropdowns */
+.city-option, .area-option {
+  transition: background-color 0.2s ease;
+}
+
+.city-option:hover, .area-option:hover {
+  background-color: #374151 !important;
+}
+
+.city-option:active, .area-option:active {
+  background-color: #4B5563 !important;
+}
+
+/* Ensure dropdowns appear above other elements */
+#billCityDropdown, #billAreaDropdown, #cityDropdown, #areaDropdown {
+  z-index: 9999 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  border: 1px solid #4B5563;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  #billCityDropdown, #billAreaDropdown, #cityDropdown, #areaDropdown {
+    max-height: 200px;
+    font-size: 14px;
+  }
 } 
