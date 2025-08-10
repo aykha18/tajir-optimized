@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize plan management
   initializePlanManagement();
 
+  // Initialize cache clearing functionality
+  initializeCacheClearing();
+
   // Navigation functionality
   const navBtns = document.querySelectorAll('.nav-btn');
   const pages = document.querySelectorAll('.page');
@@ -72,9 +75,101 @@ document.addEventListener('DOMContentLoaded', function() {
           //   loadBackupTable();
           // }
         } else if (btn.dataset.go === 'shopSettingsSec') {
-          initializeShopSettings();
+          // Ensure the section is visible
+          if (targetPage) {
+            targetPage.classList.remove('hidden');
+          }
+          // Check if initializeShopSettings function exists
+          if (typeof initializeShopSettings === 'function') {
+            initializeShopSettings();
+          } else {
+            console.error('initializeShopSettings function not found');
+          }
         }
       }
     });
   });
+
+  // Cache clearing functionality
+  function initializeCacheClearing() {
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    
+    if (clearCacheBtn) {
+      clearCacheBtn.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to clear all app cache? This will remove all stored data and may require you to log in again.')) {
+          try {
+            await clearAllCache();
+            alert('Cache cleared successfully! The app will refresh in 3 seconds.');
+            setTimeout(() => {
+              window.location.reload();
+            }, 3000);
+          } catch (error) {
+            console.error('Error clearing cache:', error);
+            alert('Error clearing cache. Please try again.');
+          }
+        }
+      });
+    }
+  }
+
+  async function clearAllCache() {
+    console.log('Clearing all app cache...');
+    
+    // Clear localStorage
+    try {
+      localStorage.clear();
+      console.log('localStorage cleared');
+    } catch (error) {
+      console.error('Error clearing localStorage:', error);
+    }
+
+    // Clear sessionStorage
+    try {
+      sessionStorage.clear();
+      console.log('sessionStorage cleared');
+    } catch (error) {
+      console.error('Error clearing sessionStorage:', error);
+    }
+
+    // Clear IndexedDB (if OfflineStorage is available)
+    try {
+      if (window.TajirPWA && window.TajirPWA.offlineStorage) {
+        const stores = ['customers', 'products', 'bills', 'pending_sync', 'settings'];
+        for (const storeName of stores) {
+          await window.TajirPWA.offlineStorage.clearStore(storeName);
+        }
+        console.log('IndexedDB cleared');
+      }
+    } catch (error) {
+      console.error('Error clearing IndexedDB:', error);
+    }
+
+    // Clear service worker cache
+    try {
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        console.log('Service worker cache cleared');
+      }
+    } catch (error) {
+      console.error('Error clearing service worker cache:', error);
+    }
+
+    // Unregister service worker
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(
+          registrations.map(registration => registration.unregister())
+        );
+        console.log('Service worker unregistered');
+      }
+    } catch (error) {
+      console.error('Error unregistering service worker:', error);
+    }
+
+    console.log('All cache cleared successfully');
+  }
 }); 

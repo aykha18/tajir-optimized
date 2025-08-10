@@ -637,14 +637,14 @@
 
 /* Mobile Shop Settings Form Layout */
 #shopSettingsForm {
-  display: flex !important;
-  flex-direction: column !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
   gap: 16px !important;
 }
 
 #shopSettingsForm .grid {
-  display: flex !important;
-  flex-direction: column !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
   gap: 16px !important;
 }
 
@@ -843,4 +843,68 @@
 #shopSettingsLoadingOverlay {
   background: rgba(0, 0, 0, 0.8) !important;
   backdrop-filter: blur(10px) !important;
+}
+
+/* Mobile Change Password Button */
+#openChangePassword {
+  min-height: 48px !important;
+  font-size: 16px !important;
+  padding: 12px 20px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+#openChangePassword:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+#openChangePassword:active {
+  transform: translateY(0) !important;
+}
+
+@media (max-width: 480px) {
+  #openChangePassword {
+    width: 100% !important;
+    min-height: 52px !important;
+    font-size: 18px !important;
+  }
+}
+
+/* Mobile Clear Cache Button */
+#clearCacheBtn {
+  min-height: 40px !important;
+  min-width: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+}
+
+#clearCacheBtn:hover {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  transform: scale(1.05) !important;
+}
+
+#clearCacheBtn:active {
+  transform: scale(0.95) !important;
+}
+
+@media (max-width: 768px) {
+  #clearCacheBtn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #clearCacheBtn {
+    min-height: 48px !important;
+    min-width: 48px !important;
+  }
 } 

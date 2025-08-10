@@ -1,14 +1,25 @@
 // Shop Settings Module
 
 function initializeShopSettings() {
+  console.log('Initializing shop settings...');
   const shopSettingsForm = document.getElementById('shopSettingsForm');
   const shopSettingsLoadingOverlay = document.getElementById('shopSettingsLoadingOverlay');
   const shopSettingsDisplay = document.getElementById('shopSettingsDisplay');
   const shopSettingsContent = document.getElementById('shopSettingsContent');
+  const shopSettingsSection = document.getElementById('shopSettingsSec');
   const isMobile = window.innerWidth <= 1024;
+
+  // Ensure the shop settings section is visible
+  if (shopSettingsSection) {
+    shopSettingsSection.classList.remove('hidden');
+    console.log('Shop settings section made visible');
+  } else {
+    console.error('Shop settings section not found');
+  }
 
   // Load shop settings on page load
   function loadShopSettings() {
+    console.log('Loading shop settings...');
     if (shopSettingsLoadingOverlay) {
       shopSettingsLoadingOverlay.classList.remove('hidden');
     }
@@ -18,6 +29,7 @@ function initializeShopSettings() {
       .then(data => {
         if (data.success && data.settings) {
           const settings = data.settings;
+          console.log('Shop settings loaded successfully:', settings);
           
           // Populate form fields
           const shopNameField = document.getElementById('shopName');
@@ -38,11 +50,16 @@ function initializeShopSettings() {
           
           // Show form with animation
           if (shopSettingsForm) {
-            shopSettingsForm.classList.remove('opacity-0', 'translate-y-4');
+            console.log('Showing shop settings form');
+            shopSettingsForm.style.display = 'block';
+            shopSettingsForm.style.visibility = 'visible';
+          } else {
+            console.error('Shop settings form not found');
           }
           
           // Update display section
           if (shopSettingsDisplay && shopSettingsContent) {
+            console.log('Updating shop settings display');
             shopSettingsContent.innerHTML = `
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -75,7 +92,10 @@ function initializeShopSettings() {
                 </div>
               </div>
             `;
-            shopSettingsDisplay.classList.remove('opacity-0', 'translate-y-4');
+            shopSettingsDisplay.style.display = 'block';
+            shopSettingsDisplay.style.visibility = 'visible';
+          } else {
+            console.error('Shop settings display not found');
           }
         } else {
           console.error('Failed to load shop settings:', data.error);
@@ -142,6 +162,8 @@ function initializeShopSettings() {
 
   // Event listeners
   if (shopSettingsForm) {
+    // Remove existing event listener to prevent duplicates
+    shopSettingsForm.removeEventListener('submit', saveShopSettings);
     shopSettingsForm.addEventListener('submit', saveShopSettings);
   }
 
@@ -247,31 +269,116 @@ function initializeShopSettings() {
     }
   }
 
-  // Initialize when the section is shown
-  const shopSettingsBtn = document.querySelector('[data-go="shopSettingsSec"]');
-  if (shopSettingsBtn) {
-    shopSettingsBtn.addEventListener('click', () => {
-      // Load settings when the section is accessed
-      setTimeout(() => {
-        loadShopSettings();
-        initializeAutocomplete();
-      }, 100);
-    });
+  // Initialize change password functionality
+  function initializeChangePassword() {
+    const openChangePasswordBtn = document.getElementById('openChangePassword');
+    const changePasswordModal = document.getElementById('changePasswordModal');
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    const cancelChangePasswordBtn = document.getElementById('cancelChangePassword');
+    const modalContent = document.getElementById('changePasswordModalContent');
+
+    // Open modal
+    if (openChangePasswordBtn) {
+      // Remove existing event listener to prevent duplicates
+      openChangePasswordBtn.removeEventListener('click', openChangePasswordHandler);
+      openChangePasswordBtn.addEventListener('click', openChangePasswordHandler);
+    }
+
+    function openChangePasswordHandler() {
+      if (changePasswordModal && modalContent) {
+        changePasswordModal.classList.remove('hidden');
+      }
+    }
+
+    // Close modal
+    if (cancelChangePasswordBtn) {
+      // Remove existing event listener to prevent duplicates
+      cancelChangePasswordBtn.removeEventListener('click', closeChangePasswordModal);
+      cancelChangePasswordBtn.addEventListener('click', closeChangePasswordModal);
+    }
+
+    // Close modal on backdrop click
+    if (changePasswordModal) {
+      // Remove existing event listener to prevent duplicates
+      changePasswordModal.removeEventListener('click', backdropClickHandler);
+      changePasswordModal.addEventListener('click', backdropClickHandler);
+    }
+
+    function backdropClickHandler(e) {
+      if (e.target === changePasswordModal) {
+        closeChangePasswordModal();
+      }
+    }
+
+    // Handle form submission
+    if (changePasswordForm) {
+      // Remove existing event listener to prevent duplicates
+      changePasswordForm.removeEventListener('submit', handleChangePasswordSubmit);
+      changePasswordForm.addEventListener('submit', handleChangePasswordSubmit);
+    }
+
+    function closeChangePasswordModal() {
+      if (changePasswordModal && modalContent) {
+        changePasswordModal.classList.add('hidden');
+        changePasswordForm.reset();
+      }
+    }
+
+    async function handleChangePasswordSubmit(e) {
+      e.preventDefault();
+      
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      // Validation
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        alert('All fields are required');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        alert('New password must be at least 6 characters long');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        alert('New passwords do not match');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/account/password', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('Password changed successfully!');
+          closeChangePasswordModal();
+        } else {
+          alert(data.message || 'Failed to change password');
+        }
+      } catch (error) {
+        console.error('Error changing password:', error);
+        alert('Failed to change password. Please try again.');
+      }
+    }
   }
 
-  // Also load on initial page load if this section is visible
-  if (document.getElementById('shopSettingsSec') && !document.getElementById('shopSettingsSec').classList.contains('hidden')) {
-    loadShopSettings();
-    initializeAutocomplete();
-  }
+  // Load settings when the section is accessed
+  loadShopSettings();
+  initializeAutocomplete();
+  initializeChangePassword();
 }
 
 // Make functions globally available
-window.initializeShopSettings = initializeShopSettings;
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeShopSettings);
-} else {
-  initializeShopSettings();
-} 
+window.initializeShopSettings = initializeShopSettings; 

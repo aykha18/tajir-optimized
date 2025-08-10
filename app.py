@@ -3779,6 +3779,8 @@ def update_email_config():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+
 # WhatsApp Integration Functions
 def generate_whatsapp_message(bill_data, shop_settings, language='en'):
     """Generate WhatsApp message for invoice"""

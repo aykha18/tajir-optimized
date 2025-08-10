@@ -80,19 +80,14 @@
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindChangePasswordButton);
-  } else {
-    bindChangePasswordButton();
-  }
+  // Disabled - Change password functionality is now handled by shop-settings module
+  // if (document.readyState === 'loading') {
+  //   document.addEventListener('DOMContentLoaded', bindChangePasswordButton);
+  // } else {
+  //   bindChangePasswordButton();
+  // }
 
-  // Also re-bind when shop settings section is navigated to
-  window.addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-go="shopSettingsSec"]');
-    if (btn) {
-      setTimeout(bindChangePasswordButton, 300);
-    }
-  });
+  // Note: Change password functionality is now handled by the shop-settings module
 })();
 
 
