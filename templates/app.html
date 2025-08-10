@@ -652,7 +652,6 @@
 
       <!-- PRODUCT TYPES -->
       <section id="productTypeSec" class="page hidden space-y-6">
-        <h3 class="text-2xl font-semibold tracking-tight">Create Product Type</h3>
         
         <!-- Loading Overlay -->
         <div id="productTypeLoadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center hidden">
@@ -701,7 +700,6 @@
 
       <!-- PRODUCTS -->
       <section id="productSec" class="page hidden space-y-6">
-        <h3 class="text-2xl font-semibold tracking-tight">Create / Modify Product</h3>
         
         <!-- Loading Overlay -->
         <div id="productLoadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center hidden">
@@ -775,7 +773,6 @@
 
       <!-- CUSTOMERS -->
       <section id="customerSec" class="page hidden space-y-6">
-        <h3 class="text-2xl font-semibold tracking-tight">Create / Modify Customer</h3>
         
         <!-- Loading Overlay -->
         <div id="customerLoadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center hidden">
@@ -851,9 +848,6 @@
 
       <!-- EMPLOYEES -->
       <section id="employeeSec" class="page hidden space-y-6">
-        <div class="modern-card">
-          <h3 class="text-2xl font-semibold tracking-tight">Create / Modify Employee</h3>
-        </div>
         
         <!-- Loading Overlay -->
         <div id="employeeLoadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center hidden">
@@ -866,13 +860,10 @@
           </div>
         </div>
 
-        <div class="modern-card">
-          <input type="text" id="employeeSearch" placeholder="Search employees by name..." class="bg-neutral-900/70 border border-neutral-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 mb-2 w-full max-w-md transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
-          <div id="employeeResults"></div>
-        </div>
+        <input type="text" id="employeeSearch" placeholder="Search employees by name..." class="bg-neutral-900/70 border border-neutral-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 mb-2 w-full max-w-md transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+        <div id="employeeResults"></div>
         
-        <div class="modern-card">
-          <form id="employeeForm" class="grid grid-cols-12 gap-4 transform transition-all duration-300 opacity-0 translate-y-4">
+        <form id="employeeForm" class="grid grid-cols-12 gap-4 transform transition-all duration-300 opacity-0 translate-y-4">
           <div class="col-span-4 flex flex-col">
             <label for="employeeName" class="text-sm font-medium text-neutral-300 mb-1">Employee Name</label>
             <input id="employeeName" placeholder="e.g. Ahmed Ali" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
@@ -923,8 +914,7 @@
 
         <ul id="employeeList" class="text-sm divide-y divide-neutral-800 border border-neutral-700 rounded-lg overflow-hidden transform transition-all duration-300 opacity-0 translate-y-4" aria-live="polite"></ul>
         
-        <div class="modern-card">
-          <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80 transform transition-all duration-300 opacity-0 translate-y-4" id="employeeTableWrapper">
+        <div class="overflow-x-auto rounded-lg border border-neutral-700 transform transition-all duration-300 opacity-0 translate-y-4" id="employeeTableWrapper">
           <table id="employeeTable" class="min-w-full text-sm border border-neutral-700 rounded-lg overflow-hidden" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
           <thead class="bg-neutral-800/70">
             <tr>
@@ -943,7 +933,6 @@
 
       <!-- VAT -->
       <section id="vatSec" class="page hidden space-y-6">
-        <h3 class="text-2xl font-semibold tracking-tight">VAT Configuration</h3>
         
         <!-- Loading Overlay -->
         <div id="vatLoadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center hidden">
@@ -1002,7 +991,6 @@
 
       <!-- SHOP SETTINGS -->
       <section id="shopSettingsSec" class="page hidden space-y-6">
-        <h3 class="text-2xl font-semibold tracking-tight">Shop Settings</h3>
         
         <!-- Loading Overlay -->
         <div id="shopSettingsLoadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center hidden">

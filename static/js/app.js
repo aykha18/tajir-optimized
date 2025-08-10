@@ -32,7 +32,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update page title
         const pageTitle = document.getElementById('pageTitle');
         if (pageTitle) {
-          pageTitle.textContent = targetPage.querySelector('h3').textContent;
+          const h3 = targetPage.querySelector('h3');
+          if (h3) {
+            pageTitle.textContent = h3.textContent;
+          } else {
+            // Fallback: use button text or derive from section ID
+            pageTitle.textContent = btn.textContent.trim() || btn.dataset.go.replace('Sec', '').replace(/([A-Z])/g, ' $1').trim();
+          }
         }
         
         // Load data for specific sections
