@@ -144,8 +144,8 @@ def log_user_action(action, user_id=None, details=None):
         logger.error(f"Failed to log user action: {e}")
 
 app = Flask(__name__)
-app.config['DATABASE'] = 'pos_tailor.db'
-app.secret_key = 'your-secret-key-here-change-in-production'  # Add secret key for sessions
+app.config['DATABASE'] = os.getenv('DATABASE_PATH', 'pos_tailor.db')
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')  # Add secret key for sessions
 
 DROPBOX_ACCESS_TOKEN = os.getenv('DROPBOX_ACCESS_TOKEN')
 
@@ -230,6 +230,14 @@ def init_db():
         finally:
             conn.close()
         print("Database initialized successfully!")
+    
+    # Always ensure admin user exists
+    try:
+        from setup_production_admin import setup_production_admin
+        setup_production_admin()
+        logger.info("Admin user setup completed")
+    except Exception as e:
+        logger.error(f"Failed to setup admin user: {e}")
 
 @app.route('/')
 def index():
@@ -4067,6 +4075,8 @@ def admin_auth_login():
         email = data.get('email')
         password = data.get('password')
         
+        logger.info(f"Admin login attempt for email: {email}")
+        
         if not email or not password:
             return jsonify({'success': False, 'message': 'Email and password required'})
         
@@ -4076,11 +4086,17 @@ def admin_auth_login():
         user = conn.execute('SELECT * FROM users WHERE email = ? AND user_id = 1 AND is_active = 1', (email,)).fetchone()
         
         if not user:
+            logger.warning(f"Admin user not found for email: {email}")
             return jsonify({'success': False, 'message': 'Invalid credentials'})
+        
+        logger.info(f"Admin user found: {user['email']}, checking password...")
         
         import bcrypt
         if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+            logger.warning(f"Password check failed for admin user: {email}")
             return jsonify({'success': False, 'message': 'Invalid credentials'})
+        
+        logger.info(f"Admin login successful for: {email}")
         
         # Set admin session
         session['admin_logged_in'] = True
@@ -4449,6 +4465,33 @@ def admin_logs():
     except Exception as e:
         logger.error(f"Failed to load admin logs: {e}")
         return jsonify({'error': 'Failed to load logs'}), 500
+
+@app.route('/api/admin/setup', methods=['POST'])
+def admin_setup():
+    """Setup admin user for production environment."""
+    try:
+        # Import the setup function
+        from setup_production_admin import setup_production_admin
+        
+        success = setup_production_admin()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Admin setup completed successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Admin setup failed'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Admin setup error: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Admin setup failed: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     init_db()
