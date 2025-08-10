@@ -91,6 +91,9 @@
         <h2 id="pageTitle" class="text-lg font-semibold tracking-tight">Billing</h2>
         </div>
         <div class="flex items-center gap-4">
+          <button id="clearCacheBtn" class="p-2 rounded-lg border border-neutral-700 hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-indigo-400/60" title="Clear App Cache">
+            <svg data-lucide="trash-2" class="w-4 h-4"></svg>
+          </button>
           <button id="darkToggle" class="p-2 rounded-lg border border-neutral-700 hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-indigo-400/60">
             <svg data-lucide="moon" class="w-4 h-4"></svg>
           </button>
@@ -789,17 +792,53 @@
         <div id="customerResults"></div>
         
         <form id="customerForm" class="grid grid-cols-12 gap-4 transform transition-all duration-300 opacity-0 translate-y-4">
-          <div class="col-span-4 flex flex-col">
-            <label for="customerName" class="text-sm font-medium text-neutral-300 mb-1">Customer Name</label>
+          <!-- Row 1: Basic Info -->
+          <div class="col-span-3 flex flex-col">
+            <label for="customerName" class="text-sm font-medium text-neutral-300 mb-1">Customer Name *</label>
             <input id="customerName" placeholder="e.g. John Doe" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
           </div>
-          <div class="col-span-4 flex flex-col">
-            <label for="customerMobile" class="text-sm font-medium text-neutral-300 mb-1">Mobile Number</label>
-            <input id="customerMobile" placeholder="e.g. 0501234567" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          <div class="col-span-3 flex flex-col">
+            <label for="customerMobile" class="text-sm font-medium text-neutral-300 mb-1">Mobile Number *</label>
+            <input id="customerMobile" placeholder="e.g. 0501234567" required maxlength="10" inputmode="numeric" pattern="\d{9,10}" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
+          <div class="col-span-2 flex flex-col">
+            <label for="customerType" class="text-sm font-medium text-neutral-300 mb-1">Customer Type</label>
+            <select id="customerType" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+              <option value="Individual">Individual</option>
+              <option value="Business">Business</option>
+            </select>
           </div>
           <div class="col-span-2 flex flex-col">
             <label for="customerCity" class="text-sm font-medium text-neutral-300 mb-1">City</label>
             <input id="customerCity" placeholder="e.g. Dubai" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
+          <div class="col-span-2 flex flex-col">
+            <label for="customerArea" class="text-sm font-medium text-neutral-300 mb-1">Area</label>
+            <input id="customerArea" placeholder="e.g. Deira" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
+          
+          <!-- Row 2: Business Fields (Hidden by default) -->
+          <div class="col-span-4 flex flex-col business-customer-field" style="display: none;">
+            <label for="customerBusinessName" class="text-sm font-medium text-neutral-300 mb-1">Business Name *</label>
+            <input id="customerBusinessName" placeholder="Legal business name" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
+          <div class="col-span-3 flex flex-col business-customer-field" style="display: none;">
+            <label for="customerTRN" class="text-sm font-medium text-neutral-300 mb-1">TRN</label>
+            <input id="customerTRN" placeholder="Tax Registration Number" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
+          <div class="col-span-5 flex flex-col business-customer-field" style="display: none;">
+            <label for="customerBusinessAddress" class="text-sm font-medium text-neutral-300 mb-1">Business Address *</label>
+            <input id="customerBusinessAddress" placeholder="Complete business address" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
+          
+          <!-- Row 3: Additional Fields -->
+          <div class="col-span-4 flex flex-col">
+            <label for="customerEmail" class="text-sm font-medium text-neutral-300 mb-1">Email</label>
+            <input id="customerEmail" type="email" placeholder="e.g. john@example.com" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
+          <div class="col-span-6 flex flex-col">
+            <label for="customerAddress" class="text-sm font-medium text-neutral-300 mb-1">Address</label>
+            <input id="customerAddress" placeholder="Complete address" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
           </div>
           <button type="submit" class="col-span-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all duration-200 rounded-lg text-sm font-medium py-2 self-end transform hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -892,7 +931,6 @@
             Add/Update
           </button>
         </form>
-        </div>
 
         <!-- Skeleton Loading -->
         <div id="employeeSkeleton" class="border border-neutral-700 rounded-lg overflow-hidden hidden">
@@ -927,7 +965,6 @@
           </thead>
           <tbody class="divide-y divide-neutral-800" id="employeeTableBody"></tbody>
           </table>
-        </div>
         </div>
       </section>
 
@@ -990,7 +1027,7 @@
       </section>
 
       <!-- SHOP SETTINGS -->
-      <section id="shopSettingsSec" class="page hidden space-y-6">
+      <section id="shopSettingsSec" class="page hidden space-y-8">
         
         <!-- Loading Overlay -->
         <div id="shopSettingsLoadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center hidden">
@@ -1003,74 +1040,198 @@
           </div>
         </div>
 
-        <form id="shopSettingsForm" class="grid grid-cols-12 gap-4 transform transition-all duration-300 opacity-0 translate-y-4">
-          <div class="col-span-6 flex flex-col">
-            <label for="shopName" class="text-sm font-medium text-neutral-300 mb-1">Shop Name</label>
-            <input id="shopName" placeholder="e.g. Tajir Tailoring" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
-          </div>
-          <div class="col-span-6 flex flex-col">
-            <label for="shopMobile" class="text-sm font-medium text-neutral-300 mb-1">Shop Mobile</label>
-            <input id="shopMobile" placeholder="e.g. 0501234567" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
-          </div>
-          <div class="col-span-6 flex flex-col relative">
-            <label for="shopCity" class="text-sm font-medium text-neutral-300 mb-1">City</label>
-            <input id="shopCity" placeholder="e.g. Dubai" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
-            <div id="cityDropdown" class="absolute top-full left-0 right-0 bg-neutral-800 border border-neutral-600 rounded-lg mt-1 max-h-48 overflow-y-auto z-50 hidden"></div>
-          </div>
-          <div class="col-span-6 flex flex-col relative">
-            <label for="shopArea" class="text-sm font-medium text-neutral-300 mb-1">Area</label>
-            <input id="shopArea" placeholder="e.g. Deira" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
-            <div id="areaDropdown" class="absolute top-full left-0 right-0 bg-neutral-800 border border-neutral-600 rounded-lg mt-1 max-h-48 overflow-y-auto z-50 hidden"></div>
-          </div>
-          <div class="col-span-8 flex flex-col">
-            <label for="shopAddress" class="text-sm font-medium text-neutral-300 mb-1">Complete Address</label>
-            <textarea id="shopAddress" placeholder="e.g. Shop #123, Building Name, Street Name, Area, City" rows="3" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500"></textarea>
-          </div>
-          <div class="col-span-4 flex flex-col">
-            <label for="shopTRN" class="text-sm font-medium text-neutral-300 mb-1">TRN Number</label>
-            <input id="shopTRN" placeholder="e.g. 123456789012345" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
-          </div>
-          <div class="col-span-12 flex items-center gap-3">
-            <input type="checkbox" id="useDynamicInvoiceTemplate" class="w-4 h-4 text-indigo-600 bg-neutral-900 border-neutral-700 rounded focus:ring-indigo-400/60 focus:ring-2">
-            <label for="useDynamicInvoiceTemplate" class="text-sm font-medium text-neutral-300">Use Dynamic Invoice Template</label>
-          </div>
-          <button type="submit" class="col-span-12 bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all duration-200 rounded-lg text-sm font-medium py-2 self-end transform hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        <!-- Header Section -->
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
             </svg>
-            Update Settings
-          </button>
-
-          <!-- Change Password (moved into Shop Settings) -->
-          <div class="col-span-12 mt-2 flex justify-end">
-            <button type="button" id="openChangePassword" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg text-sm font-medium py-2 px-4">
-              Change Password
-            </button>
           </div>
-        </form>
-
-        <!-- Skeleton Loading -->
-        <div id="shopSettingsSkeleton" class="border border-neutral-700 rounded-lg overflow-hidden hidden">
-          <div class="animate-pulse">
-            <div class="bg-neutral-800/50 h-12 flex items-center px-3">
-              <div class="h-4 bg-neutral-700 rounded w-1/4"></div>
-              <div class="h-4 bg-neutral-700 rounded w-1/4 ml-4"></div>
-              <div class="h-4 bg-neutral-700 rounded w-1/6 ml-4"></div>
-              <div class="h-4 bg-neutral-700 rounded w-1/5 ml-auto"></div>
-            </div>
-            <div class="bg-neutral-800/30 h-12 flex items-center px-3">
-              <div class="h-4 bg-neutral-700 rounded w-1/3"></div>
-              <div class="h-4 bg-neutral-700 rounded w-1/4 ml-4"></div>
-              <div class="h-4 bg-neutral-700 rounded w-1/5 ml-4"></div>
-              <div class="h-4 bg-neutral-700 rounded w-1/6 ml-auto"></div>
-            </div>
+          <div>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Shop Settings</h2>
+            <p class="text-neutral-400 text-sm">Manage your shop information and preferences</p>
           </div>
         </div>
 
-        <div id="shopSettingsDisplay" class="bg-neutral-800/60 border border-neutral-700 rounded-lg p-6 transform transition-all duration-300 opacity-0 translate-y-4">
-          <h4 class="text-lg font-semibold mb-4">Current Settings</h4>
-          <div id="shopSettingsContent" class="space-y-2 text-sm">
+        <!-- Settings Form Card -->
+        <div class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-8 shadow-xl backdrop-blur-sm">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-white">Shop Information</h3>
+          </div>
+
+          <form id="shopSettingsForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 transform transition-all duration-300">
+            <!-- Row 1: Shop Name, Shop Mobile, City -->
+            <div class="lg:col-span-2 flex flex-col">
+              <label for="shopName" class="text-sm font-medium text-neutral-300 mb-1 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                Shop Name
+              </label>
+              <input id="shopName" placeholder="e.g. Tajir Tailoring" required class="bg-neutral-800/70 border border-neutral-600/50 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-500 transition-all duration-200 hover:border-neutral-500 placeholder-neutral-500">
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col">
+              <label for="shopMobile" class="text-sm font-medium text-neutral-300 mb-1 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                </svg>
+                Shop Mobile
+              </label>
+              <input id="shopMobile" placeholder="e.g. 0501234567" required class="bg-neutral-800/70 border border-neutral-600/50 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-500 transition-all duration-200 hover:border-neutral-500 placeholder-neutral-500">
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col relative">
+              <label for="shopCity" class="text-sm font-medium text-neutral-300 mb-1 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                City
+              </label>
+              <input id="shopCity" placeholder="e.g. Dubai" required class="bg-neutral-800/70 border border-neutral-600/50 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-500 transition-all duration-200 hover:border-neutral-500 placeholder-neutral-500">
+              <div id="cityDropdown" class="absolute top-full left-0 right-0 bg-neutral-800 border border-neutral-600 rounded-lg mt-1 max-h-48 overflow-y-auto z-50 hidden shadow-xl"></div>
+            </div>
+
+            <!-- Row 2: Area, Complete Address, TRN -->
+            <div class="lg:col-span-2 flex flex-col relative">
+              <label for="shopArea" class="text-sm font-medium text-neutral-300 mb-1 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                Area
+              </label>
+              <input id="shopArea" placeholder="e.g. Deira" required class="bg-neutral-800/70 border border-neutral-600/50 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-500 transition-all duration-200 hover:border-neutral-500 placeholder-neutral-500">
+              <div id="areaDropdown" class="absolute top-full left-0 right-0 bg-neutral-800 border border-neutral-600 rounded-lg mt-1 max-h-48 overflow-y-auto z-50 hidden shadow-xl"></div>
+            </div>
+
+            <div class="lg:col-span-3 flex flex-col">
+              <label for="shopAddress" class="text-sm font-medium text-neutral-300 mb-1 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                Complete Address
+              </label>
+              <textarea id="shopAddress" placeholder="e.g. Shop #123, Building Name, Street Name, Area, City" rows="2" required class="bg-neutral-800/70 border border-neutral-600/50 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-500 transition-all duration-200 hover:border-neutral-500 placeholder-neutral-500 resize-none"></textarea>
+            </div>
+
+            <div class="lg:col-span-1 flex flex-col">
+              <label for="shopTRN" class="text-sm font-medium text-neutral-300 mb-1 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                TRN
+              </label>
+              <input id="shopTRN" placeholder="TRN" class="bg-neutral-800/70 border border-neutral-600/50 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-500 transition-all duration-200 hover:border-neutral-500 placeholder-neutral-500">
+            </div>
+
+            <!-- Dynamic Invoice Template Toggle -->
+            <div class="lg:col-span-6 flex items-center gap-3 p-3 bg-neutral-800/30 rounded-lg border border-neutral-700/30">
+              <input type="checkbox" id="useDynamicInvoiceTemplate" class="w-4 h-4 text-indigo-600 bg-neutral-800 border-neutral-600 rounded focus:ring-indigo-400/60 focus:ring-2 transition-all duration-200">
+              <label for="useDynamicInvoiceTemplate" class="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Use Dynamic Invoice Template
+              </label>
+            </div>
+
+            <!-- Buttons Row -->
+            <div class="lg:col-span-6 flex gap-4 justify-center">
+              <button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-95 transition-all duration-200 rounded-lg text-sm font-medium py-3 px-6 shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Update Settings
+              </button>
+              <button type="button" id="openChangePassword" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-lg px-6 py-3 font-medium transition-all duration-200 border border-blue-600 hover:border-blue-500 shadow-lg hover:shadow-blue-500/25 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                </svg>
+                Change Password
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Current Settings Display Card -->
+        <div id="shopSettingsDisplay" class="bg-gradient-to-br from-neutral-800/60 to-neutral-900/60 border border-neutral-700/50 rounded-2xl p-8 shadow-xl backdrop-blur-sm">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <h4 class="text-xl font-semibold text-white">Current Settings</h4>
+          </div>
+          <div id="shopSettingsContent" class="space-y-3 text-sm">
             <!-- Shop settings will be displayed here -->
+          </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div id="changePasswordModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 hidden backdrop-blur-sm p-4" style="width: 100vw; height: 100vh;">
+          <div class="bg-gradient-to-br from-neutral-900/95 to-neutral-800/95 backdrop-blur border border-neutral-700/50 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 max-h-[90vh] overflow-y-auto mobile-modal" id="changePasswordModalContent">
+            <!-- Icon -->
+            <div class="flex justify-center mb-6">
+              <div class="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center shadow-lg">
+                <svg class="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                </svg>
+              </div>
+            </div>
+            
+            <!-- Title -->
+            <h3 class="text-2xl font-bold text-white text-center mb-2">Change Password</h3>
+            <p class="text-neutral-400 text-center mb-8">Update your account password for enhanced security</p>
+            
+            <!-- Form -->
+            <form id="changePasswordForm" class="space-y-6">
+              <div class="flex flex-col">
+                <label for="currentPassword" class="text-sm font-medium text-neutral-300 mb-2 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                  </svg>
+                  Current Password *
+                </label>
+                <input id="currentPassword" type="password" required class="bg-neutral-800/70 border border-neutral-600/50 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-400/60 focus:border-blue-500 transition-all duration-200 hover:border-neutral-500">
+              </div>
+              <div class="flex flex-col">
+                <label for="newPassword" class="text-sm font-medium text-neutral-300 mb-2 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                  </svg>
+                  New Password *
+                </label>
+                <input id="newPassword" type="password" required minlength="6" class="bg-neutral-800/70 border border-neutral-600/50 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-400/60 focus:border-blue-500 transition-all duration-200 hover:border-neutral-500">
+              </div>
+              <div class="flex flex-col">
+                <label for="confirmPassword" class="text-sm font-medium text-neutral-300 mb-2 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  Confirm New Password *
+                </label>
+                <input id="confirmPassword" type="password" required minlength="6" class="bg-neutral-800/70 border border-neutral-600/50 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-400/60 focus:border-blue-500 transition-all duration-200 hover:border-neutral-500">
+              </div>
+              
+              <!-- Buttons -->
+              <div class="flex gap-4 mt-8">
+                <button type="button" id="cancelChangePassword" class="flex-1 bg-neutral-700/70 hover:bg-neutral-600/70 text-white rounded-xl px-6 py-3 font-medium transition-all duration-200 border border-neutral-600/50 hover:border-neutral-500/50 mobile-btn">
+                  Cancel
+                </button>
+                <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl px-6 py-3 font-medium transition-all duration-200 border border-blue-600 hover:border-blue-500 mobile-btn shadow-lg hover:shadow-blue-500/25">
+                  Change Password
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </section>
@@ -1152,8 +1313,6 @@
 <!-- JavaScript moved to external files: app.js and modules/ -->
 
 <script>
-    let editingCustomerId = null;
-    
     // Initialize MobileScreens module
     document.addEventListener('DOMContentLoaded', function() {
         if (window.innerWidth <= 768) {

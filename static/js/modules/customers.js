@@ -300,21 +300,30 @@ function setupCustomerTypeHandler() {
   
   if (customerType) {
     customerType.addEventListener('change', handleCustomerTypeChange);
+    // Initialize on page load
+    handleCustomerTypeChange();
   }
 }
 
 // Handle customer type change
 function handleCustomerTypeChange() {
   const customerType = document.getElementById('customerType');
-  const businessFields = document.querySelectorAll('.business-field');
-  const trnField = document.querySelector('.trn-field');
+  const businessFields = document.querySelectorAll('.business-customer-field');
   
-  if (customerType.value === 'Business') {
-    businessFields.forEach(field => field.style.display = 'block');
-    if (trnField) trnField.style.display = 'block';
+  if (customerType && customerType.value === 'Business') {
+    businessFields.forEach(field => field.style.display = 'flex');
+    // Make business fields required
+    const businessNameField = document.getElementById('customerBusinessName');
+    const businessAddressField = document.getElementById('customerBusinessAddress');
+    if (businessNameField) businessNameField.required = true;
+    if (businessAddressField) businessAddressField.required = true;
   } else {
     businessFields.forEach(field => field.style.display = 'none');
-    if (trnField) trnField.style.display = 'none';
+    // Remove required from business fields
+    const businessNameField = document.getElementById('customerBusinessName');
+    const businessAddressField = document.getElementById('customerBusinessAddress');
+    if (businessNameField) businessNameField.required = false;
+    if (businessAddressField) businessAddressField.required = false;
   }
 }
 
@@ -326,12 +335,31 @@ async function handleCustomerFormSubmit(e) {
   const customerData = {
     name: (form.querySelector('#customerName') || {}).value || '',
     phone: (form.querySelector('#customerMobile') || {}).value || '',
-    city: (form.querySelector('#customerCity') || {}).value || ''
+    customer_type: (form.querySelector('#customerType') || {}).value || 'Individual',
+    city: (form.querySelector('#customerCity') || {}).value || '',
+    area: (form.querySelector('#customerArea') || {}).value || '',
+    business_name: (form.querySelector('#customerBusinessName') || {}).value || '',
+    trn: (form.querySelector('#customerTRN') || {}).value || '',
+    email: (form.querySelector('#customerEmail') || {}).value || '',
+    address: (form.querySelector('#customerAddress') || {}).value || '',
+    business_address: (form.querySelector('#customerBusinessAddress') || {}).value || ''
   };
   
   if (!customerData.name || !customerData.phone) {
     alert('Name and phone are required');
     return;
+  }
+  
+  // Validate business fields if customer type is Business
+  if (customerData.customer_type === 'Business') {
+    if (!customerData.business_name) {
+      alert('Business name is required for business customers');
+      return;
+    }
+    if (!customerData.business_address) {
+      alert('Business address is required for business customers');
+      return;
+    }
   }
   
   // Basic phone number validation
@@ -420,7 +448,7 @@ async function editCustomer(id) {
     if (customer && !customer.error) {
       const form = document.getElementById('customerForm');
       if (!form) return;
-      // Populate only the fields that exist in the form
+      // Populate all form fields
       const setValue = (selector, value) => {
         const el = form.querySelector(selector);
         if (el) el.value = value || '';
@@ -428,9 +456,16 @@ async function editCustomer(id) {
       setValue('#customerName', customer.name);
       setValue('#customerMobile', customer.phone);
       setValue('#customerCity', customer.city);
+      setValue('#customerArea', customer.area);
       setValue('#customerType', customer.customer_type || 'Individual');
       setValue('#customerBusinessName', customer.business_name);
       setValue('#customerTRN', customer.trn);
+      setValue('#customerEmail', customer.email);
+      setValue('#customerAddress', customer.address);
+      setValue('#customerBusinessAddress', customer.business_address);
+      
+      // Show/hide business fields based on customer type
+      handleCustomerTypeChange();
       
       editingCustomerId = id;
       
