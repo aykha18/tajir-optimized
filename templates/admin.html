@@ -30,12 +30,15 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="/" class="text-neutral-400 hover:text-white transition-colors">
+                    <a href="/" class="text-neutral-400 hover:text-white transition-colors" title="Home">
                         <svg data-lucide="home" class="w-5 h-5"></svg>
                     </a>
-                    <a href="/app" class="text-neutral-400 hover:text-white transition-colors">
+                    <a href="/app" class="text-neutral-400 hover:text-white transition-colors" title="App">
                         <svg data-lucide="app-window" class="w-5 h-5"></svg>
                     </a>
+                    <button onclick="adminLogout()" class="text-neutral-400 hover:text-red-400 transition-colors" title="Logout">
+                        <svg data-lucide="log-out" class="w-5 h-5"></svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -134,7 +137,7 @@
                                 <option value="">Select Plan</option>
                                 <option value="trial">Trial (15 days)</option>
                                 <option value="basic">Basic (1 year)</option>
-                                <option value="pro">PRO (Lifetime)</option>
+                                <option value="pro">PRO</option>
                             </select>
                         </div>
 
@@ -228,10 +231,10 @@
             // Plan type change
             document.getElementById('planType').addEventListener('change', function(e) {
                 const durationOptions = document.getElementById('durationOptions');
-                if (e.target.value === 'pro') {
-                    durationOptions.classList.add('hidden');
-                } else if (e.target.value === 'trial' || e.target.value === 'basic') {
+                if (e.target.value === 'trial' || e.target.value === 'basic' || e.target.value === 'pro') {
                     durationOptions.classList.remove('hidden');
+                } else {
+                    durationOptions.classList.add('hidden');
                 }
             });
 
@@ -391,7 +394,7 @@
             }
 
             const duration = document.querySelector('input[name="duration"]:checked')?.value;
-            if (planType !== 'pro' && !duration) {
+            if (!duration) {
                 showMessage('Please select a duration', 'error');
                 return;
             }
@@ -561,6 +564,36 @@
             setTimeout(() => {
                 messageDiv.remove();
             }, 5000);
+        }
+
+        // Admin logout function
+        async function adminLogout() {
+            if (!confirm('Are you sure you want to logout from the admin panel?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('Logged out successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/login';
+                    }, 1000);
+                } else {
+                    showMessage('Logout failed: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showMessage('Logout failed. Please try again.', 'error');
+            }
         }
 
         // Initialize Lucide icons
