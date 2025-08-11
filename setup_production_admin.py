@@ -82,3 +82,5 @@ def setup_production_admin():
 if __name__ == "__main__":
     success = setup_production_admin()
     sys.exit(0 if success else 1)
+
+

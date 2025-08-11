@@ -69,11 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         } else if (btn.dataset.go === 'advancedReportsSec') {
           initializeReports();
-        } else if (btn.dataset.go === 'settingsSec') {
-          // Settings/Backup functionality is disabled
-          // if (window.loadBackupTable) {
-          //   loadBackupTable();
-          // }
+
         } else if (btn.dataset.go === 'shopSettingsSec') {
           // Ensure the section is visible
           if (targetPage) {

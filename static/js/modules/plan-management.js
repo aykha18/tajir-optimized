@@ -63,7 +63,7 @@ function applyPlanRestrictions() {
   const navButtons = {
     'dashboard': document.querySelector('[data-go="dashSec"]'),
     'customer_search': document.querySelector('[data-go="customerSec"]'),
-    'db_backup_restore': document.querySelector('[data-go="settingsSec"]')
+    'db_backup_restore': null
   };
   
   // Apply restrictions to navigation
@@ -85,7 +85,7 @@ function applyPlanRestrictions() {
   if (userPlan.expired && userPlan.plan === 'trial') {
 
     // Lock all sections except billing
-    const sections = ['productTypeSec', 'productSec', 'customerSec', 'vatSec', 'employeeSec', 'settingsSec', 'dashSec'];
+    const sections = ['productTypeSec', 'productSec', 'customerSec', 'vatSec', 'employeeSec', 'dashSec'];
     sections.forEach(sectionId => {
       const section = document.getElementById(sectionId);
       if (section) {
@@ -116,7 +116,7 @@ function applyPlanRestrictions() {
     proFeatures.forEach(feature => {
       if (lockedFeatures.includes(feature)) {
         const sectionId = feature === 'dashboard' ? 'dashSec' : 
-                         feature === 'customer_search' ? 'customerSec' : 'settingsSec';
+                         feature === 'customer_search' ? 'customerSec' : 'dashSec';
         const section = document.getElementById(sectionId);
         if (section) {
           section.innerHTML = `
