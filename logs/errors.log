@@ -1,0 +1,6 @@
+2025-08-10 21:33:20,206 - root - ERROR - log_user_action:144 - Failed to log user action: database is locked
+2025-08-10 21:36:00,014 - root - ERROR - log_user_action:144 - Failed to log user action: database is locked
+2025-08-10 21:37:36,257 - root - ERROR - log_user_action:144 - Failed to log user action: database is locked
+2025-08-10 21:38:34,461 - root - ERROR - log_user_action:144 - Failed to log user action: database is locked
+2025-08-10 22:00:08,140 - root - ERROR - log_user_action:144 - Failed to log user action: database is locked
+2025-08-10 22:01:33,495 - root - ERROR - log_user_action:144 - Failed to log user action: database is locked

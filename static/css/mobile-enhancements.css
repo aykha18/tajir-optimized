@@ -908,3 +908,287 @@
     min-width: 48px !important;
   }
 } 
+
+/* EXPENSE MANAGEMENT MOBILE OPTIMIZATIONS */
+@media (max-width: 768px) {
+  /* Expense cards mobile optimization */
+  #expensesContainer .bg-neutral-800\/60 {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    border: 1px solid #374151;
+  }
+
+  #expensesContainer .flex.justify-between {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  #expensesContainer .flex-1 {
+    width: 100%;
+  }
+
+  #expensesContainer .flex.items-center.space-x-3 {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  #expensesContainer .inline-flex.items-center.px-2\.5.py-0\.5 {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  #expensesContainer .text-lg.font-semibold {
+    font-size: 18px;
+    margin: 8px 0;
+  }
+
+  #expensesContainer .text-sm.text-neutral-400 {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  #expensesContainer .flex.items-center.space-x-4 {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  #expensesContainer .flex.space-x-2 {
+    gap: 8px;
+  }
+
+  #expensesContainer button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px;
+    border-radius: 8px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Category cards mobile optimization */
+  #categoriesContainer .bg-neutral-800\/60 {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    border: 1px solid #374151;
+  }
+
+  #categoriesContainer .flex.justify-between {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  #categoriesContainer h3 {
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+
+  #categoriesContainer p {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  #categoriesContainer .flex.space-x-2 {
+    gap: 8px;
+  }
+
+  #categoriesContainer button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px;
+    border-radius: 8px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Filter section mobile optimization */
+  .bg-neutral-800\/60.backdrop-blur.rounded-lg.shadow-sm.border.border-neutral-700 {
+    margin-bottom: 16px;
+  }
+
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-4 {
+    gap: 12px;
+  }
+
+  /* Tab navigation mobile optimization */
+  nav.-mb-px.flex.space-x-4.sm\:space-x-8 {
+    padding: 0 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-button {
+    min-height: 44px;
+    padding: 12px 16px;
+    white-space: nowrap;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Modal mobile optimization */
+  .modal .relative.top-4.sm\:top-20 {
+    margin: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+
+  .modal .w-11\/12.sm\:w-96 {
+    width: calc(100% - 32px);
+    max-width: 400px;
+  }
+
+  .modal form {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+
+  .modal .flex.flex-col.sm\:flex-row {
+    gap: 8px;
+  }
+
+  .modal button {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+    border-radius: 8px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Header mobile optimization */
+  .flex.flex-col.sm\:flex-row.justify-between {
+    gap: 16px;
+  }
+
+  .flex.flex-col.sm\:flex-row.space-y-2.sm\:space-y-0 {
+    gap: 8px;
+  }
+
+  /* Export button mobile optimization */
+  #exportExpensesBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  #expensesContainer .bg-neutral-800\/60 {
+    padding: 12px;
+  }
+
+  #categoriesContainer .bg-neutral-800\/60 {
+    padding: 12px;
+  }
+
+  .modal .relative.top-4.sm\:top-20 {
+    margin: 8px;
+  }
+
+  .modal .w-11\/12.sm\:w-96 {
+    width: calc(100% - 16px);
+  }
+
+  .tab-button {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .mobile-nav-item {
+    padding: 6px 8px;
+    min-height: 56px;
+  }
+
+  .mobile-nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-nav-item span {
+    font-size: 10px;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 360px) {
+  .container-mobile {
+    padding: 8px;
+  }
+
+  .card-mobile-body {
+    padding: 12px;
+  }
+
+  .modal-mobile-content {
+    margin: 4px;
+    padding: 12px;
+    max-height: calc(100vh - 8px);
+  }
+
+  #expensesContainer .bg-neutral-800\/60 {
+    padding: 8px;
+  }
+
+  #categoriesContainer .bg-neutral-800\/60 {
+    padding: 8px;
+  }
+
+  .mobile-nav-item {
+    padding: 4px 6px;
+    min-height: 52px;
+  }
+
+  .mobile-nav-item svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .mobile-nav-item span {
+    font-size: 9px;
+  }
+}
+
+/* Touch-friendly interactions for expense management */
+@media (max-width: 768px) {
+  /* Ensure all interactive elements are touch-friendly */
+  #expensesContainer button,
+  #categoriesContainer button,
+  .tab-button,
+  .modal button,
+  .btn-mobile {
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  /* Improve touch targets */
+  #expensesContainer svg,
+  #categoriesContainer svg {
+    pointer-events: none;
+  }
+
+  /* Smooth scrolling for mobile */
+  #expensesContainer,
+  #categoriesContainer,
+  .modal form {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent zoom on input focus */
+  .input-mobile {
+    font-size: 16px !important;
+  }
+
+  /* Better spacing for mobile */
+  .space-y-4 > * + * {
+    margin-top: 16px;
+  }
+
+  .space-y-2 > * + * {
+    margin-top: 8px;
+  }
+} 

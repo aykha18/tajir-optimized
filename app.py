@@ -302,6 +302,14 @@ def pwa_status():
                         get_user_language=get_user_language,
                         get_translated_text=get_translated_text)
 
+@app.route('/expenses')
+def expenses():
+    user_plan_info = get_user_plan_info()
+    return render_template('expenses.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
+
 # Product Types API
 @app.route('/api/product-types', methods=['GET'])
 def get_product_types():
@@ -1143,6 +1151,20 @@ def get_dashboard_data():
     # Get total customers
     total_customers = conn.execute('SELECT COUNT(*) as count FROM customers WHERE user_id = ?', (user_id,)).fetchone()['count']
     
+    # Get total expenses today
+    total_expenses_today = conn.execute('''
+        SELECT COALESCE(SUM(amount), 0) as total 
+        FROM expenses 
+        WHERE DATE(expense_date) = DATE('now') AND user_id = ?
+    ''', (user_id,)).fetchone()['total']
+    
+    # Get total expenses this month
+    total_expenses_month = conn.execute('''
+        SELECT COALESCE(SUM(amount), 0) as total 
+        FROM expenses 
+        WHERE strftime('%Y-%m', expense_date) = strftime('%Y-%m', 'now') AND user_id = ?
+    ''', (user_id,)).fetchone()['total']
+    
     # Get monthly revenue data
     monthly_revenue = conn.execute('''
         SELECT strftime('%Y-%m', bill_date) as month, 
@@ -1150,6 +1172,16 @@ def get_dashboard_data():
         FROM bills 
         WHERE bill_date >= date('now', '-6 months') AND user_id = ?
         GROUP BY strftime('%Y-%m', bill_date)
+        ORDER BY month
+    ''', (user_id,)).fetchall()
+    
+    # Get monthly expenses data
+    monthly_expenses = conn.execute('''
+        SELECT strftime('%Y-%m', expense_date) as month, 
+               SUM(amount) as expenses
+        FROM expenses 
+        WHERE expense_date >= date('now', '-6 months') AND user_id = ?
+        GROUP BY strftime('%Y-%m', expense_date)
         ORDER BY month
     ''', (user_id,)).fetchall()
 
@@ -1195,7 +1227,10 @@ def get_dashboard_data():
         'total_bills_today': total_bills_today,
         'pending_bills': pending_bills,
         'total_customers': total_customers,
+        'total_expenses_today': float(total_expenses_today),
+        'total_expenses_month': float(total_expenses_month),
         'monthly_revenue': [dict(item) for item in monthly_revenue],
+        'monthly_expenses': [dict(item) for item in monthly_expenses],
         'top_regions': [dict(item) for item in top_regions],
         'trending_products': [dict(item) for item in trending_products],
         'repeated_customers': [dict(item) for item in repeated_customers]
@@ -4465,6 +4500,463 @@ def admin_logs():
     except Exception as e:
         logger.error(f"Failed to load admin logs: {e}")
         return jsonify({'error': 'Failed to load logs'}), 500
+
+# Expense Categories API
+@app.route('/api/expense-categories', methods=['GET'])
+def get_expense_categories():
+    """Get all expense categories for current user."""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    categories = conn.execute('''
+        SELECT * FROM expense_categories 
+        WHERE user_id = ? AND is_active = 1 
+        ORDER BY category_name
+    ''', (user_id,)).fetchall()
+    conn.close()
+    return jsonify([dict(category) for category in categories])
+
+@app.route('/api/expense-categories', methods=['POST'])
+def add_expense_category():
+    """Add new expense category."""
+    data = request.get_json()
+    name = data.get('category_name', '').strip()
+    description = data.get('description', '').strip()
+    user_id = get_current_user_id()
+    
+    if not name:
+        return jsonify({'error': 'Category name is required'}), 400
+    
+    conn = get_db_connection()
+    try:
+        conn.execute('''
+            INSERT INTO expense_categories (user_id, category_name, description) 
+            VALUES (?, ?, ?)
+        ''', (user_id, name, description))
+        conn.commit()
+        category_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+        conn.close()
+        
+        log_user_action('expense_category_added', user_id, {'category_name': name})
+        return jsonify({'id': category_id, 'message': 'Category added successfully'})
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify({'error': 'Category already exists'}), 400
+    except Exception as e:
+        conn.close()
+        log_dml_error('INSERT', 'expense_categories', e, user_id, data)
+        return jsonify({'error': 'Failed to add category'}), 500
+
+@app.route('/api/expense-categories/<int:category_id>', methods=['PUT'])
+def update_expense_category(category_id):
+    """Update expense category."""
+    data = request.get_json()
+    name = data.get('category_name', '').strip()
+    description = data.get('description', '').strip()
+    user_id = get_current_user_id()
+    
+    if not name:
+        return jsonify({'error': 'Category name is required'}), 400
+    
+    conn = get_db_connection()
+    try:
+        # Check if category exists and belongs to user
+        category = conn.execute('''
+            SELECT category_id FROM expense_categories 
+            WHERE category_id = ? AND user_id = ?
+        ''', (category_id, user_id)).fetchone()
+        
+        if not category:
+            conn.close()
+            return jsonify({'error': 'Category not found'}), 404
+        
+        conn.execute('''
+            UPDATE expense_categories 
+            SET category_name = ?, description = ? 
+            WHERE category_id = ? AND user_id = ?
+        ''', (name, description, category_id, user_id))
+        conn.commit()
+        conn.close()
+        
+        log_user_action('expense_category_updated', user_id, {'category_id': category_id, 'category_name': name})
+        return jsonify({'message': 'Category updated successfully'})
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify({'error': 'Category name already exists'}), 400
+    except Exception as e:
+        conn.close()
+        log_dml_error('UPDATE', 'expense_categories', e, user_id, data)
+        return jsonify({'error': 'Failed to update category'}), 500
+
+@app.route('/api/expense-categories/<int:category_id>', methods=['DELETE'])
+def delete_expense_category(category_id):
+    """Delete expense category (soft delete)."""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    try:
+        # Check if category has expenses
+        expense_count = conn.execute('''
+            SELECT COUNT(*) FROM expenses 
+            WHERE category_id = ? AND user_id = ?
+        ''', (category_id, user_id)).fetchone()[0]
+        
+        if expense_count > 0:
+            conn.close()
+            return jsonify({'error': 'Cannot delete category with existing expenses'}), 400
+        
+        # Soft delete by setting is_active = 0
+        conn.execute('''
+            UPDATE expense_categories 
+            SET is_active = 0 
+            WHERE category_id = ? AND user_id = ?
+        ''', (category_id, user_id))
+        conn.commit()
+        conn.close()
+        
+        log_user_action('expense_category_deleted', user_id, {'category_id': category_id})
+        return jsonify({'message': 'Category deleted successfully'})
+    except Exception as e:
+        conn.close()
+        log_dml_error('DELETE', 'expense_categories', e, user_id, {'category_id': category_id})
+        return jsonify({'error': 'Failed to delete category'}), 500
+
+# Expenses API
+@app.route('/api/expenses', methods=['GET'])
+def get_expenses():
+    """Get expenses with optional filtering."""
+    user_id = get_current_user_id()
+    
+    # Get query parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    category_id = request.args.get('category_id')
+    search = request.args.get('search', '').strip()
+    
+    conn = get_db_connection()
+    
+    # Build query with filters
+    query = '''
+        SELECT e.*, ec.category_name 
+        FROM expenses e 
+        JOIN expense_categories ec ON e.category_id = ec.category_id 
+        WHERE e.user_id = ? AND ec.user_id = ?
+    '''
+    params = [user_id, user_id]
+    
+    if start_date:
+        query += ' AND e.expense_date >= ?'
+        params.append(start_date)
+    
+    if end_date:
+        query += ' AND e.expense_date <= ?'
+        params.append(end_date)
+    
+    if category_id:
+        query += ' AND e.category_id = ?'
+        params.append(category_id)
+    
+    if search:
+        query += ' AND (e.description LIKE ? OR ec.category_name LIKE ?)'
+        search_param = f'%{search}%'
+        params.extend([search_param, search_param])
+    
+    query += ' ORDER BY e.expense_date DESC, e.created_at DESC'
+    
+    expenses = conn.execute(query, params).fetchall()
+    conn.close()
+    
+    return jsonify([dict(expense) for expense in expenses])
+
+@app.route('/api/expenses', methods=['POST'])
+def add_expense():
+    """Add new expense."""
+    data = request.get_json()
+    category_id = data.get('category_id')
+    expense_date = data.get('expense_date')
+    amount = data.get('amount')
+    description = data.get('description', '').strip()
+    payment_method = data.get('payment_method', 'Cash')
+    receipt_url = data.get('receipt_url', '').strip()
+    user_id = get_current_user_id()
+    
+    # Validation
+    if not all([category_id, expense_date, amount]):
+        return jsonify({'error': 'Category, date, and amount are required'}), 400
+    
+    try:
+        amount = float(amount)
+        if amount <= 0:
+            return jsonify({'error': 'Amount must be positive'}), 400
+    except ValueError:
+        return jsonify({'error': 'Invalid amount value'}), 400
+    
+    conn = get_db_connection()
+    try:
+        # Verify category belongs to user
+        category = conn.execute('''
+            SELECT category_id FROM expense_categories 
+            WHERE category_id = ? AND user_id = ? AND is_active = 1
+        ''', (category_id, user_id)).fetchone()
+        
+        if not category:
+            conn.close()
+            return jsonify({'error': 'Invalid category'}), 400
+        
+        conn.execute('''
+            INSERT INTO expenses (user_id, category_id, expense_date, amount, description, payment_method, receipt_url) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, category_id, expense_date, amount, description, payment_method, receipt_url))
+        conn.commit()
+        expense_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+        conn.close()
+        
+        log_user_action('expense_added', user_id, {'expense_id': expense_id, 'amount': amount, 'category_id': category_id})
+        return jsonify({'id': expense_id, 'message': 'Expense added successfully'})
+    except Exception as e:
+        conn.close()
+        log_dml_error('INSERT', 'expenses', e, user_id, data)
+        return jsonify({'error': 'Failed to add expense'}), 500
+
+@app.route('/api/expenses/<int:expense_id>', methods=['GET'])
+def get_expense(expense_id):
+    """Get specific expense."""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    expense = conn.execute('''
+        SELECT e.*, ec.category_name 
+        FROM expenses e 
+        JOIN expense_categories ec ON e.category_id = ec.category_id 
+        WHERE e.expense_id = ? AND e.user_id = ? AND ec.user_id = ?
+    ''', (expense_id, user_id, user_id)).fetchone()
+    conn.close()
+    
+    if expense:
+        return jsonify(dict(expense))
+    else:
+        return jsonify({'error': 'Expense not found'}), 404
+
+@app.route('/api/expenses/<int:expense_id>', methods=['PUT'])
+def update_expense(expense_id):
+    """Update expense."""
+    data = request.get_json()
+    category_id = data.get('category_id')
+    expense_date = data.get('expense_date')
+    amount = data.get('amount')
+    description = data.get('description', '').strip()
+    payment_method = data.get('payment_method', 'Cash')
+    receipt_url = data.get('receipt_url', '').strip()
+    user_id = get_current_user_id()
+    
+    # Validation
+    if not all([category_id, expense_date, amount]):
+        return jsonify({'error': 'Category, date, and amount are required'}), 400
+    
+    try:
+        amount = float(amount)
+        if amount <= 0:
+            return jsonify({'error': 'Amount must be positive'}), 400
+    except ValueError:
+        return jsonify({'error': 'Invalid amount value'}), 400
+    
+    conn = get_db_connection()
+    try:
+        # Verify expense and category belong to user
+        expense = conn.execute('''
+            SELECT expense_id FROM expenses 
+            WHERE expense_id = ? AND user_id = ?
+        ''', (expense_id, user_id)).fetchone()
+        
+        category = conn.execute('''
+            SELECT category_id FROM expense_categories 
+            WHERE category_id = ? AND user_id = ? AND is_active = 1
+        ''', (category_id, user_id)).fetchone()
+        
+        if not expense:
+            conn.close()
+            return jsonify({'error': 'Expense not found'}), 404
+        
+        if not category:
+            conn.close()
+            return jsonify({'error': 'Invalid category'}), 400
+        
+        conn.execute('''
+            UPDATE expenses 
+            SET category_id = ?, expense_date = ?, amount = ?, description = ?, payment_method = ?, receipt_url = ? 
+            WHERE expense_id = ? AND user_id = ?
+        ''', (category_id, expense_date, amount, description, payment_method, receipt_url, expense_id, user_id))
+        conn.commit()
+        conn.close()
+        
+        log_user_action('expense_updated', user_id, {'expense_id': expense_id, 'amount': amount, 'category_id': category_id})
+        return jsonify({'message': 'Expense updated successfully'})
+    except Exception as e:
+        conn.close()
+        log_dml_error('UPDATE', 'expenses', e, user_id, data)
+        return jsonify({'error': 'Failed to update expense'}), 500
+
+@app.route('/api/expenses/<int:expense_id>', methods=['DELETE'])
+def delete_expense(expense_id):
+    """Delete expense."""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    try:
+        # Get expense details for logging
+        expense = conn.execute('''
+            SELECT amount, category_id FROM expenses 
+            WHERE expense_id = ? AND user_id = ?
+        ''', (expense_id, user_id)).fetchone()
+        
+        if not expense:
+            conn.close()
+            return jsonify({'error': 'Expense not found'}), 404
+        
+        conn.execute('DELETE FROM expenses WHERE expense_id = ? AND user_id = ?', (expense_id, user_id))
+        conn.commit()
+        conn.close()
+        
+        log_user_action('expense_deleted', user_id, {
+            'expense_id': expense_id, 
+            'amount': expense['amount'], 
+            'category_id': expense['category_id']
+        })
+        return jsonify({'message': 'Expense deleted successfully'})
+    except Exception as e:
+        conn.close()
+        log_dml_error('DELETE', 'expenses', e, user_id, {'expense_id': expense_id})
+        return jsonify({'error': 'Failed to delete expense'}), 500
+
+@app.route('/api/expenses/report', methods=['GET'])
+def expense_report():
+    """Get expense report with summary data."""
+    user_id = get_current_user_id()
+    
+    # Get query parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    category_id = request.args.get('category_id')
+    
+    conn = get_db_connection()
+    
+    # Build base query
+    base_where = 'WHERE e.user_id = ? AND ec.user_id = ?'
+    params = [user_id, user_id]
+    
+    if start_date:
+        base_where += ' AND e.expense_date >= ?'
+        params.append(start_date)
+    
+    if end_date:
+        base_where += ' AND e.expense_date <= ?'
+        params.append(end_date)
+    
+    if category_id:
+        base_where += ' AND e.category_id = ?'
+        params.append(category_id)
+    
+    # Get total expenses
+    total_query = f'''
+        SELECT SUM(e.amount) as total_amount, COUNT(*) as total_count
+        FROM expenses e 
+        JOIN expense_categories ec ON e.category_id = ec.category_id 
+        {base_where}
+    '''
+    total_result = conn.execute(total_query, params).fetchone()
+    
+    # Get expenses by category
+    category_query = f'''
+        SELECT ec.category_name, SUM(e.amount) as total_amount, COUNT(*) as count
+        FROM expenses e 
+        JOIN expense_categories ec ON e.category_id = ec.category_id 
+        {base_where}
+        GROUP BY ec.category_id, ec.category_name
+        ORDER BY total_amount DESC
+    '''
+    category_results = conn.execute(category_query, params).fetchall()
+    
+    # Get monthly breakdown
+    monthly_query = f'''
+        SELECT strftime('%Y-%m', e.expense_date) as month, 
+               SUM(e.amount) as total_amount, COUNT(*) as count
+        FROM expenses e 
+        JOIN expense_categories ec ON e.category_id = ec.category_id 
+        {base_where}
+        GROUP BY strftime('%Y-%m', e.expense_date)
+        ORDER BY month DESC
+        LIMIT 12
+    '''
+    monthly_results = conn.execute(monthly_query, params).fetchall()
+    
+    conn.close()
+    
+    return jsonify({
+        'summary': {
+            'total_amount': float(total_result['total_amount'] or 0),
+            'total_count': total_result['total_count'] or 0
+        },
+        'by_category': [dict(result) for result in category_results],
+        'by_month': [dict(result) for result in monthly_results]
+    })
+
+@app.route('/api/expenses/download', methods=['GET'])
+def download_expenses():
+    """Download expenses as CSV."""
+    user_id = get_current_user_id()
+    
+    # Get query parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    category_id = request.args.get('category_id')
+    
+    conn = get_db_connection()
+    
+    # Build query
+    query = '''
+        SELECT e.expense_date, ec.category_name, e.amount, e.description, e.payment_method, e.receipt_url
+        FROM expenses e 
+        JOIN expense_categories ec ON e.category_id = ec.category_id 
+        WHERE e.user_id = ? AND ec.user_id = ?
+    '''
+    params = [user_id, user_id]
+    
+    if start_date:
+        query += ' AND e.expense_date >= ?'
+        params.append(start_date)
+    
+    if end_date:
+        query += ' AND e.expense_date <= ?'
+        params.append(end_date)
+    
+    if category_id:
+        query += ' AND e.category_id = ?'
+        params.append(category_id)
+    
+    query += ' ORDER BY e.expense_date DESC'
+    
+    expenses = conn.execute(query, params).fetchall()
+    conn.close()
+    
+    # Create CSV
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Date', 'Category', 'Amount', 'Description', 'Payment Method', 'Receipt URL'])
+    
+    for expense in expenses:
+        writer.writerow([
+            expense['expense_date'],
+            expense['category_name'],
+            expense['amount'],
+            expense['description'] or '',
+            expense['payment_method'],
+            expense['receipt_url'] or ''
+        ])
+    
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=expenses.csv'}
+    )
 
 @app.route('/api/admin/setup', methods=['POST'])
 def admin_setup():

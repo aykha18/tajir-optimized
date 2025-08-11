@@ -15,6 +15,8 @@ async function loadDashboardData() {
       document.getElementById('todayBills').textContent = dashboardData.total_bills_today || 0;
       document.getElementById('pendingBills').textContent = dashboardData.pending_bills || 0;
       document.getElementById('totalCustomers').textContent = dashboardData.total_customers || 0;
+      document.getElementById('todayExpenses').textContent = `AED ${parseFloat(dashboardData.total_expenses_today || 0).toFixed(2)}`;
+      document.getElementById('monthExpenses').textContent = `AED ${parseFloat(dashboardData.total_expenses_month || 0).toFixed(2)}`;
       
       createRevenueChart(dashboardData.monthly_revenue || []);
       createRegionsChart(dashboardData.top_regions || []);
@@ -31,6 +33,8 @@ async function loadDashboardData() {
       document.getElementById('todayBills').textContent = 'Error';
       document.getElementById('pendingBills').textContent = 'Error';
       document.getElementById('totalCustomers').textContent = 'Error';
+      document.getElementById('todayExpenses').textContent = 'Error';
+      document.getElementById('monthExpenses').textContent = 'Error';
     }
   } catch (error) {
     console.error('Error loading dashboard data:', error);
@@ -38,6 +42,8 @@ async function loadDashboardData() {
     document.getElementById('todayBills').textContent = 'Error';
     document.getElementById('pendingBills').textContent = 'Error';
     document.getElementById('totalCustomers').textContent = 'Error';
+    document.getElementById('todayExpenses').textContent = 'Error';
+    document.getElementById('monthExpenses').textContent = 'Error';
   } finally {
     const refreshBtn = document.getElementById('refreshDashboardBtn');
     refreshBtn.innerHTML = '<svg data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></svg> Refresh';
@@ -53,6 +59,11 @@ function createRevenueChart(data) {
   
   if (window.revenueChart && typeof window.revenueChart.destroy === 'function') {
     window.revenueChart.destroy();
+  }
+  
+  // Ensure data is an array
+  if (!data || !Array.isArray(data)) {
+    data = [];
   }
   
   const labels = data.map(item => {
@@ -115,6 +126,11 @@ function createRegionsChart(data) {
     window.regionsChart.destroy();
   }
   
+  // Ensure data is an array
+  if (!data || !Array.isArray(data)) {
+    data = [];
+  }
+  
   const labels = data.map(item => item.area || 'Unknown');
   const values = data.map(item => parseFloat(item.sales || 0));
   
@@ -160,6 +176,11 @@ function createTrendingProductsChart(data) {
   
   if (window.trendingProductsChart && typeof window.trendingProductsChart.destroy === 'function') {
     window.trendingProductsChart.destroy();
+  }
+  
+  // Ensure data is an array
+  if (!data || !Array.isArray(data)) {
+    data = [];
   }
   
   const labels = data.map(item => item.product_name || 'Unknown');
@@ -216,6 +237,11 @@ function createRepeatedCustomersChart(data) {
   
   if (window.repeatedCustomersChart && typeof window.repeatedCustomersChart.destroy === 'function') {
     window.repeatedCustomersChart.destroy();
+  }
+  
+  // Ensure data is an array
+  if (!data || !Array.isArray(data)) {
+    data = [];
   }
   
   const labels = data.map(item => item.customer_name || 'Unknown');
@@ -275,6 +301,11 @@ function createEmployeeBarChart(data) {
     window.employeeBarChart.destroy();
   }
   
+  // Ensure data is an array
+  if (!data || !Array.isArray(data)) {
+    data = [];
+  }
+  
   const labels = data.map(e => e.name || 'Unknown');
   const values = data.map(e => Number(e.total_revenue) || 0);
   
@@ -326,6 +357,11 @@ function createEmployeePieChart(data) {
   
   if (window.employeePieChart && typeof window.employeePieChart.destroy === 'function') {
     window.employeePieChart.destroy();
+  }
+  
+  // Ensure data is an array
+  if (!data || !Array.isArray(data)) {
+    data = [];
   }
   
   const labels = data.map(e => e.name || 'Unknown');

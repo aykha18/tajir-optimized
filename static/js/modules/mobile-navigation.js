@@ -251,6 +251,7 @@ class MobileNavigation {
       <div style="display:flex;flex-direction:column;gap:8px;">
         <button data-action="customers" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Customers</button>
         <button data-action="reports" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Reports</button>
+        <button data-action="expenses" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Expenses</button>
         <button data-action="settings" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Shop Settings</button>
         <button data-action="product-types" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Product Types</button>
         <button data-action="close" style="padding:12px;border:1px solid #4b5563;border-radius:8px;background:#111827;color:#9ca3af;text-align:center;">Close</button>
@@ -276,13 +277,19 @@ class MobileNavigation {
       const map = {
         customers: 'customerSec',
         reports: 'advancedReportsSec',
+        expenses: 'expenses',
         settings: 'shopSettingsSec',
         'product-types': 'productTypeSec'
       };
       const target = map[action];
       if (target) {
-        const navButton = document.querySelector(`[data-go="${target}"]`);
-        if (navButton) navButton.click();
+        if (target === 'expenses') {
+          // Navigate to expenses page
+          window.location.href = '/expenses';
+        } else {
+          const navButton = document.querySelector(`[data-go="${target}"]`);
+          if (navButton) navButton.click();
+        }
       }
       handleClose();
     });

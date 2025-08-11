@@ -342,6 +342,49 @@ CREATE INDEX IF NOT EXISTS idx_user_actions_timestamp ON user_actions(timestamp)
 CREATE INDEX IF NOT EXISTS idx_user_actions_user_id ON user_actions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_actions_action ON user_actions(action);
 
+-- Expense Management Tables (per tenant)
+CREATE TABLE IF NOT EXISTS expense_categories (
+    category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    category_name TEXT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    UNIQUE(user_id, category_name)
+);
+
+CREATE TABLE IF NOT EXISTS expenses (
+    expense_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    category_id INTEGER NOT NULL,
+    expense_date DATE NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    description TEXT,
+    payment_method TEXT DEFAULT 'Cash',
+    receipt_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (category_id) REFERENCES expense_categories(category_id)
+);
+
+-- Create indexes for expense tables
+CREATE INDEX IF NOT EXISTS idx_expense_categories_user_id ON expense_categories(user_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_user_id ON expenses(user_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_category_id ON expenses(category_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date);
+
+-- Insert default expense categories for existing users
+INSERT OR IGNORE INTO expense_categories (user_id, category_name, description) VALUES
+(1, 'Rent', 'Shop rent and utilities'),
+(1, 'Supplies', 'Raw materials and supplies'),
+(1, 'Equipment', 'Machines and tools'),
+(1, 'Marketing', 'Advertising and promotion'),
+(1, 'Transportation', 'Delivery and travel costs'),
+(1, 'Utilities', 'Electricity, water, internet'),
+(1, 'Maintenance', 'Equipment and shop maintenance'),
+(1, 'Miscellaneous', 'Other expenses');
+
 -- Insert default user (for backward compatibility)
 INSERT OR IGNORE INTO users (user_id, email, shop_code, password_hash, shop_name, shop_type, contact_number, email_address) VALUES
 (1, 'admin@tailorpos.com', 'SHOP001', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KqKqKq', 'Tajir', 'tailors', '+971 50 123 4567', 'admin@tailorpos.com');

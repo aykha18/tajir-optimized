@@ -136,3 +136,5 @@ If admin login still fails after deployment:
 4. **Manual Setup**: Call the `/api/admin/setup` endpoint to manually create the admin user.
 
 5. **Database Permissions**: Ensure the application has read/write permissions to the database file.
+
+
