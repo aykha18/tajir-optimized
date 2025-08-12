@@ -2382,7 +2382,7 @@ def get_current_language():
 def report_invoices():
     """
     Returns filtered invoice data for the Advanced Reports section.
-    Accepts query parameters: from_date, to_date, products, employees, city, area, status
+    Accepts query parameters: from_date, to_date, products, employees, city, area, status, client_id
     """
     try:
         # Parse query parameters with defaults
@@ -2393,11 +2393,12 @@ def report_invoices():
         city = request.args.get('city', '')
         area = request.args.get('area', '')
         status = request.args.get('status', '')
+        client_id = request.args.get('client_id', '')
         
         # Build SQL query with filters
         base_query = """
             SELECT 
-                substr(b.bill_number,6) as bill_id,
+                b.bill_number,
                 b.bill_date,
                 b.customer_name,
                 b.customer_phone,
@@ -2421,7 +2422,12 @@ def report_invoices():
         conditions = []
         params = []
         
- # Date range filter
+        # Client ID filter (most important)
+        if client_id:
+            conditions.append("b.user_id = ?")
+            params.append(client_id)
+        
+        # Date range filter
         if from_date:
             conditions.append("b.bill_date >= ?")
             params.append(from_date)
@@ -2440,6 +2446,7 @@ def report_invoices():
             placeholders = ','.join(['?' for _ in employees])
             conditions.append(f"e.name IN ({placeholders})")
             params.extend(employees)
+        
         # City filter
         if city and city != "All":
             conditions.append("b.customer_city = ?")
@@ -2461,7 +2468,7 @@ def report_invoices():
             
         base_query += " GROUP BY b.bill_id ORDER BY b.bill_date DESC LIMIT 50"
         
-               # Execute query and fetch results
+        # Execute query and fetch results
         cursor = get_db_connection().cursor()
         cursor.execute(base_query, params)
         rows = cursor.fetchall()
@@ -2470,16 +2477,16 @@ def report_invoices():
         invoices_data = []
         for row in rows:
             invoice = {
-                'bill_id': row[0],
+                'bill_number': row[0],
                 'bill_date': row[1],
                 'customer_name': row[2],
                 'customer_phone': row[3],
                 'customer_city': row[4],
                 'customer_area': row[5],
                 'delivery_date': row[6],
-                'total_before_vat': round(float(row[7]), 2) if row[7] is not None else 0.0,
-                'vat': round(float(row[8]), 2) if row[8] is not None else 0.0,
-                'total_after_vat': round(float(row[9]), 2) if row[9] is not None else 0.0,
+                'subtotal': round(float(row[7]), 2) if row[7] is not None else 0.0,
+                'vat_amount': round(float(row[8]), 2) if row[8] is not None else 0.0,
+                'total_amount': round(float(row[9]), 2) if row[9] is not None else 0.0,
                 'status': row[10],
                 'master_id': row[11],
                 'employee_name': row[12],
@@ -2491,13 +2498,12 @@ def report_invoices():
         
         # Calculate summary statistics
         total_invoices = len(invoices_data)
-        # total_amount = sum(inv['total_amount'] for inv in invoices_data)
-        total_amount = sum(inv['total_after_vat'] for inv in invoices_data)
+        total_amount = sum(inv['total_amount'] for inv in invoices_data)
         paid_invoices = len([inv for inv in invoices_data if inv['status'] == 'Paid'])
         
         return jsonify({
             'success': True,
-            'data': invoices_data,
+            'invoices': invoices_data,  # Changed from 'data' to 'invoices'
             'summary': {
                 'total_invoices': total_invoices,
                 'total_amount': total_amount,
@@ -2508,10 +2514,11 @@ def report_invoices():
                 'from_date': from_date,
                 'to_date': to_date,
                 'products': products,
-                'employees': employees,  # Note: Not implemented in SQL yet
+                'employees': employees,
                 'city': city,
                 'area': area,
-                'status': status
+                'status': status,
+                'client_id': client_id
             }
         })
         
@@ -2532,6 +2539,7 @@ def download_invoices():
         city = request.args.get('city', '')
         area = request.args.get('area', '')
         status = request.args.get('status', '')
+        client_id = request.args.get('client_id', '2')  # Default to client_id 2 for testing
         base_query = """
             SELECT 
                 b.bill_number as bill_id,
@@ -2553,9 +2561,10 @@ def download_invoices():
             FROM bills b
             LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
             LEFT JOIN employees e ON b.master_id = e.employee_id
+            WHERE b.user_id = ?
         """
         conditions = []
-        params = []
+        params = [client_id]
         if from_date:
             conditions.append("b.bill_date >= ?")
             params.append(from_date)
@@ -2580,7 +2589,7 @@ def download_invoices():
             conditions.append("b.status = ?")
             params.append(status)
         if conditions:
-            base_query += " WHERE " + " AND ".join(conditions)
+            base_query += " AND " + " AND ".join(conditions)
         base_query += " GROUP BY b.bill_id ORDER BY b.bill_date DESC"
         cursor = get_db_connection().cursor()
         cursor.execute(base_query, params)
@@ -2696,7 +2705,7 @@ def print_invoices():
 def report_employees():
     """
     Returns filtered employee report data for the Advanced Reports section.
-    Accepts query parameters: from_date, to_date, products, city, area, status
+    Accepts query parameters: from_date, to_date, products, city, area, status, client_id
     """
     try:
         from_date = request.args.get('from_date', '')
@@ -2705,6 +2714,7 @@ def report_employees():
         city = request.args.get('city', '')
         area = request.args.get('area', '')
         status = request.args.get('status', '')
+        client_id = request.args.get('client_id', '')
 
         base_query = """
             SELECT 
@@ -2720,6 +2730,11 @@ def report_employees():
 
         conditions = []
         params = []
+
+        # Client ID filter (most important)
+        if client_id:
+            conditions.append("e.user_id = ?")
+            params.append(client_id)
 
         if from_date:
             conditions.append("b.bill_date >= ?")
@@ -2753,22 +2768,23 @@ def report_employees():
         for row in rows:
             employees_data.append({
                 'employee_id': row[0],
-                'employee_name': row[1],
+                'name': row[1],  # Changed to match frontend expectation
                 'bills_handled': row[2] or 0,
                 'total_billed': round(float(row[3]), 2) if row[3] is not None else 0.0,
-                'products': row[4].split(',') if row[4] else []
+                'products_handled': row[4].split(',') if row[4] else []  # Changed to match frontend
             })
 
         return jsonify({
             'success': True,
-            'data': employees_data,
+            'employees': employees_data,  # Changed from 'data' to 'employees'
             'filters_applied': {
                 'from_date': from_date,
                 'to_date': to_date,
                 'products': products,
                 'city': city,
                 'area': area,
-                'status': status
+                'status': status,
+                'client_id': client_id
             }
         })
     except Exception as e:
@@ -2777,8 +2793,6 @@ def report_employees():
 @app.route('/api/reports/products', methods=['GET'])
 def report_products():
     try:
-        conn = get_db_connection()
-        
         # Get filter parameters
         from_date = request.args.get('from_date')
         to_date = request.args.get('to_date')
@@ -2786,6 +2800,7 @@ def report_products():
         city = request.args.get('city')
         area = request.args.get('area')
         status = request.args.get('status')
+        client_id = request.args.get('client_id', '')
         
         # Build base query
         base_query = """
@@ -2802,6 +2817,11 @@ def report_products():
         """
         
         params = []
+        
+        # Client ID filter (most important)
+        if client_id:
+            base_query += " AND b.user_id = ?"
+            params.append(client_id)
         
         # Add filters
         if from_date:
@@ -2830,18 +2850,18 @@ def report_products():
         
         base_query += " GROUP BY p.product_id, p.product_name, pt.type_name ORDER BY total_revenue DESC"
         
-        cursor = conn.execute(base_query, params)
+        cursor = get_db_connection().cursor()
+        cursor.execute(base_query, params)
+        rows = cursor.fetchall()
+        
         products = []
-        
-        for row in cursor:
+        for row in rows:
             products.append({
-                'product_name': row['product_name'],
-                'product_type': row['product_type'],
-                'total_quantity': row['total_quantity'],
-                'total_revenue': round(float(row['total_revenue']), 2)
+                'product_name': row[0],
+                'type_name': row[1],  # Changed to match frontend expectation
+                'total_quantity': row[2],
+                'total_revenue': round(float(row[3]), 2)
             })
-        
-        conn.close()
         
         return jsonify({
             'success': True,
