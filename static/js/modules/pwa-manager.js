@@ -50,8 +50,25 @@ class PWAManager {
         window.location.reload();
       });
 
+      // Check for updates periodically
+      setInterval(() => {
+        this.swRegistration.update();
+      }, 60000); // Check every minute
+
     } catch (error) {
       console.error('PWA Manager: Service Worker registration failed', error);
+    }
+  }
+
+  async forceUpdateServiceWorker() {
+    if (this.swRegistration) {
+      console.log('PWA Manager: Forcing service worker update...');
+      try {
+        await this.swRegistration.update();
+        console.log('PWA Manager: Service worker update triggered');
+      } catch (error) {
+        console.error('PWA Manager: Failed to force update service worker', error);
+      }
     }
   }
 
