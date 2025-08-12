@@ -1,10 +1,68 @@
 // Reports Module
 
 function initializeReports() {
+  // Initialize tab switching functionality
+  initializeTabSwitching();
+  
   // Initialize all report sections
   initializeInvoicesReport();
   initializeEmployeesReport();
   initializeProductsReport();
+}
+
+function initializeTabSwitching() {
+  console.log('🔧 Initializing reports tab switching...');
+  
+  const tabButtons = document.querySelectorAll('.report-tab-btn');
+  const tabContents = document.querySelectorAll('.report-tab-content');
+  
+  console.log(`Found ${tabButtons.length} tab buttons and ${tabContents.length} tab contents`);
+  
+  // Hide all tab contents initially
+  tabContents.forEach(content => {
+    content.style.display = 'none';
+  });
+  
+  // Show the first tab by default
+  if (tabContents.length > 0) {
+    tabContents[0].style.display = 'block';
+    if (tabButtons.length > 0) {
+      tabButtons[0].classList.add('text-indigo-400', 'border-indigo-400');
+      tabButtons[0].classList.remove('text-neutral-300', 'border-transparent');
+    }
+  }
+  
+  // Add click event listeners to tab buttons
+  tabButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const targetTab = this.getAttribute('data-tab');
+      console.log(`Switching to tab: ${targetTab}`);
+      
+      // Remove active state from all buttons
+      tabButtons.forEach(btn => {
+        btn.classList.remove('text-indigo-400', 'border-indigo-400');
+        btn.classList.add('text-neutral-300', 'border-transparent');
+      });
+      
+      // Add active state to clicked button
+      this.classList.add('text-indigo-400', 'border-indigo-400');
+      this.classList.remove('text-neutral-300', 'border-transparent');
+      
+      // Hide all tab contents
+      tabContents.forEach(content => {
+        content.style.display = 'none';
+      });
+      
+      // Show target tab content
+      const targetContent = document.getElementById(targetTab);
+      if (targetContent) {
+        targetContent.style.display = 'block';
+        console.log(`✅ Tab ${targetTab} displayed`);
+      } else {
+        console.error(`❌ Tab content for ${targetTab} not found`);
+      }
+    });
+  });
 }
 
 function initializeInvoicesReport() {
