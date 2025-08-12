@@ -314,6 +314,10 @@ def expenses():
 def sw_debug():
     return send_file('sw_debug.html')
 
+@app.route('/test-dropdown')
+def test_dropdown():
+    return send_file('test_employee_dropdown.html')
+
 # Product Types API
 @app.route('/api/product-types', methods=['GET'])
 def get_product_types():
