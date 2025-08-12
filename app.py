@@ -310,6 +310,10 @@ def expenses():
                         get_user_language=get_user_language,
                         get_translated_text=get_translated_text)
 
+@app.route('/sw-debug')
+def sw_debug():
+    return send_file('sw_debug.html')
+
 # Product Types API
 @app.route('/api/product-types', methods=['GET'])
 def get_product_types():
@@ -865,25 +869,65 @@ def create_bill():
                 ))
                 customer_id = cursor.lastrowid
             
-            # Create bill
+            # Create bill with retry logic for duplicate bill numbers
             bill_uuid = str(uuid.uuid4())
-            cursor = conn.execute('''
-                INSERT INTO bills (
-                    user_id, bill_number, customer_id, customer_name, customer_phone, 
-                    customer_city, customer_area, customer_trn, customer_type, business_name, business_address,
-                    uuid, bill_date, delivery_date, payment_method, subtotal, vat_amount, total_amount, 
-                    advance_paid, balance_amount, status, master_id, trial_date, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                user_id, bill_data.get('bill_number'), customer_id, bill_data.get('customer_name'),
-                re.sub(r'\D', '', customer_phone), bill_data.get('customer_city'),
-                bill_data.get('customer_area'), bill_data.get('customer_trn', ''),
-                bill_data.get('customer_type', 'Individual'), bill_data.get('business_name', ''),
-                bill_data.get('business_address', ''), bill_uuid, bill_data.get('bill_date'), 
-                bill_data.get('delivery_date'), bill_data.get('payment_method', 'Cash'),
-                subtotal, vat_amount, total_amount, advance_paid, balance_amount,
-                'Pending', master_id, bill_data.get('trial_date'), notes
-            ))
+            max_retries = 3
+            bill_created = False
+            
+            for attempt in range(max_retries):
+                try:
+                    # Generate a unique bill number if needed
+                    bill_number = bill_data.get('bill_number')
+                    if attempt > 0:
+                        # If retrying, generate a new bill number
+                        today = datetime.now().strftime('%Y%m%d')
+                        import time
+                        timestamp = int(time.time() * 1000) % 10000
+                        bill_number = f'BILL-{today}-{timestamp:04d}'
+                    
+                    cursor = conn.execute('''
+                        INSERT INTO bills (
+                            user_id, bill_number, customer_id, customer_name, customer_phone, 
+                            customer_city, customer_area, customer_trn, customer_type, business_name, business_address,
+                            uuid, bill_date, delivery_date, payment_method, subtotal, vat_amount, total_amount, 
+                            advance_paid, balance_amount, status, master_id, trial_date, notes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        user_id, bill_number, customer_id, bill_data.get('customer_name'),
+                        re.sub(r'\D', '', customer_phone), bill_data.get('customer_city'),
+                        bill_data.get('customer_area'), bill_data.get('customer_trn', ''),
+                        bill_data.get('customer_type', 'Individual'), bill_data.get('business_name', ''),
+                        bill_data.get('business_address', ''), bill_uuid, bill_data.get('bill_date'), 
+                        bill_data.get('delivery_date'), bill_data.get('payment_method', 'Cash'),
+                        subtotal, vat_amount, total_amount, advance_paid, balance_amount,
+                        'Pending', master_id, bill_data.get('trial_date'), notes
+                    ))
+                    bill_created = True
+                    break
+                    
+                except sqlite3.IntegrityError as e:
+                    if "UNIQUE constraint failed: bills.user_id, bills.bill_number" in str(e):
+                        if attempt == max_retries - 1:
+                            # Last attempt failed
+                            conn.rollback()
+                            conn.close()
+                            return jsonify({'error': 'Failed to create bill due to duplicate bill number. Please try again.'}), 500
+                        # Continue to next attempt
+                        continue
+                    else:
+                        # Other integrity error
+                        conn.rollback()
+                        conn.close()
+                        return jsonify({'error': f'Database error: {str(e)}'}), 500
+                except Exception as e:
+                    conn.rollback()
+                    conn.close()
+                    return jsonify({'error': f'Error creating bill: {str(e)}'}), 500
+            
+            if not bill_created:
+                conn.rollback()
+                conn.close()
+                return jsonify({'error': 'Failed to create bill after multiple attempts'}), 500
             
             bill_id = cursor.lastrowid
             # print(f"DEBUG: Created bill_id: {bill_id}")
@@ -988,21 +1032,61 @@ def create_bill():
                 customer_id = cursor.lastrowid
                 print(f"DEBUG: Created new customer_id: {customer_id}")
             
-            # Create bill
+            # Create bill with retry logic for duplicate bill numbers
             bill_uuid = str(uuid.uuid4())
-            cursor = conn.execute('''
-                INSERT INTO bills (
-                    user_id, bill_number, customer_id, customer_name, customer_phone, 
-                    customer_city, customer_area, uuid, bill_date, delivery_date, 
-                    payment_method, subtotal, vat_amount, total_amount, 
-                    advance_paid, balance_amount, status, master_id, trial_date, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                user_id, request.form.get('bill_number'), customer_id, customer_name, customer_phone,
-                customer_city, customer_area, bill_uuid, bill_date, delivery_date,
-                payment_method, subtotal, vat_amount, total_amount,
-                advance_paid, balance_amount, 'Pending', master_id, trial_date, notes
-            ))
+            max_retries = 3
+            bill_created = False
+            
+            for attempt in range(max_retries):
+                try:
+                    # Generate a unique bill number if needed
+                    bill_number = request.form.get('bill_number')
+                    if attempt > 0:
+                        # If retrying, generate a new bill number
+                        today = datetime.now().strftime('%Y%m%d')
+                        import time
+                        timestamp = int(time.time() * 1000) % 10000
+                        bill_number = f'BILL-{today}-{timestamp:04d}'
+                    
+                    cursor = conn.execute('''
+                        INSERT INTO bills (
+                            user_id, bill_number, customer_id, customer_name, customer_phone, 
+                            customer_city, customer_area, uuid, bill_date, delivery_date, 
+                            payment_method, subtotal, vat_amount, total_amount, 
+                            advance_paid, balance_amount, status, master_id, trial_date, notes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        user_id, bill_number, customer_id, customer_name, customer_phone,
+                        customer_city, customer_area, bill_uuid, bill_date, delivery_date,
+                        payment_method, subtotal, vat_amount, total_amount,
+                        advance_paid, balance_amount, 'Pending', master_id, trial_date, notes
+                    ))
+                    bill_created = True
+                    break
+                    
+                except sqlite3.IntegrityError as e:
+                    if "UNIQUE constraint failed: bills.user_id, bills.bill_number" in str(e):
+                        if attempt == max_retries - 1:
+                            # Last attempt failed
+                            conn.rollback()
+                            conn.close()
+                            return jsonify({'error': 'Failed to create bill due to duplicate bill number. Please try again.'}), 500
+                        # Continue to next attempt
+                        continue
+                    else:
+                        # Other integrity error
+                        conn.rollback()
+                        conn.close()
+                        return jsonify({'error': f'Database error: {str(e)}'}), 500
+                except Exception as e:
+                    conn.rollback()
+                    conn.close()
+                    return jsonify({'error': f'Error creating bill: {str(e)}'}), 500
+            
+            if not bill_created:
+                conn.rollback()
+                conn.close()
+                return jsonify({'error': 'Failed to create bill after multiple attempts'}), 500
             
             bill_id = cursor.lastrowid
             print(f"DEBUG: Created bill_id: {bill_id}")
@@ -1526,22 +1610,60 @@ def delete_employee(employee_id):
 def get_next_bill_number():
     user_id = get_current_user_id()
     today = datetime.now().strftime('%Y%m%d')
-    conn = get_db_connection()
-    # Find all bills for today with the new format
-    bills = conn.execute("""
-        SELECT bill_number FROM bills WHERE bill_number LIKE ? AND user_id = ?
-    """, (f'BILL-{today}-%', user_id)).fetchall()
-    conn.close()
-    max_seq = 0
-    for b in bills:
-        parts = b['bill_number'].split('-')
-        if len(parts) == 3 and parts[1] == today and parts[2].isdigit():
-            seq = int(parts[2])
-            if seq > max_seq:
-                max_seq = seq
-    next_seq = max_seq + 1
-    bill_number = f'BILL-{today}-{next_seq:03d}'
-    return jsonify({'bill_number': bill_number})
+    
+    # Use a more robust approach with retry logic
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            conn = get_db_connection()
+            # Use a transaction to prevent race conditions
+            conn.execute('BEGIN TRANSACTION')
+            
+            # Find all bills for today with the new format
+            bills = conn.execute("""
+                SELECT bill_number FROM bills WHERE bill_number LIKE ? AND user_id = ?
+                ORDER BY bill_number DESC
+            """, (f'BILL-{today}-%', user_id)).fetchall()
+            
+            max_seq = 0
+            for b in bills:
+                parts = b['bill_number'].split('-')
+                if len(parts) == 3 and parts[1] == today and parts[2].isdigit():
+                    seq = int(parts[2])
+                    if seq > max_seq:
+                        max_seq = seq
+            
+            next_seq = max_seq + 1
+            bill_number = f'BILL-{today}-{next_seq:03d}'
+            
+            # Verify this bill number doesn't exist (double-check)
+            existing = conn.execute("""
+                SELECT COUNT(*) as count FROM bills WHERE bill_number = ? AND user_id = ?
+            """, (bill_number, user_id)).fetchone()
+            
+            if existing['count'] == 0:
+                conn.commit()
+                conn.close()
+                return jsonify({'bill_number': bill_number})
+            else:
+                # If bill number exists, increment and try again
+                max_seq += 1
+                next_seq = max_seq + 1
+                bill_number = f'BILL-{today}-{next_seq:03d}'
+                conn.commit()
+                conn.close()
+                return jsonify({'bill_number': bill_number})
+                
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            if attempt == max_retries - 1:
+                # Last attempt failed, generate a unique bill number with timestamp
+                import time
+                timestamp = int(time.time() * 1000) % 10000  # Last 4 digits of timestamp
+                bill_number = f'BILL-{today}-{timestamp:04d}'
+                return jsonify({'bill_number': bill_number})
+            time.sleep(0.1)  # Small delay before retry
 
 @app.route('/api/employee-analytics', methods=['GET'])
 def employee_analytics():
@@ -1887,7 +2009,7 @@ def handle_setup_wizard():
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['shopType', 'shopName', 'contactNumber', 'selectedPlan']
+        required_fields = ['shopType', 'shopName', 'shopOwner', 'contactNumber', 'selectedPlan']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'success': False, 'message': f'Missing required field: {field}'})
@@ -1984,6 +2106,19 @@ def handle_setup_wizard():
             data.get('address', ''),
             f"Shop Type: {data['shopType']}",
             1  # Enable dynamic invoice template by default
+        ))
+        
+        # Create shop owner as employee with "Owner" position
+        conn.execute('''
+            INSERT INTO employees (user_id, name, phone, address, position, is_active)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            new_user_id,
+            data['shopOwner'],
+            contact_number_digits,
+            data.get('address', ''),
+            'Owner',
+            1
         ))
         
         # Create user plan for new user

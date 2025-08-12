@@ -1492,8 +1492,69 @@ function initializeBillingSystem() {
         // Make employees available globally for debugging
         window.allEmployees = employees;
         console.log('🌐 Global allEmployees set:', window.allEmployees.length);
+        
+        // Set default owner if available
+        setDefaultOwner();
       } catch (error) {
         console.error('❌ Error loading employees:', error);
+      }
+    }
+    
+    // Set default owner
+    function setDefaultOwner() {
+      const owner = employees.find(emp => emp.position === 'Owner');
+      if (owner) {
+        console.log('👑 Setting default owner:', owner.name);
+        
+        // Set the owner as default in both desktop and mobile inputs
+        if (masterInput) {
+          masterInput.value = owner.name;
+          masterInput.setAttribute('data-selected-master', JSON.stringify({
+            master_id: owner.employee_id,
+            master_name: owner.name
+          }));
+        }
+        
+        if (masterInputMobile) {
+          masterInputMobile.value = owner.name;
+          masterInputMobile.setAttribute('data-selected-master', JSON.stringify({
+            master_id: owner.employee_id,
+            master_name: owner.name
+          }));
+        }
+        
+        // Set global selected master ID
+        window.selectedMasterId = owner.employee_id;
+        console.log('🎯 Default owner set - ID:', owner.employee_id, 'Name:', owner.name);
+      } else {
+        // If no owner found, set the first available employee as default
+        if (employees.length > 0) {
+          const firstEmployee = employees[0];
+          console.log('⚠️ No owner found, setting first employee as default:', firstEmployee.name);
+          
+          // Set the first employee as default in both desktop and mobile inputs
+          if (masterInput) {
+            masterInput.value = firstEmployee.name;
+            masterInput.setAttribute('data-selected-master', JSON.stringify({
+              master_id: firstEmployee.employee_id,
+              master_name: firstEmployee.name
+            }));
+          }
+          
+          if (masterInputMobile) {
+            masterInputMobile.value = firstEmployee.name;
+            masterInputMobile.setAttribute('data-selected-master', JSON.stringify({
+              master_id: firstEmployee.employee_id,
+              master_name: firstEmployee.name
+            }));
+          }
+          
+          // Set global selected master ID
+          window.selectedMasterId = firstEmployee.employee_id;
+          console.log('🎯 Default employee set - ID:', firstEmployee.employee_id, 'Name:', firstEmployee.name);
+        } else {
+          console.log('⚠️ No employees found in list');
+        }
       }
     }
 
