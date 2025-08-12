@@ -527,7 +527,10 @@
               </select>
             </div>
             <div class="flex gap-2 ml-auto">
-              <button type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+              <button type="button" id="previewInvoicesBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="eye" class="w-4 h-4"></svg> Preview
+              </button>
+              <button type="button" id="downloadInvoicesBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
                 <svg data-lucide="download" class="w-4 h-4"></svg> Download
               </button>
               <button id="invoicePrintBtn" type="button" class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
@@ -560,7 +563,7 @@
               </thead>
               <tbody id="invoices-table-body">
                 <tr>
-                  <td colspan="10" class="text-center text-neutral-500 py-8">No data to display. Use filters and click Preview.</td>
+                  <td colspan="10" class="text-center text-neutral-500 py-8">Loading data...</td>
                 </tr>
               </tbody>
             </table>
