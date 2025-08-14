@@ -2292,25 +2292,74 @@ function initializeBillingSystem() {
                   <td class="px-2 py-1">AED ${parseFloat(bill.total_amount).toFixed(2)}</td>
                   <td class="px-2 py-1">${bill.status || (bill.balance_amount > 0 ? 'Pending' : 'Paid')}</td>
                   <td class="px-2 py-1 flex gap-2">
-                    <button class="reprint-btn bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1" data-id="${bill.bill_id}">Reprint</button>
-                    ${(bill.status === 'Pending' || (bill.balance_amount && bill.balance_amount > 0)) ? `<button class="mark-paid-btn bg-green-600 hover:bg-green-500 text-white rounded px-3 py-1" data-id="${bill.bill_id}" data-balance="${bill.balance_amount}">Mark as Paid</button>` : ''}
+                    <button class="reprint-btn bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1" data-id="${bill.bill_id}">Print</button>
+                    <button class="whatsapp-btn bg-green-600 hover:bg-green-500 text-white rounded px-3 py-1" data-id="${bill.bill_id}">Send WhatsApp</button>
+                    ${(bill.status === 'Pending' || (bill.balance_amount && bill.balance_amount > 0)) ? `<button class="mark-paid-btn bg-green-600 hover:bg-green-500 text-white rounded px-3 py-1" data-id="${bill.bill_id}" data-balance="${bill.balance_amount}">Mark Paid</button>` : ''}
                   </td>
                 </tr>
               `).join('')}
             </tbody>
           </table>`
-        : '<div class="text-neutral-400 text-center py-4">No invoices found.</div>';
+        : '<div class="text-neutral-400 text-center py-4">No invoices found matching your search.</div>';
     });
     
-    // Combined Reprint and Mark as Paid functionality
+    // Combined Reprint, WhatsApp, and Mark as Paid functionality
     document.getElementById('searchInvoiceResults')?.addEventListener('click', async function(e) {
       const reprintBtn = e.target.closest('.reprint-btn');
+      const whatsappBtn = e.target.closest('.whatsapp-btn');
       const payBtn = e.target.closest('.mark-paid-btn');
       
       // Handle Reprint functionality
       if (reprintBtn) {
         const billId = reprintBtn.getAttribute('data-id');
         window.open(`/api/bills/${billId}/print`, '_blank');
+        return; // Prevent further processing
+      }
+      
+      // Handle WhatsApp functionality
+      if (whatsappBtn) {
+        const billId = whatsappBtn.getAttribute('data-id');
+        try {
+          // First get the bill details to get customer phone
+          const billResponse = await fetch(`/api/bills/${billId}`);
+          if (!billResponse.ok) {
+            showModernAlert('Failed to get bill details', 'error');
+            return;
+          }
+          
+          const billData = await billResponse.json();
+          const customerPhone = billData.bill?.customer_phone || '';
+          
+          if (!customerPhone) {
+            showModernAlert('Customer phone number not found for this bill', 'error');
+            return;
+          }
+          
+          // Now call the WhatsApp endpoint with required parameters
+          const response = await fetch(`/api/bills/${billId}/whatsapp`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              phone: customerPhone,
+              language: 'en' // Default to English
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.whatsapp_url) {
+              window.open(data.whatsapp_url, '_blank');
+            }
+          } else {
+            const errorData = await response.json();
+            showModernAlert(errorData.error || 'Failed to generate WhatsApp link', 'error');
+          }
+        } catch (error) {
+          console.error('WhatsApp error:', error);
+          showModernAlert('Error generating WhatsApp link', 'error');
+        }
         return; // Prevent further processing
       }
       
@@ -2885,7 +2934,7 @@ function initializeBillingSystem() {
           
           // Reset button after 3 seconds
           setTimeout(() => {
-            saveBillBtn.innerHTML = '<svg data-lucide="save" class="w-4 h-4"></svg> Save Bill';
+            saveBillBtn.innerHTML = '<svg data-lucide="save" class="w-4 h-4"></svg> Save Invoice';
             saveBillBtn.classList.remove('bg-green-600', 'hover:bg-green-500');
             saveBillBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-500');
           }, 3000);
