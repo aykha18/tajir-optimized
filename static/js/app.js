@@ -90,7 +90,10 @@ document.addEventListener('DOMContentLoaded', function() {
   function initializeCacheClearing() {
     const clearCacheBtn = document.getElementById('clearCacheBtn');
     
-    if (clearCacheBtn) {
+    if (clearCacheBtn && !clearCacheBtn.hasAttribute('data-cache-initialized')) {
+      // Mark as initialized to prevent duplicate event listeners
+      clearCacheBtn.setAttribute('data-cache-initialized', 'true');
+      
       clearCacheBtn.addEventListener('click', async () => {
         if (confirm('Are you sure you want to clear all app cache? This will remove all stored data and may require you to log in again.')) {
           try {
