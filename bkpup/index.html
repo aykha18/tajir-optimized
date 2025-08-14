@@ -172,7 +172,7 @@
             <input id="restoreInput" type="file" accept=".zip" class="hidden">
           </label>
         </div>
-        <h4 class="text-lg font-semibold mb-2">Last 7 Backups (Dropbox)</h4>
+        <h4 class="text-lg font-semibold mb-2">Backup History</h4>
         <table class="min-w-full text-sm border border-neutral-700 rounded-lg overflow-hidden">
           <thead class="bg-neutral-800/70"><tr><th class="px-3 py-2 text-left font-medium">Date</th><th class="px-3 py-2 text-left font-medium">File</th><th class="px-3 py-2 text-left font-medium">Actions</th></tr></thead>
           <tbody id="backupTableBody" class="divide-y divide-neutral-800"></tbody>
@@ -1761,7 +1761,7 @@
         showToast(data.message || 'Restore complete', 'success');
         e.target.value = '';
       });
-      // Download/Restore from Dropbox table
+              // Download/Restore backup table
       $('backupTableBody').addEventListener('click', async (e) => {
         const dlBtn = e.target.closest('.download-backup-btn');
         const rsBtn = e.target.closest('.restore-backup-btn');
@@ -1769,7 +1769,7 @@
           window.open(`/api/backup/download/${encodeURIComponent(dlBtn.dataset.fn)}`, '_blank');
         }
         if (rsBtn) {
-          if (!(await showConfirmDialog('Restore this backup from Dropbox? This will overwrite all current data.'))) return;
+          if (!(await showConfirmDialog('Restore this backup? This will overwrite all current data.'))) return;
           const resp = await fetch(`/api/backup/restore/${encodeURIComponent(rsBtn.dataset.fn)}`, { method: 'POST' });
           const data = await resp.json();
           showToast(data.message || 'Restore complete', 'success');
