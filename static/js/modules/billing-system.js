@@ -1,4 +1,4 @@
-// Billing System Module
+﻿// Billing System Module
 
 // Global variables
 let bill = []; // Primary declaration of 'bill'
@@ -357,12 +357,18 @@ function initializeBillingSystem() {
     const amountDue = totalBeforeAdvance - totalAdvance; // Deduct advance from total
     
     // Enable/disable action buttons based on bill items
+    const saveBillBtn = document.getElementById('saveBillBtn');
     const whatsappBtn = document.getElementById('whatsappBtn');
     const emailBtn = document.getElementById('emailBtn');
     const printBtn = document.getElementById('printBtn');
     
     if (bill.length > 0) {
       // Enable buttons when items exist
+      if (saveBillBtn) {
+        saveBillBtn.disabled = false;
+        saveBillBtn.classList.remove('opacity-50', 'pointer-events-none', 'bg-yellow-600/40', 'text-white/60');
+        saveBillBtn.classList.add('bg-yellow-600', 'text-white', 'hover:bg-yellow-500');
+      }
       if (whatsappBtn) {
         whatsappBtn.disabled = false;
         whatsappBtn.classList.remove('opacity-50', 'pointer-events-none', 'bg-green-600/40', 'text-white/60');
@@ -380,6 +386,11 @@ function initializeBillingSystem() {
       }
     } else {
       // Disable buttons when no items
+      if (saveBillBtn) {
+        saveBillBtn.disabled = true;
+        saveBillBtn.classList.add('opacity-50', 'pointer-events-none', 'bg-yellow-600/40', 'text-white/60');
+        saveBillBtn.classList.remove('bg-yellow-600', 'text-white', 'hover:bg-yellow-500');
+      }
       if (whatsappBtn) {
         whatsappBtn.disabled = true;
         whatsappBtn.classList.add('opacity-50', 'pointer-events-none', 'bg-green-600/40', 'text-white/60');
@@ -1289,7 +1300,7 @@ function initializeBillingSystem() {
 
   // FEATURE 4: City and Area Autocomplete
   function setupCityAreaAutocomplete() {
-    console.log('🌍 Setting up city and area autocomplete...');
+    console.log('≡ƒîì Setting up city and area autocomplete...');
     
     const cityInput = document.getElementById('billCity');
     const areaInput = document.getElementById('billArea');
@@ -1450,15 +1461,15 @@ function initializeBillingSystem() {
 
   // FEATURE 3: Master Autocomplete
   function setupMasterAutocomplete() {
-    console.log('🔍 Setting up master autocomplete...');
+    console.log('≡ƒöì Setting up master autocomplete...');
     const masterInput = document.getElementById('masterName');
     const masterInputMobile = document.getElementById('masterNameMobile');
     
-    console.log('💻 Desktop master input found:', !!masterInput);
-    console.log('📱 Mobile master input found:', !!masterInputMobile);
+    console.log('≡ƒÆ╗ Desktop master input found:', !!masterInput);
+    console.log('≡ƒô▒ Mobile master input found:', !!masterInputMobile);
     
     if (!masterInput && !masterInputMobile) {
-      console.log('❌ No master inputs found');
+      console.log('Γ¥î No master inputs found');
       return;
     }
 
@@ -1467,7 +1478,7 @@ function initializeBillingSystem() {
 
     // Create dropdown container
     function createMasterDropdown() {
-      console.log('🔍 Creating master dropdown');
+      console.log('≡ƒöì Creating master dropdown');
       masterDropdown = document.createElement('div');
       masterDropdown.className = 'master-suggestion';
       masterDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
@@ -1483,20 +1494,20 @@ function initializeBillingSystem() {
     // Load employees
     async function loadEmployees() {
       try {
-        console.log('🔍 Loading employees...');
+        console.log('≡ƒöì Loading employees...');
         const response = await fetch('/api/employees');
         employees = await response.json();
-        console.log('✅ Employees loaded:', employees.length);
-        console.log('📋 Sample employees:', employees.slice(0, 3));
+        console.log('Γ£à Employees loaded:', employees.length);
+        console.log('≡ƒôï Sample employees:', employees.slice(0, 3));
         
         // Make employees available globally for debugging
         window.allEmployees = employees;
-        console.log('🌐 Global allEmployees set:', window.allEmployees.length);
+        console.log('≡ƒîÉ Global allEmployees set:', window.allEmployees.length);
         
         // Set default owner if available
         setDefaultOwner();
       } catch (error) {
-        console.error('❌ Error loading employees:', error);
+        console.error('Γ¥î Error loading employees:', error);
       }
     }
     
@@ -1504,7 +1515,7 @@ function initializeBillingSystem() {
     function setDefaultOwner() {
       const owner = employees.find(emp => emp.position === 'Owner');
       if (owner) {
-        console.log('👑 Setting default owner:', owner.name);
+        console.log('≡ƒææ Setting default owner:', owner.name);
         
         // Set the owner as default in both desktop and mobile inputs
         if (masterInput) {
@@ -1525,12 +1536,12 @@ function initializeBillingSystem() {
         
         // Set global selected master ID
         window.selectedMasterId = owner.employee_id;
-        console.log('🎯 Default owner set - ID:', owner.employee_id, 'Name:', owner.name);
+        console.log('≡ƒÄ» Default owner set - ID:', owner.employee_id, 'Name:', owner.name);
       } else {
         // If no owner found, set the first available employee as default
         if (employees.length > 0) {
           const firstEmployee = employees[0];
-          console.log('⚠️ No owner found, setting first employee as default:', firstEmployee.name);
+          console.log('ΓÜá∩╕Å No owner found, setting first employee as default:', firstEmployee.name);
           
           // Set the first employee as default in both desktop and mobile inputs
           if (masterInput) {
@@ -1551,9 +1562,9 @@ function initializeBillingSystem() {
           
           // Set global selected master ID
           window.selectedMasterId = firstEmployee.employee_id;
-          console.log('🎯 Default employee set - ID:', firstEmployee.employee_id, 'Name:', firstEmployee.name);
+          console.log('≡ƒÄ» Default employee set - ID:', firstEmployee.employee_id, 'Name:', firstEmployee.name);
         } else {
-          console.log('⚠️ No employees found in list');
+          console.log('ΓÜá∩╕Å No employees found in list');
         }
       }
     }
@@ -1592,8 +1603,8 @@ function initializeBillingSystem() {
           const masterName = this.getAttribute('data-master-name');
           
           window.selectedMasterId = masterId;
-          console.log('🎯 Master selected - ID:', masterId, 'Name:', masterName);
-          console.log('🌐 Global selectedMasterId set to:', window.selectedMasterId);
+          console.log('≡ƒÄ» Master selected - ID:', masterId, 'Name:', masterName);
+          console.log('≡ƒîÉ Global selectedMasterId set to:', window.selectedMasterId);
           
           // Update both inputs if they exist
           if (masterInput) {
@@ -1619,20 +1630,20 @@ function initializeBillingSystem() {
 
     // Show dropdown
     function showDropdown(activeInput) {
-      console.log('🔍 showDropdown called for:', activeInput.id);
+      console.log('≡ƒöì showDropdown called for:', activeInput.id);
       
       if (!masterDropdown) createMasterDropdown();
       
       // Calculate position relative to input
       const inputRect = activeInput.getBoundingClientRect();
-      console.log('📐 Input rect:', inputRect);
+      console.log('≡ƒôÉ Input rect:', inputRect);
       
       masterDropdown.style.left = inputRect.left + 'px';
       masterDropdown.style.top = (inputRect.bottom + 4) + 'px';
       masterDropdown.style.width = inputRect.width + 'px';
       masterDropdown.style.minWidth = '200px'; // Ensure minimum width
       
-      console.log('📍 Dropdown position set to:', {
+      console.log('≡ƒôì Dropdown position set to:', {
         left: inputRect.left + 'px',
         top: (inputRect.bottom + 4) + 'px',
         width: inputRect.width + 'px'
@@ -1647,7 +1658,7 @@ function initializeBillingSystem() {
         masterDropdown.style.transition = 'all 0.2s ease';
         masterDropdown.style.opacity = '1';
         masterDropdown.style.transform = 'translateY(0)';
-        console.log('✅ Dropdown animation started');
+        console.log('Γ£à Dropdown animation started');
       }, 10);
     }
 
@@ -1671,12 +1682,12 @@ function initializeBillingSystem() {
 
     // Event listeners for desktop
     if (masterInput) {
-      console.log('🔍 Setting up desktop master input event listeners');
+      console.log('≡ƒöì Setting up desktop master input event listeners');
       masterInput.addEventListener('input', function() {
-        console.log('💻 Desktop master input event triggered, value:', this.value);
+        console.log('≡ƒÆ╗ Desktop master input event triggered, value:', this.value);
         const query = this.value;
         const filteredEmployees = filterEmployees(query);
-        console.log('🔍 Filtered employees:', filteredEmployees.length);
+        console.log('≡ƒöì Filtered employees:', filteredEmployees.length);
         
         if (filteredEmployees.length > 0) {
           renderDropdownOptions(filteredEmployees);
@@ -1699,13 +1710,13 @@ function initializeBillingSystem() {
 
     // Event listeners for mobile
     if (masterInputMobile) {
-      console.log('🔍 Setting up mobile master input event listeners');
+      console.log('≡ƒöì Setting up mobile master input event listeners');
       
       masterInputMobile.addEventListener('input', function() {
-        console.log('📱 Mobile master input event triggered, value:', this.value);
+        console.log('≡ƒô▒ Mobile master input event triggered, value:', this.value);
         const query = this.value;
         const filteredEmployees = filterEmployees(query);
-        console.log('🔍 Filtered employees:', filteredEmployees.length);
+        console.log('≡ƒöì Filtered employees:', filteredEmployees.length);
         
         if (filteredEmployees.length > 0) {
           renderDropdownOptions(filteredEmployees);
@@ -1716,10 +1727,10 @@ function initializeBillingSystem() {
       });
 
       masterInputMobile.addEventListener('focus', function() {
-        console.log('📱 Mobile master input focused, value:', this.value);
+        console.log('≡ƒô▒ Mobile master input focused, value:', this.value);
         if (this.value.trim()) {
           const filteredEmployees = filterEmployees(this.value);
-          console.log('🔍 Focus filtered employees:', filteredEmployees.length);
+          console.log('≡ƒöì Focus filtered employees:', filteredEmployees.length);
           if (filteredEmployees.length > 0) {
             renderDropdownOptions(filteredEmployees);
             showDropdown(this);
@@ -1727,12 +1738,12 @@ function initializeBillingSystem() {
         }
       });
       
-      console.log('✅ Mobile master input event listeners attached');
+      console.log('Γ£à Mobile master input event listeners attached');
     } else {
-      console.log('❌ Mobile master input not found');
+      console.log('Γ¥î Mobile master input not found');
     }
     
-    console.log('✅ Master input event listeners attached');
+    console.log('Γ£à Master input event listeners attached');
 
     // Hide dropdown when clicking outside - but NOT when clicking on options
     document.addEventListener('click', function(e) {
@@ -1756,7 +1767,7 @@ function initializeBillingSystem() {
     });
 
     // Load employees on initialization
-    console.log('🔍 Loading employees on initialization...');
+    console.log('≡ƒöì Loading employees on initialization...');
     loadEmployees();
   }
 
@@ -1767,13 +1778,13 @@ function initializeBillingSystem() {
 
   // Test function for master dropdown
   window.testMasterDropdown = function() {
-    console.log('🧪 Testing master dropdown...');
-    console.log('📱 Mobile master input:', masterInputMobile);
-    console.log('💻 Desktop master input:', masterInput);
-    console.log('👥 Employees loaded:', employees.length);
+    console.log('≡ƒº¬ Testing master dropdown...');
+    console.log('≡ƒô▒ Mobile master input:', masterInputMobile);
+    console.log('≡ƒÆ╗ Desktop master input:', masterInput);
+    console.log('≡ƒæÑ Employees loaded:', employees.length);
     
     if (masterInputMobile) {
-      console.log('📱 Triggering mobile master input focus...');
+      console.log('≡ƒô▒ Triggering mobile master input focus...');
       masterInputMobile.focus();
       masterInputMobile.value = 'test';
       masterInputMobile.dispatchEvent(new Event('input'));
@@ -1782,26 +1793,26 @@ function initializeBillingSystem() {
 
   // Test function to check master selection status
   window.testMasterSelection = function() {
-    console.log('🧪 Testing master selection status...');
+    console.log('≡ƒº¬ Testing master selection status...');
     
     const masterNameElement = document.getElementById('masterName');
     const masterNameMobileElement = document.getElementById('masterNameMobile');
     
-    console.log('💻 Desktop master element:', masterNameElement);
-    console.log('📱 Mobile master element:', masterNameMobileElement);
+    console.log('≡ƒÆ╗ Desktop master element:', masterNameElement);
+    console.log('≡ƒô▒ Mobile master element:', masterNameMobileElement);
     
     if (masterNameElement) {
-      console.log('💻 Desktop master value:', masterNameElement.value);
-      console.log('💻 Desktop master data-selected-master:', masterNameElement.getAttribute('data-selected-master'));
+      console.log('≡ƒÆ╗ Desktop master value:', masterNameElement.value);
+      console.log('≡ƒÆ╗ Desktop master data-selected-master:', masterNameElement.getAttribute('data-selected-master'));
     }
     
     if (masterNameMobileElement) {
-      console.log('📱 Mobile master value:', masterNameMobileElement.value);
-      console.log('📱 Mobile master data-selected-master:', masterNameMobileElement.getAttribute('data-selected-master'));
+      console.log('≡ƒô▒ Mobile master value:', masterNameMobileElement.value);
+      console.log('≡ƒô▒ Mobile master data-selected-master:', masterNameMobileElement.getAttribute('data-selected-master'));
     }
     
     // Also check global selectedMasterId
-    console.log('🌐 Global selectedMasterId:', window.selectedMasterId);
+    console.log('≡ƒîÉ Global selectedMasterId:', window.selectedMasterId);
   };
 
     // Setup Add Item button functionality
@@ -2146,7 +2157,7 @@ function initializeBillingSystem() {
       printBtn.classList.remove('bg-indigo-600', 'text-white', 'hover:bg-indigo-500');
     }
     
-    console.log('✅ Billing form reset successfully');
+    console.log('Γ£à Billing form reset successfully');
   }
 
   // Helper function to clear billing form
@@ -2408,19 +2419,19 @@ function initializeBillingSystem() {
         const masterNameMobileElement = document.getElementById('masterNameMobile');
         let masterId = null;
         
-        console.log('🔍 Debugging master selection:');
-        console.log('💻 Desktop master element:', masterNameElement);
-        console.log('📱 Mobile master element:', masterNameMobileElement);
-        console.log('🌐 Global selectedMasterId:', window.selectedMasterId);
+        console.log('≡ƒöì Debugging master selection:');
+        console.log('≡ƒÆ╗ Desktop master element:', masterNameElement);
+        console.log('≡ƒô▒ Mobile master element:', masterNameMobileElement);
+        console.log('≡ƒîÉ Global selectedMasterId:', window.selectedMasterId);
         
         if (masterNameElement) {
-          console.log('💻 Desktop master value:', masterNameElement.value);
-          console.log('💻 Desktop master data-selected-master:', masterNameElement.getAttribute('data-selected-master'));
+          console.log('≡ƒÆ╗ Desktop master value:', masterNameElement.value);
+          console.log('≡ƒÆ╗ Desktop master data-selected-master:', masterNameElement.getAttribute('data-selected-master'));
         }
         
         if (masterNameMobileElement) {
-          console.log('📱 Mobile master value:', masterNameMobileElement.value);
-          console.log('📱 Mobile master data-selected-master:', masterNameMobileElement.getAttribute('data-selected-master'));
+          console.log('≡ƒô▒ Mobile master value:', masterNameMobileElement.value);
+          console.log('≡ƒô▒ Mobile master data-selected-master:', masterNameMobileElement.getAttribute('data-selected-master'));
         }
         
         // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
@@ -2429,23 +2440,23 @@ function initializeBillingSystem() {
           selectedMasterElement = masterNameMobileElement;
         }
         
-        console.log('🎯 Selected master element:', selectedMasterElement);
+        console.log('≡ƒÄ» Selected master element:', selectedMasterElement);
         
         if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
           try {
             const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
             masterId = selectedMaster.master_id;
-            console.log('✅ Successfully parsed master data:', selectedMaster);
-            console.log('🆔 Master ID extracted:', masterId);
+            console.log('Γ£à Successfully parsed master data:', selectedMaster);
+            console.log('≡ƒåö Master ID extracted:', masterId);
           } catch (e) {
             console.warn('Failed to parse selected master data:', e);
           }
         } else {
-          console.log('❌ No master selected or data-selected-master attribute not found');
+          console.log('Γ¥î No master selected or data-selected-master attribute not found');
           // Try to use global selectedMasterId as fallback
           if (window.selectedMasterId) {
             masterId = window.selectedMasterId;
-            console.log('🔄 Using global selectedMasterId as fallback:', masterId);
+            console.log('≡ƒöä Using global selectedMasterId as fallback:', masterId);
           }
         }
         
@@ -2484,8 +2495,8 @@ function initializeBillingSystem() {
         };
 
         try {
-          console.log('📋 Bill data being sent:', billData);
-          console.log('🔍 Master ID:', masterId);
+          console.log('≡ƒôï Bill data being sent:', billData);
+          console.log('≡ƒöì Master ID:', masterId);
           
           // Save bill first
           const saveResponse = await fetch('/api/bills', {
@@ -2540,9 +2551,13 @@ function initializeBillingSystem() {
   setupMobileBillingToggle();
   setupPrintButton(); // Add print button setup
   
+  // Initialize Save Bill and WhatsApp functionality
+  initializeSaveBill();
+  initializeWhatsApp();
+  
 
   
-  console.log('🚀 Billing system initialized successfully!');
+  console.log('≡ƒÜÇ Billing system initialized successfully!');
   console.log('showConfirmDialog available during init:', typeof showConfirmDialog);
   console.log('showSimpleToast available during init:', typeof showSimpleToast);
   
@@ -2682,6 +2697,411 @@ function initializeBillingSystem() {
       }
     }
   };
+
+  // Save Bill functionality
+  function initializeSaveBill() {
+    setTimeout(() => {
+      const saveBillBtn = document.getElementById('saveBillBtn');
+      
+      if (saveBillBtn) {
+        saveBillBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSaveBillClick();
+        });
+      }
+    }, 1000);
+  }
+
+  // WhatsApp functionality
+  function initializeWhatsApp() {
+    setTimeout(() => {
+      const whatsappBtn = document.getElementById('whatsappBtn');
+      
+      if (whatsappBtn) {
+        whatsappBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleWhatsAppClick();
+        });
+      }
+    }, 1000);
+  }
+
+  // Function to prepare bill data for saving
+  async function prepareBillData() {
+    // Check if bill has items
+    if (bill.length === 0) {
+      if (window.showSimpleToast) {
+        window.showSimpleToast('Please add items to the bill first', 'warning');
+      }
+      return null;
+    }
+    
+    // Validate required fields
+    const customerMobile = document.getElementById('billMobile')?.value?.trim();
+    
+    if (!customerMobile) {
+      if (window.showSimpleToast) {
+        window.showSimpleToast('Please enter customer mobile number in the Mobile field', 'warning');
+      }
+      // Focus on the mobile field to help user
+      const mobileField = document.getElementById('billMobile');
+      if (mobileField) {
+        mobileField.focus();
+        mobileField.style.borderColor = '#ef4444'; // Red border to highlight
+        setTimeout(() => {
+          mobileField.style.borderColor = ''; // Reset after 3 seconds
+        }, 3000);
+      }
+      return null;
+    }
+
+    // Generate bill number if not exists
+    const billNumberInput = document.getElementById('billNumber');
+    if (billNumberInput && !billNumberInput.value.trim()) {
+      const timestamp = Date.now();
+      billNumberInput.value = `BILL-${timestamp}`;
+    }
+
+    // Collect bill data
+    const masterNameElement = document.getElementById('masterName');
+    const masterNameMobileElement = document.getElementById('masterNameMobile');
+    let masterId = null;
+    
+    // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
+    let selectedMasterElement = masterNameElement;
+    if (!selectedMasterElement || !selectedMasterElement.getAttribute('data-selected-master')) {
+      selectedMasterElement = masterNameMobileElement;
+    }
+    
+    if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
+      try {
+        const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
+        masterId = selectedMaster.master_id;
+      } catch (e) {
+        console.warn('Failed to parse selected master data:', e);
+      }
+    } else {
+      // Try to use global selectedMasterId as fallback
+      if (window.selectedMasterId) {
+        masterId = window.selectedMasterId;
+      }
+    }
+    
+    // Calculate totals from bill array (same logic as updateTotals function)
+    const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
+    const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
+    const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
+    const totalBeforeAdvance = subtotal + totalVat;
+    const amountDue = totalBeforeAdvance - totalAdvance;
+    
+    const billData = {
+      bill: {
+        bill_number: document.getElementById('billNumber')?.value || '',
+        customer_name: document.getElementById('billCustomer')?.value || '',
+        customer_phone: document.getElementById('billMobile')?.value || '',
+        customer_city: document.getElementById('billCity')?.value || '',
+        customer_area: document.getElementById('billArea')?.value || '',
+        customer_trn: document.getElementById('billTRN')?.value || '',
+        customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
+        business_name: document.getElementById('billBusinessName')?.value || '',
+        business_address: document.getElementById('billBusinessAddress')?.value || '',
+        bill_date: document.getElementById('billDate')?.value || '',
+        delivery_date: document.getElementById('deliveryDate')?.value || '',
+        trial_date: document.getElementById('trialDate')?.value || '',
+        master_id: masterId,
+        master_name: document.getElementById('masterName')?.value || '',
+        notes: document.getElementById('billNotes')?.value || '',
+        subtotal: subtotal,
+        discount: 0, // No discount field in current UI
+        vat_amount: totalVat,
+        total_amount: amountDue,
+        advance_paid: totalAdvance,
+        balance_amount: amountDue
+      },
+      items: bill
+    };
+
+    return billData;
+  }
+
+  async function handleSaveBillClick() {
+    // Check if there are items in the bill
+    if (bill.length === 0) {
+      if (window.showSimpleToast) {
+        window.showSimpleToast('Please add items to the bill first', 'warning');
+      }
+      return;
+    }
+    
+    try {
+      // Create the bill data
+      const billData = await prepareBillData();
+      if (!billData) {
+        if (window.showSimpleToast) {
+          window.showSimpleToast('Failed to prepare bill data', 'error');
+        }
+        return;
+      }
+      
+      // Save the bill
+      const saveResponse = await fetch('/api/bills', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(billData)
+      });
+      
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save bill');
+      }
+      
+      const saveResult = await saveResponse.json();
+      
+      if (saveResult.error) {
+        if (window.showSimpleToast) {
+          window.showSimpleToast(saveResult.error, 'error');
+        }
+        return;
+      }
+      
+      if (saveResult.bill_id) {
+        // Store the current bill ID
+        window.currentBillId = saveResult.bill_id;
+        
+        // Show success message
+        if (window.showSimpleToast) {
+          window.showSimpleToast('Bill saved successfully!', 'success');
+        }
+        
+        // Update button text to show saved status
+        const saveBillBtn = document.getElementById('saveBillBtn');
+        if (saveBillBtn) {
+          saveBillBtn.innerHTML = '<svg data-lucide="check" class="w-4 h-4"></svg> Saved';
+          saveBillBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-500');
+          saveBillBtn.classList.add('bg-green-600', 'hover:bg-green-500');
+          
+          // Reset button after 3 seconds
+          setTimeout(() => {
+            saveBillBtn.innerHTML = '<svg data-lucide="save" class="w-4 h-4"></svg> Save Bill';
+            saveBillBtn.classList.remove('bg-green-600', 'hover:bg-green-500');
+            saveBillBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-500');
+          }, 3000);
+        }
+        
+      } else {
+        if (window.showSimpleToast) {
+          window.showSimpleToast('Failed to save bill', 'error');
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error saving bill:', error);
+      if (window.showSimpleToast) {
+        window.showSimpleToast('Failed to save bill. Please try again.', 'error');
+      }
+    }
+  }
+
+  async function handleWhatsAppClick() {
+    // Check if there are items in the bill
+    if (bill.length === 0) {
+      if (window.showSimpleToast) {
+        window.showSimpleToast('Please add items to the bill first', 'warning');
+      }
+      return;
+    }
+    
+    try {
+      let billId = window.currentBillId; // Check if bill is already saved
+      let billData = null;
+      
+      // If bill is not saved, ask user if they want to save it first
+      if (!billId) {
+        const shouldSave = confirm('Would you like to save this bill before sending WhatsApp? This will create a permanent record.');
+        if (shouldSave) {
+          // Save the bill first
+          billData = await prepareBillData();
+          if (!billData) {
+            if (window.showSimpleToast) {
+              window.showSimpleToast('Failed to prepare bill data', 'error');
+            }
+            return;
+          }
+          
+          const saveResponse = await fetch('/api/bills', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(billData)
+          });
+          
+          if (!saveResponse.ok) {
+            throw new Error('Failed to save bill');
+          }
+          
+          const saveResult = await saveResponse.json();
+          
+          if (saveResult.error) {
+            if (window.showSimpleToast) {
+              window.showSimpleToast(saveResult.error, 'error');
+            }
+            return;
+          }
+          
+          if (saveResult.bill_id) {
+            billId = saveResult.bill_id;
+            window.currentBillId = billId;
+            
+            // Update save button to show saved status
+            const saveBillBtn = document.getElementById('saveBillBtn');
+            if (saveBillBtn) {
+              saveBillBtn.innerHTML = '<svg data-lucide="check" class="w-4 h-4"></svg> Saved';
+              saveBillBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-500');
+              saveBillBtn.classList.add('bg-green-600', 'hover:bg-green-500');
+            }
+          } else {
+            if (window.showSimpleToast) {
+              window.showSimpleToast('Failed to save bill', 'error');
+            }
+            return;
+          }
+        } else {
+          // Use draft bill data for WhatsApp
+          billData = await prepareBillData();
+          if (!billData) {
+            if (window.showSimpleToast) {
+              window.showSimpleToast('Failed to prepare bill data', 'error');
+            }
+            return;
+          }
+        }
+      }
+      
+      // If we have a saved bill, use the API endpoint
+      if (billId) {
+        const customerPhone = document.getElementById('billMobile')?.value?.trim() || '';
+        
+        if (!customerPhone) {
+          if (window.showSimpleToast) {
+            window.showSimpleToast('Please enter customer mobile number to send WhatsApp', 'warning');
+          }
+          return;
+        }
+        
+        // Use the existing WhatsApp API endpoint
+        const whatsappResponse = await fetch(`/api/bills/${billId}/whatsapp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            phone: customerPhone,
+            language: 'en'
+          })
+        });
+        
+        if (!whatsappResponse.ok) {
+          const errorData = await whatsappResponse.json();
+          throw new Error(errorData.error || 'Failed to generate WhatsApp link');
+        }
+        
+        const whatsappResult = await whatsappResponse.json();
+        
+        if (whatsappResult.success && whatsappResult.whatsapp_url) {
+          window.open(whatsappResult.whatsapp_url, '_blank');
+          
+          // Also open PDF in new tab
+          const pdfUrl = `${window.location.origin}/api/bills/${billId}/pdf`;
+          window.open(pdfUrl, '_blank');
+          
+          if (window.showSimpleToast) {
+            window.showSimpleToast('WhatsApp opened with bill details!', 'success');
+          }
+        } else {
+          throw new Error('Failed to generate WhatsApp link');
+        }
+      } else {
+        // Use draft bill data to create WhatsApp message
+        const customerName = billData.bill.customer_name || 'Customer';
+        const customerPhone = billData.bill.customer_phone || '';
+        const totalAmount = billData.bill.total_amount || '0';
+        const billNumber = billData.bill.bill_number || 'Draft';
+        const billDate = billData.bill.bill_date || '';
+        const subtotal = billData.bill.subtotal || '0';
+        const vatAmount = billData.bill.vat_amount || '0';
+        const advancePaid = billData.bill.advance_paid || '0';
+        const balanceAmount = billData.bill.balance_amount || '0';
+        
+        // Create detailed bill message
+        let message = `*🧾 TAJIR POS - DRAFT BILL*\n\n`;
+        message += `*Customer Details:*\n`;
+        message += `• Name: ${customerName}\n`;
+        if (customerPhone) message += `• Phone: ${customerPhone}\n\n`;
+        
+        message += `*Bill Details:*\n`;
+        message += `• Bill #: ${billNumber} (Draft)\n`;
+        message += `• Date: ${billDate}\n\n`;
+        
+        // Add items details
+        if (billData.items && billData.items.length > 0) {
+          message += `*Items:*\n`;
+          billData.items.forEach((item, index) => {
+            message += `${index + 1}. ${item.product_name} - Qty: ${item.quantity} - Rate: AED ${item.rate} - Total: AED ${item.total}\n`;
+          });
+          message += `\n`;
+        }
+        
+        message += `*Bill Summary:*\n`;
+        message += `• Subtotal: AED ${subtotal}\n`;
+        message += `• VAT: AED ${vatAmount}\n`;
+        message += `• Advance Paid: AED ${advancePaid}\n`;
+        message += `• Balance Amount: AED ${balanceAmount}\n`;
+        message += `*Total Amount: AED ${totalAmount}*\n\n`;
+        message += `*Note: This is a draft bill. Please save it in the POS system for permanent record.*`;
+        
+        // Encode the message for WhatsApp
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Construct WhatsApp URL
+        let whatsappUrl;
+        if (customerPhone) {
+          const cleanPhone = customerPhone.replace(/\D/g, '');
+          let phoneWithCode = cleanPhone;
+          
+          if (!cleanPhone.startsWith('971') && cleanPhone.length > 0) {
+            phoneWithCode = '971' + cleanPhone;
+          }
+          
+          whatsappUrl = `https://wa.me/${phoneWithCode}?text=${encodedMessage}`;
+        } else {
+          whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+        }
+        
+        window.open(whatsappUrl, '_blank');
+        
+        if (window.showSimpleToast) {
+          window.showSimpleToast('WhatsApp opened with draft bill details!', 'success');
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error handling WhatsApp:', error);
+      if (window.showSimpleToast) {
+        window.showSimpleToast('Failed to send WhatsApp. Please try again.', 'error');
+      }
+    }
+  }
+
+  // Expose functions globally for debugging
+  window.initializeSaveBill = initializeSaveBill;
+  window.initializeWhatsApp = initializeWhatsApp;
+  window.handleSaveBillClick = handleSaveBillClick;
+  window.handleWhatsAppClick = handleWhatsAppClick;
+  window.prepareBillData = prepareBillData;
 }
 
 // Initialize when DOM is ready
