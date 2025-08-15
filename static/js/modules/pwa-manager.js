@@ -47,7 +47,12 @@ class PWAManager {
       // Handle controller change
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         console.log('PWA Manager: Service Worker controller changed');
-        window.location.reload();
+        // Don't reload if we're in the middle of clearing cache
+        if (!window.isClearingCache) {
+          window.location.reload();
+        } else {
+          console.log('PWA Manager: Skipping reload during cache clear');
+        }
       });
 
       // Check for updates periodically

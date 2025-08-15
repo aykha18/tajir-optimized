@@ -1,6 +1,9 @@
 // Main Application JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Reset cache clearing flag on page load
+  window.isClearingCache = false;
+  
   lucide.createIcons();
   
   // Initialize plan management
@@ -97,14 +100,23 @@ document.addEventListener('DOMContentLoaded', function() {
       clearCacheBtn.addEventListener('click', async () => {
         if (confirm('Are you sure you want to clear all app cache? This will remove all stored data and may require you to log in again.')) {
           try {
+            // Set a flag to prevent double refresh
+            window.isClearingCache = true;
+            
+            // Add a small delay to ensure the flag is set before any service worker events
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
             await clearAllCache();
             alert('Cache cleared successfully! The app will refresh in 3 seconds.');
             setTimeout(() => {
+              // Reset the flag before reloading
+              window.isClearingCache = false;
               window.location.reload();
             }, 3000);
           } catch (error) {
             console.error('Error clearing cache:', error);
             alert('Error clearing cache. Please try again.');
+            window.isClearingCache = false;
           }
         }
       });
@@ -156,14 +168,18 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('Error clearing service worker cache:', error);
     }
 
-    // Unregister service worker
+    // Unregister service worker (skip during manual cache clear to prevent double refresh)
     try {
       if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(
-          registrations.map(registration => registration.unregister())
-        );
-        console.log('Service worker unregistered');
+        if (window.isClearingCache) {
+          console.log('Skipping service worker unregistration during manual cache clear');
+        } else {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(
+            registrations.map(registration => registration.unregister())
+          );
+          console.log('Service worker unregistered');
+        }
       }
     } catch (error) {
       console.error('Error unregistering service worker:', error);
