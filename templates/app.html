@@ -159,7 +159,7 @@
     <!-- CONTENT -->
     <div class="max-w-6xl mx-auto px-6 py-4 mobile-container">
       <!-- BILLING -->
-      <section id="billingSec" class="page space-y-4 mobile-form">
+      <section id="billingSec" class="page space-y-2 mobile-form">
         <div class="flex justify-between items-center">
           <h3 class="text-2xl font-semibold tracking-tight">Billing</h3>
           <div class="flex gap-2">
@@ -173,83 +173,81 @@
                     <!-- BILLING LAYOUT - Two Column -->
             <div class="grid grid-cols-1 lg:grid-cols-6 gap-4">
               <!-- LEFT COLUMN - Billing Form -->
-              <div class="lg:col-span-4">
+              <div class="lg:col-span-5">
                 <!-- BILLING FORM - Compact Layout -->
                 <div class="modern-card">
                   <h4 class="text-xs font-medium text-neutral-300 mb-2">META</h4>
-                  <form id="billingForm" class="compact-form grid grid-cols-12 gap-2 mobile-grid">
-            <!-- Row 1 - 4 fields per row -->
-            <div class="col-span-3 flex flex-col">
+                  <form id="billingForm" class="compact-form grid grid-cols-12 gap-1 mobile-grid">
+            <!-- Row 1 - 6 fields per row -->
+            <div class="col-span-2 flex flex-col">
               <label for="billNumber" class="text-xs text-neutral-400">Bill #</label>
               <input id="billNumber" placeholder="Auto / Manual" class="compact-form h-8 text-sm">
           </div>
-          <div class="col-span-3 flex flex-col">
+          <div class="col-span-2 flex flex-col">
               <label for="billMobile" class="text-xs text-neutral-400">Mobile</label>
              <input id="billMobile" placeholder="Mobile no." maxlength="10" inputmode="numeric" pattern="\d{9,10}" class="compact-form h-8 text-sm">
           </div>
-          <div class="col-span-3 flex flex-col">
+          <div class="col-span-2 flex flex-col">
               <label for="billCustomerType" class="text-xs text-neutral-400">Customer Type</label>
               <select id="billCustomerType" class="compact-form h-8 text-sm">
               <option value="Individual">Individual (B2C)</option>
               <option value="Business">Business (B2B)</option>
             </select>
           </div>
-            <div class="col-span-3 flex flex-col">
+            <div class="col-span-2 flex flex-col">
               <label for="billCustomer" class="text-xs text-neutral-400">Customer</label>
               <input id="billCustomer" placeholder="Customer name" class="compact-form h-8 text-sm">
           </div>
-            
-            <!-- Row 2 - 4 fields per row -->
-            <div class="col-span-3 flex flex-col">
+          <div class="col-span-2 flex flex-col">
               <label for="paymentMethod" class="text-xs text-neutral-400">Payment Method</label>
               <select id="paymentMethod" class="compact-form h-8 text-sm">
                 <option>Cash</option>
                 <option>Card</option>
               </select>
           </div>
-          <div class="col-span-3 flex flex-col">
+          <div class="col-span-2 flex flex-col">
               <label for="masterName" class="text-xs text-neutral-400">Master *</label>
               <input id="masterName" placeholder="Select master" autocomplete="off" required class="compact-form h-8 text-sm">
           </div>
-            <div class="col-span-3 flex flex-col">
+            
+            <!-- Row 2 - 6 fields per row -->
+            <div class="col-span-2 flex flex-col">
               <label for="trialDate" class="text-xs text-neutral-400">Trial Date</label>
               <input id="trialDate" type="date" class="compact-form h-8 text-sm">
           </div>
-            <div class="col-span-3 flex flex-col">
+            <div class="col-span-2 flex flex-col">
               <label for="billDate" class="text-xs text-neutral-400">Bill Date</label>
               <input id="billDate" type="date" class="compact-form h-8 text-sm">
           </div>
-            
-            <!-- Row 3 - 4 fields per row -->
-            <div class="col-span-3 flex flex-col">
+            <div class="col-span-2 flex flex-col">
               <label for="deliveryDate" class="text-xs text-neutral-400">Delivery Date</label>
               <input id="deliveryDate" type="date" class="compact-form h-8 text-sm">
             </div>
-            <div class="col-span-3 flex flex-col relative">
+            <div class="col-span-2 flex flex-col relative">
               <label for="billCity" class="text-xs text-neutral-400">City</label>
               <input id="billCity" placeholder="City" class="compact-form h-8 text-sm" autocomplete="off">
               <div id="billCityDropdown" class="absolute top-full left-0 right-0 bg-neutral-800 border border-neutral-600 rounded-lg mt-1 max-h-48 overflow-y-auto z-50 hidden shadow-xl"></div>
           </div>
-            <div class="col-span-3 flex flex-col relative">
+            <div class="col-span-2 flex flex-col relative">
               <label for="billArea" class="text-xs text-neutral-400">Area</label>
               <input id="billArea" placeholder="Area" class="compact-form h-8 text-sm" autocomplete="off">
               <div id="billAreaDropdown" class="absolute top-full left-0 right-0 bg-neutral-800 border border-neutral-600 rounded-lg mt-1 max-h-48 overflow-y-auto z-50 hidden shadow-xl"></div>
           </div>
-          <div class="col-span-3 flex flex-col">
+          <div class="col-span-2 flex flex-col">
               <label for="billNotes" class="text-xs text-neutral-400">Notes</label>
               <textarea id="billNotes" placeholder="Notes" rows="1" class="compact-form h-8 text-sm resize-none"></textarea>
           </div>
             
             <!-- Business Fields (Hidden by default) -->
-            <div class="col-span-3 flex flex-col business-billing-field" style="display: none;">
+            <div class="col-span-2 flex flex-col business-billing-field" style="display: none;">
               <label for="billBusinessName" class="text-xs text-neutral-400">Business Name *</label>
               <input id="billBusinessName" placeholder="Legal business name" class="compact-form h-8 text-sm">
             </div>
-            <div class="col-span-3 flex flex-col trn-billing-field" style="display: none;">
+            <div class="col-span-2 flex flex-col trn-billing-field" style="display: none;">
               <label for="billTRN" class="text-xs text-neutral-400">TRN</label>
               <input id="billTRN" placeholder="Tax Registration Number" class="compact-form h-8 text-sm">
             </div>
-            <div class="col-span-6 flex flex-col business-billing-field" style="display: none;">
+            <div class="col-span-4 flex flex-col business-billing-field" style="display: none;">
               <label for="billBusinessAddress" class="text-xs text-neutral-400">Business Address *</label>
               <input id="billBusinessAddress" placeholder="Complete business address" class="compact-form h-8 text-sm">
             </div>
@@ -257,9 +255,9 @@
             </div>
           </div>
 
-          <!-- RIGHT COLUMN - Recent Customers (Extended to left) -->
-          <div class="lg:col-span-2">
-            <div class="modern-card" style="width: 80%; margin-left: 0;">
+          <!-- RIGHT COLUMN - Recent Customers (Pushed to extreme right) -->
+          <div class="lg:col-span-1">
+            <div class="modern-card" style="width: 100%; margin-left: auto;">
               <h4 class="text-xs font-medium text-neutral-300 mb-2">Recent Customers</h4>
               <div id="recentCustomersContainer" class="recent-customers">
                 <!-- Recent customers will be populated here -->
@@ -282,7 +280,7 @@
           </div>
           
           <!-- Desktop Layout (hidden on mobile) - More compact -->
-          <div class="hidden md:grid grid-cols-12 gap-2 compact-form">
+          <div class="hidden md:grid grid-cols-12 gap-1 compact-form">
             <div class="col-span-5 flex flex-col">
               <label for="billProduct" class="text-xs text-neutral-400">Product</label>
               <input id="billProduct" type="text" placeholder="Search products..." required class="compact-form h-8 text-sm">
@@ -380,7 +378,7 @@
                 <th class="{{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Actions</th>
             </tr>
           </thead>
-            <tbody class="divide-y divide-neutral-800"></tbody>
+            <tbody></tbody>
         </table>
         </div>
 

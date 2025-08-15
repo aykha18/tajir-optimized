@@ -665,12 +665,12 @@ def delete_customer(customer_id):
 
 @app.route('/api/customers/recent', methods=['GET'])
 def get_recent_customers():
-    """Get the last 5 customers used in bills for quick selection."""
+    """Get the last 3 customers used in bills for quick selection."""
     try:
         user_id = get_current_user_id()
         conn = get_db_connection()
         
-        # Get the last 5 unique customers from bills, ordered by most recent
+        # Get the last 3 unique customers from bills, ordered by most recent
         query = """
             SELECT DISTINCT c.customer_id, c.name, c.phone, c.city, c.area, c.trn, 
                    c.customer_type, c.business_name, c.business_address
@@ -678,7 +678,7 @@ def get_recent_customers():
             INNER JOIN bills b ON c.customer_id = b.customer_id
             WHERE c.user_id = ? AND b.user_id = ?
             ORDER BY b.bill_date DESC, b.bill_id DESC
-            LIMIT 5
+            LIMIT 3
         """
         
         recent_customers = conn.execute(query, (user_id, user_id)).fetchall()

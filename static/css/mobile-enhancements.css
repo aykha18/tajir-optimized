@@ -1102,8 +1102,8 @@
   }
 
   /* META section mobile optimization - 2 fields per row */
-  .compact-form .col-span-3 {
-    grid-column: span 6 !important; /* Change from 3 to 6 for 2 fields per row */
+  .compact-form .col-span-2 {
+    grid-column: span 6 !important; /* Change from 2 to 6 for 2 fields per row */
   }
 
   .mobile-nav-item svg {
@@ -1158,8 +1158,8 @@
 /* Touch-friendly interactions for expense management */
 @media (max-width: 768px) {
   /* META section mobile optimization - 2 fields per row for all mobile devices */
-  .compact-form .col-span-3 {
-    grid-column: span 6 !important; /* Change from 3 to 6 for 2 fields per row */
+  .compact-form .col-span-2 {
+    grid-column: span 6 !important; /* Change from 2 to 6 for 2 fields per row */
   }
 
   /* Improve META section spacing and touch targets on mobile */

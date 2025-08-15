@@ -801,6 +801,15 @@ function initializeBillingSystem() {
             
             populateCustomerFields(customerData);
           });
+
+          // Add hover event listeners for tooltip
+          btn.addEventListener('mouseenter', function() {
+            showCustomerTooltip(this);
+          });
+
+          btn.addEventListener('mouseleave', function() {
+            hideCustomerTooltip();
+          });
         });
         
         // Refresh Lucide icons
@@ -814,6 +823,118 @@ function initializeBillingSystem() {
       if (container) {
         container.innerHTML = '<p class="text-neutral-500 text-sm">Failed to load recent customers</p>';
       }
+    }
+  }
+
+  // Customer tooltip functions
+  function showCustomerTooltip(element) {
+    console.log('showCustomerTooltip called', element);
+    // Remove any existing tooltip
+    hideCustomerTooltip();
+    
+    const customerData = {
+      name: element.getAttribute('data-customer-name'),
+      phone: element.getAttribute('data-customer-phone'),
+      city: element.getAttribute('data-customer-city'),
+      area: element.getAttribute('data-customer-area'),
+      trn: element.getAttribute('data-customer-trn'),
+      customer_type: element.getAttribute('data-customer-type'),
+      business_name: element.getAttribute('data-business-name'),
+      business_address: element.getAttribute('data-business-address')
+    };
+    
+    console.log('Customer data:', customerData);
+
+    // Create tooltip content
+    let tooltipContent = `
+      <div class="customer-tooltip-content">
+        <div class="tooltip-header">
+          <strong>${customerData.name}</strong>
+        </div>
+        <div class="tooltip-body">
+    `;
+
+    if (customerData.phone) {
+      tooltipContent += `<div class="tooltip-row"><span class="tooltip-label">Phone:</span> <span class="tooltip-value">${customerData.phone}</span></div>`;
+    }
+    if (customerData.city) {
+      tooltipContent += `<div class="tooltip-row"><span class="tooltip-label">City:</span> <span class="tooltip-value">${customerData.city}</span></div>`;
+    }
+    if (customerData.area) {
+      tooltipContent += `<div class="tooltip-row"><span class="tooltip-label">Area:</span> <span class="tooltip-value">${customerData.area}</span></div>`;
+    }
+    if (customerData.customer_type === 'Business') {
+      if (customerData.business_name) {
+        tooltipContent += `<div class="tooltip-row"><span class="tooltip-label">Business:</span> <span class="tooltip-value">${customerData.business_name}</span></div>`;
+      }
+      if (customerData.business_address) {
+        tooltipContent += `<div class="tooltip-row"><span class="tooltip-label">Address:</span> <span class="tooltip-value">${customerData.business_address}</span></div>`;
+      }
+      if (customerData.trn) {
+        tooltipContent += `<div class="tooltip-row"><span class="tooltip-label">TRN:</span> <span class="tooltip-value">${customerData.trn}</span></div>`;
+      }
+    }
+    if (customerData.customer_type) {
+      tooltipContent += `<div class="tooltip-row"><span class="tooltip-label">Type:</span> <span class="tooltip-value">${customerData.customer_type}</span></div>`;
+    }
+
+    tooltipContent += `
+        </div>
+      </div>
+    `;
+
+    // Create tooltip element
+    const tooltip = document.createElement('div');
+    tooltip.className = 'customer-tooltip';
+    tooltip.innerHTML = tooltipContent;
+    tooltip.id = 'customerTooltip';
+    
+    // Position tooltip
+    const rect = element.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const tooltipWidth = 300; // Approximate tooltip width
+    const padding = 20; // Padding from viewport edge
+    
+    tooltip.style.position = 'fixed';
+    tooltip.style.zIndex = '10000';
+    
+    // Calculate left position - try to position to the right first
+    let leftPosition = rect.left + rect.width + 10;
+    let isPositionedLeft = false;
+    
+    // If tooltip would go off-screen to the right, position it to the left
+    if (leftPosition + tooltipWidth + padding > viewportWidth) {
+      leftPosition = rect.left - tooltipWidth - 10;
+      isPositionedLeft = true;
+    }
+    
+    // Ensure tooltip doesn't go off-screen to the left
+    if (leftPosition < padding) {
+      leftPosition = padding;
+      isPositionedLeft = false;
+    }
+    
+    // Add positioning class for arrow direction
+    if (isPositionedLeft) {
+      tooltip.classList.add('tooltip-left');
+    } else {
+      tooltip.classList.add('tooltip-right');
+    }
+    
+    tooltip.style.left = leftPosition + 'px';
+    tooltip.style.top = rect.top + 'px';
+    
+    console.log('Tooltip created:', tooltip);
+    console.log('Tooltip position:', { left: tooltip.style.left, top: tooltip.style.top, viewportWidth, rectLeft: rect.left, rectWidth: rect.width });
+    
+    document.body.appendChild(tooltip);
+    console.log('Tooltip appended to body');
+  }
+
+  function hideCustomerTooltip() {
+    const tooltip = document.getElementById('customerTooltip');
+    if (tooltip) {
+      tooltip.remove();
     }
   }
 
