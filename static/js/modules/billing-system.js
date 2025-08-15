@@ -2044,7 +2044,7 @@ function initializeBillingSystem() {
         clearBillingForm(formType);
         
         // Show success message
-        showBillingSuccess('Quantity updated');
+        showSimpleToast('Quantity updated', 'success');
         
         // Focus back to product input
         setTimeout(() => {
@@ -2088,7 +2088,7 @@ function initializeBillingSystem() {
     clearBillingForm(formType);
     
     // Show success message with better feedback
-    showBillingSuccess('Item added');
+    showSimpleToast('Item added', 'success');
     
          // Focus back to product input for quick addition of next item
      setTimeout(() => {
