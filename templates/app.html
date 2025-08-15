@@ -18,7 +18,7 @@
   <script src="{{ url_for('static', filename='js/modules/reports.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/shop-settings.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/dashboard.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/billing-system.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/modules/billing-system.js', v='1.0.2') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/mobile-enhancements.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/mobile-screens.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/account.js') }}"></script>
@@ -233,15 +233,15 @@
               <input id="billQty" type="number" min="1" value="1" required class="compact-form">
           </div>
             <div class="col-span-1 flex flex-col">
-              <label for="billDiscount">Discount (AED)</label>
+              <label for="billDiscount">Discount</label>
               <input id="billDiscount" type="number" min="0" step=".01" value="0" class="compact-form">
             </div>
             <div class="col-span-1 flex flex-col">
-              <label for="billAdvPaid">Advance Payment</label>
+              <label for="billAdvPaid">Advance</label>
               <input id="billAdvPaid" type="number" min="0" value="0" class="compact-form">
             </div>
             <div class="col-span-1 flex flex-col">
-              <label for="vatPercent">Tax Rate (%)</label>
+              <label for="vatPercent"> VAT Rate(%)</label>
               <input id="vatPercent" type="number" min="0" step=".01" value="5" class="compact-form">
             </div>
             <button id="addItemBtn" class="col-span-1 modern-btn modern-btn-primary self-end">Add Item</button>

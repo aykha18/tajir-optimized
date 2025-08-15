@@ -3966,21 +3966,29 @@ def update_email_config():
 
 # WhatsApp Integration Functions
 def generate_whatsapp_message(bill_data, shop_settings, language='en'):
-    """Generate WhatsApp message for invoice"""
+    """Generate WhatsApp message for invoice with modern design"""
+    # Calculate VAT percentage (standard UAE VAT is 5%)
+    vat_percent = 5.0
+    discount_amount = bill_data.get('discount_amount', 0)
+    
+    # Get app name from config
+    app_name = "Tajir-POS"  # Default app name
+    
     if language == 'ar':
-        # Arabic message
-        message = f"""فاتورة - {shop_settings.get('shop_name', 'Tajir')}
+        # Arabic message with modern design
+        message = f"""🧾 *{app_name}* - {shop_settings.get('shop_name', 'Tajir')}
 
-رقم الفاتورة: {bill_data['bill_number']}
+📋 *تفاصيل الفاتورة:*
+رقم الفاتورة: `{bill_data['bill_number']}`
 التاريخ: {bill_data['bill_date']}
 
-تفاصيل العميل:
+👤 *معلومات العميل:*
 الاسم: {bill_data['customer_name']}
 الهاتف: {bill_data['customer_phone']}
 {f"المدينة: {bill_data['customer_city']}" if bill_data.get('customer_city') else ""}
 {f"المنطقة: {bill_data['customer_area']}" if bill_data.get('customer_area') else ""}
 
-تفاصيل الفاتورة:
+🛍️ *المنتجات:*
 """
         
         # Add items
@@ -3988,29 +3996,37 @@ def generate_whatsapp_message(bill_data, shop_settings, language='en'):
             message += f"• {item['product_name']} - {item['qty']} × {item['rate']:.2f} درهم = {item['total']:.2f} درهم\n"
         
         message += f"""
-المجموع الفرعي: {bill_data['subtotal']:.2f} درهم
-الضريبة ({bill_data.get('vat_percent', 5)}%): {bill_data['vat_amount']:.2f} درهم
+💰 *الملخص المالي:*
+المجموع الفرعي: {bill_data['subtotal']:.2f} درهم"""
+        
+        if discount_amount > 0:
+            message += f"""
+الخصم: -{discount_amount:.2f} درهم"""
+        
+        message += f"""
+الضريبة (5%): {bill_data['vat_amount']:.2f} درهم
 المدفوع مسبقاً: {bill_data.get('advance_paid', 0):.2f} درهم
-المجموع النهائي: {bill_data['total_amount']:.2f} درهم
+*المجموع النهائي: {bill_data['total_amount']:.2f} درهم*
 
-شكراً لتعاملكم معنا!
-{shop_settings.get('shop_name', 'Tajir')}
-{f"العنوان: {shop_settings.get('address', '')}" if shop_settings.get('address') else ""}
-{f"الهاتف: {shop_settings.get('phone', '')}" if shop_settings.get('phone') else ""}"""
+🙏 شكراً لتعاملكم معنا!
+🏪 {shop_settings.get('shop_name', 'Tajir')}
+{f"📍 العنوان: {shop_settings.get('address', '')}" if shop_settings.get('address') else ""}
+{f"📞 الهاتف: {shop_settings.get('phone', '')}" if shop_settings.get('phone') else ""}"""
     else:
-        # English message
-        message = f"""Invoice - {shop_settings.get('shop_name', 'Tajir')}
+        # English message with modern design
+        message = f"""🧾 *{app_name}* - {shop_settings.get('shop_name', 'Tajir')}
 
-Invoice #: {bill_data['bill_number']}
+📋 *Invoice Details:*
+Invoice #: `{bill_data['bill_number']}`
 Date: {bill_data['bill_date']}
 
-Customer Details:
+👤 *Customer Information:*
 Name: {bill_data['customer_name']}
 Phone: {bill_data['customer_phone']}
 {f"City: {bill_data['customer_city']}" if bill_data.get('customer_city') else ""}
 {f"Area: {bill_data['customer_area']}" if bill_data.get('customer_area') else ""}
 
-Invoice Details:
+🛍️ *Items:*
 """
         
         # Add items
@@ -4018,15 +4034,22 @@ Invoice Details:
             message += f"• {item['product_name']} - {item['qty']} × AED {item['rate']:.2f} = AED {item['total']:.2f}\n"
         
         message += f"""
-Subtotal: AED {bill_data['subtotal']:.2f}
-VAT ({bill_data.get('vat_percent', 5)}%): AED {bill_data['vat_amount']:.2f}
+💰 *Financial Summary:*
+Subtotal: AED {bill_data['subtotal']:.2f}"""
+        
+        if discount_amount > 0:
+            message += f"""
+Discount: -AED {discount_amount:.2f}"""
+        
+        message += f"""
+VAT (5%): AED {bill_data['vat_amount']:.2f}
 Advance Paid: AED {bill_data.get('advance_paid', 0):.2f}
-Total Amount: AED {bill_data['total_amount']:.2f}
+*Total Amount: AED {bill_data['total_amount']:.2f}*
 
-Thank you for your business!
-{shop_settings.get('shop_name', 'Tajir')}
-{f"Address: {shop_settings.get('address', '')}" if shop_settings.get('address') else ""}
-{f"Phone: {shop_settings.get('phone', '')}" if shop_settings.get('phone') else ""}"""
+🙏 Thank you for your business!
+🏪 {shop_settings.get('shop_name', 'Tajir')}
+{f"📍 Address: {shop_settings.get('address', '')}" if shop_settings.get('address') else ""}
+{f"📞 Phone: {shop_settings.get('phone', '')}" if shop_settings.get('phone') else ""}"""
     
     return message
 
@@ -4119,6 +4142,12 @@ def send_bill_whatsapp(bill_id):
         
         conn.close()
         
+        # Calculate total discount from bill items
+        total_discount = 0
+        for item in items:
+            item_dict = dict(item) if not isinstance(item, dict) else item
+            total_discount += float(item_dict.get('discount', 0))
+        
         # Prepare bill data
         print(f"DEBUG: Preparing bill data from bill keys: {list(bill.keys())}")
         bill_data = {
@@ -4130,9 +4159,10 @@ def send_bill_whatsapp(bill_id):
             'customer_area': bill.get('customer_area', ''),
             'subtotal': float(bill.get('subtotal', 0)),
             'vat_amount': float(bill.get('vat_amount', 0)),
-            'vat_percent': float(bill.get('vat_percent', 0)),
+            'vat_percent': 5.0,  # Standard UAE VAT rate
             'total_amount': float(bill.get('total_amount', 0)),
             'advance_paid': float(bill.get('advance_paid', 0)),
+            'discount_amount': total_discount,  # Calculate from bill items
             'items': []
         }
         
@@ -5096,6 +5126,17 @@ def admin_setup():
             'success': False,
             'message': f'Admin setup failed: {str(e)}'
         }), 500
+
+@app.route('/static/<path:filename>')
+def static_with_cache_busting(filename):
+    """Serve static files with cache-busting headers."""
+    response = send_from_directory('static', filename)
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    # Add timestamp to force cache refresh
+    response.headers['Last-Modified'] = 'Thu, 01 Jan 1970 00:00:00 GMT'
+    return response
 
 if __name__ == '__main__':
     init_db()

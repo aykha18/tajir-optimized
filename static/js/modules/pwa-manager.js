@@ -26,7 +26,7 @@ class PWAManager {
     }
 
     try {
-      this.swRegistration = await navigator.serviceWorker.register('/sw.js', {
+      this.swRegistration = await navigator.serviceWorker.register('/sw.js?v=1.0.2', {
         scope: '/'
       });
 

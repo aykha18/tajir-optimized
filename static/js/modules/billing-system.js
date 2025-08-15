@@ -1,4 +1,4 @@
-﻿// Billing System Module
+﻿// Billing System Module - v1.0.2 (Updated with modern text and WhatsApp integration)
 
 // Global variables
 let bill = []; // Primary declaration of 'bill'
