@@ -21,9 +21,10 @@ body {
   background: rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: 12px;
   margin: 0px;
   min-height: 100vh;
+  width: 100%;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
@@ -48,6 +49,8 @@ main {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(10px);
   padding: 0px;
+  margin: 0px;
+  width: 100%;
 }
 
 label {
@@ -105,6 +108,7 @@ label {
   margin-bottom: 2px;
   margin-left: 0px;
   margin-right: 0px;
+  border-radius: 12px;
 }
 
 /* Compact action buttons */
@@ -186,7 +190,7 @@ textarea.compact-form:hover {
 .modern-card {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
+  border-radius: 12px;
   padding: 6px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.3),
@@ -334,6 +338,10 @@ textarea.compact-form:hover {
     0 2px 4px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  min-height: 60px; /* h-15 equivalent */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modern-btn::before {
@@ -498,13 +506,38 @@ textarea.compact-form:hover {
   background-clip: text;
 }
 
-/* Recent Customers Styling - More Compact */
+/* Recent Customers Styling - Vertical Layout */
 .recent-customers {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 4px;
   margin-top: 6px;
   margin-bottom: 4px;
+}
+
+/* Billing Layout Grid */
+#billingSec .grid {
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+
+#billingSec .lg\:grid-cols-6 {
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+
+/* Reduce gap between META and Add Product sections */
+#billingSec .grid + .modern-card {
+  margin-top: 2px;
+}
+
+/* Recent Customers Card - Extended to left */
+#billingSec .lg\:col-span-2 .modern-card {
+  width: 80%;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 /* META Section Optimization */
@@ -522,15 +555,15 @@ textarea.compact-form:hover {
 .customer-pill {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
   border: 1px solid rgba(99, 102, 241, 0.3);
-  border-radius: 16px;
-  padding: 4px 10px;
+  border-radius: 8px;
+  padding: 6px 12px;
   font-size: 0.7rem;
   color: #e5e7eb;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  max-width: 200px;
+  width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -657,6 +690,9 @@ textarea.compact-form:hover {
 /* Page Transitions */
 .page {
   animation: fadeIn 0.3s ease-in-out;
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
 }
 
 .page > * {
@@ -810,12 +846,12 @@ textarea.compact-form:hover {
   
   /* Reduce margins on mobile for better space usage */
   #app {
-    margin: 4px;
-    min-height: calc(100vh - 8px);
+    margin: 0px;
+    min-height: 100vh;
   }
   
   main {
-    padding: 4px;
+    padding: 0px;
   }
   
   .modern-card {
@@ -1429,5 +1465,21 @@ select.compact-form option:checked {
   #billCityDropdown, #billAreaDropdown, #cityDropdown, #areaDropdown {
     max-height: 200px;
     font-size: 14px;
+  }
+  
+  /* Mobile billing layout adjustments */
+  #billingSec .lg\:grid-cols-6 {
+    grid-template-columns: 1fr;
+  }
+  
+  #billingSec .lg\:col-span-2 .modern-card {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  /* Ensure META form fields stack properly on mobile */
+  #billingForm .col-span-3 {
+    grid-column: span 12;
   }
 } 

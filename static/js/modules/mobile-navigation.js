@@ -355,9 +355,33 @@ class MobileNavigation {
   }
 
   showMobileNotification(message, type = 'info', duration = 3000) {
+    // Remove any existing notifications
+    const existingNotifications = document.querySelectorAll('.mobile-notification');
+    existingNotifications.forEach(notification => notification.remove());
+
     const notification = document.createElement('div');
-    notification.className = `notification-mobile ${type === 'error' ? 'bg-red-500 text-white' : type === 'success' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'}`;
-    notification.textContent = message;
+    notification.className = `mobile-notification ${type}`;
+    
+    // Create icon based on type
+    let icon = '';
+    switch (type) {
+      case 'success':
+        icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+        break;
+      case 'error':
+        icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+        break;
+      case 'warning':
+        icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>';
+        break;
+      default:
+        icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    }
+    
+    notification.innerHTML = `
+      ${icon}
+      <span class="message">${message}</span>
+    `;
 
     document.body.appendChild(notification);
 

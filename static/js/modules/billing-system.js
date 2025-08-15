@@ -263,7 +263,7 @@ function initializeBillingSystem() {
     let bgColor, textColor, iconColor;
     switch (type) {
       case 'success':
-        bgColor = 'bg-green-600';
+        bgColor = 'bg-gradient-to-r from-green-500 to-green-600';
         textColor = 'text-white';
         iconColor = 'text-green-100';
         break;
@@ -277,10 +277,15 @@ function initializeBillingSystem() {
         textColor = 'text-white';
         iconColor = 'text-yellow-100';
         break;
-      default:
-        bgColor = 'bg-blue-600';
+      case 'info':
+        bgColor = 'bg-gradient-to-r from-green-500 to-green-600';
         textColor = 'text-white';
-        iconColor = 'text-blue-100';
+        iconColor = 'text-green-100';
+        break;
+      default:
+        bgColor = 'bg-gradient-to-r from-green-500 to-green-600';
+        textColor = 'text-white';
+        iconColor = 'text-green-100';
     }
     
     toast.innerHTML = `
@@ -323,17 +328,29 @@ function initializeBillingSystem() {
     
     tbody.innerHTML = bill.map((item, index) => `
       <tr class="hover:bg-neutral-800/50 transition-colors swipe-action" data-index="${index}">
-        <td class="px-3 py-3">${item.product_name}</td>
-        <td class="px-3 py-3">${item.quantity}</td>
-        <td class="px-3 py-3">AED ${item.rate}</td>
-        <td class="px-3 py-3">AED ${item.discount || 0}</td>
-        <td class="px-3 py-3">AED ${item.advance_paid || 0}</td>
-        <td class="px-3 py-3">AED ${item.vat_amount.toFixed(2)}</td>
-        <td class="px-3 py-3">AED ${item.total.toFixed(2)}</td>
+        <td class="px-3 py-3">${item.product_name || ''}</td>
+        <td class="px-3 py-3">
+          <input type="number" min="1" value="${item.quantity || 0}" 
+                 class="w-16 bg-transparent border-none text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded px-1"
+                 onchange="updateBillItemField(${index}, 'quantity', this.value)"
+                 onblur="updateBillItemField(${index}, 'quantity', this.value)">
+        </td>
+        <td class="px-3 py-3">${(item.rate || 0).toFixed(2)}</td>
+        <td class="px-3 py-3">
+          <input type="number" min="0" step="0.01" value="${(item.discount || 0).toFixed(2)}" 
+                 class="w-20 bg-transparent border-none text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded px-1"
+                 onchange="updateBillItemField(${index}, 'discount', this.value)"
+                 onblur="updateBillItemField(${index}, 'discount', this.value)">
+        </td>
+        <td class="px-3 py-3">
+          <input type="number" min="0" step="0.01" value="${(item.advance_paid || 0).toFixed(2)}" 
+                 class="w-20 bg-transparent border-none text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded px-1"
+                 onchange="updateBillItemField(${index}, 'advance_paid', this.value)"
+                 onblur="updateBillItemField(${index}, 'advance_paid', this.value)">
+        </td>
+        <td class="px-3 py-3">${(item.vat_amount || 0).toFixed(2)}</td>
+        <td class="px-3 py-3">${(item.total || 0).toFixed(2)}</td>
         <td class="px-3 py-3 flex gap-2">
-          <button class="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 px-2 py-1 rounded transition-all duration-200 transform hover:scale-110 hover:shadow-sm mobile-btn" onclick="editBillItem(${index})">
-            Edit
-          </button>
           <button class="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded transition-all duration-200 transform hover:scale-110 hover:shadow-sm mobile-btn" onclick="deleteBillItem(${index})">
             Delete
           </button>
@@ -413,13 +430,13 @@ function initializeBillingSystem() {
     const totalElement = document.getElementById('amountDue');
     
          if (subtotalElement) {
-       subtotalElement.textContent = `AED ${subtotal.toFixed(2)}`;
+       subtotalElement.textContent = `${subtotal.toFixed(2)}`;
      }
      if (vatElement) {
-       vatElement.textContent = `AED ${totalVat.toFixed(2)}`;
+       vatElement.textContent = `${totalVat.toFixed(2)}`;
      }
      if (totalElement) {
-       totalElement.textContent = `AED ${amountDue.toFixed(2)}`;
+       totalElement.textContent = `${amountDue.toFixed(2)}`;
      }
   }
 
@@ -1066,7 +1083,7 @@ function initializeBillingSystem() {
             <div class="product-name" style="font-weight: 500; color: #f9fafb;">${product.product_name}</div>
             <div class="product-details" style="font-size: 12px; color: #9ca3af; margin-top: 2px;">${product.type_name || ''}</div>
           </div>
-          <div class="product-price" style="font-weight: 600; color: #10b981;">AED ${product.rate}</div>
+          <div class="product-price" style="font-weight: 600; color: #10b981;">${product.rate}</div>
         </div>
       `).join('');
       
@@ -1128,6 +1145,8 @@ function initializeBillingSystem() {
     function showDropdown() {
       if (!productDropdown) createProductDropdown();
       
+      if (!productDropdown || !productDropdown.style) return;
+      
       // Calculate position relative to input
       const inputRect = productInput.getBoundingClientRect();
       productDropdown.style.left = inputRect.left + 'px';
@@ -1141,26 +1160,30 @@ function initializeBillingSystem() {
       
       // Animate in
       setTimeout(() => {
-        productDropdown.style.transition = 'all 0.2s ease';
-        productDropdown.style.opacity = '1';
-        productDropdown.style.transform = 'translateY(0)';
+        if (productDropdown && productDropdown.style) {
+          productDropdown.style.transition = 'all 0.2s ease';
+          productDropdown.style.opacity = '1';
+          productDropdown.style.transform = 'translateY(0)';
+        }
       }, 10);
     }
 
     // Hide dropdown with animation
     function hideDropdown() {
-      if (productDropdown) {
+      if (productDropdown && productDropdown.style) {
         productDropdown.style.transition = 'all 0.2s ease';
         productDropdown.style.opacity = '0';
         productDropdown.style.transform = 'translateY(-10px)';
         
         setTimeout(() => {
-          productDropdown.style.display = 'none';
-          // Remove from DOM to prevent memory leaks
-          if (productDropdown.parentNode) {
-            productDropdown.parentNode.removeChild(productDropdown);
+          if (productDropdown && productDropdown.style) {
+            productDropdown.style.display = 'none';
+            // Remove from DOM to prevent memory leaks
+            if (productDropdown.parentNode) {
+              productDropdown.parentNode.removeChild(productDropdown);
+            }
+            productDropdown = null;
           }
-          productDropdown = null;
         }, 200);
       }
     }
@@ -1634,6 +1657,8 @@ function initializeBillingSystem() {
       
       if (!masterDropdown) createMasterDropdown();
       
+      if (!masterDropdown || !masterDropdown.style) return;
+      
       // Calculate position relative to input
       const inputRect = activeInput.getBoundingClientRect();
       console.log('≡ƒôÉ Input rect:', inputRect);
@@ -1655,27 +1680,31 @@ function initializeBillingSystem() {
       
       // Animate in
       setTimeout(() => {
-        masterDropdown.style.transition = 'all 0.2s ease';
-        masterDropdown.style.opacity = '1';
-        masterDropdown.style.transform = 'translateY(0)';
-        console.log('Γ£à Dropdown animation started');
+        if (masterDropdown && masterDropdown.style) {
+          masterDropdown.style.transition = 'all 0.2s ease';
+          masterDropdown.style.opacity = '1';
+          masterDropdown.style.transform = 'translateY(0)';
+          console.log('Γ£à Dropdown animation started');
+        }
       }, 10);
     }
 
     // Hide dropdown
     function hideDropdown() {
-      if (masterDropdown) {
+      if (masterDropdown && masterDropdown.style) {
         masterDropdown.style.transition = 'all 0.2s ease';
         masterDropdown.style.opacity = '0';
         masterDropdown.style.transform = 'translateY(-10px)';
         
         setTimeout(() => {
-          masterDropdown.style.display = 'none';
-          // Remove from DOM to prevent memory leaks
-          if (masterDropdown.parentNode) {
-            masterDropdown.parentNode.removeChild(masterDropdown);
+          if (masterDropdown && masterDropdown.style) {
+            masterDropdown.style.display = 'none';
+            // Remove from DOM to prevent memory leaks
+            if (masterDropdown.parentNode) {
+              masterDropdown.parentNode.removeChild(masterDropdown);
+            }
+            masterDropdown = null;
           }
-          masterDropdown = null;
         }, 200);
       }
     }
@@ -2427,8 +2456,14 @@ function initializeBillingSystem() {
       mobileBillingToggle.addEventListener('click', function() {
         // Show mobile billing interface
         if (window.TajirPWA && window.TajirPWA.mobileBilling) {
-          window.TajirPWA.mobileBilling.showMobileBilling();
+          try {
+            window.TajirPWA.mobileBilling.showMobileBilling();
+          } catch (error) {
+            console.error('Error showing mobile billing:', error);
+            showModernAlert('Mobile billing encountered an error. Please try again.', 'error', 'Error');
+          }
         } else {
+          console.warn('Mobile billing not available');
           showModernAlert('Mobile billing is not available. Please refresh the page.', 'warning', 'Feature Unavailable');
         }
       });
@@ -3102,17 +3137,17 @@ function initializeBillingSystem() {
         if (billData.items && billData.items.length > 0) {
           message += `*Items:*\n`;
           billData.items.forEach((item, index) => {
-            message += `${index + 1}. ${item.product_name} - Qty: ${item.quantity} - Rate: AED ${item.rate} - Total: AED ${item.total}\n`;
+            message += `${index + 1}. ${item.product_name} - Qty: ${item.quantity} - Rate: ${item.rate} - Total: ${item.total}\n`;
           });
           message += `\n`;
         }
         
         message += `*Bill Summary:*\n`;
-        message += `• Subtotal: AED ${subtotal}\n`;
-        message += `• VAT: AED ${vatAmount}\n`;
-        message += `• Advance Paid: AED ${advancePaid}\n`;
-        message += `• Balance Amount: AED ${balanceAmount}\n`;
-        message += `*Total Amount: AED ${totalAmount}*\n\n`;
+                    message += `• Subtotal: ${subtotal}\n`;
+            message += `• VAT: ${vatAmount}\n`;
+            message += `• Advance Paid: ${advancePaid}\n`;
+            message += `• Balance Amount: ${balanceAmount}\n`;
+            message += `*Total Amount: ${totalAmount}*\n\n`;
         message += `*Note: This is a draft bill. Please save it in the POS system for permanent record.*`;
         
         // Encode the message for WhatsApp
@@ -3150,6 +3185,56 @@ function initializeBillingSystem() {
       }
     }
   }
+
+  // Function to update bill item fields inline
+  window.updateBillItemField = function(index, field, value) {
+    const item = bill[index];
+    if (!item) return;
+    
+    // Convert value to appropriate type
+    let parsedValue;
+    if (field === 'quantity') {
+      parsedValue = parseInt(value) || 1;
+      if (parsedValue < 1) parsedValue = 1;
+    } else {
+      parsedValue = parseFloat(value) || 0;
+      if (parsedValue < 0) parsedValue = 0;
+    }
+    
+    // Update the field
+    item[field] = parsedValue;
+    
+    // Recalculate totals for this item
+    const rate = parseFloat(item.rate) || 0;
+    const quantity = parseInt(item.quantity) || 0;
+    const discount = parseFloat(item.discount) || 0;
+    const vatPercent = parseFloat(item.vat_percent) || 5;
+    
+    // Calculate subtotal (before discount)
+    const subtotal = rate * quantity;
+    
+    // Calculate total after discount
+    const totalAfterDiscount = subtotal - discount;
+    
+    // Calculate VAT amount
+    const vatAmount = (totalAfterDiscount * vatPercent) / 100;
+    
+    // Calculate final total
+    const total = totalAfterDiscount + vatAmount;
+    
+    // Update item totals
+    item.total = total;
+    item.vat_amount = vatAmount;
+    
+    // Re-render table and update totals
+    renderBillTable();
+    updateTotals();
+    
+    // Show success message
+    if (window.showSimpleToast) {
+      window.showSimpleToast(`${field.charAt(0).toUpperCase() + field.slice(1)} updated!`, 'success');
+    }
+  };
 
   // Expose functions globally for debugging
   window.initializeSaveBill = initializeSaveBill;

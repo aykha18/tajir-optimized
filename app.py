@@ -317,6 +317,10 @@ def sw_debug():
 def test_dropdown():
     return send_file('test_employee_dropdown.html')
 
+@app.route('/test-mobile-billing')
+def test_mobile_billing():
+    return send_file('test_mobile_billing.html')
+
 # Product Types API
 @app.route('/api/product-types', methods=['GET'])
 def get_product_types():

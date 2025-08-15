@@ -19,6 +19,8 @@ class MobileBilling {
 
   async init() {
     try {
+      console.log('Mobile Billing: Starting initialization...');
+      
       this.setupMobileBillingInterface();
       this.setupTouchGestures();
       this.setupMobileOptimizations();
@@ -26,8 +28,15 @@ class MobileBilling {
       
       console.log('Mobile Billing: Initialized successfully');
       this.isInitialized = true;
+      
+      // Dispatch initialization event
+      window.dispatchEvent(new CustomEvent('mobileBillingInitialized', {
+        detail: { timestamp: Date.now() }
+      }));
+      
     } catch (error) {
       console.error('Mobile Billing: Initialization failed', error);
+      throw error; // Re-throw to let caller know about the error
     }
   }
 
@@ -76,19 +85,19 @@ class MobileBilling {
                 <div class="bill-summary-mobile">
                   <div class="bill-summary-row-mobile">
                     <span class="bill-summary-label">Subtotal:</span>
-                    <span class="bill-summary-value" id="mobile-subtotal">AED 0.00</span>
-                  </div>
-                  <div class="bill-summary-row-mobile">
-                    <span class="bill-summary-label">Tax (5%):</span>
-                    <span class="bill-summary-value" id="mobile-tax-amount">AED 0.00</span>
-                  </div>
-                  <div class="bill-summary-row-mobile">
-                    <span class="bill-summary-label">Discount:</span>
-                    <span class="bill-summary-value" id="mobile-discount-amount">AED 0.00</span>
-                  </div>
-                  <div class="bill-summary-row-mobile">
-                    <span class="bill-summary-label">Total:</span>
-                    <span class="bill-summary-total" id="mobile-final-total">AED 0.00</span>
+                                         <span class="bill-summary-value" id="mobile-subtotal">0.00</span>
+                   </div>
+                   <div class="bill-summary-row-mobile">
+                     <span class="bill-summary-label">Tax (5%):</span>
+                     <span class="bill-summary-value" id="mobile-tax-amount">0.00</span>
+                   </div>
+                   <div class="bill-summary-row-mobile">
+                     <span class="bill-summary-label">Discount:</span>
+                     <span class="bill-summary-value" id="mobile-discount-amount">0.00</span>
+                   </div>
+                   <div class="bill-summary-row-mobile">
+                     <span class="bill-summary-label">Total:</span>
+                     <span class="bill-summary-total" id="mobile-final-total">0.00</span>
                   </div>
                 </div>
               </div>
@@ -110,14 +119,6 @@ class MobileBilling {
     
     // Add to body but hide initially
     billingContainer.style.display = 'none';
-    billingContainer.style.position = 'fixed';
-    billingContainer.style.top = '0';
-    billingContainer.style.left = '0';
-    billingContainer.style.right = '0';
-    billingContainer.style.bottom = '0';
-    billingContainer.style.backgroundColor = 'white';
-    billingContainer.style.zIndex = '2000';
-    billingContainer.style.overflowY = 'auto';
     
     document.body.appendChild(billingContainer);
     
@@ -240,6 +241,9 @@ class MobileBilling {
     if (container) {
       // Sync mobile bill data to main billing system before hiding
       this.syncToMainBilling();
+      
+      // Clear the mobile bill after syncing
+      this.clearMobileBill();
       
       container.classList.add('slide-up-mobile');
       setTimeout(() => {
@@ -433,7 +437,7 @@ class MobileBilling {
         <div class="product-card-content">
           <div class="product-name">${product.product_name}</div>
           <div class="product-type">${product.type_name || ''}</div>
-          <div class="product-price">AED ${product.rate}</div>
+                     <div class="product-price">${product.rate}</div>
         </div>
         <button class="add-to-bill-btn" onclick="window.TajirPWA.mobileBilling.addToMobileBill(${product.product_id})">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -553,10 +557,10 @@ class MobileBilling {
       <div class="list-item-mobile" data-product-id="${item.product_id}">
         <div class="flex-1">
           <div class="font-semibold">${item.product_name}</div>
-          <div class="text-sm text-gray-600">AED ${item.price} x ${item.quantity}</div>
+          <div class="text-sm text-gray-600">${item.price} x ${item.quantity}</div>
         </div>
         <div class="text-right">
-          <div class="font-bold">AED ${item.total.toFixed(2)}</div>
+          <div class="font-bold">${item.total.toFixed(2)}</div>
           <button class="text-red-500 text-sm" onclick="window.TajirPWA.mobileBilling.removeItemFromBill(${item.product_id})">
             Remove
           </button>
@@ -578,10 +582,10 @@ class MobileBilling {
       <div class="list-item-mobile" data-product-id="${item.product_id}">
         <div class="flex-1">
           <div class="font-semibold">${item.product_name}</div>
-          <div class="text-sm text-gray-600">AED ${item.price} x ${item.quantity}</div>
+          <div class="text-sm text-gray-600">${item.price} x ${item.quantity}</div>
         </div>
         <div class="text-right">
-          <div class="font-bold">AED ${item.total.toFixed(2)}</div>
+          <div class="font-bold">${item.total.toFixed(2)}</div>
           <button class="remove-item-btn-mobile" onclick="window.TajirPWA.mobileBilling.removeFromMobileBill(${item.product_id})">
             Remove
           </button>
@@ -608,10 +612,10 @@ class MobileBilling {
     this.currentBill.finalTotal = finalTotal;
 
     // Update display
-    document.getElementById('subtotal').textContent = `AED ${subtotal.toFixed(2)}`;
-    document.getElementById('tax-amount').textContent = `AED ${tax.toFixed(2)}`;
-    document.getElementById('discount-amount').textContent = `AED ${discount.toFixed(2)}`;
-    document.getElementById('final-total').textContent = `AED ${finalTotal.toFixed(2)}`;
+    document.getElementById('subtotal').textContent = `${subtotal.toFixed(2)}`;
+    document.getElementById('tax-amount').textContent = `${tax.toFixed(2)}`;
+    document.getElementById('discount-amount').textContent = `${discount.toFixed(2)}`;
+    document.getElementById('final-total').textContent = `${finalTotal.toFixed(2)}`;
   }
 
   calculateMobileTotals() {
@@ -625,10 +629,10 @@ class MobileBilling {
     this.currentBill.finalTotal = finalTotal;
 
     // Update display
-    document.getElementById('mobile-subtotal').textContent = `AED ${subtotal.toFixed(2)}`;
-    document.getElementById('mobile-tax-amount').textContent = `AED ${tax.toFixed(2)}`;
-    document.getElementById('mobile-discount-amount').textContent = `AED ${discount.toFixed(2)}`;
-    document.getElementById('mobile-final-total').textContent = `AED ${finalTotal.toFixed(2)}`;
+    document.getElementById('mobile-subtotal').textContent = `${subtotal.toFixed(2)}`;
+    document.getElementById('mobile-tax-amount').textContent = `${tax.toFixed(2)}`;
+    document.getElementById('mobile-discount-amount').textContent = `${discount.toFixed(2)}`;
+    document.getElementById('mobile-final-total').textContent = `${finalTotal.toFixed(2)}`;
   }
 
   clearBill() {
@@ -656,7 +660,7 @@ class MobileBilling {
     };
     this.updateMobileBillDisplay();
     this.calculateMobileTotals();
-    this.showMobileNotification('Bill cleared', 'info');
+    // Removed notification to prevent "Bill Cleared" message
   }
 
   async processBill() {
@@ -707,11 +711,13 @@ class MobileBilling {
     try {
       // Save bill to offline storage
       const billData = {
+        bill_id: Date.now(), // Add the required bill_id for IndexedDB
         items: this.currentBill.items,
         subtotal: this.currentBill.subtotal,
         tax: this.currentBill.tax,
         total: this.currentBill.finalTotal,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        status: 'pending'
       };
 
       // Save to offline storage
@@ -720,12 +726,9 @@ class MobileBilling {
       }
 
       // Show success message
-      this.showMobileNotification('Bill processed successfully', 'success');
+      this.showMobileNotification('Bill processed successfully! Items transferred to main billing.', 'success');
       
-      // Clear the bill
-      this.clearMobileBill();
-      
-      // Hide mobile billing interface
+      // Hide mobile billing interface first (this will sync data)
       this.hideMobileBilling();
       
     } catch (error) {
@@ -760,32 +763,32 @@ class MobileBilling {
         <div style="text-align: center;">${new Date().toLocaleString()}</div>
         <hr>
         ${billData.items.map(item => `
-          <div style="display: flex; justify-content: space-between; margin: 4px 0;">
-            <span>${item.product_name}</span>
-            <span>AED ${item.total.toFixed(2)}</span>
-          </div>
-          <div style="font-size: 12px; color: #666;">
-            ${item.quantity} x AED ${item.price}
-          </div>
+                     <div style="display: flex; justify-content: space-between; margin: 4px 0;">
+             <span>${item.product_name}</span>
+             <span>${item.total.toFixed(2)}</span>
+           </div>
+           <div style="font-size: 12px; color: #666;">
+             ${item.quantity} x ${item.price}
+           </div>
         `).join('')}
         <hr>
-        <div style="display: flex; justify-content: space-between;">
-          <span>Subtotal:</span>
-          <span>AED ${billData.subtotal.toFixed(2)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span>Tax (5%):</span>
-          <span>AED ${billData.tax.toFixed(2)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span>Discount:</span>
-          <span>AED ${billData.discount.toFixed(2)}</span>
-        </div>
+                 <div style="display: flex; justify-content: space-between;">
+           <span>Subtotal:</span>
+           <span>${billData.subtotal.toFixed(2)}</span>
+         </div>
+         <div style="display: flex; justify-content: space-between;">
+           <span>Tax (5%):</span>
+           <span>${billData.tax.toFixed(2)}</span>
+         </div>
+         <div style="display: flex; justify-content: space-between;">
+           <span>Discount:</span>
+           <span>${billData.discount.toFixed(2)}</span>
+         </div>
         <hr>
-        <div style="display: flex; justify-content: space-between; font-weight: bold;">
-          <span>Total:</span>
-          <span>AED ${billData.final_total.toFixed(2)}</span>
-        </div>
+                 <div style="display: flex; justify-content: space-between; font-weight: bold;">
+           <span>Total:</span>
+           <span>${billData.final_total.toFixed(2)}</span>
+         </div>
         <hr>
         <div style="text-align: center; font-size: 12px;">
           Thank you for your business!
@@ -810,8 +813,47 @@ class MobileBilling {
     if (window.TajirPWA && window.TajirPWA.mobileNavigation) {
       window.TajirPWA.mobileNavigation.showMobileNotification(message, type);
     } else {
-      // Fallback notification
-      alert(message);
+      // Create a simple custom notification if mobile navigation is not available
+      const notification = document.createElement('div');
+      notification.className = `mobile-notification ${type}`;
+      
+      // Create icon based on type
+      let icon = '';
+      switch (type) {
+        case 'success':
+          icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+          break;
+        case 'error':
+          icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+          break;
+        case 'warning':
+          icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>';
+          break;
+        default:
+          icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+      }
+      
+      notification.innerHTML = `
+        ${icon}
+        <span class="message">${message}</span>
+      `;
+
+      document.body.appendChild(notification);
+
+      // Show notification
+      setTimeout(() => {
+        notification.classList.add('show');
+      }, 100);
+
+      // Hide and remove after 3 seconds
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 300);
+      }, 3000);
     }
   }
 

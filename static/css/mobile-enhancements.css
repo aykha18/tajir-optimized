@@ -1101,6 +1101,11 @@
     min-height: 56px;
   }
 
+  /* META section mobile optimization - 2 fields per row */
+  .compact-form .col-span-3 {
+    grid-column: span 6 !important; /* Change from 3 to 6 for 2 fields per row */
+  }
+
   .mobile-nav-item svg {
     width: 20px;
     height: 20px;
@@ -1152,6 +1157,24 @@
 
 /* Touch-friendly interactions for expense management */
 @media (max-width: 768px) {
+  /* META section mobile optimization - 2 fields per row for all mobile devices */
+  .compact-form .col-span-3 {
+    grid-column: span 6 !important; /* Change from 3 to 6 for 2 fields per row */
+  }
+
+  /* Improve META section spacing and touch targets on mobile */
+  .compact-form input,
+  .compact-form select,
+  .compact-form textarea {
+    min-height: 44px; /* Ensure touch-friendly height */
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .compact-form label {
+    font-size: 12px; /* Slightly larger labels for mobile */
+    margin-bottom: 4px;
+  }
+
   /* Ensure all interactive elements are touch-friendly */
   #expensesContainer button,
   #categoriesContainer button,
@@ -1191,4 +1214,433 @@
   .space-y-2 > * + * {
     margin-top: 8px;
   }
-} 
+}
+
+/* Mobile Billing Styles */
+#mobile-billing-container {
+  background: #111827;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  overflow-y: auto;
+  padding: 16px;
+  padding-bottom: 100px; /* Add space for sticky button */
+}
+
+#mobile-billing-container .card-mobile {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: #1f2937;
+  border: 1px solid #374151;
+}
+
+#mobile-billing-container .card-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+  border-radius: 12px 12px 0 0;
+  color: #f9fafb;
+}
+
+#mobile-billing-container .card-mobile-body {
+  padding: 20px;
+  background: #1f2937;
+  border-radius: 0 0 12px 12px;
+  color: #f9fafb;
+}
+
+/* Mobile Search Enhancement */
+#mobile-billing-container .search-mobile {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+#mobile-billing-container .search-mobile input {
+  background: #374151;
+  border: 2px solid #4b5563;
+  border-radius: 12px;
+  padding: 16px 16px 16px 48px;
+  font-size: 16px;
+  width: 100%;
+  transition: border-color 0.2s ease;
+  color: #f9fafb;
+}
+
+#mobile-billing-container .search-mobile input:focus {
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+#mobile-billing-container .search-mobile svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  width: 20px;
+  height: 20px;
+}
+
+/* Mobile Product Grid */
+#mobile-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  #mobile-product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Product Cards */
+.product-card-mobile {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  color: #f9fafb;
+}
+
+.product-card-mobile:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.product-card-mobile.added-to-bill {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+  transform: scale(1.02);
+}
+
+.product-card-content {
+  flex: 1;
+}
+
+.product-name {
+  font-weight: 600;
+  color: #f9fafb;
+  margin-bottom: 4px;
+}
+
+.product-type {
+  font-size: 14px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.product-price {
+  font-weight: 700;
+  color: #10b981;
+  font-size: 16px;
+}
+
+.add-to-bill-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: auto;
+  width: auto;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  min-height: 60px; /* h-15 equivalent */
+}
+
+.add-to-bill-btn:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+}
+
+.add-to-bill-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Mobile Bill Items */
+#mobile-bill-items {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+#mobile-bill-items .list-item-mobile {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  color: #f9fafb;
+}
+
+#mobile-bill-items .list-item-mobile:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.remove-item-btn-mobile {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: auto;
+  width: auto;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 60px; /* h-15 equivalent */
+}
+
+.remove-item-btn-mobile:hover {
+  background: #dc2626;
+}
+
+/* Mobile Bill Summary Enhancement */
+#mobile-billing-container .bill-summary-mobile {
+  background: #374151;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  border: 1px solid #4b5563;
+}
+
+#mobile-billing-container .bill-summary-row-mobile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #4b5563;
+}
+
+#mobile-billing-container .bill-summary-row-mobile:last-child {
+  border-bottom: none;
+  font-weight: 700;
+  font-size: 18px;
+  color: #f9fafb;
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 2px solid #4b5563;
+}
+
+#mobile-billing-container .bill-summary-label {
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+#mobile-billing-container .bill-summary-value {
+  font-weight: 600;
+  color: #f9fafb;
+  font-size: 14px;
+}
+
+#mobile-billing-container .bill-summary-total {
+  font-size: 18px;
+  color: #10b981;
+  font-weight: 700;
+}
+
+/* Mobile Action Buttons Enhancement */
+#mobile-billing-container .billing-actions-mobile {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  left: 20px;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+#mobile-billing-container .billing-actions-mobile .billing-action-btn {
+  pointer-events: auto;
+  min-width: auto;
+  width: auto;
+  padding: 12px 20px;
+  white-space: nowrap;
+  font-size: 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  min-height: 60px; /* h-15 equivalent */
+}
+
+#mobile-billing-container .billing-actions-mobile .billing-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+#mobile-billing-container .billing-actions-mobile .billing-action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Clear button styling */
+#mobile-billing-container #clear-mobile-bill {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: auto;
+  width: auto;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 60px; /* h-15 equivalent */
+}
+
+#mobile-billing-container #clear-mobile-bill:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+#mobile-billing-container .billing-action-btn {
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  min-height: 60px; /* h-15 equivalent */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: none;
+  cursor: pointer;
+}
+
+#mobile-billing-container .billing-action-btn.primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+#mobile-billing-container .billing-action-btn.primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+#mobile-billing-container .billing-action-btn.primary:active {
+  transform: translateY(0);
+}
+
+#mobile-billing-container .billing-action-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Mobile Notification Enhancement */
+.mobile-notification {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  background: #1f2937;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 3000;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 4px solid #3b82f6;
+  color: #f9fafb;
+}
+
+.mobile-notification.show {
+  transform: translateY(0);
+}
+
+.mobile-notification.success {
+  border-left-color: #10b981;
+}
+
+.mobile-notification.error {
+  border-left-color: #ef4444;
+}
+
+.mobile-notification.warning {
+  border-left-color: #f59e0b;
+}
+
+.mobile-notification.info {
+  border-left-color: #10b981;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+
+
+/* Mobile Billing Animations */
+.fade-in-mobile {
+  animation: fadeInMobile 0.3s ease-out;
+}
+
+.slide-up-mobile {
+  animation: slideUpMobile 0.3s ease-out;
+}
+
+@keyframes fadeInMobile {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUpMobile {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
