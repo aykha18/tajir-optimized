@@ -22,8 +22,8 @@ body {
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  margin: 16px;
-  min-height: calc(100vh - 32px);
+  margin: 0px;
+  min-height: 100vh;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
@@ -47,6 +47,7 @@ header {
 main {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(10px);
+  padding: 2px;
 }
 
 label {
@@ -60,22 +61,61 @@ label {
 
 /* Compact UI Improvements */
 .compact-form {
-  gap: 2px; /* Further reduced from 4px */
+  gap: 1px; /* Further reduced from 2px */
 }
 
 .compact-form .col-span-3,
 .compact-form .col-span-2,
 .compact-form .col-span-1,
 .compact-form .col-span-6 {
-  margin-bottom: 1px; /* Further reduced from 2px */
+  margin-bottom: 0.5px; /* Further reduced from 1px */
 }
 
 .compact-form label {
-  margin-bottom: 0.0625rem; /* Further reduced from 0.125rem */
-  font-size: 0.6875rem; /* Further reduced from 0.75rem */
+  margin-bottom: 0.03125rem; /* Further reduced from 0.0625rem */
+  font-size: 0.625rem; /* Further reduced from 0.6875rem */
   font-weight: 600;
   color: #d1d5db;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Ultra-compact form inputs */
+.compact-form input,
+.compact-form select,
+.compact-form textarea {
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  min-height: 32px;
+  border-radius: 6px;
+}
+
+/* Compact table styling */
+.compact-table {
+  font-size: 0.7rem;
+}
+
+.compact-table th,
+.compact-table td {
+  padding: 6px 8px;
+}
+
+/* Compact card spacing */
+.modern-card {
+  padding: 8px;
+  margin-bottom: 4px;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+/* Compact action buttons */
+.action-buttons {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.action-buttons button {
+  padding: 8px 12px;
+  font-size: 0.75rem;
 }
 
 /* Form Elements Styling */
@@ -146,14 +186,16 @@ textarea.compact-form:hover {
 .modern-card {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 6px;
+  padding: 8px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 2px 8px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
-  margin-bottom: 16px;
+  margin-bottom: 4px;
+  margin-left: 0px;
+  margin-right: 0px;
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -456,25 +498,29 @@ textarea.compact-form:hover {
   background-clip: text;
 }
 
-/* Recent Customers Styling */
+/* Recent Customers Styling - More Compact */
 .recent-customers {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .customer-pill {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
   border: 1px solid rgba(99, 102, 241, 0.3);
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 0.75rem;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
   color: #e5e7eb;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .customer-pill::before {
@@ -580,6 +626,19 @@ textarea.compact-form:hover {
 .action-buttons .modern-btn {
   flex: 1;
   max-width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px;
+  padding: 8px 12px;
+}
+
+.action-buttons .modern-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* Page Transitions */
@@ -734,6 +793,22 @@ textarea.compact-form:hover {
   .mobile-table td {
     padding: 8px 4px;
     white-space: nowrap;
+  }
+  
+  /* Reduce margins on mobile for better space usage */
+  #app {
+    margin: 4px;
+    min-height: calc(100vh - 8px);
+  }
+  
+  main {
+    padding: 4px;
+  }
+  
+  .modern-card {
+    margin-left: 0px;
+    margin-right: 0px;
+    padding: 8px;
   }
 }
 
