@@ -495,7 +495,7 @@ class PWATester {
       installability: await this.testInstallability()
     };
 
-    console.log('PWA Test Results:', results);
+    
     return results;
   }
 

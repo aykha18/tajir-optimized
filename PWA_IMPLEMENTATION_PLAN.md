@@ -356,8 +356,7 @@ async function runLighthouse() {
   const runnerResult = await lighthouse('https://your-app.com', options);
   const reportResults = runnerResult.lhr;
   
-  console.log('PWA Score:', reportResults.categories.pwa.score);
-  console.log('Performance Score:', reportResults.categories.performance.score);
+  
   
   await chrome.kill();
 }

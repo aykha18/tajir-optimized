@@ -5,7 +5,6 @@
 
 class MobileEnhancements {
     constructor() {
-        console.log('MobileEnhancements: Initializing...');
         this.isRecording = false;
         this.recognition = null;
         this.isMobile = this.detectMobile();
@@ -18,9 +17,6 @@ class MobileEnhancements {
     }
 
     init() {
-        console.log('MobileEnhancements: Setting up features...');
-        console.log('MobileEnhancements: Mobile device detected:', this.isMobile);
-        
         // Wait for DOM to be fully loaded
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -38,8 +34,6 @@ class MobileEnhancements {
     }
 
     setupFeatures() {
-        console.log('MobileEnhancements: Setting up features...');
-        
         // Always setup touch optimizations
         this.setupTouchOptimizations();
         
@@ -50,8 +44,6 @@ class MobileEnhancements {
             this.setupQuickAddMode();
             this.setupMobileNavigation();
         }
-        
-        console.log('MobileEnhancements: Setup complete');
     }
 
     /**
@@ -59,10 +51,8 @@ class MobileEnhancements {
      */
     setupSwipeActions() {
         const billTable = document.getElementById('billTable');
-        console.log('MobileEnhancements: Setting up swipe actions for bill table:', billTable);
         
         if (!billTable) {
-            console.log('MobileEnhancements: Bill table not found');
             return;
         }
 
@@ -75,7 +65,6 @@ class MobileEnhancements {
         billTable.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
         billTable.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
         billTable.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: true });
-        console.log('MobileEnhancements: Swipe event listeners added for billing table only');
     }
 
     handleTouchStart(e) {
@@ -85,7 +74,6 @@ class MobileEnhancements {
         // Prevent event bubbling to avoid conflicts with other swipe systems
         e.stopPropagation();
         
-        console.log('MobileEnhancements: Touch start on billing row:', row);
         this.touchStartX = e.touches[0].clientX;
         this.touchStartY = e.touches[0].clientY;
         this.currentRow = row;
@@ -114,7 +102,6 @@ class MobileEnhancements {
             const transform = deltaX > 0 ? -swipeDistance : swipeDistance;
             
             this.currentRow.style.transform = `translateX(${transform}px)`;
-            console.log('MobileEnhancements: Swiping billing row, transform:', transform);
         }
     }
 
@@ -126,8 +113,6 @@ class MobileEnhancements {
 
         const touchX = e.changedTouches[0].clientX;
         const deltaX = this.touchStartX - touchX;
-
-        console.log('MobileEnhancements: Touch end on billing row, deltaX:', deltaX);
 
         // If swipe distance is sufficient, show actions
         if (Math.abs(deltaX) > 60) {
@@ -142,8 +127,6 @@ class MobileEnhancements {
     }
 
     showSwipeActions(row, isLeftSwipe) {
-        console.log('MobileEnhancements: Showing swipe actions for row:', row);
-        
         // Remove any existing actions
         const existingActions = row.querySelector('.swipe-actions');
         if (existingActions) {
@@ -173,7 +156,6 @@ class MobileEnhancements {
     editRow(button) {
         const row = button.closest('tr');
         const idx = parseInt(row.getAttribute('data-index'));
-        console.log('MobileEnhancements: Edit row at index:', idx);
         
         // Trigger edit functionality using the billing system's editBillItem function
         if (window.editBillItem) {
@@ -187,7 +169,6 @@ class MobileEnhancements {
     deleteRow(button) {
         const row = button.closest('tr');
         const idx = parseInt(row.getAttribute('data-index'));
-        console.log('MobileEnhancements: Delete row at index:', idx);
         
         // Trigger delete functionality using the billing system's deleteBillItem function
         if (window.deleteBillItem) {
@@ -211,17 +192,14 @@ class MobileEnhancements {
      */
     setupVoiceInput() {
         const customerInput = document.getElementById('billCustomer');
-        console.log('MobileEnhancements: Setting up voice input for customer input:', customerInput);
         
         if (!customerInput) {
-            console.log('MobileEnhancements: Customer input not found');
             return;
         }
 
         // Check if voice button already exists
         const existingVoiceBtn = customerInput.parentElement.querySelector('.voice-input-btn');
         if (existingVoiceBtn) {
-            console.log('MobileEnhancements: Voice button already exists');
             return;
         }
 
@@ -239,7 +217,6 @@ class MobileEnhancements {
         // Position the button
         customerInput.style.position = 'relative';
         customerInput.parentElement.appendChild(voiceBtn);
-        console.log('MobileEnhancements: Voice input button added');
 
         // Initialize speech recognition
         this.initSpeechRecognition();
@@ -269,9 +246,6 @@ class MobileEnhancements {
                 this.isRecording = false;
                 this.updateVoiceButton();
             };
-            console.log('MobileEnhancements: Speech recognition initialized');
-        } else {
-            console.log('MobileEnhancements: Speech recognition not supported');
         }
     }
 
@@ -305,17 +279,14 @@ class MobileEnhancements {
     setupQuickAddMode() {
         // Add Quick Add Mode toggle button
         const billingSection = document.getElementById('billingSec');
-        console.log('MobileEnhancements: Setting up quick add mode for billing section:', billingSection);
         
         if (!billingSection) {
-            console.log('MobileEnhancements: Billing section not found');
             return;
         }
 
         // Check if quick add button already exists
         const existingQuickAddBtn = billingSection.querySelector('.quick-add-mode-btn');
         if (existingQuickAddBtn) {
-            console.log('MobileEnhancements: Quick add button already exists');
             return;
         }
 
@@ -334,7 +305,6 @@ class MobileEnhancements {
         const header = billingSection.querySelector('h3');
         if (header) {
             header.parentElement.insertBefore(quickAddBtn, header.nextSibling);
-            console.log('MobileEnhancements: Quick add mode button added');
         }
     }
 
@@ -345,7 +315,6 @@ class MobileEnhancements {
         if (!billingSection || !form) return;
 
         const isQuickMode = billingSection.classList.contains('quick-add-mode');
-        console.log('MobileEnhancements: Toggling quick add mode, current state:', isQuickMode);
         
         if (isQuickMode) {
             // Exit Quick Add Mode
@@ -413,8 +382,6 @@ class MobileEnhancements {
             sidebar.addEventListener('touchstart', this.handleSidebarTouchStart.bind(this), { passive: true });
             sidebar.addEventListener('touchmove', this.handleSidebarTouchMove.bind(this), { passive: false });
             sidebar.addEventListener('touchend', this.handleSidebarTouchEnd.bind(this), { passive: true });
-            
-            console.log('MobileEnhancements: Mobile navigation setup complete');
         }
     }
 
@@ -462,7 +429,6 @@ class MobileEnhancements {
                 input.style.fontSize = '16px';
             });
         });
-        console.log('MobileEnhancements: Touch optimizations applied to', buttons.length, 'buttons and', inputs.length, 'inputs');
     }
 
     handleButtonTouchStart(e) {

@@ -352,7 +352,7 @@
     }
 
     function togglePrint() {
-      console.log('togglePrint called. bill.length:', bill.length, 'printBtn:', printBtn);
+      
       const enabled = bill.length > 0;
       printBtn.disabled = !enabled;
       printBtn.classList.toggle('opacity-50', !enabled);
@@ -379,7 +379,7 @@
     document.addEventListener('DOMContentLoaded',()=>{
       lucide.createIcons({nameAttr:'data-lucide'});
       printBtn = document.getElementById('printBtn');
-      console.log('printBtn set:', printBtn);
+      
 
       /* NAV + FADE */
       const navBtns=[...document.querySelectorAll('.nav-btn')],pages=[...document.querySelectorAll('.page')];
@@ -480,7 +480,7 @@
           customers.push(...customersData);
           renderCustomerList();
           window.customers = customers; // Store customers globally
-          console.log('Loaded customers:', customers); // Debug log
+  
         }
 
         // Load VAT rates
@@ -534,7 +534,7 @@
               createEmployeePieChart(empAnalytics.shares || []);
             }
             
-            console.log('Dashboard data loaded successfully:', dashboardData);
+    
           } else {
             console.error('No dashboard data received');
           }
@@ -787,7 +787,7 @@
 
       // Employee Bar Chart (Top 5 by Revenue)
       function createEmployeeBarChart(data) {
-        console.log('Top 5 employee data:', data); // Add this line for debugging
+
         const ctx = document.getElementById('employeeBarChart');
         if (!ctx) return;
         if (window.employeeBarChart && typeof window.employeeBarChart.destroy === 'function') window.employeeBarChart.destroy();
@@ -1207,7 +1207,7 @@
         // Ensure bill_date is in YYYY-MM-DD format
         const billDateValue = new Date($('billDate').value).toISOString().split('T')[0];
         // Debug log
-        console.log('Bill Date Value (raw):', $('billDate').value, 'Formatted:', billDateValue);
+
 
         // 1. Check for duplicate invoice number
         const billNumber = $('billNumber').value.trim();

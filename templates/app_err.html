@@ -1063,8 +1063,7 @@
     lucide.createIcons();
     
     // Initialize plan management
-    console.log('App loaded successfully!');
-     initializePlanManagement();
+    initializePlanManagement();
 
     // Navigation functionality
     const navBtns = document.querySelectorAll('.nav-btn');
@@ -1122,7 +1121,7 @@
       try {
         const resp = await fetch('/api/product-types');
         const types = await resp.json();
-        console.log('Loaded product types:', types); // Debug log
+
         
         if (!list) return;
         
@@ -2899,8 +2898,6 @@
 
     // --- SIMPLE INVOICE NUMBER GENERATION ---
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('Initializing invoice number generation...');
-        
         // Simple invoice number generation
         async function generateInvoiceNumber() {
             try {
@@ -2911,7 +2908,6 @@
                         const billNumberInput = document.getElementById('billNumber');
                         if (billNumberInput) {
                             billNumberInput.value = data.bill_number;
-                            console.log('Generated invoice number:', data.bill_number);
                         }
                     }
                 }
@@ -2928,8 +2924,6 @@
 
         // Generate invoice number on page load
         generateInvoiceNumber();
-
-        console.log('Invoice number generation initialized');
     });
 
     // --- BILLING: Payment Modal Logic ---

@@ -826,9 +826,121 @@ function initializeBillingSystem() {
     }
   }
 
+  // Mobile Recent Customers functionality
+  function initializeMobileRecentCustomers() {
+    const mobileBtn = document.getElementById('mobileRecentCustomersBtn');
+    const mobileDropdown = document.getElementById('mobileRecentCustomersDropdown');
+    
+    if (mobileBtn && mobileDropdown) {
+      // Toggle dropdown on button click
+      mobileBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isVisible = !mobileDropdown.classList.contains('hidden');
+        
+        if (isVisible) {
+          hideMobileRecentCustomersDropdown();
+        } else {
+          showMobileRecentCustomersDropdown();
+        }
+      });
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!mobileBtn.contains(e.target) && !mobileDropdown.contains(e.target)) {
+          hideMobileRecentCustomersDropdown();
+        }
+      });
+    }
+  }
+
+  function showMobileRecentCustomersDropdown() {
+    const dropdown = document.getElementById('mobileRecentCustomersDropdown');
+    if (dropdown) {
+      dropdown.classList.remove('hidden');
+      loadMobileRecentCustomers();
+    }
+  }
+
+  function hideMobileRecentCustomersDropdown() {
+    const dropdown = document.getElementById('mobileRecentCustomersDropdown');
+    if (dropdown) {
+      dropdown.classList.add('hidden');
+    }
+  }
+
+  async function loadMobileRecentCustomers() {
+    try {
+      const response = await fetch('/api/customers/recent');
+      const recentCustomers = await response.json();
+      
+      const container = document.getElementById('mobileRecentCustomersList');
+      if (!container) return;
+      
+      if (recentCustomers && recentCustomers.length > 0) {
+        container.innerHTML = recentCustomers.map(customer => `
+          <button 
+            class="mobile-customer-item"
+            data-customer-id="${customer.customer_id}"
+            data-customer-name="${customer.name}"
+            data-customer-phone="${customer.phone || ''}"
+            data-customer-city="${customer.city || ''}"
+            data-customer-area="${customer.area || ''}"
+            data-customer-trn="${customer.trn || ''}"
+            data-customer-type="${customer.customer_type || 'Individual'}"
+            data-business-name="${customer.business_name || ''}"
+            data-business-address="${customer.business_address || ''}"
+          >
+            <div class="flex items-center justify-between w-full">
+              <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span class="text-sm text-white font-medium">${customer.name}</span>
+              </div>
+              ${customer.phone ? `<span class="text-xs text-neutral-400">${customer.phone}</span>` : ''}
+            </div>
+          </button>
+        `).join('');
+        
+        // Add event listeners to mobile customer items
+        container.querySelectorAll('.mobile-customer-item').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const customerData = {
+              customer_id: this.getAttribute('data-customer-id'),
+              name: this.getAttribute('data-customer-name'),
+              phone: this.getAttribute('data-customer-phone'),
+              city: this.getAttribute('data-customer-city'),
+              area: this.getAttribute('data-customer-area'),
+              trn: this.getAttribute('data-customer-trn'),
+              customer_type: this.getAttribute('data-customer-type'),
+              business_name: this.getAttribute('data-business-name'),
+              business_address: this.getAttribute('data-business-address')
+            };
+            
+
+            populateCustomerFields(customerData);
+            hideMobileRecentCustomersDropdown();
+            
+            // Show success notification
+            if (window.showSimpleToast) {
+              window.showSimpleToast(`Customer "${customerData.name}" selected`, 'success');
+            }
+          });
+        });
+      } else {
+        container.innerHTML = '<div class="p-3 text-center"><p class="text-neutral-500 text-sm">No recent customers found</p></div>';
+      }
+    } catch (error) {
+      console.error('Error loading mobile recent customers:', error);
+      const container = document.getElementById('mobileRecentCustomersList');
+      if (container) {
+        container.innerHTML = '<div class="p-3 text-center"><p class="text-neutral-500 text-sm">Failed to load recent customers</p></div>';
+      }
+    }
+  }
+
   // Customer tooltip functions
   function showCustomerTooltip(element) {
-    console.log('showCustomerTooltip called', element);
     // Remove any existing tooltip
     hideCustomerTooltip();
     
@@ -843,7 +955,7 @@ function initializeBillingSystem() {
       business_address: element.getAttribute('data-business-address')
     };
     
-    console.log('Customer data:', customerData);
+
 
     // Create tooltip content
     let tooltipContent = `
@@ -924,11 +1036,7 @@ function initializeBillingSystem() {
     tooltip.style.left = leftPosition + 'px';
     tooltip.style.top = rect.top + 'px';
     
-    console.log('Tooltip created:', tooltip);
-    console.log('Tooltip position:', { left: tooltip.style.left, top: tooltip.style.top, viewportWidth, rectLeft: rect.left, rectWidth: rect.width });
-    
     document.body.appendChild(tooltip);
-    console.log('Tooltip appended to body');
   }
 
   function hideCustomerTooltip() {
@@ -998,7 +1106,7 @@ function initializeBillingSystem() {
           e.preventDefault();
           e.stopPropagation();
           
-          console.log('Customer option clicked:', this);
+
           
           const customerData = {
             customer_id: this.getAttribute('data-customer-id'),
@@ -1014,7 +1122,7 @@ function initializeBillingSystem() {
             business_address: this.getAttribute('data-business-address')
           };
           
-          console.log('Selected customer data:', customerData);
+
           populateCustomerFields(customerData);
           hideCustomerDropdown();
           customerInput.value = customerData.name;
@@ -1050,7 +1158,7 @@ function initializeBillingSystem() {
       }
 
       try {
-        console.log('Searching customers for:', query);
+  
         const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
         
         if (!response.ok) {
@@ -1060,7 +1168,7 @@ function initializeBillingSystem() {
         }
         
         const customers = await response.json();
-        console.log('Found customers:', customers);
+
         
         if (customers && customers.length > 0) {
           showCustomerSuggestions(customers);
@@ -1161,7 +1269,7 @@ function initializeBillingSystem() {
         const response = await fetch('/api/products');
         allProducts = await response.json();
         window.allProducts = allProducts; // Store globally for validation
-        console.log('Loaded products:', allProducts.length);
+    
       } catch (error) {
         console.error('Error loading products:', error);
         // Show user-friendly error message
@@ -1282,9 +1390,9 @@ function initializeBillingSystem() {
       // Animate in
       setTimeout(() => {
         if (productDropdown && productDropdown.style) {
-          productDropdown.style.transition = 'all 0.2s ease';
-          productDropdown.style.opacity = '1';
-          productDropdown.style.transform = 'translateY(0)';
+        productDropdown.style.transition = 'all 0.2s ease';
+        productDropdown.style.opacity = '1';
+        productDropdown.style.transform = 'translateY(0)';
         }
       }, 10);
     }
@@ -1298,12 +1406,12 @@ function initializeBillingSystem() {
         
         setTimeout(() => {
           if (productDropdown && productDropdown.style) {
-            productDropdown.style.display = 'none';
-            // Remove from DOM to prevent memory leaks
-            if (productDropdown.parentNode) {
-              productDropdown.parentNode.removeChild(productDropdown);
-            }
-            productDropdown = null;
+          productDropdown.style.display = 'none';
+          // Remove from DOM to prevent memory leaks
+          if (productDropdown.parentNode) {
+            productDropdown.parentNode.removeChild(productDropdown);
+          }
+          productDropdown = null;
           }
         }, 200);
       }
@@ -1444,7 +1552,7 @@ function initializeBillingSystem() {
 
   // FEATURE 4: City and Area Autocomplete
   function setupCityAreaAutocomplete() {
-    console.log('≡ƒîì Setting up city and area autocomplete...');
+  
     
     const cityInput = document.getElementById('billCity');
     const areaInput = document.getElementById('billArea');
@@ -1605,24 +1713,20 @@ function initializeBillingSystem() {
 
   // FEATURE 3: Master Autocomplete
   function setupMasterAutocomplete() {
-    console.log('≡ƒöì Setting up master autocomplete...');
+  
     const masterInput = document.getElementById('masterName');
     const masterInputMobile = document.getElementById('masterNameMobile');
     
-    console.log('≡ƒÆ╗ Desktop master input found:', !!masterInput);
-    console.log('≡ƒô▒ Mobile master input found:', !!masterInputMobile);
-    
-    if (!masterInput && !masterInputMobile) {
-      console.log('Γ¥î No master inputs found');
-      return;
-    }
+          if (!masterInput && !masterInputMobile) {
+        return;
+      }
 
     let employees = [];
     let masterDropdown;
 
     // Create dropdown container
     function createMasterDropdown() {
-      console.log('≡ƒöì Creating master dropdown');
+
       masterDropdown = document.createElement('div');
       masterDropdown.className = 'master-suggestion';
       masterDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
@@ -1638,15 +1742,14 @@ function initializeBillingSystem() {
     // Load employees
     async function loadEmployees() {
       try {
-        console.log('≡ƒöì Loading employees...');
+  
         const response = await fetch('/api/employees');
         employees = await response.json();
-        console.log('Γ£à Employees loaded:', employees.length);
-        console.log('≡ƒôï Sample employees:', employees.slice(0, 3));
+
         
         // Make employees available globally for debugging
         window.allEmployees = employees;
-        console.log('≡ƒîÉ Global allEmployees set:', window.allEmployees.length);
+
         
         // Set default owner if available
         setDefaultOwner();
@@ -1659,7 +1762,7 @@ function initializeBillingSystem() {
     function setDefaultOwner() {
       const owner = employees.find(emp => emp.position === 'Owner');
       if (owner) {
-        console.log('≡ƒææ Setting default owner:', owner.name);
+
         
         // Set the owner as default in both desktop and mobile inputs
         if (masterInput) {
@@ -1680,12 +1783,12 @@ function initializeBillingSystem() {
         
         // Set global selected master ID
         window.selectedMasterId = owner.employee_id;
-        console.log('≡ƒÄ» Default owner set - ID:', owner.employee_id, 'Name:', owner.name);
+        
       } else {
         // If no owner found, set the first available employee as default
         if (employees.length > 0) {
           const firstEmployee = employees[0];
-          console.log('ΓÜá∩╕Å No owner found, setting first employee as default:', firstEmployee.name);
+
           
           // Set the first employee as default in both desktop and mobile inputs
           if (masterInput) {
@@ -1706,10 +1809,8 @@ function initializeBillingSystem() {
           
           // Set global selected master ID
           window.selectedMasterId = firstEmployee.employee_id;
-          console.log('≡ƒÄ» Default employee set - ID:', firstEmployee.employee_id, 'Name:', firstEmployee.name);
-        } else {
-          console.log('ΓÜá∩╕Å No employees found in list');
-        }
+          
+                  }
       }
     }
 
@@ -1747,8 +1848,7 @@ function initializeBillingSystem() {
           const masterName = this.getAttribute('data-master-name');
           
           window.selectedMasterId = masterId;
-          console.log('≡ƒÄ» Master selected - ID:', masterId, 'Name:', masterName);
-          console.log('≡ƒîÉ Global selectedMasterId set to:', window.selectedMasterId);
+          
           
           // Update both inputs if they exist
           if (masterInput) {
@@ -1774,7 +1874,7 @@ function initializeBillingSystem() {
 
     // Show dropdown
     function showDropdown(activeInput) {
-      console.log('≡ƒöì showDropdown called for:', activeInput.id);
+      
       
       if (!masterDropdown) createMasterDropdown();
       
@@ -1782,18 +1882,14 @@ function initializeBillingSystem() {
       
       // Calculate position relative to input
       const inputRect = activeInput.getBoundingClientRect();
-      console.log('≡ƒôÉ Input rect:', inputRect);
+      
       
       masterDropdown.style.left = inputRect.left + 'px';
       masterDropdown.style.top = (inputRect.bottom + 4) + 'px';
       masterDropdown.style.width = inputRect.width + 'px';
       masterDropdown.style.minWidth = '200px'; // Ensure minimum width
       
-      console.log('≡ƒôì Dropdown position set to:', {
-        left: inputRect.left + 'px',
-        top: (inputRect.bottom + 4) + 'px',
-        width: inputRect.width + 'px'
-      });
+
       
       masterDropdown.style.display = 'block';
       masterDropdown.style.opacity = '0';
@@ -1802,10 +1898,10 @@ function initializeBillingSystem() {
       // Animate in
       setTimeout(() => {
         if (masterDropdown && masterDropdown.style) {
-          masterDropdown.style.transition = 'all 0.2s ease';
-          masterDropdown.style.opacity = '1';
-          masterDropdown.style.transform = 'translateY(0)';
-          console.log('Γ£à Dropdown animation started');
+        masterDropdown.style.transition = 'all 0.2s ease';
+        masterDropdown.style.opacity = '1';
+        masterDropdown.style.transform = 'translateY(0)';
+
         }
       }, 10);
     }
@@ -1819,12 +1915,12 @@ function initializeBillingSystem() {
         
         setTimeout(() => {
           if (masterDropdown && masterDropdown.style) {
-            masterDropdown.style.display = 'none';
-            // Remove from DOM to prevent memory leaks
-            if (masterDropdown.parentNode) {
-              masterDropdown.parentNode.removeChild(masterDropdown);
-            }
-            masterDropdown = null;
+          masterDropdown.style.display = 'none';
+          // Remove from DOM to prevent memory leaks
+          if (masterDropdown.parentNode) {
+            masterDropdown.parentNode.removeChild(masterDropdown);
+          }
+          masterDropdown = null;
           }
         }, 200);
       }
@@ -1832,14 +1928,13 @@ function initializeBillingSystem() {
 
     // Event listeners for desktop
     if (masterInput) {
-      console.log('≡ƒöì Setting up desktop master input event listeners');
-      masterInput.addEventListener('input', function() {
-        console.log('≡ƒÆ╗ Desktop master input event triggered, value:', this.value);
-        const query = this.value;
-        const filteredEmployees = filterEmployees(query);
-        console.log('≡ƒöì Filtered employees:', filteredEmployees.length);
-        
-        if (filteredEmployees.length > 0) {
+
+              masterInput.addEventListener('input', function() {
+ 
+          const query = this.value;
+          const filteredEmployees = filterEmployees(query);
+          
+          if (filteredEmployees.length > 0) {
           renderDropdownOptions(filteredEmployees);
           showDropdown(this);
         } else {
@@ -1860,13 +1955,11 @@ function initializeBillingSystem() {
 
     // Event listeners for mobile
     if (masterInputMobile) {
-      console.log('≡ƒöì Setting up mobile master input event listeners');
+
       
       masterInputMobile.addEventListener('input', function() {
-        console.log('≡ƒô▒ Mobile master input event triggered, value:', this.value);
         const query = this.value;
         const filteredEmployees = filterEmployees(query);
-        console.log('≡ƒöì Filtered employees:', filteredEmployees.length);
         
         if (filteredEmployees.length > 0) {
           renderDropdownOptions(filteredEmployees);
@@ -1877,10 +1970,8 @@ function initializeBillingSystem() {
       });
 
       masterInputMobile.addEventListener('focus', function() {
-        console.log('≡ƒô▒ Mobile master input focused, value:', this.value);
         if (this.value.trim()) {
           const filteredEmployees = filterEmployees(this.value);
-          console.log('≡ƒöì Focus filtered employees:', filteredEmployees.length);
           if (filteredEmployees.length > 0) {
             renderDropdownOptions(filteredEmployees);
             showDropdown(this);
@@ -1888,12 +1979,9 @@ function initializeBillingSystem() {
         }
       });
       
-      console.log('Γ£à Mobile master input event listeners attached');
-    } else {
-      console.log('Γ¥î Mobile master input not found');
     }
     
-    console.log('Γ£à Master input event listeners attached');
+    
 
     // Hide dropdown when clicking outside - but NOT when clicking on options
     document.addEventListener('click', function(e) {
@@ -1917,7 +2005,7 @@ function initializeBillingSystem() {
     });
 
     // Load employees on initialization
-    console.log('≡ƒöì Loading employees on initialization...');
+    
     loadEmployees();
   }
 
@@ -1928,13 +2016,7 @@ function initializeBillingSystem() {
 
   // Test function for master dropdown
   window.testMasterDropdown = function() {
-    console.log('≡ƒº¬ Testing master dropdown...');
-    console.log('≡ƒô▒ Mobile master input:', masterInputMobile);
-    console.log('≡ƒÆ╗ Desktop master input:', masterInput);
-    console.log('≡ƒæÑ Employees loaded:', employees.length);
-    
     if (masterInputMobile) {
-      console.log('≡ƒô▒ Triggering mobile master input focus...');
       masterInputMobile.focus();
       masterInputMobile.value = 'test';
       masterInputMobile.dispatchEvent(new Event('input'));
@@ -1943,26 +2025,8 @@ function initializeBillingSystem() {
 
   // Test function to check master selection status
   window.testMasterSelection = function() {
-    console.log('≡ƒº¬ Testing master selection status...');
-    
     const masterNameElement = document.getElementById('masterName');
     const masterNameMobileElement = document.getElementById('masterNameMobile');
-    
-    console.log('≡ƒÆ╗ Desktop master element:', masterNameElement);
-    console.log('≡ƒô▒ Mobile master element:', masterNameMobileElement);
-    
-    if (masterNameElement) {
-      console.log('≡ƒÆ╗ Desktop master value:', masterNameElement.value);
-      console.log('≡ƒÆ╗ Desktop master data-selected-master:', masterNameElement.getAttribute('data-selected-master'));
-    }
-    
-    if (masterNameMobileElement) {
-      console.log('≡ƒô▒ Mobile master value:', masterNameMobileElement.value);
-      console.log('≡ƒô▒ Mobile master data-selected-master:', masterNameMobileElement.getAttribute('data-selected-master'));
-    }
-    
-    // Also check global selectedMasterId
-    console.log('≡ƒîÉ Global selectedMasterId:', window.selectedMasterId);
   };
 
     // Setup Add Item button functionality
@@ -1977,7 +2041,7 @@ function initializeBillingSystem() {
       newAddItemBtn.classList.add('add-item-btn-mobile');
       newAddItemBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        console.log('Desktop add item button clicked');
+
         handleAddItem('desktop');
       });
     }
@@ -1991,14 +2055,13 @@ function initializeBillingSystem() {
       
       newAddItemBtnMobile.addEventListener('click', function(e) {
         e.preventDefault();
-        console.log('Mobile add item button clicked');
+
         handleAddItem('mobile');
       });
     }
   }
 
   async function handleAddItem(formType) {
-    console.log('handleAddItem called with formType:', formType);
     
     // Get form elements based on form type
     let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput;
@@ -2040,8 +2103,7 @@ function initializeBillingSystem() {
     const selectedProductData = productInput?.getAttribute('data-selected-product');
     
     // Debug logging
-    console.log('Product input value:', productInput?.value);
-    console.log('Selected product data:', selectedProductData);
+
     
     if (!selectedProductData && productInput?.value.trim()) {
       // Check if we have a valid product name but no data attribute
@@ -2055,7 +2117,7 @@ function initializeBillingSystem() {
         if (foundProduct) {
           // Set the data attribute now
           productInput.setAttribute('data-selected-product', JSON.stringify(foundProduct));
-          console.log('Found and set product data:', foundProduct);
+  
         } else {
           // Add a small delay to allow for any pending DOM updates
           setTimeout(() => {
@@ -2109,7 +2171,7 @@ function initializeBillingSystem() {
     
     // Check if this product already exists in the bill
     const existingItemIndex = bill.findIndex(item => item.product_id === productId);
-    console.log('Checking for duplicate product. Product ID:', productId, 'Existing index:', existingItemIndex);
+    
     
     if (existingItemIndex !== -1) {
       // Product already exists, show confirmation dialog
@@ -2119,29 +2181,28 @@ function initializeBillingSystem() {
       const newTotal = Math.round((newSubtotal - discount) * 100) / 100;
       const newVatAmount = Math.round(newTotal * (vatPercent / 100) * 100) / 100;
       
-      console.log('Duplicate found. Existing quantity:', existingItem.quantity, 'New quantity:', quantity, 'Total will be:', newQuantity);
+      
       
       // Show modern confirmation dialog
-      console.log('Showing confirmation dialog for duplicate product');
-      console.log('showConfirmDialog available:', typeof showConfirmDialog);
+      
       
       let confirmed;
       if (typeof showConfirmDialog !== 'function') {
         console.error('showConfirmDialog is not available!');
         // Fallback to simple confirm
         confirmed = confirm(`"${productName}" is already in the bill. Would you like to increase the quantity?`);
-        console.log('Fallback confirm result:', confirmed);
+        
       } else {
         confirmed = await showConfirmDialog(
           `"${productName}" is already in the bill with quantity ${existingItem.quantity}.<br><br>Would you like to increase the quantity to ${newQuantity} instead of adding a duplicate item?`,
           'Product Already Added',
           'info'
         );
-        console.log('User response to duplicate dialog:', confirmed);
+
       }
       
       if (confirmed) {
-        console.log('User confirmed to update quantity. Updating existing item...');
+        
         // Update existing item with new quantity and recalculate totals
         bill[existingItemIndex] = {
           ...existingItem,
@@ -2155,7 +2216,7 @@ function initializeBillingSystem() {
           total: newTotal
         };
         
-        console.log('Updated existing item:', bill[existingItemIndex]);
+        
         
         // Update display
         renderBillTable();
@@ -2174,7 +2235,7 @@ function initializeBillingSystem() {
           }
         }, 500);
       } else {
-        console.log('User cancelled duplicate dialog. Not adding item.');
+        
       }
       return;
     }
@@ -2198,7 +2259,7 @@ function initializeBillingSystem() {
       total: total // Store final total (after discount)
     };
     
-    console.log('Adding new item to bill:', item);
+    
     bill.push(item);
     
     // Update display
@@ -2307,7 +2368,7 @@ function initializeBillingSystem() {
       printBtn.classList.remove('bg-indigo-600', 'text-white', 'hover:bg-indigo-500');
     }
     
-    console.log('Γ£à Billing form reset successfully');
+
   }
 
   // Helper function to clear billing form
@@ -2578,7 +2639,7 @@ function initializeBillingSystem() {
         // Show mobile billing interface
         if (window.TajirPWA && window.TajirPWA.mobileBilling) {
           try {
-            window.TajirPWA.mobileBilling.showMobileBilling();
+          window.TajirPWA.mobileBilling.showMobileBilling();
           } catch (error) {
             console.error('Error showing mobile billing:', error);
             showModernAlert('Mobile billing encountered an error. Please try again.', 'error', 'Error');
@@ -2591,12 +2652,14 @@ function initializeBillingSystem() {
     }
   }
 
+
+
   // Setup Print Button functionality
   function setupPrintButton() {
     const printBtn = document.getElementById('printBtn');
     if (printBtn) {
       printBtn.addEventListener('click', async function() {
-        console.log('Print button clicked');
+    
         
         if (bill.length === 0) {
           showModernAlert('Please add items to the bill first', 'warning', 'No Items');
@@ -2624,19 +2687,12 @@ function initializeBillingSystem() {
         const masterNameMobileElement = document.getElementById('masterNameMobile');
         let masterId = null;
         
-        console.log('≡ƒöì Debugging master selection:');
-        console.log('≡ƒÆ╗ Desktop master element:', masterNameElement);
-        console.log('≡ƒô▒ Mobile master element:', masterNameMobileElement);
-        console.log('≡ƒîÉ Global selectedMasterId:', window.selectedMasterId);
+
         
         if (masterNameElement) {
-          console.log('≡ƒÆ╗ Desktop master value:', masterNameElement.value);
-          console.log('≡ƒÆ╗ Desktop master data-selected-master:', masterNameElement.getAttribute('data-selected-master'));
         }
         
         if (masterNameMobileElement) {
-          console.log('≡ƒô▒ Mobile master value:', masterNameMobileElement.value);
-          console.log('≡ƒô▒ Mobile master data-selected-master:', masterNameMobileElement.getAttribute('data-selected-master'));
         }
         
         // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
@@ -2645,23 +2701,20 @@ function initializeBillingSystem() {
           selectedMasterElement = masterNameMobileElement;
         }
         
-        console.log('≡ƒÄ» Selected master element:', selectedMasterElement);
+
         
         if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
           try {
             const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
             masterId = selectedMaster.master_id;
-            console.log('Γ£à Successfully parsed master data:', selectedMaster);
-            console.log('≡ƒåö Master ID extracted:', masterId);
+
           } catch (e) {
             console.warn('Failed to parse selected master data:', e);
           }
         } else {
-          console.log('Γ¥î No master selected or data-selected-master attribute not found');
           // Try to use global selectedMasterId as fallback
           if (window.selectedMasterId) {
             masterId = window.selectedMasterId;
-            console.log('≡ƒöä Using global selectedMasterId as fallback:', masterId);
           }
         }
         
@@ -2700,8 +2753,7 @@ function initializeBillingSystem() {
         };
 
         try {
-          console.log('≡ƒôï Bill data being sent:', billData);
-          console.log('≡ƒöì Master ID:', masterId);
+
           
           // Save bill first
           const saveResponse = await fetch('/api/bills', {
@@ -2744,6 +2796,7 @@ function initializeBillingSystem() {
   setupMobileCustomerFetch();
   setupCustomerTypeHandler();
   loadRecentCustomers(); // Load recent customers for quick selection
+  initializeMobileRecentCustomers(); // Initialize mobile recent customers
   setupMasterAutocomplete();
   
   // Setup city and area autocomplete
@@ -2762,9 +2815,7 @@ function initializeBillingSystem() {
   
 
   
-  console.log('≡ƒÜÇ Billing system initialized successfully!');
-  console.log('showConfirmDialog available during init:', typeof showConfirmDialog);
-  console.log('showSimpleToast available during init:', typeof showSimpleToast);
+  
   
   // Make functions globally available
   window.initializeBillingSystem = initializeBillingSystem;
@@ -2803,13 +2854,10 @@ function initializeBillingSystem() {
   };
   
   window.editBillItem = function(index) {
-    console.log('editBillItem called with index:', index);
     const item = bill[index];
     if (!item) {
-      console.log('No item found at index:', index);
       return;
     }
-    console.log('Editing item:', item);
     
     // Desktop form elements
     const billProductElement = document.getElementById('billProduct');
@@ -2852,22 +2900,16 @@ function initializeBillingSystem() {
         price: item.rate, // Changed from item.price to item.rate
         product_type: 'Unknown'
       }));
-      console.log('Mobile product element populated:', item.product_name);
-    } else {
-      console.log('Mobile product element not found');
     }
+    
     if (billQuantityMobileElement) {
-      billQuantityMobileElement.value = item.quantity;
-      console.log('Mobile quantity element populated:', item.quantity);
-    } else {
-      console.log('Mobile quantity element not found');
+            billQuantityMobileElement.value = item.quantity;
     }
+    
     if (billPriceMobileElement) {
-      billPriceMobileElement.value = item.rate; // Changed from item.price to item.rate
-      console.log('Mobile price element populated:', item.rate);
-    } else {
-      console.log('Mobile price element not found');
+            billPriceMobileElement.value = item.rate; // Changed from item.price to item.rate
     }
+    
     if (billDiscountMobileElement) billDiscountMobileElement.value = item.discount || 0;
     if (billAdvanceMobileElement) billAdvanceMobileElement.value = item.advance || 0;
     if (billVatMobileElement) billVatMobileElement.value = item.vat_percent || 5;
@@ -2881,7 +2923,7 @@ function initializeBillingSystem() {
       window.showSimpleToast('Item loaded for editing!', 'info');
     }
     
-    console.log('Edit operation completed');
+
   };
   
   window.deleteBillItem = async function(index) {

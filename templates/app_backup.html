@@ -3235,11 +3235,9 @@
 
     // Update button states function (to be called when bill has items)
     function updateButtonStates(hasItems) {
-        console.log('updateButtonStates called with hasItems:', hasItems, 'bill.length:', bill.length);
         const buttons = [whatsappBtn, emailBtn, printBtn];
         buttons.forEach(btn => {
             if (btn) {
-                console.log('Updating button:', btn.id, 'disabled:', !hasItems);
                 btn.disabled = !hasItems;
                 btn.classList.toggle('opacity-50', !hasItems);
                 btn.classList.toggle('pointer-events-none', !hasItems);
@@ -3263,8 +3261,6 @@
                     btn.classList.toggle('text-white', hasItems);
                     btn.classList.toggle('hover:bg-indigo-500', hasItems);
                 }
-            } else {
-                console.log('Button not found:', btn);
             }
         });
     }
@@ -3296,7 +3292,7 @@
         total: qty * rate - disc - adv
       });
 
-      console.log('Item added to bill. Bill length now:', bill.length);
+
 
       // Reset item entry fields
       ['billProduct','billRate','billQty','billDiscount','billAdvPaid'].forEach(id => {
@@ -4073,11 +4069,9 @@
 
     // Update button states function (to be called when bill has items)
     function updateButtonStates(hasItems) {
-        console.log('updateButtonStates called with hasItems:', hasItems, 'bill.length:', bill.length);
         const buttons = [whatsappBtn, emailBtn, printBtn];
         buttons.forEach(btn => {
             if (btn) {
-                console.log('Updating button:', btn.id, 'disabled:', !hasItems);
                 btn.disabled = !hasItems;
                 btn.classList.toggle('opacity-50', !hasItems);
                 btn.classList.toggle('pointer-events-none', !hasItems);
@@ -4101,8 +4095,6 @@
                     btn.classList.toggle('text-white', hasItems);
                     btn.classList.toggle('hover:bg-indigo-500', hasItems);
                 }
-            } else {
-                console.log('Button not found:', btn);
             }
         });
     }
@@ -4134,7 +4126,7 @@
         total: qty * rate - disc - adv
       });
 
-      console.log('Item added to bill. Bill length now:', bill.length);
+
 
       // Reset item entry fields
       ['billProduct','billRate','billQty','billDiscount','billAdvPaid'].forEach(id => {

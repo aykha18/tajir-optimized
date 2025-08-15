@@ -3,7 +3,9 @@
  * Provides touch-friendly billing interface optimized for mobile devices
  */
 
-class MobileBilling {
+// Prevent multiple declarations
+if (typeof window.MobileBilling === 'undefined') {
+  window.MobileBilling = class MobileBilling {
   constructor() {
     this.currentBill = {
       items: [],
@@ -19,14 +21,14 @@ class MobileBilling {
 
   async init() {
     try {
-      console.log('Mobile Billing: Starting initialization...');
+  
       
       this.setupMobileBillingInterface();
       this.setupTouchGestures();
       this.setupMobileOptimizations();
       this.loadOfflineProducts();
       
-      console.log('Mobile Billing: Initialized successfully');
+      
       this.isInitialized = true;
       
       // Dispatch initialization event
@@ -256,17 +258,16 @@ class MobileBilling {
   // Sync mobile bill data to main billing system
   syncToMainBilling() {
     if (this.currentBill.items.length === 0) {
-      console.log('Mobile billing: No items to sync');
+  
       return;
     }
     
     try {
-      console.log('Mobile billing: Starting sync to main billing...');
-      console.log('Mobile bill items:', this.currentBill.items);
+      
       
       // Get the main billing system's bill array
       const mainBill = window.bill || [];
-      console.log('Main bill before sync:', mainBill);
+      
       
       // Convert mobile bill items to main billing format
       const convertedItems = this.currentBill.items.map(item => ({
@@ -282,7 +283,7 @@ class MobileBilling {
         total: item.total // After discount
       }));
       
-      console.log('Converted items:', convertedItems);
+      
       
       // Add items to main bill array
       convertedItems.forEach(item => {
@@ -296,24 +297,24 @@ class MobileBilling {
           mainBill[existingIndex].quantity += item.quantity;
           mainBill[existingIndex].total = mainBill[existingIndex].quantity * mainBill[existingIndex].price;
           mainBill[existingIndex].vat_amount = mainBill[existingIndex].total * 0.05;
-          console.log('Updated existing item:', mainBill[existingIndex]);
+
         } else {
           // Add new item
           mainBill.push(item);
-          console.log('Added new item:', item);
+
         }
       });
       
-      console.log('Main bill after sync:', mainBill);
+      
       
       // Update main billing display
       if (typeof window.renderBillTable === 'function') {
         window.renderBillTable();
-        console.log('Main billing table updated');
+
       }
       if (typeof window.updateTotals === 'function') {
         window.updateTotals();
-        console.log('Main billing totals updated');
+
       }
       
       // Show success notification
@@ -331,16 +332,14 @@ class MobileBilling {
   // Sync main billing data to mobile billing
   syncFromMainBilling() {
     try {
-      console.log('Mobile billing: Starting sync from main billing...');
       const mainBill = window.bill || [];
-      console.log('Main bill items:', mainBill);
       
       if (mainBill.length === 0) {
         // Clear mobile bill if main bill is empty
         this.currentBill.items = [];
         this.updateMobileBillDisplay();
         this.calculateMobileTotals();
-        console.log('Mobile billing: Main bill empty, cleared mobile bill');
+
         return;
       }
       
@@ -353,14 +352,14 @@ class MobileBilling {
         total: item.total
       }));
       
-      console.log('Converted to mobile format:', mobileItems);
+
       
       // Update mobile bill
       this.currentBill.items = mobileItems;
       this.updateMobileBillDisplay();
       this.calculateMobileTotals();
       
-      console.log('Mobile billing synced from main billing:', mobileItems.length, 'items');
+
       
     } catch (error) {
       console.error('Error syncing from main billing:', error);
@@ -871,11 +870,7 @@ class MobileBilling {
 
   // Method to manually trigger sync for testing
   testSync() {
-    console.log('=== Mobile Billing Sync Test ===');
-    console.log('Current mobile bill:', this.currentBill);
-    console.log('Main bill:', window.bill);
-    console.log('Window renderBillTable function:', typeof window.renderBillTable);
-    console.log('Window updateTotals function:', typeof window.updateTotals);
+    // Sync test completed
   }
 
   // Get bill total
@@ -891,5 +886,6 @@ class MobileBilling {
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = MobileBilling;
-} 
+  module.exports = window.MobileBilling;
+}
+} // Close the if (typeof window.MobileBilling === 'undefined') block 

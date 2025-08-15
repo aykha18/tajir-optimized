@@ -43,14 +43,12 @@ class ExpenseManager {
     }
 
     async init() {
-        console.log('ExpenseManager: Initializing...');
         await this.loadCategories();
         await this.loadExpenses();
         this.setupEventListeners();
         this.renderCategories();
         this.renderExpenses();
         this.updateDashboard();
-        console.log('ExpenseManager: Initialization complete');
     }
 
     setupEventListeners() {
@@ -92,7 +90,6 @@ class ExpenseManager {
 
     async loadExpenses() {
         try {
-            console.log('ExpenseManager: Loading expenses...');
             const params = new URLSearchParams();
             const dateFrom = document.getElementById('expenseDateFrom')?.value;
             const dateTo = document.getElementById('expenseDateTo')?.value;
@@ -107,7 +104,6 @@ class ExpenseManager {
             const response = await fetch(`/api/expenses?${params}`);
             if (response.ok) {
                 this.expenses = await response.json();
-                console.log('ExpenseManager: Loaded', this.expenses.length, 'expenses');
                 this.renderExpenses();
             } else {
                 console.error('ExpenseManager: Failed to load expenses, status:', response.status);
@@ -120,7 +116,6 @@ class ExpenseManager {
 
     // Public method to refresh expenses (can be called from console for debugging)
     async refreshExpenses() {
-        console.log('ExpenseManager: Manual refresh requested');
         await this.loadExpenses();
     }
 
@@ -262,7 +257,6 @@ class ExpenseManager {
         
         // Prevent duplicate submissions
         if (this.isSubmittingCategory) {
-            console.log('Category form submission already in progress, ignoring duplicate');
             return;
         }
         
@@ -317,7 +311,6 @@ class ExpenseManager {
         
         // Prevent duplicate submissions
         if (this.isSubmitting) {
-            console.log('Form submission already in progress, ignoring duplicate');
             return;
         }
         
@@ -513,16 +506,13 @@ let expenseManagerInitialized = false;
 function initializeExpenseManager() {
     // Only initialize once
     if (expenseManagerInitialized) {
-        console.log('ExpenseManager already initialized, skipping...');
         return;
     }
     
     const container = document.getElementById('expensesContainer');
     if (container && !window.expenseManager) {
-        console.log('Initializing ExpenseManager...');
         window.expenseManager = new ExpenseManager();
         expenseManagerInitialized = true;
-        console.log('ExpenseManager initialized successfully');
     }
 }
 
@@ -538,7 +528,6 @@ window.refreshExpenses = function() {
     if (window.expenseManager) {
         window.expenseManager.refreshExpenses();
     } else {
-        console.log('ExpenseManager not initialized, initializing now...');
         initializeExpenseManager();
     }
 };

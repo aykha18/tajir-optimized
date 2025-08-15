@@ -157,9 +157,9 @@
     </div>
 
     <!-- CONTENT -->
-    <div class="max-w-6xl mx-auto px-6 py-4 mobile-container">
+    <div class="mx-auto px-6 py-4 mobile-container">
       <!-- BILLING -->
-      <section id="billingSec" class="page space-y-2 mobile-form">
+      <section id="billingSec" class="page space-y-2 mobile-form max-w-7xl mx-auto">
         <div class="flex justify-between items-center">
           <h3 class="text-2xl font-semibold tracking-tight">Billing</h3>
           <div class="flex gap-2">
@@ -256,7 +256,7 @@
           </div>
 
           <!-- RIGHT COLUMN - Recent Customers (Pushed to extreme right) -->
-          <div class="lg:col-span-1">
+          <div class="lg:col-span-1 hidden md:block">
             <div class="modern-card" style="width: 100%; margin-left: auto;">
               <h4 class="text-xs font-medium text-neutral-300 mb-2">Recent Customers</h4>
               <div id="recentCustomersContainer" class="recent-customers">
@@ -265,6 +265,8 @@
             </div>
           </div>
         </div>
+
+
 
         <!-- ITEM ENTRY - More compact -->
         <div class="modern-card">
@@ -352,8 +354,8 @@
               <input id="masterNameMobile" placeholder="Select master" autocomplete="off" required class="w-full px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
 
-            <!-- Add Button -->
-            <button id="addItemBtnMobile" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+            <!-- Add Button and WhatsApp Button Row -->
+            <button id="addItemBtnMobile" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 w-full">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
               </svg>
@@ -1329,6 +1331,8 @@
   </main>
 </div>
 
+
+
 <!-- Modern Confirmation Modal -->
 <div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden backdrop-blur-sm p-4">
   <div class="bg-neutral-900/95 backdrop-blur border border-neutral-700 rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 scale-95 opacity-0 max-h-[90vh] overflow-y-auto mobile-modal" id="confirmModalContent">
@@ -1396,6 +1400,28 @@
     </div>
   </div>
 </div>
+
+        <!-- Mobile Recent Customers Sticky Icon - Fixed at extreme right -->
+        <div id="mobileRecentCustomersIcon" class="fixed bottom-6 right-6 z-50 md:hidden">
+          <button type="button" id="mobileRecentCustomersBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110" title="Recent Customers">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+            </svg>
+          </button>
+          
+          <!-- Mobile Recent Customers Dropdown -->
+          <div id="mobileRecentCustomersDropdown" class="absolute bottom-16 right-0 bg-neutral-800 border border-neutral-600 rounded-lg shadow-xl w-64 max-h-64 overflow-y-auto hidden" style="transform: translateX(-100%);">
+            <div class="p-3 border-b border-neutral-600">
+              <h4 class="text-sm font-medium text-neutral-200">Recent Customers</h4>
+            </div>
+            <div id="mobileRecentCustomersList" class="p-2">
+              <!-- Mobile recent customers will be populated here -->
+            </div>
+          </div>
+        </div>
+
+    </body>
+</code_block_to_apply_changes_from>
 {% endblock %}
 
 {% block extra_scripts %}

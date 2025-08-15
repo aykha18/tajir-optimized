@@ -224,12 +224,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function clearAllCache() {
-    console.log('Clearing all app cache...');
+
     
     // Clear localStorage
     try {
       localStorage.clear();
-      console.log('localStorage cleared');
+
     } catch (error) {
       console.error('Error clearing localStorage:', error);
     }
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clear sessionStorage
     try {
       sessionStorage.clear();
-      console.log('sessionStorage cleared');
+
     } catch (error) {
       console.error('Error clearing sessionStorage:', error);
     }
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (const storeName of stores) {
           await window.TajirPWA.offlineStorage.clearStore(storeName);
         }
-        console.log('IndexedDB cleared');
+  
       }
     } catch (error) {
       console.error('Error clearing IndexedDB:', error);
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
         await Promise.all(
           cacheNames.map(cacheName => caches.delete(cacheName))
         );
-        console.log('Service worker cache cleared');
+  
       }
     } catch (error) {
       console.error('Error clearing service worker cache:', error);
@@ -272,19 +272,19 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       if ('serviceWorker' in navigator) {
         if (window.isClearingCache) {
-          console.log('Skipping service worker unregistration during manual cache clear');
+  
         } else {
           const registrations = await navigator.serviceWorker.getRegistrations();
           await Promise.all(
             registrations.map(registration => registration.unregister())
           );
-          console.log('Service worker unregistered');
+
         }
       }
     } catch (error) {
       console.error('Error unregistering service worker:', error);
     }
 
-    console.log('All cache cleared successfully');
+
   }
 }); 

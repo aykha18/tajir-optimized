@@ -150,7 +150,7 @@ async function loadCustomers() {
 
 // Search customers function
 async function searchCustomers(query) {
-  console.log('searchCustomers called with query:', query);
+  
   
   const overlay = document.getElementById('customerLoadingOverlay');
   const skeleton = document.getElementById('customerSkeleton');
@@ -164,10 +164,10 @@ async function searchCustomers(query) {
   
   try {
     const url = query ? `/api/customers?search=${encodeURIComponent(query)}` : '/api/customers';
-    console.log('Fetching URL:', url);
+
     const resp = await fetch(url);
     const customers = await resp.json();
-    console.log('Search results:', customers.length, 'customers found');
+
     
     // Store customers globally for bill creation
     window.customers = customers;
@@ -469,7 +469,7 @@ async function editCustomer(id) {
       
       editingCustomerId = id;
       
-      console.log('Customer data populated for editing:', customer);
+  
     }
   } catch (error) {
     console.error('Error editing customer:', error);

@@ -610,7 +610,7 @@ async function employeeTableClickHandler(e) {
 // Edit employee function
 async function editEmployee(id) {
   try {
-    console.log('🔍 Fetching employee data for ID:', id);
+
     
     const response = await fetch(`/api/employees/${id}`);
     
@@ -621,7 +621,7 @@ async function editEmployee(id) {
     const employee = await response.json();
     
     if (employee) {
-      console.log('✅ Employee data received:', employee);
+  
       
       const nameEl = document.getElementById('employeeName');
       const mobileEl = document.getElementById('employeeMobile');
@@ -633,7 +633,7 @@ async function editEmployee(id) {
       if (addressEl) addressEl.value = employee.address || '';
       if (roleEl) {
         roleEl.value = employee.position || '';
-        console.log('🎯 Set role to:', employee.position);
+    
       }
       
       editingEmployeeId = id;

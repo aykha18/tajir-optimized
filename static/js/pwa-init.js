@@ -15,7 +15,7 @@ class PWAInitializer {
     }
 
     try {
-      console.log('PWA Initializer: Starting initialization...');
+  
 
       // Initialize offline storage
       this.offlineStorage = new OfflineStorage();
@@ -40,7 +40,7 @@ class PWAInitializer {
       try {
         this.mobileBilling = new MobileBilling();
         await this.mobileBilling.init();
-        console.log('PWA Initializer: Mobile Billing initialized successfully');
+
       } catch (error) {
         console.error('PWA Initializer: Mobile Billing initialization failed', error);
         this.mobileBilling = null;
@@ -71,7 +71,7 @@ class PWAInitializer {
       this.setupPeriodicSync();
 
       this.isInitialized = true;
-      console.log('PWA Initializer: Initialization completed successfully');
+      
 
       // Dispatch initialization event
       window.dispatchEvent(new CustomEvent('pwaInitialized', {
@@ -89,12 +89,6 @@ class PWAInitializer {
       
       // Store offline data in global scope for easy access
       window.offlineData = offlineData;
-      
-      console.log('PWA Initializer: Offline data loaded', {
-        customers: offlineData.customers.length,
-        products: offlineData.products.length,
-        bills: offlineData.bills.length
-      });
     } catch (error) {
       console.error('PWA Initializer: Failed to load offline data', error);
     }

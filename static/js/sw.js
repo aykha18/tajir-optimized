@@ -28,11 +28,11 @@ const STATIC_ASSETS = [
 
 // Install event - cache static assets
 self.addEventListener('install', event => {
-  console.log('Service Worker: Installing...');
+  
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => {
-        console.log('Service Worker: Caching static assets');
+
         // Cache assets one by one to handle missing files gracefully
         const cachePromises = STATIC_ASSETS.map(url => {
           return cache.add(url).catch(error => {
@@ -44,7 +44,7 @@ self.addEventListener('install', event => {
         return Promise.all(cachePromises);
       })
       .then(() => {
-        console.log('Service Worker: Installation completed');
+        
         return self.skipWaiting();
       })
       .catch(error => {
@@ -57,19 +57,19 @@ self.addEventListener('install', event => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', event => {
-  console.log('Service Worker: Activating...');
+  
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-            console.log('Service Worker: Deleting old cache', cacheName);
+  
             return caches.delete(cacheName);
           }
         })
       );
     }).then(() => {
-      console.log('Service Worker: Activation completed');
+      
       return self.clients.claim();
     })
   );
@@ -105,7 +105,7 @@ self.addEventListener('fetch', event => {
           return response;
         })
         .catch(error => {
-          console.log('Service Worker: API fetch failed, serving from cache', request.url, error);
+  
           return caches.match(request)
             .then(cachedResponse => {
               if (cachedResponse) {
@@ -144,11 +144,11 @@ self.addEventListener('fetch', event => {
     caches.match(request)
       .then(response => {
         if (response) {
-          console.log('Service Worker: Serving from cache', request.url);
+  
           return response;
         }
         
-        console.log('Service Worker: Fetching from network', request.url);
+
         return fetch(request)
           .then(response => {
             // Don't cache non-successful responses
@@ -182,7 +182,7 @@ self.addEventListener('fetch', event => {
 
 // Background sync for offline data
 self.addEventListener('sync', event => {
-  console.log('Service Worker: Background sync triggered', event.tag);
+  
   
   if (event.tag === 'sync-pending-data') {
     event.waitUntil(syncPendingData());
@@ -191,7 +191,7 @@ self.addEventListener('sync', event => {
 
 // Push notification handling
 self.addEventListener('push', event => {
-  console.log('Service Worker: Push notification received');
+  
   
   const options = {
     body: event.data ? event.data.text() : 'New notification from Tajir POS',
@@ -223,7 +223,7 @@ self.addEventListener('push', event => {
 
 // Notification click handling
 self.addEventListener('notificationclick', event => {
-  console.log('Service Worker: Notification clicked');
+  
   
   event.notification.close();
   
@@ -238,7 +238,7 @@ self.addEventListener('notificationclick', event => {
 async function syncPendingData() {
   try {
     // This will be implemented with IndexedDB integration
-    console.log('Service Worker: Syncing pending data...');
+
     
     // Get all clients
     const clients = await self.clients.matchAll();
@@ -257,7 +257,7 @@ async function syncPendingData() {
 
 // Message handling from main thread
 self.addEventListener('message', event => {
-  console.log('Service Worker: Message received', event.data);
+  
   
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
