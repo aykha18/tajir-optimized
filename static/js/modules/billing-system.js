@@ -3070,6 +3070,9 @@ function initializeBillingSystem() {
           if (window.showSimpleToast) {
             window.showSimpleToast('WhatsApp opened with bill details!', 'success');
           }
+          
+          // Reset the billing form after successful WhatsApp send
+          resetBillingForm();
         } else {
           throw new Error('Failed to generate WhatsApp link');
         }
@@ -3135,6 +3138,9 @@ function initializeBillingSystem() {
         if (window.showSimpleToast) {
           window.showSimpleToast('WhatsApp opened with draft bill details!', 'success');
         }
+        
+        // Reset the billing form after successful WhatsApp send (draft case)
+        resetBillingForm();
       }
       
     } catch (error) {
