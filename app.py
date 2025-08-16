@@ -3997,7 +3997,11 @@ def generate_whatsapp_message(bill_data, shop_settings, language='en'):
         
         # Add items
         for item in bill_data['items']:
-            message += f"• {item['product_name']} - {item['qty']} × {item['rate']:.2f} درهم = {item['total']:.2f} درهم\n"
+            product_name = item.get('product_name', 'Unknown Product')
+            qty = item.get('qty', 0)
+            rate = float(item.get('rate', 0))
+            total = float(item.get('total', 0))
+            message += f"• {product_name} - {qty} × {rate:.2f} درهم = {total:.2f} درهم\n"
         
         message += f"""
 💰 *الملخص المالي:*
@@ -4035,7 +4039,11 @@ Phone: {bill_data['customer_phone']}
         
         # Add items
         for item in bill_data['items']:
-            message += f"• {item['product_name']} - {item['qty']} × AED {item['rate']:.2f} = AED {item['total']:.2f}\n"
+            product_name = item.get('product_name', 'Unknown Product')
+            qty = item.get('qty', 0)
+            rate = float(item.get('rate', 0))
+            total = float(item.get('total', 0))
+            message += f"• {product_name} - {qty} × AED {rate:.2f} = AED {total:.2f}\n"
         
         message += f"""
 💰 *Financial Summary:*
@@ -4062,11 +4070,19 @@ def generate_whatsapp_share_link(phone_number, message):
     # Remove any non-digit characters from phone number
     clean_phone = ''.join(filter(str.isdigit, phone_number))
     
-    # Add country code if not present (assuming UAE +971)
-    if not clean_phone.startswith('971'):
-        if clean_phone.startswith('0'):
+    # Handle UAE phone numbers properly
+    if clean_phone:
+        if clean_phone.startswith('971'):
+            # Already has country code
+            pass
+        elif clean_phone.startswith('0'):
+            # Remove leading 0 and add 971
             clean_phone = '971' + clean_phone[1:]
+        elif len(clean_phone) == 9:
+            # 9-digit number, add 971
+            clean_phone = '971' + clean_phone
         else:
+            # Add 971 prefix
             clean_phone = '971' + clean_phone
     
     # URL encode the message
@@ -4092,6 +4108,12 @@ def send_bill_whatsapp(bill_id):
         
         if not phone_number:
             return jsonify({'success': False, 'error': 'Phone number is required'}), 400
+        
+        # Validate phone number format
+        import re
+        phone_digits = re.sub(r'\D', '', phone_number)
+        if len(phone_digits) < 9:
+            return jsonify({'success': False, 'error': 'Invalid phone number format. Please enter a valid UAE phone number.'}), 400
         
         # Check if user has WhatsApp feature access
         try:
@@ -4161,22 +4183,25 @@ def send_bill_whatsapp(bill_id):
             'customer_phone': bill.get('customer_phone', ''),
             'customer_city': bill.get('customer_city', ''),
             'customer_area': bill.get('customer_area', ''),
-            'subtotal': float(bill.get('subtotal', 0)),
-            'vat_amount': float(bill.get('vat_amount', 0)),
+            'subtotal': float(bill.get('subtotal', 0) or 0),
+            'vat_amount': float(bill.get('vat_amount', 0) or 0),
             'vat_percent': 5.0,  # Standard UAE VAT rate
-            'total_amount': float(bill.get('total_amount', 0)),
-            'advance_paid': float(bill.get('advance_paid', 0)),
+            'total_amount': float(bill.get('total_amount', 0) or 0),
+            'advance_paid': float(bill.get('advance_paid', 0) or 0),
             'discount_amount': total_discount,  # Calculate from bill items
             'items': []
         }
         
         for item in items:
             item_dict = dict(item) if not isinstance(item, dict) else item
+            rate = float(item_dict.get('rate', 0) or 0)
+            qty = int(item_dict.get('quantity', 0) or 0)
+            total = rate * qty
             bill_data['items'].append({
-                'product_name': item_dict.get('product_name', ''),
-                'rate': float(item_dict.get('rate', 0)),
-                'qty': item_dict.get('quantity', 0),
-                'total': float(item_dict.get('rate', 0)) * item_dict.get('quantity', 0)
+                'product_name': item_dict.get('product_name', 'Unknown Product'),
+                'rate': rate,
+                'qty': qty,
+                'total': total
             })
         
         # Get shop settings

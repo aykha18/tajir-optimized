@@ -2962,17 +2962,17 @@ function initializeBillingSystem() {
 
   // WhatsApp functionality
   function initializeWhatsApp() {
-    setTimeout(() => {
-      const whatsappBtn = document.getElementById('whatsappBtn');
-      
-      if (whatsappBtn) {
-        whatsappBtn.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          handleWhatsAppClick();
-        });
-      }
-    }, 1000);
+    const whatsappBtn = document.getElementById('whatsappBtn');
+    
+    if (whatsappBtn) {
+      // Remove any existing event listeners to prevent duplicates
+      whatsappBtn.removeEventListener('click', handleWhatsAppClick);
+      whatsappBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleWhatsAppClick();
+      });
+    }
   }
 
   // Function to prepare bill data for saving
@@ -3153,16 +3153,34 @@ function initializeBillingSystem() {
   }
 
   async function handleWhatsAppClick() {
-    // Check if there are items in the bill
-    if (bill.length === 0) {
-      if (window.showSimpleToast) {
-        window.showSimpleToast('Please add items to the bill first', 'warning');
-      }
-      return;
-    }
-    
     try {
-      let billId = window.currentBillId; // Check if bill is already saved
+      // Check if there are items in the bill
+      if (bill.length === 0) {
+        if (window.showSimpleToast) {
+          window.showSimpleToast('Please add items to the bill first', 'warning');
+        }
+        return;
+      }
+      
+      // Check if customer mobile is provided
+      const customerMobile = document.getElementById('billMobile')?.value?.trim();
+      if (!customerMobile) {
+        if (window.showSimpleToast) {
+          window.showSimpleToast('Please enter customer mobile number to send WhatsApp', 'warning');
+        }
+        // Focus on the mobile field
+        const mobileField = document.getElementById('billMobile');
+        if (mobileField) {
+          mobileField.focus();
+          mobileField.style.borderColor = '#ef4444';
+          setTimeout(() => {
+            mobileField.style.borderColor = '';
+          }, 3000);
+        }
+        return;
+      }
+    
+          let billId = window.currentBillId; // Check if bill is already saved
       let billData = null;
       
       // If bill is not saved, ask user if they want to save it first
@@ -3322,8 +3340,17 @@ function initializeBillingSystem() {
           const cleanPhone = customerPhone.replace(/\D/g, '');
           let phoneWithCode = cleanPhone;
           
-          if (!cleanPhone.startsWith('971') && cleanPhone.length > 0) {
-            phoneWithCode = '971' + cleanPhone;
+          // Handle UAE phone numbers properly
+          if (cleanPhone.length > 0) {
+            if (cleanPhone.startsWith('971')) {
+              phoneWithCode = cleanPhone;
+            } else if (cleanPhone.startsWith('0')) {
+              phoneWithCode = '971' + cleanPhone.substring(1);
+            } else if (cleanPhone.length === 9) {
+              phoneWithCode = '971' + cleanPhone;
+            } else {
+              phoneWithCode = '971' + cleanPhone;
+            }
           }
           
           whatsappUrl = `https://wa.me/${phoneWithCode}?text=${encodedMessage}`;
