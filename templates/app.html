@@ -272,13 +272,35 @@
         <div class="modern-card">
           <div class="flex justify-between items-center mb-2">
             <h4 class="text-xs font-medium text-neutral-300">Add Product</h4>
-            <!-- Mobile Billing Toggle (only visible on mobile) -->
-            <button id="mobileBillingToggle" class="md:hidden bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700 transition-colors">
-              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-              </svg>
-              Mobile Billing
-            </button>
+            <!-- Mobile Billing Toggle and Recent Customers Icon (only visible on mobile) -->
+            <div class="flex items-center gap-2 md:hidden">
+              <!-- Mobile Recent Customers Icon -->
+              <div id="mobileRecentCustomersIcon" class="relative">
+                <button type="button" id="mobileRecentCustomersBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white w-8 h-8 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110" title="Recent Customers">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                  </svg>
+                </button>
+                
+                <!-- Mobile Recent Customers Dropdown -->
+                <div id="mobileRecentCustomersDropdown" class="absolute top-10 right-0 bg-neutral-800 border border-neutral-600 rounded-lg shadow-xl w-64 max-h-64 overflow-y-auto hidden" style="transform: translateX(-100%);">
+                  <div class="p-3 border-b border-neutral-600">
+                    <h4 class="text-sm font-medium text-neutral-200">Recent Customers</h4>
+                  </div>
+                  <div id="mobileRecentCustomersList" class="p-2">
+                    <!-- Mobile recent customers will be populated here -->
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Mobile Billing Toggle -->
+              <button id="mobileBillingToggle" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700 transition-colors">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                Mobile Billing
+              </button>
+            </div>
           </div>
           
           <!-- Desktop Layout (hidden on mobile) - More compact -->
