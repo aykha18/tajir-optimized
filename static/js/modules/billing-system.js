@@ -70,8 +70,15 @@ function initializeBillingSystem() {
     
     function onOkClick() {
       const paymentAmount = parseFloat(modal.querySelector('.payment-amount-input').value) || 0;
+      console.log('Payment modal - onOkClick called with amount:', paymentAmount);
       cleanup();
-      if (onOk) onOk(paymentAmount);
+      if (onOk) {
+        try {
+          onOk(paymentAmount);
+        } catch (error) {
+          console.error('Error in payment onOk callback:', error);
+        }
+      }
     }
     
     function onCancelClick() {
@@ -2608,21 +2615,43 @@ function initializeBillingSystem() {
           delivery,
           status,
           onOk: async (amount) => {
-            payBtn.disabled = true;
-            payBtn.textContent = 'Processing...';
-            const resp = await fetch(`/api/bills/${billId}/payment`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ amount_paid: amount })
-            });
-            const result = await resp.json();
-            if (result && result.bill && !result.error) {
-              showPaymentProgressModal(() => {
-                showModernAlert('Payment recorded. Bill is now ' + (result.bill.status || 'updated'), 'success');
-                document.getElementById('searchInvoiceInput').dispatchEvent(new Event('input'));
+            try {
+              console.log('Payment processing started for amount:', amount);
+              payBtn.disabled = true;
+              payBtn.textContent = 'Processing...';
+              
+              // Add timeout to prevent hanging
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+              
+              const resp = await fetch(`/api/bills/${billId}/payment`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount_paid: amount }),
+                signal: controller.signal
               });
-            } else {
-              showModernAlert(result?.error || 'Failed to update payment', 'error');
+              
+              clearTimeout(timeoutId);
+              const result = await resp.json();
+              console.log('Payment API response:', result);
+              
+              if (result && result.bill && !result.error) {
+                showPaymentProgressModal(() => {
+                  showModernAlert('Payment recorded. Bill is now ' + (result.bill.status || 'updated'), 'success');
+                  document.getElementById('searchInvoiceInput').dispatchEvent(new Event('input'));
+                });
+              } else {
+                showModernAlert(result?.error || 'Failed to update payment', 'error');
+                payBtn.disabled = false;
+                payBtn.textContent = 'Mark as Paid';
+              }
+            } catch (error) {
+              console.error('Payment processing error:', error);
+              if (error.name === 'AbortError') {
+                showModernAlert('Payment request timed out. Please try again.', 'error');
+              } else {
+                showModernAlert('Failed to process payment. Please try again.', 'error');
+              }
               payBtn.disabled = false;
               payBtn.textContent = 'Mark as Paid';
             }
