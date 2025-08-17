@@ -1,0 +1,15 @@
+[phases.setup]
+nixPkgs = ["tesseract", "tesseract-data-eng", "python39", "python39Packages.pip"]
+
+[phases.install]
+cmds = [
+    "pip install -r requirements.txt"
+]
+
+[phases.build]
+cmds = [
+    "python -c \"import pytesseract; print('Tesseract version:', pytesseract.get_tesseract_version())\""
+]
+
+[start]
+cmd = "python app.py"
