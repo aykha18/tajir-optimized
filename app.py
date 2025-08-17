@@ -35,10 +35,20 @@ import logging.handlers
 import traceback
 import sys
 from pathlib import Path
-import cv2
-import numpy as np
 import pytesseract
 from werkzeug.utils import secure_filename
+
+# Try to import OpenCV and NumPy, with fallback for Railway deployment
+try:
+    import cv2
+    import numpy as np
+    OPENCV_AVAILABLE = True
+except ImportError as e:
+    print(f"OpenCV/NumPy not available: {e}")
+    print("OCR will use basic image processing without OpenCV")
+    OPENCV_AVAILABLE = False
+    cv2 = None
+    np = None
 
 # Configure comprehensive logging system
 def setup_logging():
@@ -5489,6 +5499,11 @@ def setup_ocr():
 def preprocess_image(image):
     """Preprocess image for better OCR results"""
     try:
+        if not OPENCV_AVAILABLE:
+            # Fallback: return image as-is if OpenCV is not available
+            logger.warning("OpenCV not available, skipping image preprocessing")
+            return image
+        
         # Convert to grayscale
         if len(image.shape) == 3:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -5514,13 +5529,24 @@ def preprocess_image(image):
 def extract_text_from_image(image_path):
     """Extract text from image using OCR"""
     try:
-        # Read image
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ValueError("Could not read image file")
-        
-        # Preprocess image
-        processed_image = preprocess_image(image)
+        if not OPENCV_AVAILABLE:
+            # Fallback: use PIL for image reading if OpenCV is not available
+            try:
+                from PIL import Image
+                image = Image.open(image_path)
+                processed_image = image
+                logger.info("Using PIL for image processing (OpenCV not available)")
+            except ImportError:
+                logger.error("Neither OpenCV nor PIL available for image processing")
+                return {"text": "", "confidence": 0, "error": "No image processing library available"}
+        else:
+            # Read image with OpenCV
+            image = cv2.imread(image_path)
+            if image is None:
+                raise ValueError("Could not read image file")
+            
+            # Preprocess image
+            processed_image = preprocess_image(image)
         
         # Extract text using Tesseract
         # Try different OCR configurations for better results

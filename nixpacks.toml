@@ -1,5 +1,10 @@
 [phases.setup]
-nixPkgs = ["tesseract", "tesseract-data-eng", "python39", "python39Packages.pip"]
+nixPkgs = [
+    "tesseract", 
+    "tesseract-data-eng", 
+    "python39", 
+    "python39Packages.pip"
+]
 
 [phases.install]
 cmds = [
@@ -8,7 +13,9 @@ cmds = [
 
 [phases.build]
 cmds = [
-    "python -c \"import pytesseract; print('Tesseract version:', pytesseract.get_tesseract_version())\""
+    "python -c \"import pytesseract; print('Tesseract version:', pytesseract.get_tesseract_version())\"",
+    "python -c \"try: import cv2; print('OpenCV version:', cv2.__version__); except: print('OpenCV not available, will use PIL fallback')\"",
+    "python -c \"from PIL import Image; print('PIL/Pillow available for image processing')\""
 ]
 
 [start]

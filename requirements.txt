@@ -15,4 +15,4 @@ pytest==8.3.2
 pytest-html==3.2.0
 pytesseract==0.3.13
 Pillow==11.3.0
-opencv-python==4.12.0.88
+# opencv-python==4.12.0.88  # Optional - will use PIL fallback if not available
