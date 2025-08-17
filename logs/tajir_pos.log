@@ -21083,3 +21083,117 @@
 2025-08-18 02:18:37,263 - werkzeug - INFO -  * Debugger PIN: 107-126-000
 2025-08-18 02:19:06,552 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:19:06] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
 2025-08-18 02:20:06,208 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:20:06] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
+2025-08-18 02:21:05,955 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:21:05] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
+2025-08-18 02:21:12,465 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:21:12] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-08-18 02:21:49,872 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:21:49] "GET / HTTP/1.1" 200 -
+2025-08-18 02:22:05,934 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:05] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
+2025-08-18 02:22:08,024 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /app HTTP/1.1" 200 -
+2025-08-18 02:22:08,270 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/css/main.css HTTP/1.1" 200 -
+2025-08-18 02:22:08,356 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/css/mobile-enhancements.css HTTP/1.1" 200 -
+2025-08-18 02:22:08,358 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/css/animations.css HTTP/1.1" 200 -
+2025-08-18 02:22:08,363 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/pwa-init.js HTTP/1.1" 200 -
+2025-08-18 02:22:08,365 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/app.js HTTP/1.1" 200 -
+2025-08-18 02:22:08,365 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/modules/product-types.js HTTP/1.1" 200 -
+2025-08-18 02:22:08,592 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/modules/products.js HTTP/1.1" 200 -
+2025-08-18 02:22:08,681 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/modules/customers.js HTTP/1.1" 200 -
+2025-08-18 02:22:08,685 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/modules/vat.js HTTP/1.1" 200 -
+2025-08-18 02:22:08,687 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/modules/employees.js HTTP/1.1" 200 -
+2025-08-18 02:22:08,690 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/modules/plan-management.js HTTP/1.1" 200 -
+2025-08-18 02:22:08,692 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/modules/reports.js HTTP/1.1" 200 -
+2025-08-18 02:22:08,910 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:08] "GET /static/js/modules/shop-settings.js HTTP/1.1" 200 -
+2025-08-18 02:22:09,008 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /static/js/modules/billing-system.js?v=1.0.2 HTTP/1.1" 200 -
+2025-08-18 02:22:09,010 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /static/js/modules/dashboard.js HTTP/1.1" 200 -
+2025-08-18 02:22:09,011 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /static/js/modules/mobile-enhancements.js HTTP/1.1" 200 -
+2025-08-18 02:22:09,014 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /static/js/modules/mobile-screens.js HTTP/1.1" 200 -
+2025-08-18 02:22:09,017 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /static/js/modules/mobile-billing.js HTTP/1.1" 200 -
+2025-08-18 02:22:09,221 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /static/js/modules/account.js HTTP/1.1" 200 -
+2025-08-18 02:22:09,326 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-08-18 02:22:09,327 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /static/js/modules/catalog-scanner.js HTTP/1.1" 200 -
+2025-08-18 02:22:09,762 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /api/plan/config HTTP/1.1" 200 -
+2025-08-18 02:22:09,768 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /api/areas HTTP/1.1" 200 -
+2025-08-18 02:22:09,780 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /api/plan/status HTTP/1.1" 200 -
+2025-08-18 02:22:09,784 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /api/products HTTP/1.1" 200 -
+2025-08-18 02:22:09,785 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /api/employees HTTP/1.1" 200 -
+2025-08-18 02:22:09,787 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:09] "GET /api/areas HTTP/1.1" 200 -
+2025-08-18 02:22:10,077 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/cities HTTP/1.1" 200 -
+2025-08-18 02:22:10,080 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/products HTTP/1.1" 200 -
+2025-08-18 02:22:10,103 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/areas HTTP/1.1" 200 -
+2025-08-18 02:22:10,104 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/cities HTTP/1.1" 200 -
+2025-08-18 02:22:10,105 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/areas HTTP/1.1" 200 -
+2025-08-18 02:22:10,108 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/reports/invoices?from_date=2025-07-31&to_date=2025-08-30&client_id=2 HTTP/1.1" 200 -
+2025-08-18 02:22:10,392 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/cities HTTP/1.1" 200 -
+2025-08-18 02:22:10,396 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/reports/employees?client_id=2 HTTP/1.1" 200 -
+2025-08-18 02:22:10,415 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/next-bill-number HTTP/1.1" 200 -
+2025-08-18 02:22:10,419 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/customers/recent HTTP/1.1" 200 -
+2025-08-18 02:22:10,422 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/employees HTTP/1.1" 200 -
+2025-08-18 02:22:10,429 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/reports/products?client_id=2 HTTP/1.1" 200 -
+2025-08-18 02:22:10,709 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/products HTTP/1.1" 200 -
+2025-08-18 02:22:10,711 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/products HTTP/1.1" 200 -
+2025-08-18 02:22:10,738 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /api/shop-settings/payment-mode HTTP/1.1" 200 -
+2025-08-18 02:22:10,739 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /static/js/modules/offline-storage.js HTTP/1.1" 200 -
+2025-08-18 02:22:10,790 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:10] "GET /static/js/modules/sync-manager.js HTTP/1.1" 200 -
+2025-08-18 02:22:11,074 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:11] "GET /static/js/modules/pwa-manager.js HTTP/1.1" 200 -
+2025-08-18 02:22:11,105 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:11] "GET /static/js/modules/mobile-navigation.js HTTP/1.1" 200 -
+2025-08-18 02:22:11,430 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:11] "GET /static/manifest.json HTTP/1.1" 200 -
+2025-08-18 02:22:11,441 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:11] "GET /static/icons/icon-144.png HTTP/1.1" 200 -
+2025-08-18 02:22:12,124 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:12] "GET /api/products HTTP/1.1" 200 -
+2025-08-18 02:22:12,412 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:12] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
+2025-08-18 02:22:13,257 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:13] "GET /api/product-types HTTP/1.1" 200 -
+2025-08-18 02:22:48,031 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:22:48] "GET /static/sample_catalog.csv HTTP/1.1" 200 -
+2025-08-18 02:23:11,455 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:23:11] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
+2025-08-18 02:24:11,212 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:24:11] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
+2025-08-18 02:25:11,528 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:25:11] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
+2025-08-18 02:26:11,202 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:26:11] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
+2025-08-18 02:26:40,253 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\app.py', reloading
+2025-08-18 02:26:40,254 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\app.py', reloading
+2025-08-18 02:26:40,312 - werkzeug - INFO -  * Restarting with stat
+2025-08-18 02:26:40,327 - werkzeug - INFO -  * Restarting with stat
+2025-08-18 02:26:40,358 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\app.py', reloading
+2025-08-18 02:26:40,414 - werkzeug - INFO -  * Restarting with stat
+2025-08-18 02:26:40,453 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\app.py', reloading
+2025-08-18 02:26:40,455 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\app.py', reloading
+2025-08-18 02:26:40,529 - werkzeug - INFO -  * Restarting with stat
+2025-08-18 02:26:40,660 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\app.py', reloading
+2025-08-18 02:26:40,667 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\app.py', reloading
+2025-08-18 02:26:40,671 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\app.py', reloading
+2025-08-18 02:26:40,734 - werkzeug - INFO -  * Restarting with stat
+2025-08-18 02:26:40,740 - werkzeug - INFO -  * Restarting with stat
+2025-08-18 02:26:40,747 - werkzeug - INFO -  * Restarting with stat
+2025-08-18 02:30:50,337 - root - WARNING - Tesseract not found in common Windows paths. Please install Tesseract OCR.
+2025-08-18 02:30:50,511 - root - INFO - Admin user setup completed
+2025-08-18 02:30:50,528 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.35:5000
+2025-08-18 02:30:50,528 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-18 02:30:50,529 - werkzeug - INFO -  * Restarting with stat
+2025-08-18 02:30:51,065 - root - WARNING - Tesseract not found in common Windows paths. Please install Tesseract OCR.
+2025-08-18 02:30:51,245 - root - INFO - Admin user setup completed
+2025-08-18 02:30:51,249 - werkzeug - WARNING -  * Debugger is active!
+2025-08-18 02:30:51,252 - werkzeug - INFO -  * Debugger PIN: 107-126-000
+2025-08-18 02:30:51,297 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:30:51] "[36mGET /sw.js?v=1.0.2 HTTP/1.1[0m" 304 -
+2025-08-18 02:30:52,186 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:30:52] "GET / HTTP/1.1" 200 -
+2025-08-18 02:30:54,287 - root - WARNING - OCR config --oem 3 --psm 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:54,289 - root - WARNING - OCR config --oem 3 --psm 3 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:54,291 - root - WARNING - OCR config --oem 3 --psm 8 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:54,292 - root - WARNING - OCR config --oem 3 --psm 13 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:54,319 - root - ERROR - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:54,321 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:30:54] "[35m[1mPOST /api/ocr/extract HTTP/1.1[0m" 500 -
+2025-08-18 02:30:56,380 - root - WARNING - OCR config --oem 3 --psm 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,382 - root - WARNING - OCR config --oem 3 --psm 3 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,384 - root - WARNING - OCR config --oem 3 --psm 8 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,386 - root - WARNING - OCR config --oem 3 --psm 13 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,402 - root - ERROR - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,409 - root - WARNING - OCR config --oem 3 --psm 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,411 - root - WARNING - OCR config --oem 3 --psm 3 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,412 - root - WARNING - OCR config --oem 3 --psm 8 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,413 - root - WARNING - OCR config --oem 3 --psm 13 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,428 - root - ERROR - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,429 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:30:56] "POST /api/ocr/extract-batch HTTP/1.1" 200 -
+2025-08-18 02:30:58,475 - root - WARNING - OCR config --oem 3 --psm 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:58,477 - root - WARNING - OCR config --oem 3 --psm 3 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:58,480 - root - WARNING - OCR config --oem 3 --psm 8 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:58,482 - root - WARNING - OCR config --oem 3 --psm 13 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:58,502 - root - ERROR - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:58,503 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:30:58] "[35m[1mPOST /api/ocr/extract HTTP/1.1[0m" 500 -
+2025-08-18 02:31:00,546 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 02:31:00] "[31m[1mPOST /api/ocr/extract HTTP/1.1[0m" 400 -

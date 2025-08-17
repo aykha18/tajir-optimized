@@ -14,3 +14,7 @@
 2025-08-12 17:56:21,084 - root - ERROR - log_dml_error:122 - Failed to log to database: database is locked
 2025-08-12 18:34:11,328 - root - ERROR - log_dml_error:101 - DML Error - Operation: CREATE, Table: bills, Error: UNIQUE constraint failed: bills.user_id, bills.bill_number, User: 12, Data: {'customer_name': None, 'total_amount': 94.5, 'item_count': 0}...
 2025-08-12 18:34:33,196 - root - ERROR - log_dml_error:122 - Failed to log to database: database is locked
+2025-08-18 02:30:54,319 - root - ERROR - extract_text_from_image:5569 - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,402 - root - ERROR - extract_text_from_image:5569 - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:56,428 - root - ERROR - extract_text_from_image:5569 - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
+2025-08-18 02:30:58,502 - root - ERROR - extract_text_from_image:5569 - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
