@@ -1,72 +1,128 @@
 /**
  * Catalog Scanner Module
- * Provides functionality to scan shop catalogs and automatically create product types and products
+ * 
+ * Provides functionality to scan shop catalogs and automatically create 
+ * product types and products in the Tajir POS system.
+ * 
+ * Features:
+ * - CSV/Excel file upload and parsing
+ * - Manual data entry with JSON support
+ * - Intelligent catalog analysis
+ * - Automatic product type and product suggestions
+ * - Batch product creation
+ * 
+ * @author Tajir POS Team
+ * @version 1.0.0
  */
 
 class CatalogScanner {
+    /**
+     * Initialize the Catalog Scanner
+     */
     constructor() {
         this.catalogData = [];
         this.analysis = null;
         this.suggestions = null;
+        this.isProcessing = false;
+        this.maxFileSize = 10 * 1024 * 1024; // 10MB limit
+        this.supportedFormats = ['.csv', '.xlsx', '.xls'];
+        
         this.init();
     }
 
+    /**
+     * Initialize the scanner
+     */
     init() {
-        this.bindEvents();
         this.createUI();
+        this.bindEvents();
+        console.log('Catalog Scanner initialized successfully');
     }
 
+    /**
+     * Create the modal UI
+     */
     createUI() {
-        // Create the catalog scanner modal
         const modalHTML = `
             <div id="catalogScannerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
                 <div class="flex items-center justify-center min-h-screen p-4">
                     <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <!-- Header -->
                         <div class="flex items-center justify-between p-6 border-b">
-                            <h2 class="text-2xl font-bold text-gray-800">Catalog Scanner</h2>
-                            <button onclick="window.catalogScanner.closeModal()" class="text-gray-500 hover:text-gray-700">
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Upload Products
+                            </h2>
+                            <button onclick="window.catalogScanner.closeModal()" class="text-gray-500 hover:text-gray-700 transition-colors">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </button>
                         </div>
                         
+                        <!-- Content -->
                         <div class="p-6">
                             <!-- Step 1: Upload Catalog -->
                             <div id="step1" class="step-content">
                                 <h3 class="text-lg font-semibold mb-4">Step 1: Upload Your Catalog</h3>
+                                
+                                <!-- File Upload Section -->
                                 <div class="mb-6">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
                                         Upload CSV/Excel file or paste catalog data
                                     </label>
+                                    
+                                    <!-- Sample Template Download -->
                                     <div class="mb-3">
-                                        <a href="/static/sample_catalog.csv" download class="text-blue-600 hover:text-blue-800 text-sm underline">
-                                            📥 Download Sample CSV Template
+                                        <a href="/static/sample_catalog.csv" download 
+                                           class="text-blue-600 hover:text-blue-800 text-sm underline flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            Download Sample CSV Template
                                         </a>
                                     </div>
-                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                    
+                                    <!-- Upload Area -->
+                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
                                         <input type="file" id="catalogFile" accept=".csv,.xlsx,.xls" class="hidden">
-                                        <button onclick="document.getElementById('catalogFile').click()" 
-                                                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-4">
-                                            Choose File
-                                        </button>
+                                        <div class="space-y-4">
+                                            <svg class="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                            </svg>
+                                            <div>
+                                                <button onclick="document.getElementById('catalogFile').click()" 
+                                                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                                    Choose File
+                                                </button>
+                                                <p class="text-sm text-gray-500 mt-2">or drag and drop files here</p>
+                                                <p class="text-xs text-gray-400 mt-1">Supported: CSV, Excel (max 10MB)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Manual Input Option -->
+                                    <div class="mt-4 text-center">
                                         <p class="text-sm text-gray-500">or</p>
                                         <button onclick="window.catalogScanner.showManualInput()" 
-                                                class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2">
+                                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors mt-2">
                                             Enter Data Manually
                                         </button>
                                     </div>
                                 </div>
                                 
+                                <!-- Manual Input Section -->
                                 <div id="manualInput" class="hidden">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
                                         Paste your catalog data (JSON format)
                                     </label>
                                     <textarea id="catalogDataInput" rows="10" 
-                                              class="w-full border border-gray-300 rounded-md p-3"
+                                              class="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                               placeholder='[{"name": "Product Name", "price": 25.00, "category": "Category Name", "description": "Product description"}]'></textarea>
                                     <button onclick="window.catalogScanner.processManualData()" 
-                                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-2">
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors mt-2">
                                         Process Data
                                     </button>
                                 </div>
@@ -78,11 +134,11 @@ class CatalogScanner {
                                 <div id="analysisResults" class="space-y-4"></div>
                                 <div class="flex justify-between mt-6">
                                     <button onclick="window.catalogScanner.showStep(1)" 
-                                            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                                            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                                         Back
                                     </button>
                                     <button onclick="window.catalogScanner.showStep(3)" 
-                                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                                         Continue to Suggestions
                                     </button>
                                 </div>
@@ -94,11 +150,11 @@ class CatalogScanner {
                                 <div id="suggestionsResults" class="space-y-4"></div>
                                 <div class="flex justify-between mt-6">
                                     <button onclick="window.catalogScanner.showStep(2)" 
-                                            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                                            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                                         Back
                                     </button>
                                     <button onclick="window.catalogScanner.createProducts()" 
-                                            class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                                         Create Products
                                     </button>
                                 </div>
@@ -109,9 +165,15 @@ class CatalogScanner {
             </div>
         `;
         
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        // Add modal to body if it doesn't exist
+        if (!document.getElementById('catalogScannerModal')) {
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
     }
 
+    /**
+     * Bind event listeners
+     */
     bindEvents() {
         // File upload handling
         document.addEventListener('change', (e) => {
@@ -119,18 +181,52 @@ class CatalogScanner {
                 this.handleFileUpload(e.target.files[0]);
             }
         });
+
+        // Drag and drop events
+        const dropZone = document.querySelector('#catalogScannerModal .border-dashed');
+        if (dropZone) {
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-green-400', 'bg-green-50');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-green-400', 'bg-green-50');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-green-400', 'bg-green-50');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.handleFileUpload(files[0]);
+                }
+            });
+        }
     }
 
+    /**
+     * Show the modal
+     */
     showModal() {
         document.getElementById('catalogScannerModal').classList.remove('hidden');
         this.showStep(1);
+        this.resetData();
     }
 
+    /**
+     * Close the modal
+     */
     closeModal() {
         document.getElementById('catalogScannerModal').classList.add('hidden');
         this.resetData();
     }
 
+    /**
+     * Show specific step
+     * @param {number} step - Step number to show
+     */
     showStep(step) {
         // Hide all steps
         document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
@@ -146,21 +242,53 @@ class CatalogScanner {
         }
     }
 
+    /**
+     * Show manual input section
+     */
     showManualInput() {
         document.getElementById('manualInput').classList.remove('hidden');
     }
 
+    /**
+     * Handle file upload
+     * @param {File} file - File to process
+     */
     async handleFileUpload(file) {
         if (!file) return;
 
+        // Validate file size
+        if (file.size > this.maxFileSize) {
+            showModernAlert(`File size too large. Maximum size is ${this.maxFileSize / 1024 / 1024}MB.`, 'error');
+            return;
+        }
+
+        // Validate file type
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+        if (!this.supportedFormats.includes(fileExtension)) {
+            showModernAlert(`Unsupported file type. Please use: ${this.supportedFormats.join(', ')}`, 'error');
+            return;
+        }
+
         try {
+            this.isProcessing = true;
+            showSimpleToast('Processing file...', 'info');
+            
             const data = await this.readFile(file);
-            this.processCatalogData(data);
+            await this.processCatalogData(data);
+            
         } catch (error) {
+            console.error('File upload error:', error);
             showModernAlert('Error reading file: ' + error.message, 'error');
+        } finally {
+            this.isProcessing = false;
         }
     }
 
+    /**
+     * Read file content
+     * @param {File} file - File to read
+     * @returns {Promise<Array>} Parsed data
+     */
     readFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -179,7 +307,7 @@ class CatalogScanner {
                     
                     resolve(data);
                 } catch (error) {
-                    reject(error);
+                    reject(new Error(`Failed to parse file: ${error.message}`));
                 }
             };
             
@@ -188,9 +316,27 @@ class CatalogScanner {
         });
     }
 
+    /**
+     * Parse CSV content
+     * @param {string} content - CSV content
+     * @returns {Array} Parsed data
+     */
     parseCSV(content) {
-        const lines = content.split('\n');
+        const lines = content.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+            throw new Error('CSV file must have at least a header row and one data row');
+        }
+
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const requiredHeaders = ['name', 'price'];
+        
+        // Validate required headers
+        for (const required of requiredHeaders) {
+            if (!headers.includes(required)) {
+                throw new Error(`Missing required column: ${required}`);
+            }
+        }
+
         const data = [];
         
         for (let i = 1; i < lines.length; i++) {
@@ -209,23 +355,41 @@ class CatalogScanner {
         return data;
     }
 
+    /**
+     * Process manual data input
+     */
     processManualData() {
-        const input = document.getElementById('catalogDataInput').value;
+        const input = document.getElementById('catalogDataInput').value.trim();
+        if (!input) {
+            showModernAlert('Please enter catalog data.', 'warning');
+            return;
+        }
+
         try {
             const data = JSON.parse(input);
+            if (!Array.isArray(data)) {
+                throw new Error('Data must be an array of products');
+            }
             this.processCatalogData(data);
         } catch (error) {
-            showModernAlert('Invalid JSON format. Please check your data.', 'error');
+            showModernAlert('Invalid JSON format. Please check your data structure.', 'error');
         }
     }
 
+    /**
+     * Process catalog data
+     * @param {Array} data - Catalog data to process
+     */
     async processCatalogData(data) {
         try {
+            this.isProcessing = true;
+            showSimpleToast('Analyzing catalog data...', 'info');
+            
             // Validate and clean data
             const cleanedData = this.cleanCatalogData(data);
             
             if (cleanedData.length === 0) {
-                showModernAlert('No valid catalog data found.', 'error');
+                showModernAlert('No valid catalog data found. Please check your data format.', 'error');
                 return;
             }
             
@@ -238,21 +402,34 @@ class CatalogScanner {
                 body: JSON.stringify({ catalog: cleanedData })
             });
             
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const result = await response.json();
             
             if (result.success) {
                 this.analysis = result.analysis;
                 this.suggestions = result.suggestions;
                 this.showStep(2);
+                showSimpleToast('Analysis completed successfully!', 'success');
             } else {
-                showModernAlert('Analysis failed: ' + result.error, 'error');
+                throw new Error(result.error || 'Analysis failed');
             }
             
         } catch (error) {
+            console.error('Catalog processing error:', error);
             showModernAlert('Error processing catalog data: ' + error.message, 'error');
+        } finally {
+            this.isProcessing = false;
         }
     }
 
+    /**
+     * Clean and validate catalog data
+     * @param {Array} data - Raw catalog data
+     * @returns {Array} Cleaned data
+     */
     cleanCatalogData(data) {
         const cleaned = [];
         
@@ -266,7 +443,7 @@ class CatalogScanner {
                 cleaned.push({
                     name: name.trim(),
                     price: price,
-                    category: category.trim(),
+                    category: category.trim() || 'General',
                     description: description.trim()
                 });
             }
@@ -275,41 +452,54 @@ class CatalogScanner {
         return cleaned;
     }
 
+    /**
+     * Display analysis results
+     */
     displayAnalysis() {
         const container = document.getElementById('analysisResults');
         
         const html = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-gray-50 p-4 rounded-lg">
-                    <h4 class="font-semibold mb-2">Summary</h4>
-                    <p><strong>Total Items:</strong> ${this.analysis.total_items}</p>
-                    <p><strong>Categories Found:</strong> ${Object.keys(this.analysis.categories).length}</p>
-                    <p><strong>Price Ranges:</strong> ${Object.keys(this.analysis.price_ranges).length}</p>
+                    <h4 class="font-semibold mb-2 text-gray-800">Summary</h4>
+                    <div class="space-y-1 text-sm">
+                        <p><strong>Total Items:</strong> ${this.analysis.total_items}</p>
+                        <p><strong>Categories Found:</strong> ${Object.keys(this.analysis.categories).length}</p>
+                        <p><strong>Price Ranges:</strong> ${Object.keys(this.analysis.price_ranges).length}</p>
+                    </div>
                 </div>
                 
                 <div class="bg-gray-50 p-4 rounded-lg">
-                    <h4 class="font-semibold mb-2">Categories</h4>
-                    ${Object.entries(this.analysis.categories).map(([category, data]) => `
-                        <div class="mb-2">
-                            <strong>${category}:</strong> ${data.count} items (Avg: AED ${data.avg_price.toFixed(2)})
-                        </div>
-                    `).join('')}
+                    <h4 class="font-semibold mb-2 text-gray-800">Categories</h4>
+                    <div class="space-y-2 text-sm">
+                        ${Object.entries(this.analysis.categories).map(([category, data]) => `
+                            <div class="flex justify-between">
+                                <span><strong>${category}:</strong></span>
+                                <span>${data.count} items (Avg: AED ${data.avg_price.toFixed(2)})</span>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
                 
                 <div class="bg-gray-50 p-4 rounded-lg">
-                    <h4 class="font-semibold mb-2">Price Distribution</h4>
-                    ${Object.entries(this.analysis.price_ranges).map(([range, count]) => `
-                        <div class="mb-2">
-                            <strong>${range}:</strong> ${count} items
-                        </div>
-                    `).join('')}
+                    <h4 class="font-semibold mb-2 text-gray-800">Price Distribution</h4>
+                    <div class="space-y-2 text-sm">
+                        ${Object.entries(this.analysis.price_ranges).map(([range, count]) => `
+                            <div class="flex justify-between">
+                                <span><strong>${range}:</strong></span>
+                                <span>${count} items</span>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
                 
                 <div class="bg-gray-50 p-4 rounded-lg">
-                    <h4 class="font-semibold mb-2">Common Patterns</h4>
-                    ${this.analysis.common_patterns.slice(0, 10).map(pattern => `
-                        <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-2 mb-1">${pattern}</span>
-                    `).join('')}
+                    <h4 class="font-semibold mb-2 text-gray-800">Common Patterns</h4>
+                    <div class="flex flex-wrap gap-1">
+                        ${this.analysis.common_patterns.slice(0, 10).map(pattern => `
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${pattern}</span>
+                        `).join('')}
+                    </div>
                 </div>
             </div>
         `;
@@ -317,6 +507,9 @@ class CatalogScanner {
         container.innerHTML = html;
     }
 
+    /**
+     * Display product suggestions
+     */
     displaySuggestions() {
         const container = document.getElementById('suggestionsResults');
         
@@ -326,19 +519,20 @@ class CatalogScanner {
         if (this.suggestions.product_types.length > 0) {
             html += `
                 <div>
-                    <h4 class="font-semibold mb-3">Suggested Product Types (${this.suggestions.product_types.length})</h4>
+                    <h4 class="font-semibold mb-3 text-gray-800">Suggested Product Types (${this.suggestions.product_types.length})</h4>
                     <div class="space-y-3">
                         ${this.suggestions.product_types.map(type => `
-                            <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="border border-gray-200 rounded-lg p-4 bg-white">
                                 <div class="flex items-center justify-between mb-2">
-                                    <h5 class="font-medium">${type.name}</h5>
-                                    <span class="text-sm text-gray-500">${type.products.length} products</span>
+                                    <h5 class="font-medium text-gray-900">${type.name}</h5>
+                                    <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">${type.products.length} products</span>
                                 </div>
                                 <p class="text-sm text-gray-600 mb-3">${type.description}</p>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     ${type.products.map(product => `
-                                        <div class="text-sm bg-gray-50 p-2 rounded">
-                                            <strong>${product.name}</strong> - AED ${product.rate}
+                                        <div class="text-sm bg-gray-50 p-2 rounded border">
+                                            <div class="font-medium">${product.name}</div>
+                                            <div class="text-gray-600">AED ${product.rate}</div>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -353,11 +547,11 @@ class CatalogScanner {
         if (this.suggestions.recommendations.length > 0) {
             html += `
                 <div>
-                    <h4 class="font-semibold mb-3">Recommendations</h4>
+                    <h4 class="font-semibold mb-3 text-gray-800">Recommendations</h4>
                     <div class="space-y-2">
                         ${this.suggestions.recommendations.map(rec => `
-                            <div class="bg-blue-50 border-l-4 border-blue-400 p-3">
-                                <p class="text-sm">${rec.suggestion}</p>
+                            <div class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
+                                <p class="text-sm text-blue-800">${rec.suggestion}</p>
                             </div>
                         `).join('')}
                     </div>
@@ -369,13 +563,25 @@ class CatalogScanner {
         container.innerHTML = html;
     }
 
+    /**
+     * Create products from suggestions
+     */
     async createProducts() {
+        if (this.isProcessing) return;
+
         try {
+            this.isProcessing = true;
+            showSimpleToast('Creating products...', 'info');
+            
             const response = await fetch('/api/catalog/auto-create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ suggestions: this.suggestions })
             });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             
             const result = await response.json();
             
@@ -391,36 +597,48 @@ class CatalogScanner {
                     loadProductTypes();
                 }
             } else {
-                showModernAlert('Failed to create products: ' + result.error, 'error');
+                throw new Error(result.error || 'Failed to create products');
             }
             
         } catch (error) {
+            console.error('Product creation error:', error);
             showModernAlert('Error creating products: ' + error.message, 'error');
+        } finally {
+            this.isProcessing = false;
         }
     }
 
+    /**
+     * Reset all data and UI
+     */
     resetData() {
         this.catalogData = [];
         this.analysis = null;
         this.suggestions = null;
+        this.isProcessing = false;
         
         // Reset UI
-        document.getElementById('catalogFile').value = '';
-        document.getElementById('catalogDataInput').value = '';
-        document.getElementById('manualInput').classList.add('hidden');
-        document.getElementById('analysisResults').innerHTML = '';
-        document.getElementById('suggestionsResults').innerHTML = '';
+        const fileInput = document.getElementById('catalogFile');
+        if (fileInput) fileInput.value = '';
+        
+        const dataInput = document.getElementById('catalogDataInput');
+        if (dataInput) dataInput.value = '';
+        
+        const manualInput = document.getElementById('manualInput');
+        if (manualInput) manualInput.classList.add('hidden');
+        
+        const analysisResults = document.getElementById('analysisResults');
+        if (analysisResults) analysisResults.innerHTML = '';
+        
+        const suggestionsResults = document.getElementById('suggestionsResults');
+        if (suggestionsResults) suggestionsResults.innerHTML = '';
     }
 }
 
 // Initialize catalog scanner when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize catalog scanner
     const catalogScanner = new CatalogScanner();
-    
-    // Export for global access
     window.catalogScanner = catalogScanner;
-    
     console.log('Catalog Scanner initialized:', window.catalogScanner);
 });
 

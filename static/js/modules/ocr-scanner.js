@@ -1,23 +1,51 @@
 /**
  * OCR Scanner Module
- * Handles image upload and text extraction using OCR
+ * 
+ * Handles image upload and text extraction using OCR (Optical Character Recognition).
+ * Provides functionality to extract text from images for product catalog processing.
+ * 
+ * Features:
+ * - Multi-image upload with drag & drop support
+ * - Real-time image preview
+ * - Batch processing with progress tracking
+ * - Confidence scoring for extracted text
+ * - Copy to clipboard functionality
+ * - Advanced image preprocessing
+ * 
+ * @author Tajir POS Team
+ * @version 1.0.0
  */
+
 class OCRScanner {
+    /**
+     * Initialize the OCR Scanner
+     */
     constructor() {
         this.isInitialized = false;
         this.currentStep = 1;
         this.uploadedFiles = [];
         this.extractedTexts = [];
+        this.isProcessing = false;
+        this.maxFileSize = 10 * 1024 * 1024; // 10MB limit
+        this.maxFiles = 10; // Maximum number of files
+        this.supportedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff', 'image/webp'];
+        
         this.init();
     }
 
+    /**
+     * Initialize the scanner
+     */
     init() {
         this.createModal();
         this.bindEvents();
         this.isInitialized = true;
-        console.log('OCR Scanner initialized');
+        console.log('OCR Scanner initialized successfully');
     }
 
+    /**
+     * Create the modal UI
+     */
     createModal() {
         const modalHTML = `
             <div id="ocrModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
@@ -29,9 +57,9 @@ class OCRScanner {
                                 <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
-                                OCR Text Scanner
+                                Scan Products
                             </h2>
-                            <button onclick="window.ocrScanner.closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <button onclick="window.ocrScanner.closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
@@ -52,6 +80,7 @@ class OCRScanner {
                                     <p class="text-gray-600">Upload images containing text you want to extract</p>
                                 </div>
 
+                                <!-- Upload Area -->
                                 <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
                                     <input type="file" id="ocrFileInput" multiple accept="image/*" class="hidden">
                                     <div class="space-y-4">
@@ -63,6 +92,7 @@ class OCRScanner {
                                                 Choose Images
                                             </button>
                                             <p class="text-sm text-gray-500 mt-2">or drag and drop images here</p>
+                                            <p class="text-xs text-gray-400 mt-1">Supported: JPG, PNG, GIF, BMP, TIFF, WebP (max 10MB each, up to 10 files)</p>
                                         </div>
                                     </div>
                                 </div>
@@ -74,7 +104,9 @@ class OCRScanner {
                                 </div>
 
                                 <div class="flex justify-end mt-6">
-                                    <button onclick="window.ocrScanner.showStep(2)" id="ocrNextBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    <button onclick="window.ocrScanner.showStep(2)" id="ocrNextBtn" 
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                                            disabled>
                                         Extract Text
                                     </button>
                                 </div>
@@ -132,6 +164,9 @@ class OCRScanner {
         }
     }
 
+    /**
+     * Bind event listeners
+     */
     bindEvents() {
         // File input change event
         document.addEventListener('change', (e) => {
@@ -161,20 +196,43 @@ class OCRScanner {
         }
     }
 
+    /**
+     * Handle file selection
+     * @param {FileList} files - Selected files
+     */
     handleFileSelection(files) {
-        this.uploadedFiles = Array.from(files).filter(file => 
-            file.type.startsWith('image/')
-        );
+        if (this.isProcessing) return;
 
-        if (this.uploadedFiles.length === 0) {
-            showModernAlert('Please select valid image files.', 'error');
+        const validFiles = Array.from(files).filter(file => {
+            // Check file type
+            if (!this.supportedFormats.includes(file.type)) {
+                showModernAlert(`Unsupported file type: ${file.name}. Please use image files only.`, 'warning');
+                return false;
+            }
+
+            // Check file size
+            if (file.size > this.maxFileSize) {
+                showModernAlert(`File too large: ${file.name}. Maximum size is ${this.maxFileSize / 1024 / 1024}MB.`, 'warning');
+                return false;
+            }
+
+            return true;
+        });
+
+        // Check total number of files
+        if (this.uploadedFiles.length + validFiles.length > this.maxFiles) {
+            showModernAlert(`Too many files. Maximum ${this.maxFiles} files allowed.`, 'warning');
             return;
         }
 
+        this.uploadedFiles.push(...validFiles);
         this.displayFilePreview();
         document.getElementById('ocrNextBtn').disabled = false;
     }
 
+    /**
+     * Display file preview
+     */
     displayFilePreview() {
         const previewContainer = document.getElementById('ocrFilePreview');
         const fileList = document.getElementById('ocrFileList');
@@ -190,7 +248,8 @@ class OCRScanner {
                 fileItem.innerHTML = `
                     <img src="${e.target.result}" alt="${file.name}" class="w-full h-24 object-cover rounded">
                     <div class="mt-2 text-xs text-gray-600 truncate">${file.name}</div>
-                    <button onclick="window.ocrScanner.removeFile(${index})" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600">
+                    <button onclick="window.ocrScanner.removeFile(${index})" 
+                            class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors">
                         ×
                     </button>
                 `;
@@ -200,6 +259,10 @@ class OCRScanner {
         });
     }
 
+    /**
+     * Remove file from selection
+     * @param {number} index - File index to remove
+     */
     removeFile(index) {
         this.uploadedFiles.splice(index, 1);
         this.displayFilePreview();
@@ -210,7 +273,12 @@ class OCRScanner {
         }
     }
 
+    /**
+     * Process uploaded images
+     */
     async processImages() {
+        if (this.isProcessing) return;
+
         this.showStep(2);
         
         const formData = new FormData();
@@ -222,6 +290,8 @@ class OCRScanner {
         const progressText = document.getElementById('ocrProgressText');
         
         try {
+            this.isProcessing = true;
+            
             progressText.textContent = 'Uploading images...';
             progressBar.style.width = '25%';
 
@@ -232,6 +302,10 @@ class OCRScanner {
 
             progressBar.style.width = '75%';
             progressText.textContent = 'Processing images...';
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
 
             const result = await response.json();
 
@@ -249,9 +323,14 @@ class OCRScanner {
             console.error('OCR processing error:', error);
             showModernAlert(`Error processing images: ${error.message}`, 'error');
             this.showStep(1);
+        } finally {
+            this.isProcessing = false;
         }
     }
 
+    /**
+     * Display OCR results
+     */
     displayResults() {
         const resultsContainer = document.getElementById('ocrResults');
         resultsContainer.innerHTML = '';
@@ -269,7 +348,8 @@ class OCRScanner {
                         <h4 class="font-medium text-gray-900">${result.filename}</h4>
                         <p class="text-sm text-gray-500">Confidence: <span class="${confidenceColor} font-medium">${result.confidence.toFixed(1)}%</span></p>
                     </div>
-                    <button onclick="window.ocrScanner.copyText(${index})" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    <button onclick="window.ocrScanner.copyText(${index})" 
+                            class="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
                         Copy Text
                     </button>
                 </div>
@@ -282,6 +362,10 @@ class OCRScanner {
         });
     }
 
+    /**
+     * Copy extracted text to clipboard
+     * @param {number} index - Result index to copy
+     */
     copyText(index) {
         const result = this.extractedTexts[index];
         if (result.success && result.text) {
@@ -293,6 +377,10 @@ class OCRScanner {
         }
     }
 
+    /**
+     * Show specific step
+     * @param {number} step - Step number to show
+     */
     showStep(step) {
         this.currentStep = step;
         
@@ -310,42 +398,55 @@ class OCRScanner {
         }
     }
 
+    /**
+     * Show the modal
+     */
     showModal() {
         document.getElementById('ocrModal').classList.remove('hidden');
         this.showStep(1);
         this.reset();
     }
 
+    /**
+     * Close the modal
+     */
     closeModal() {
         document.getElementById('ocrModal').classList.add('hidden');
         this.reset();
     }
 
+    /**
+     * Reset scanner state
+     */
     reset() {
         this.currentStep = 1;
         this.uploadedFiles = [];
         this.extractedTexts = [];
+        this.isProcessing = false;
         
         // Reset file input
         const fileInput = document.getElementById('ocrFileInput');
         if (fileInput) fileInput.value = '';
         
         // Reset UI
-        document.getElementById('ocrFilePreview').classList.add('hidden');
-        document.getElementById('ocrNextBtn').disabled = true;
-        document.getElementById('ocrProgressBar').style.width = '0%';
-        document.getElementById('ocrProgressText').textContent = 'Starting...';
+        const filePreview = document.getElementById('ocrFilePreview');
+        if (filePreview) filePreview.classList.add('hidden');
+        
+        const nextBtn = document.getElementById('ocrNextBtn');
+        if (nextBtn) nextBtn.disabled = true;
+        
+        const progressBar = document.getElementById('ocrProgressBar');
+        if (progressBar) progressBar.style.width = '0%';
+        
+        const progressText = document.getElementById('ocrProgressText');
+        if (progressText) progressText.textContent = 'Starting...';
     }
 }
 
 // Initialize OCR scanner when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize OCR scanner
     const ocrScanner = new OCRScanner();
-    
-    // Export for global access
     window.ocrScanner = ocrScanner;
-    
     console.log('OCR Scanner initialized:', window.ocrScanner);
 });
 
