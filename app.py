@@ -2846,15 +2846,36 @@ def get_shop_settings():
                 'settings': dict(settings)
             })
         else:
-            return jsonify({
-                'success': False,
-                'error': 'Shop settings not found'
-            }), 404
-            
+                    return jsonify({
+            'success': False,
+            'error': 'Shop settings not found'
+        }), 404
+        
     except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e)
+        }), 500
+
+@app.route('/api/shop-settings/payment-mode', methods=['GET'])
+def get_payment_mode():
+    """Get payment mode setting for the current user."""
+    try:
+        user_id = get_current_user_id()
+        conn = get_db_connection()
+        settings = conn.execute('SELECT payment_mode FROM shop_settings WHERE user_id = ?', (user_id,)).fetchone()
+        conn.close()
+        
+        payment_mode = settings['payment_mode'] if settings else 'advance'
+        return jsonify({
+            'success': True,
+            'payment_mode': payment_mode
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'payment_mode': 'advance'  # Default fallback
         }), 500
 
 @app.route('/api/shop-settings', methods=['PUT'])
@@ -2874,6 +2895,7 @@ def update_shop_settings():
         working_hours = data.get('working_hours', '')
         invoice_static_info = data.get('invoice_static_info', '')
         use_dynamic_invoice_template = data.get('use_dynamic_invoice_template', False)
+        payment_mode = data.get('payment_mode', 'advance')
         
         conn = get_db_connection()
         
@@ -2886,18 +2908,18 @@ def update_shop_settings():
                 UPDATE shop_settings 
                 SET shop_name = ?, address = ?, trn = ?, city = ?, area = ?, logo_url = ?, 
                     shop_mobile = ?, working_hours = ?, invoice_static_info = ?,
-                    use_dynamic_invoice_template = ?, updated_at = CURRENT_TIMESTAMP
+                    use_dynamic_invoice_template = ?, payment_mode = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = ?
             ''', (shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
-                  invoice_static_info, use_dynamic_invoice_template, user_id))
+                  invoice_static_info, use_dynamic_invoice_template, payment_mode, user_id))
         else:
             # Create new shop settings for this user
             conn.execute('''
                 INSERT INTO shop_settings (user_id, shop_name, address, trn, city, area, logo_url, 
-                    shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template, payment_mode)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (user_id, shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
-                  invoice_static_info, use_dynamic_invoice_template))
+                  invoice_static_info, use_dynamic_invoice_template, payment_mode))
         
         conn.commit()
         conn.close()

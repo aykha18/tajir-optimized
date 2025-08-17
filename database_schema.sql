@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS shop_settings (
     working_hours TEXT DEFAULT '',
     invoice_static_info TEXT DEFAULT '',
     use_dynamic_invoice_template BOOLEAN DEFAULT 0,
+    payment_mode TEXT DEFAULT 'advance' CHECK (payment_mode IN ('advance', 'full')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)

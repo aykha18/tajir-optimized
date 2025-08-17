@@ -245,7 +245,9 @@
                 <th>Rate (AED) / السعر</th>
                 <th>Discount (AED) / الخصم</th>
                 <th>VAT ({{ bill.vat_percent or '5.0' }}%) / الضريبة</th>
+                {% if payment_mode != 'full' %}
                 <th>Advance (AED) / الدفعة المقدمة</th>
+                {% endif %}
                 <th>Total (AED) / المجموع</th>
             </tr>
         </thead>
@@ -258,7 +260,9 @@
                  <td>{{ "%.2f"|format(item.rate) }}</td>
                  <td>{{ "%.2f"|format(item.discount) }}</td>
                  <td>{{ "%.2f"|format(item.vat_amount) }}</td>
+                 {% if payment_mode != 'full' %}
                  <td>{{ "%.2f"|format(item.advance_paid) }}</td>
+                 {% endif %}
                  <td>{{ "%.2f"|format(item.total_amount) }}</td>
              </tr>
              {% endfor %}
@@ -274,13 +278,15 @@
             <span>VAT ({{ bill.vat_percent or '5.0' }}%) / الضريبة:</span>
             <span>AED {{ "%.2f"|format(bill.vat_amount) }}</span>
         </div>
+        {% if payment_mode != 'full' %}
         <div class="total-row">
             <span>Advance Paid / الدفعة المقدمة:</span>
             <span>AED {{ "%.2f"|format(bill.advance_paid) }}</span>
         </div>
+        {% endif %}
         <hr style="border: 1px solid #000; margin: 8px 0;">
         <div class="total-row" style="font-weight: bold; font-size: 1.2em;">
-            <span>Amount Due / المبلغ المستحق:</span>
+            <span>{% if payment_mode == 'full' %}Total Amount Paid / إجمالي المبلغ المدفوع:{% else %}Amount Due / المبلغ المستحق:{% endif %}</span>
             <span>AED {{ "%.2f"|format(bill.balance_amount) }}</span>
         </div>
         

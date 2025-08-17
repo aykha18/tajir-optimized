@@ -342,7 +342,7 @@ function initializeBillingSystem() {
                  onchange="updateBillItemField(${index}, 'discount', this.value)"
                  onblur="updateBillItemField(${index}, 'discount', this.value)">
         </td>
-        <td class="px-3 py-3">
+        <td class="px-3 py-3" ${window.paymentMode === 'full' ? 'style="display: none;"' : ''}>
           <input type="number" min="0" step="0.01" value="${(item.advance_paid || 0).toFixed(2)}" 
                  class="w-20 bg-transparent border-none text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded px-1"
                  onchange="updateBillItemField(${index}, 'advance_paid', this.value)"
@@ -2209,7 +2209,7 @@ function initializeBillingSystem() {
           quantity: newQuantity,
           rate: price, // Update rate in case it changed (changed from 'price' to 'rate')
           discount: discount,
-          advance_paid: advance, // Changed from 'advance' to 'advance_paid' to match backend expectation
+          advance_paid: window.paymentMode === 'full' ? 0 : advance, // Set to 0 if full payment mode
           vat_percent: vatPercent,
           vat_amount: newVatAmount,
           subtotal: newSubtotal,
@@ -2252,7 +2252,7 @@ function initializeBillingSystem() {
       quantity: quantity,
       rate: price, // Changed from 'price' to 'rate' to match backend expectation
       discount: discount,
-      advance_paid: advance, // Changed from 'advance' to 'advance_paid' to match backend expectation
+              advance_paid: window.paymentMode === 'full' ? 0 : advance, // Set to 0 if full payment mode
       vat_percent: vatPercent,
       vat_amount: vatAmount,
       subtotal: subtotal, // Store subtotal (before discount)
@@ -2675,117 +2675,122 @@ function initializeBillingSystem() {
           return;
         }
 
-        // Generate bill number if not exists
-        const billNumberInput = document.getElementById('billNumber');
-        if (billNumberInput && !billNumberInput.value.trim()) {
-          const timestamp = Date.now();
-          billNumberInput.value = `BILL-${timestamp}`;
-        }
-
-        // Collect bill data
-        const masterNameElement = document.getElementById('masterName');
-        const masterNameMobileElement = document.getElementById('masterNameMobile');
-        let masterId = null;
+        // Check if bill is already saved
+        let billId = window.currentBillId;
         
-
-        
-        if (masterNameElement) {
-        }
-        
-        if (masterNameMobileElement) {
-        }
-        
-        // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
-        let selectedMasterElement = masterNameElement;
-        if (!selectedMasterElement || !selectedMasterElement.getAttribute('data-selected-master')) {
-          selectedMasterElement = masterNameMobileElement;
-        }
-        
-
-        
-        if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
-          try {
-            const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
-            masterId = selectedMaster.master_id;
-
-          } catch (e) {
-            console.warn('Failed to parse selected master data:', e);
+        // If bill is not saved, save it first
+        if (!billId) {
+          // Generate bill number if not exists
+          const billNumberInput = document.getElementById('billNumber');
+          if (billNumberInput && !billNumberInput.value.trim()) {
+            const timestamp = Date.now();
+            billNumberInput.value = `BILL-${timestamp}`;
           }
-        } else {
-          // Try to use global selectedMasterId as fallback
-          if (window.selectedMasterId) {
-            masterId = window.selectedMasterId;
-          }
-        }
-        
-        // Calculate totals from bill array (same logic as updateTotals function)
-        const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
-        const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
-        const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
-        const totalBeforeAdvance = subtotal + totalVat;
-        const amountDue = totalBeforeAdvance - totalAdvance;
-        
-        const billData = {
-          bill: {
-            bill_number: document.getElementById('billNumber')?.value || '',
-            customer_name: document.getElementById('billCustomer')?.value || '',
-            customer_phone: document.getElementById('billMobile')?.value || '',
-            customer_city: document.getElementById('billCity')?.value || '',
-            customer_area: document.getElementById('billArea')?.value || '',
-            customer_trn: document.getElementById('billTRN')?.value || '',
-            customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
-            business_name: document.getElementById('billBusinessName')?.value || '',
-            business_address: document.getElementById('billBusinessAddress')?.value || '',
-            bill_date: document.getElementById('billDate')?.value || '',
-            delivery_date: document.getElementById('deliveryDate')?.value || '',
-            trial_date: document.getElementById('trialDate')?.value || '',
-            master_id: masterId,
-            master_name: document.getElementById('masterName')?.value || '',
-            notes: document.getElementById('billNotes')?.value || '',
-            subtotal: subtotal,
-            discount: 0, // No discount field in current UI
-            vat_amount: totalVat,
-            total_amount: amountDue,
-            advance_paid: totalAdvance,
-            balance_amount: amountDue
-          },
-          items: bill
-        };
 
-        try {
-
+          // Collect bill data
+          const masterNameElement = document.getElementById('masterName');
+          const masterNameMobileElement = document.getElementById('masterNameMobile');
+          let masterId = null;
           
-          // Save bill first
-          const saveResponse = await fetch('/api/bills', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
+          // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
+          let selectedMasterElement = masterNameElement;
+          if (!selectedMasterElement || !selectedMasterElement.getAttribute('data-selected-master')) {
+            selectedMasterElement = masterNameMobileElement;
+          }
+          
+          if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
+            try {
+              const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
+              masterId = selectedMaster.master_id;
+
+            } catch (e) {
+              console.warn('Failed to parse selected master data:', e);
+            }
+          } else {
+            // Try to use global selectedMasterId as fallback
+            if (window.selectedMasterId) {
+              masterId = window.selectedMasterId;
+            }
+          }
+          
+          // Calculate totals from bill array (same logic as updateTotals function)
+          const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
+          const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
+          const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
+          const totalBeforeAdvance = subtotal + totalVat;
+          const amountDue = totalBeforeAdvance - totalAdvance;
+          
+          const billData = {
+            bill: {
+              bill_number: document.getElementById('billNumber')?.value || '',
+              customer_name: document.getElementById('billCustomer')?.value || '',
+              customer_phone: document.getElementById('billMobile')?.value || '',
+              customer_city: document.getElementById('billCity')?.value || '',
+              customer_area: document.getElementById('billArea')?.value || '',
+              customer_trn: document.getElementById('billTRN')?.value || '',
+              customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
+              business_name: document.getElementById('billBusinessName')?.value || '',
+              business_address: document.getElementById('billBusinessAddress')?.value || '',
+              bill_date: document.getElementById('billDate')?.value || '',
+              delivery_date: document.getElementById('deliveryDate')?.value || '',
+              trial_date: document.getElementById('trialDate')?.value || '',
+              master_id: masterId,
+              master_name: document.getElementById('masterName')?.value || '',
+              notes: document.getElementById('billNotes')?.value || '',
+              subtotal: subtotal,
+              discount: 0, // No discount field in current UI
+              vat_amount: totalVat,
+              total_amount: amountDue,
+              advance_paid: totalAdvance,
+              balance_amount: amountDue
             },
-            body: JSON.stringify(billData)
-          });
+            items: bill
+          };
 
-          const saveResult = await saveResponse.json();
-          
-          if (saveResult.error) {
-            showModernAlert(saveResult.error, 'error', 'Save Failed');
+          try {
+            // Save bill first
+            const saveResponse = await fetch('/api/bills', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(billData)
+            });
+
+            const saveResult = await saveResponse.json();
+            
+            if (saveResult.error) {
+              showModernAlert(saveResult.error, 'error', 'Save Failed');
+              return;
+            }
+
+            if (saveResult.bill_id) {
+              // Store the current bill ID
+              window.currentBillId = saveResult.bill_id;
+              billId = saveResult.bill_id;
+              
+              // Show success message
+              showSimpleToast('Bill saved successfully!', 'success');
+            } else {
+              showModernAlert('Failed to save bill', 'error', 'Save Failed');
+              return;
+            }
+          } catch (error) {
+            console.error('Error saving bill:', error);
+            showModernAlert('Failed to save bill. Please try again.', 'error', 'Save Failed');
             return;
           }
+        }
 
-          if (saveResult.bill_id) {
-            // Open print window
-            window.open(`/api/bills/${saveResult.bill_id}/print`, '_blank');
-            
-            // Reset the billing form
-            resetBillingForm();
-            
-            // Show success message
-            showSimpleToast('Bill saved and print window opened', 'success');
-          } else {
-            showModernAlert('Failed to save bill', 'error', 'Save Failed');
-          }
-        } catch (error) {
-          console.error('Error saving bill:', error);
-          showModernAlert('Failed to save bill. Please try again.', 'error', 'Save Failed');
+        // Now print the bill using the existing bill ID
+        if (billId) {
+          // Open print window
+          window.open(`/api/bills/${billId}/print`, '_blank');
+          
+          // Show success message
+          showSimpleToast('Print window opened', 'success');
+        } else {
+          showModernAlert('Failed to get bill ID for printing', 'error', 'Print Failed');
         }
       });
     }
@@ -2813,10 +2818,140 @@ function initializeBillingSystem() {
   initializeSaveBill();
   initializeWhatsApp();
   
+  // Initialize payment mode
+  initializePaymentMode();
+  
 
   
   
   
+  // Initialize payment mode
+  async function initializePaymentMode() {
+    try {
+      const response = await fetch('/api/shop-settings/payment-mode');
+      const data = await response.json();
+      
+      if (data.success) {
+        const paymentMode = data.payment_mode;
+        window.paymentMode = paymentMode; // Store globally
+        
+        // Hide/show advance payment fields based on mode
+        const advanceFields = [
+          document.getElementById('billAdvPaid'),
+          document.getElementById('billAdvPaidMobile')
+        ];
+        
+        const advanceLabels = [
+          document.querySelector('label[for="billAdvPaid"]'),
+          document.querySelector('label[for="billAdvPaidMobile"]')
+        ];
+        
+        if (paymentMode === 'full') {
+          // Hide advance payment fields
+          advanceFields.forEach(field => {
+            if (field) {
+              if (field.tagName === 'TH') {
+                field.style.display = 'none';
+              } else if (field.tagName === 'TD') {
+                field.style.display = 'none';
+              } else {
+                field.style.display = 'none';
+              }
+            }
+          });
+          
+          advanceLabels.forEach(label => {
+            if (label) {
+              label.style.display = 'none';
+            }
+          });
+          
+          // Update table header to remove "Adv" column
+          const advHeader = document.getElementById('advHeader');
+          if (advHeader) {
+            advHeader.style.display = 'none';
+          }
+          
+          // Reposition input fields for full payment mode
+          const productField = document.getElementById('billProduct');
+          const rateField = document.getElementById('billRate');
+          const qtyField = document.getElementById('billQty');
+          const discountField = document.getElementById('billDiscount');
+          
+          if (productField && rateField && qtyField && discountField) {
+            // Expand Product field from col-span-5 to col-span-6
+            const productContainer = productField.closest('.col-span-5');
+            if (productContainer) {
+              productContainer.className = 'col-span-6 flex flex-col';
+            }
+            
+            // Move Rate field from col-span-1 to col-span-1 (no change needed)
+            // Move Qty field from col-span-1 to col-span-1 (no change needed)
+            // Move Discount field from col-span-1 to col-span-1 (no change needed)
+            // VAT field stays at col-span-1
+            // Add Item button stays at col-span-2
+          }
+          
+          // Mobile repositioning - change discount and advance row to just discount
+          const discountMobileContainer = document.getElementById('billDiscountMobile')?.closest('.grid.grid-cols-2');
+          if (discountMobileContainer) {
+            discountMobileContainer.className = 'flex flex-col';
+          }
+          
+          // Set all advance payments to 0
+          bill.forEach(item => {
+            item.advance_paid = 0;
+          });
+          
+          // Update totals
+          updateTotals();
+          
+          console.log('Payment mode set to: Full Payment Only');
+        } else {
+          // Show advance payment fields
+          advanceFields.forEach(field => {
+            if (field) {
+              field.style.display = '';
+            }
+          });
+          
+          advanceLabels.forEach(label => {
+            if (label) {
+              label.style.display = '';
+            }
+          });
+          
+          // Show table header
+          const advHeader = document.getElementById('advHeader');
+          if (advHeader) {
+            advHeader.style.display = '';
+          }
+          
+          // Reset input field positioning for advance payment mode
+          const productField = document.getElementById('billProduct');
+          if (productField) {
+            const productContainer = productField.closest('.col-span-6');
+            if (productContainer) {
+              productContainer.className = 'col-span-5 flex flex-col';
+            }
+          }
+          
+          // Reset mobile layout for advance payment mode
+          const discountMobileContainer = document.getElementById('billDiscountMobile')?.closest('.flex.flex-col');
+          if (discountMobileContainer) {
+            discountMobileContainer.className = 'grid grid-cols-2 gap-3';
+          }
+          
+          console.log('Payment mode set to: Allow Advance Payments');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading payment mode:', error);
+      // Default to advance mode if error
+      window.paymentMode = 'advance';
+    }
+  }
+
   // Make functions globally available
   window.initializeBillingSystem = initializeBillingSystem;
   window.showPaymentModal = showPaymentModal;
@@ -2842,6 +2977,9 @@ function initializeBillingSystem() {
     bill.length = 0;
     renderBillTable();
     updateTotals();
+    
+    // Clear current bill ID to allow new bill creation
+    window.currentBillId = null;
     
     // Reset form fields
     const form = document.getElementById('billingForm');

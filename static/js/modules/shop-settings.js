@@ -39,6 +39,8 @@ function initializeShopSettings() {
           const shopAddressField = document.getElementById('shopAddress');
           const shopTRNField = document.getElementById('shopTRN');
           const useDynamicInvoiceTemplateField = document.getElementById('useDynamicInvoiceTemplate');
+          const paymentModeAdvanceField = document.getElementById('paymentModeAdvance');
+          const paymentModeFullField = document.getElementById('paymentModeFull');
           
           if (shopNameField) shopNameField.value = settings.shop_name || '';
           if (shopMobileField) shopMobileField.value = settings.shop_mobile || '';
@@ -47,6 +49,11 @@ function initializeShopSettings() {
           if (shopAddressField) shopAddressField.value = settings.address || '';
           if (shopTRNField) shopTRNField.value = settings.trn || '';
           if (useDynamicInvoiceTemplateField) useDynamicInvoiceTemplateField.checked = settings.use_dynamic_invoice_template || false;
+          
+          // Set payment mode
+          const paymentMode = settings.payment_mode || 'advance';
+          if (paymentModeAdvanceField) paymentModeAdvanceField.checked = paymentMode === 'advance';
+          if (paymentModeFullField) paymentModeFullField.checked = paymentMode === 'full';
           
           // Show form with animation
           if (shopSettingsForm) {
@@ -90,6 +97,10 @@ function initializeShopSettings() {
                   <span class="text-neutral-400">Dynamic Invoice Template:</span>
                   <span class="text-white ml-2">${settings.use_dynamic_invoice_template ? 'Enabled' : 'Disabled'}</span>
                 </div>
+                <div>
+                  <span class="text-neutral-400">Payment Mode:</span>
+                  <span class="text-white ml-2">${settings.payment_mode === 'full' ? 'Full Payment Only' : 'Allow Advance Payments'}</span>
+                </div>
               </div>
             `;
             shopSettingsDisplay.style.display = 'block';
@@ -122,7 +133,8 @@ function initializeShopSettings() {
       area: shopSettingsForm?.querySelector('#shopArea')?.value || '',
       address: shopSettingsForm?.querySelector('#shopAddress')?.value || '',
       trn: shopSettingsForm?.querySelector('#shopTRN')?.value || '',
-      use_dynamic_invoice_template: shopSettingsForm?.querySelector('#useDynamicInvoiceTemplate')?.checked || false
+      use_dynamic_invoice_template: shopSettingsForm?.querySelector('#useDynamicInvoiceTemplate')?.checked || false,
+      payment_mode: shopSettingsForm?.querySelector('input[name="paymentMode"]:checked')?.value || 'advance'
     };
 
     // Mobile-friendly inline validation

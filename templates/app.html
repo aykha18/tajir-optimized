@@ -396,7 +396,7 @@
                 <th class="{{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Qty</th>
                 <th class="{{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Price</th>
                 <th class="{{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Disc</th>
-                <th class="{{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Adv</th>
+                <th class="{{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}" id="advHeader">Adv</th>
                 <th class="{{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Tax</th>
                 <th class="{{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Total</th>
                 <th class="{{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Actions</th>
@@ -417,7 +417,7 @@
             <span id="vatAmount" class="font-semibold tracking-tight text-sm">AED 0.00</span>
           </div>
           <div class="bill-summary-row">
-            <span class="text-neutral-400 text-sm">Total Amount:</span>
+            <span class="text-neutral-400 text-sm">Total Amount Paid:</span>
             <span id="amountDue" class="font-semibold tracking-tight text-sm">AED 0.00</span>
         </div>
             </div>
@@ -1255,6 +1255,28 @@
                 </svg>
                 Use Dynamic Invoice Template
               </label>
+            </div>
+
+            <!-- Payment Mode Toggle -->
+            <div class="lg:col-span-6 flex items-center gap-3 p-3 bg-neutral-800/30 rounded-lg border border-neutral-700/30">
+              <div class="flex items-center gap-3">
+                <input type="radio" id="paymentModeAdvance" name="paymentMode" value="advance" class="w-4 h-4 text-indigo-600 bg-neutral-800 border-neutral-600 focus:ring-indigo-400/60 focus:ring-2 transition-all duration-200">
+                <label for="paymentModeAdvance" class="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                  </svg>
+                  Allow Advance Payments
+                </label>
+              </div>
+              <div class="flex items-center gap-3">
+                <input type="radio" id="paymentModeFull" name="paymentMode" value="full" class="w-4 h-4 text-indigo-600 bg-neutral-800 border-neutral-600 focus:ring-indigo-400/60 focus:ring-2 transition-all duration-200">
+                <label for="paymentModeFull" class="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  Full Payment Only
+                </label>
+              </div>
             </div>
 
             <!-- Buttons Row -->
