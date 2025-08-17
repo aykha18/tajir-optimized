@@ -342,11 +342,12 @@ function initializeBillingSystem() {
                  onchange="updateBillItemField(${index}, 'discount', this.value)"
                  onblur="updateBillItemField(${index}, 'discount', this.value)">
         </td>
-        <td class="px-3 py-3" ${window.paymentMode === 'full' ? 'style="display: none;"' : ''}>
+        <td class="px-3 py-3">
           <input type="number" min="0" step="0.01" value="${(item.advance_paid || 0).toFixed(2)}" 
                  class="w-20 bg-transparent border-none text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded px-1"
                  onchange="updateBillItemField(${index}, 'advance_paid', this.value)"
-                 onblur="updateBillItemField(${index}, 'advance_paid', this.value)">
+                 onblur="updateBillItemField(${index}, 'advance_paid', this.value)"
+                 ${window.paymentMode === 'full' ? 'disabled' : ''}>
         </td>
         <td class="px-3 py-3">${(item.vat_amount || 0).toFixed(2)}</td>
         <td class="px-3 py-3">${(item.total || 0).toFixed(2)}</td>
@@ -2789,6 +2790,13 @@ function initializeBillingSystem() {
           
           // Show success message
           showSimpleToast('Print window opened', 'success');
+          
+          // Reset the billing form after printing
+          setTimeout(() => {
+            resetBillingForm();
+            // Clear the current bill ID
+            window.currentBillId = null;
+          }, 1000); // Small delay to ensure print window opens first
         } else {
           showModernAlert('Failed to get bill ID for printing', 'error', 'Print Failed');
         }
@@ -2847,55 +2855,58 @@ function initializeBillingSystem() {
         ];
         
         if (paymentMode === 'full') {
-          // Hide advance payment fields
+          // Keep advance payment fields visible but disable them
           advanceFields.forEach(field => {
             if (field) {
-              if (field.tagName === 'TH') {
-                field.style.display = 'none';
-              } else if (field.tagName === 'TD') {
-                field.style.display = 'none';
-              } else {
-                field.style.display = 'none';
-              }
+              field.style.display = '';
+              field.disabled = true;
+              field.value = '0';
             }
           });
           
           advanceLabels.forEach(label => {
             if (label) {
-              label.style.display = 'none';
+              label.style.display = '';
             }
           });
           
-          // Update table header to remove "Adv" column
+          // Keep table header visible
           const advHeader = document.getElementById('advHeader');
           if (advHeader) {
-            advHeader.style.display = 'none';
+            advHeader.style.display = '';
           }
           
-          // Reposition input fields for full payment mode
-          const productField = document.getElementById('billProduct');
-          const rateField = document.getElementById('billRate');
-          const qtyField = document.getElementById('billQty');
-          const discountField = document.getElementById('billDiscount');
-          
-          if (productField && rateField && qtyField && discountField) {
-            // Expand Product field from col-span-5 to col-span-6
-            const productContainer = productField.closest('.col-span-5');
-            if (productContainer) {
-              productContainer.className = 'col-span-6 flex flex-col';
-            }
-            
-            // Move Rate field from col-span-1 to col-span-1 (no change needed)
-            // Move Qty field from col-span-1 to col-span-1 (no change needed)
-            // Move Discount field from col-span-1 to col-span-1 (no change needed)
-            // VAT field stays at col-span-1
-            // Add Item button stays at col-span-2
+          // Update the "Total Amount Paid" label for full payment mode
+          const totalAmountLabel = document.querySelector('.bill-summary-row:last-child .text-neutral-400');
+          if (totalAmountLabel) {
+            totalAmountLabel.textContent = 'Total Amount Paid:';
           }
           
-          // Mobile repositioning - change discount and advance row to just discount
-          const discountMobileContainer = document.getElementById('billDiscountMobile')?.closest('.grid.grid-cols-2');
-          if (discountMobileContainer) {
-            discountMobileContainer.className = 'flex flex-col';
+          // Desktop repositioning - reduce Product field and fit Add button in same row
+          const billProduct = document.getElementById('billProduct');
+          const billRate = document.getElementById('billRate');
+          const billQty = document.getElementById('billQty');
+          const billDiscount = document.getElementById('billDiscount');
+          const vatPercent = document.getElementById('vatPercent');
+          const addItemBtn = document.getElementById('addItemBtn');
+          
+          if (billProduct && billProduct.parentElement) {
+            billProduct.parentElement.className = 'col-span-5 flex flex-col';
+          }
+          if (billRate && billRate.parentElement) {
+            billRate.parentElement.className = 'col-span-1 flex flex-col';
+          }
+          if (billQty && billQty.parentElement) {
+            billQty.parentElement.className = 'col-span-1 flex flex-col';
+          }
+          if (billDiscount && billDiscount.parentElement) {
+            billDiscount.parentElement.className = 'col-span-1 flex flex-col';
+          }
+          if (vatPercent && vatPercent.parentElement) {
+            vatPercent.parentElement.className = 'col-span-1 flex flex-col';
+          }
+          if (addItemBtn) {
+            addItemBtn.className = 'col-span-2 modern-btn modern-btn-primary self-end h-8 text-sm';
           }
           
           // Set all advance payments to 0
@@ -2908,10 +2919,12 @@ function initializeBillingSystem() {
           
           console.log('Payment mode set to: Full Payment Only');
         } else {
-          // Show advance payment fields
+          // Show and enable advance payment fields
           advanceFields.forEach(field => {
             if (field) {
               field.style.display = '';
+              field.disabled = false;
+              field.value = '';
             }
           });
           
@@ -2927,19 +2940,37 @@ function initializeBillingSystem() {
             advHeader.style.display = '';
           }
           
-          // Reset input field positioning for advance payment mode
-          const productField = document.getElementById('billProduct');
-          if (productField) {
-            const productContainer = productField.closest('.col-span-6');
-            if (productContainer) {
-              productContainer.className = 'col-span-5 flex flex-col';
-            }
+          // Reset desktop layout for advance payment mode
+          const billProduct = document.getElementById('billProduct');
+          const billRate = document.getElementById('billRate');
+          const billQty = document.getElementById('billQty');
+          const billDiscount = document.getElementById('billDiscount');
+          const vatPercent = document.getElementById('vatPercent');
+          const addItemBtn = document.getElementById('addItemBtn');
+          
+          if (billProduct && billProduct.parentElement) {
+            billProduct.parentElement.className = 'col-span-5 flex flex-col';
+          }
+          if (billRate && billRate.parentElement) {
+            billRate.parentElement.className = 'col-span-1 flex flex-col';
+          }
+          if (billQty && billQty.parentElement) {
+            billQty.parentElement.className = 'col-span-1 flex flex-col';
+          }
+          if (billDiscount && billDiscount.parentElement) {
+            billDiscount.parentElement.className = 'col-span-1 flex flex-col';
+          }
+          if (vatPercent && vatPercent.parentElement) {
+            vatPercent.parentElement.className = 'col-span-1 flex flex-col';
+          }
+          if (addItemBtn) {
+            addItemBtn.className = 'col-span-2 modern-btn modern-btn-primary self-end h-8 text-sm';
           }
           
-          // Reset mobile layout for advance payment mode
-          const discountMobileContainer = document.getElementById('billDiscountMobile')?.closest('.flex.flex-col');
-          if (discountMobileContainer) {
-            discountMobileContainer.className = 'grid grid-cols-2 gap-3';
+          // Update the "Total Amount Paid" label for advance payment mode
+          const totalAmountLabel = document.querySelector('.bill-summary-row:last-child .text-neutral-400');
+          if (totalAmountLabel) {
+            totalAmountLabel.textContent = 'Total Amount Due:';
           }
           
           console.log('Payment mode set to: Allow Advance Payments');
