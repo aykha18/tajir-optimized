@@ -165,16 +165,32 @@
                                 </div>
                             </div>
 
-                            <!-- PRO plan duration (lifetime) -->
+                            <!-- PRO plan durations: same as Basic + Lifetime -->
                             <div id="proDurationOptions" class="hidden">
                                 <label class="block text-sm font-medium text-neutral-300 mb-2">Plan Length</label>
-                                <div class="grid grid-cols-1 gap-3">
-                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-green-600 cursor-pointer">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
+                                        <input type="radio" name="duration_pro" value="1" class="mr-3">
+                                        <span class="text-sm text-white">1 Month</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
+                                        <input type="radio" name="duration_pro" value="3" class="mr-3">
+                                        <span class="text-sm text-white">3 Months</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
+                                        <input type="radio" name="duration_pro" value="6" class="mr-3">
+                                        <span class="text-sm text-white">6 Months</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
+                                        <input type="radio" name="duration_pro" value="12" class="mr-3">
+                                        <span class="text-sm text-white">1 Year</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-green-600 cursor-pointer col-span-2">
                                         <input type="radio" name="duration_pro" value="lifetime" class="mr-3" checked>
                                         <span class="text-sm text-white font-medium">Lifetime (No Expiry)</span>
                                     </label>
                                 </div>
-                                <p class="text-xs text-neutral-400 mt-2">PRO plans are lifetime by default. No end date will be set.</p>
+                                <p class="text-xs text-neutral-400 mt-2">Select a fixed duration or choose Lifetime to set no expiry.</p>
                             </div>
                         </div>
 
@@ -429,7 +445,12 @@
                     return;
                 }
             } else if (planType === 'pro') {
-                duration = null; // lifetime
+                const proChoice = document.querySelector('input[name="duration_pro"]:checked')?.value;
+                if (!proChoice) {
+                    showMessage('Please select a duration for PRO plan', 'error');
+                    return;
+                }
+                duration = proChoice === 'lifetime' ? null : parseInt(proChoice);
             } else if (planType === 'trial') {
                 duration = 0; // ignored by server
             }
@@ -444,7 +465,7 @@
                     body: JSON.stringify({
                         user_id: selectedShopId,
                         plan_type: planType,
-                        duration_months: duration ? parseInt(duration) : null
+                        duration_months: duration
                     })
                 });
 
