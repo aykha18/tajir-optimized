@@ -25,6 +25,7 @@
   <script src="{{ url_for('static', filename='js/modules/account.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/catalog-scanner.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/ocr-scanner.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/barcode-scanner.js') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -865,6 +866,13 @@
           <div class="col-span-2 flex flex-col">
             <label for="productPrice" class="text-sm font-medium text-neutral-300 mb-1">Price (AED)</label>
             <input id="productPrice" type="number" min="0" step=".01" placeholder="0.00" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
+          <div class="col-span-3 flex flex-col">
+            <label for="productBarcode" class="text-sm font-medium text-neutral-300 mb-1">Barcode</label>
+            <div class="flex gap-2">
+              <input id="productBarcode" placeholder="Scan or enter barcode" class="flex-1 bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+              <button type="button" id="openBarcodeScannerBtn" class="bg-green-600 hover:bg-green-500 text-white px-3 rounded-lg text-sm">Scan</button>
+            </div>
           </div>
           <button type="submit" class="col-span-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all duration-200 rounded-lg text-sm font-medium py-2 self-end transform hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

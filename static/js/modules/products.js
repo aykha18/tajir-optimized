@@ -274,7 +274,8 @@ async function handleProductFormSubmit(e) {
   const formData = new FormData(e.target);
   const productData = {
     type_id: document.getElementById('productTypeSelect').value,
-    rate: document.getElementById('productPrice').value
+    rate: document.getElementById('productPrice').value,
+    barcode: document.getElementById('productBarcode')?.value?.trim() || ''
   };
   
   // For updates, use product_name; for creation, use name
@@ -363,6 +364,9 @@ async function editProduct(id) {
       document.getElementById('productTypeSelect').value = product.type_id;
       document.getElementById('productName').value = product.product_name || product.name || '';
       document.getElementById('productPrice').value = product.rate || product.price || '';
+      if (document.getElementById('productBarcode')) {
+        document.getElementById('productBarcode').value = product.barcode || '';
+      }
       editingProductId = id;
     }
   } catch (error) {

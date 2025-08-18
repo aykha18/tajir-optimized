@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS products (
     type_id INTEGER NOT NULL,
     product_name TEXT NOT NULL,
     rate DECIMAL(10,2) NOT NULL,
+    barcode TEXT,
     description TEXT,
     is_active BOOLEAN DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

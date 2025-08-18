@@ -1411,3 +1411,24 @@
 2025-08-18 12:41:54,923 - root - ERROR - auto_create_products:5323 - Auto-create products error: table product_types has no column named description
 2025-08-18 12:44:54,955 - root - ERROR - auto_create_products:5323 - Auto-create products error: table product_types has no column named description
 2025-08-18 13:21:31,956 - root - ERROR - scan_catalog:5233 - Catalog scan error: 415 Unsupported Media Type: Did not attempt to load JSON data because the request Content-Type was not 'application/json'.
+2025-08-18 13:55:33,767 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:33] code 400, message Bad request version ('É+\x0eÌIj\x8f£H\x98\x96¼ñG')
+2025-08-18 13:55:34,030 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:34] code 400, message Bad request version ('ÚÚ\x13\x01\x13\x02\x13\x03À+À/À,À0Ì©Ì¨À\x13À\x14\x00\x9c\x00\x9d\x00/\x005\x01\x00\x06e\x8a\x8a\x00\x00\x00\x1b\x00\x03\x02\x00\x02\x00+\x00\x07\x06')
+2025-08-18 13:55:34,077 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:34] code 400, message Bad request version ('\\\x91{cä')
+2025-08-18 13:55:34,339 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:34] code 400, message Bad request version ('\x83kôu8\x90\x98\x99æ\x05\x15Á\x8eÖ\x00')
+2025-08-18 13:55:50,825 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:50] code 400, message Bad request version ('LIr')
+2025-08-18 13:55:50,825 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:50] code 400, message Bad request version ('Ïþý*[\x04N9S£é´qÈé\x8dS')
+2025-08-18 13:55:51,087 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:51] code 400, message Bad request syntax ('\x16\x03\x01\x06ò\x01\x00\x06î\x03\x03r8êæÂ^\x99úFã')
+2025-08-18 13:55:51,135 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:51] code 400, message Bad request version ('êê\x13\x01\x13\x02\x13\x03À+À/À,À0Ì©Ì¨À\x13À\x14\x00\x9c\x00\x9d\x00/\x005\x01\x00\x06E\x1a\x1a\x00\x00\x003\x04ï\x04íºº\x00\x01\x00\x11ì\x04À\x04Lp´')
+2025-08-18 13:55:51,135 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:51] code 400, message Bad request version ('\x96\x98(é\x08\x8a¿4í\\\x17±\x8f\x017`o½íÂoqU\x15\x9e\x9bü¡p£®Q\x00ðÉá4\x7fQÖ\\\x17')
+2025-08-18 13:55:51,398 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:55:51] code 400, message Bad request version ('localhost\x00+\x00\x07\x06**\x03\x04\x03\x03\x00\x17\x00\x00\x00')
+2025-08-18 13:56:17,665 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:56:17] code 400, message Bad request version ('j\x12]\x07>Á9E§\x004\x17k6)bã¥')
+2025-08-18 13:56:17,666 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:56:17] code 400, message Bad request version ('K\x04bòE\x0f1#\x93ÆÁ×:W°C´\x83\x87±îf\x91+0Å\x1a\x02c\x03Ã!.Efé8Ép&\x14Æ²\x04BtÎ\x1a\x08u\x9c')
+2025-08-18 13:56:17,927 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:56:17] code 400, message Bad request version ('1÷\x91«´\x03Õ8³^:\x8e0»2V\x13')
+2025-08-18 13:56:17,973 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:56:17] code 400, message Bad request version ('JJ\x13\x01\x13\x02\x13\x03À+À/À,À0Ì©Ì¨À\x13À\x14\x00\x9c\x00\x9d\x00/\x005\x01\x00\x06¥\x9a\x9a\x00\x00\x00')
+2025-08-18 13:56:17,974 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:56:17] code 400, message Bad request version ('zz\x13\x01\x13\x02\x13\x03À+À/À,À0Ì©Ì¨À\x13À\x14\x00\x9c\x00\x9d\x00/\x005\x01\x00\x06ezz\x00\x00\x00-\x00\x02\x01\x01ÿ\x01\x00\x01\x00\x00#\x00\x00\x00+\x00\x07\x06\x8a\x8a\x03\x04\x03\x03\x00')
+2025-08-18 13:56:18,234 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 13:56:18] code 400, message Bad request version ('localhost\x00\x17\x00\x00\x00-\x00\x02\x01\x01\x00')
+2025-08-18 14:05:11,960 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 14:05:11] code 400, message Bad request version ('pg2\x0eÖÇ&')
+2025-08-18 14:05:12,206 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 14:05:12] code 400, message Bad request syntax ('\x16\x03\x01\x06Ò\x01\x00\x06Î\x03\x03*ILÊ')
+2025-08-18 14:05:12,268 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 14:05:12] code 400, message Bad request syntax ('\x16\x03\x01\x06Ò\x01\x00\x06Î\x03\x03\x12m\x84¤½')
+2025-08-18 14:05:12,513 - werkzeug - ERROR - _log:187 - 127.0.0.1 - - [18/Aug/2025 14:05:12] code 400, message Bad request version ('\x02h2\x08http/1.1\x00')
+2025-08-18 14:49:32,161 - root - ERROR - log_user_action:157 - Failed to log user action: database is locked

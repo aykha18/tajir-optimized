@@ -385,8 +385,17 @@ def delete_product_type(type_id):
 def get_products():
     user_id = get_current_user_id()
     search = request.args.get('search', '').strip()
+    barcode = request.args.get('barcode', '').strip()
     conn = get_db_connection()
-    if search:
+    if barcode:
+        products = conn.execute('''
+            SELECT p.*, pt.type_name 
+            FROM products p 
+            JOIN product_types pt ON p.type_id = pt.type_id 
+            WHERE p.user_id = ? AND pt.user_id = ? AND p.is_active = 1 AND p.barcode = ?
+            ORDER BY pt.type_name, p.product_name
+        ''', (user_id, user_id, barcode)).fetchall()
+    elif search:
         like_search = f"%{search}%"
         products = conn.execute('''
             SELECT p.*, pt.type_name 
@@ -413,6 +422,7 @@ def add_product():
     name = data.get('name', '').strip()
     rate = data.get('rate')
     description = data.get('description', '').strip()
+    barcode = (data.get('barcode') or '').strip()
     user_id = get_current_user_id()
     
     if not all([type_id, name, rate]):
@@ -434,9 +444,9 @@ def add_product():
             return jsonify({'error': 'Invalid product type'}), 400
             
         conn.execute('''
-            INSERT INTO products (user_id, type_id, product_name, rate, description) 
-            VALUES (?, ?, ?, ?, ?)
-        ''', (user_id, type_id, name, rate, description))
+            INSERT INTO products (user_id, type_id, product_name, rate, description, barcode) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, type_id, name, rate, description, barcode or None))
         conn.commit()
         product_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
         conn.close()
@@ -469,6 +479,7 @@ def update_product(product_id):
     rate = data.get('rate')
     type_id = data.get('type_id')
     description = data.get('description', '').strip()
+    barcode = (data.get('barcode') or '').strip()
     user_id = get_current_user_id()
     
     if not all([name, rate, type_id]):
@@ -495,9 +506,9 @@ def update_product(product_id):
         
     conn.execute('''
         UPDATE products 
-        SET product_name = ?, rate = ?, type_id = ?, description = ? 
+        SET product_name = ?, rate = ?, type_id = ?, description = ?, barcode = ? 
         WHERE product_id = ? AND user_id = ?
-    ''', (name, rate, type_id, description, product_id, user_id))
+    ''', (name, rate, type_id, description, barcode or None, product_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Product updated successfully'})
