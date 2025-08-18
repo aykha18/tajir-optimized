@@ -24,9 +24,12 @@ async function loadProductTypes() {
     list.innerHTML = types.length
       ? types.map((t, index) => `
         <li class="product-type-item group flex justify-between px-3 py-3 hover:bg-neutral-800/50 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-sm hover-glow" style="animation-delay: ${index * 0.1}s;">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 flex-1">
             <div class="w-2 h-2 bg-indigo-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-            <span class="font-medium text-neutral-200 group-hover:text-white transition-colors duration-200">${t.type_name}</span>
+            <div class="flex flex-col">
+              <span class="font-medium text-neutral-200 group-hover:text-white transition-colors duration-200">${t.type_name}</span>
+              ${t.description ? `<span class="text-xs text-neutral-500 group-hover:text-neutral-400 transition-colors duration-200">${t.description}</span>` : ''}
+            </div>
           </div>
           <button data-id="${t.type_id}" class="delete-type-btn text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded transition-all duration-200 transform hover:scale-110 hover:shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,6 +157,7 @@ async function handleProductTypeFormSubmit(e) {
   e.preventDefault();
   
   const typeName = document.getElementById('productTypeName').value.trim();
+  const description = document.getElementById('productTypeDescription').value.trim();
   
   if (!typeName) {
     alert('Please enter a product type name');
@@ -166,7 +170,10 @@ async function handleProductTypeFormSubmit(e) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name: typeName })
+      body: JSON.stringify({ 
+        name: typeName,
+        description: description || null
+      })
     });
     
     if (response.ok) {

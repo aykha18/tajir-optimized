@@ -348,6 +348,7 @@ def get_product_types():
 def add_product_type():
     data = request.get_json()
     name = data.get('name', '').strip()
+    description = data.get('description', '').strip() if data.get('description') else None
     user_id = get_current_user_id()
     
     if not name:
@@ -355,11 +356,11 @@ def add_product_type():
     
     conn = get_db_connection()
     try:
-        conn.execute('INSERT INTO product_types (user_id, type_name) VALUES (?, ?)', (user_id, name))
+        conn.execute('INSERT INTO product_types (user_id, type_name, description) VALUES (?, ?, ?)', (user_id, name, description))
         conn.commit()
         type_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
         conn.close()
-        return jsonify({'id': type_id, 'name': name, 'message': 'Product type added successfully'})
+        return jsonify({'id': type_id, 'name': name, 'description': description, 'message': 'Product type added successfully'})
     except sqlite3.IntegrityError:
         conn.close()
         return jsonify({'error': 'Product type already exists'}), 400
