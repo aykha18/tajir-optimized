@@ -142,24 +142,39 @@
                         </div>
 
                         <div id="durationOptions" class="hidden">
-                            <label class="block text-sm font-medium text-neutral-300 mb-2">Duration</label>
-                            <div class="grid grid-cols-2 gap-3">
-                                <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
-                                    <input type="radio" name="duration" value="1" class="mr-3">
-                                    <span class="text-sm text-white">1 Month</span>
-                                </label>
-                                <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
-                                    <input type="radio" name="duration" value="3" class="mr-3">
-                                    <span class="text-sm text-white">3 Months</span>
-                                </label>
-                                <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
-                                    <input type="radio" name="duration" value="6" class="mr-3">
-                                    <span class="text-sm text-white">6 Months</span>
-                                </label>
-                                <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
-                                    <input type="radio" name="duration" value="12" class="mr-3">
-                                    <span class="text-sm text-white">1 Year</span>
-                                </label>
+                            <!-- Basic plan durations -->
+                            <div id="basicDurationOptions" class="hidden">
+                                <label class="block text-sm font-medium text-neutral-300 mb-2">Duration</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
+                                        <input type="radio" name="duration_basic" value="1" class="mr-3">
+                                        <span class="text-sm text-white">1 Month</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
+                                        <input type="radio" name="duration_basic" value="3" class="mr-3">
+                                        <span class="text-sm text-white">3 Months</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
+                                        <input type="radio" name="duration_basic" value="6" class="mr-3">
+                                        <span class="text-sm text-white">6 Months</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-neutral-600 cursor-pointer hover:bg-neutral-600 transition-colors">
+                                        <input type="radio" name="duration_basic" value="12" class="mr-3">
+                                        <span class="text-sm text-white">1 Year</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- PRO plan duration (lifetime) -->
+                            <div id="proDurationOptions" class="hidden">
+                                <label class="block text-sm font-medium text-neutral-300 mb-2">Plan Length</label>
+                                <div class="grid grid-cols-1 gap-3">
+                                    <label class="flex items-center p-3 bg-neutral-700 rounded-lg border border-green-600 cursor-pointer">
+                                        <input type="radio" name="duration_pro" value="lifetime" class="mr-3" checked>
+                                        <span class="text-sm text-white font-medium">Lifetime (No Expiry)</span>
+                                    </label>
+                                </div>
+                                <p class="text-xs text-neutral-400 mt-2">PRO plans are lifetime by default. No end date will be set.</p>
                             </div>
                         </div>
 
@@ -231,9 +246,22 @@
             // Plan type change
             document.getElementById('planType').addEventListener('change', function(e) {
                 const durationOptions = document.getElementById('durationOptions');
-                if (e.target.value === 'trial' || e.target.value === 'basic' || e.target.value === 'pro') {
+                const basic = document.getElementById('basicDurationOptions');
+                const pro = document.getElementById('proDurationOptions');
+                
+                // Reset visibility
+                durationOptions.classList.add('hidden');
+                basic.classList.add('hidden');
+                pro.classList.add('hidden');
+                
+                if (e.target.value === 'basic') {
                     durationOptions.classList.remove('hidden');
+                    basic.classList.remove('hidden');
+                } else if (e.target.value === 'pro') {
+                    durationOptions.classList.remove('hidden');
+                    pro.classList.remove('hidden');
                 } else {
+                    // Trial has fixed duration, hide options entirely
                     durationOptions.classList.add('hidden');
                 }
             });
@@ -393,10 +421,17 @@
                 return;
             }
 
-            const duration = document.querySelector('input[name="duration"]:checked')?.value;
-            if (!duration) {
-                showMessage('Please select a duration', 'error');
-                return;
+            let duration = null;
+            if (planType === 'basic') {
+                duration = document.querySelector('input[name="duration_basic"]:checked')?.value;
+                if (!duration) {
+                    showMessage('Please select a duration for Basic plan', 'error');
+                    return;
+                }
+            } else if (planType === 'pro') {
+                duration = null; // lifetime
+            } else if (planType === 'trial') {
+                duration = 0; // ignored by server
             }
 
             try {
