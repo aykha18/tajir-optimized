@@ -1407,3 +1407,7 @@
 2025-08-18 02:57:09,413 - root - ERROR - extract_text_from_image:5569 - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
 2025-08-18 02:57:13,749 - root - ERROR - extract_text_from_image:5569 - Error extracting text from image: tesseract is not installed or it's not in your PATH. See README file for more information.
 2025-08-18 03:01:51,530 - root - ERROR - auto_create_products:5313 - Auto-create products error: table product_types has no column named description
+2025-08-18 03:19:07,181 - root - ERROR - extract_text_from_image:5595 - Error extracting text from image: Could not read image file
+2025-08-18 12:41:54,923 - root - ERROR - auto_create_products:5323 - Auto-create products error: table product_types has no column named description
+2025-08-18 12:44:54,955 - root - ERROR - auto_create_products:5323 - Auto-create products error: table product_types has no column named description
+2025-08-18 13:21:31,956 - root - ERROR - scan_catalog:5233 - Catalog scan error: 415 Unsupported Media Type: Did not attempt to load JSON data because the request Content-Type was not 'application/json'.

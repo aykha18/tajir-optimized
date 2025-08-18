@@ -1071,6 +1071,25 @@ textarea.compact-form:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Modal scrollbar visibility for catalog/ocr scanners */
+.modal-scroll {
+  overflow-y: auto;
+}
+.modal-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.modal-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9; /* light slate */
+  border-radius: 8px;
+}
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* slate-300 */
+  border-radius: 8px;
+}
+.modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* slate-400 */
+}
+
 /* Dropdown Animation */
 @keyframes dropdownFadeIn {
   from {

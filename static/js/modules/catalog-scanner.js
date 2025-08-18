@@ -46,7 +46,7 @@ class CatalogScanner {
         const modalHTML = `
             <div id="catalogScannerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
                 <div class="flex items-center justify-center min-h-screen p-4">
-                    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full overflow-y-auto modal-scroll" style="max-height: 90vh;">
                         <!-- Header -->
                         <div class="flex items-center justify-between p-6 border-b">
                             <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -559,8 +559,207 @@ class CatalogScanner {
             `;
         }
         
+        // Add duplicate check button
+        html += `
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <button type="button" onclick="window.catalogScanner.checkDuplicates()" 
+                        class="w-full px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">
+                    🔍 Check for Duplicates Before Creating
+                </button>
+            </div>
+        `;
+        
         html += '</div>';
         container.innerHTML = html;
+    }
+
+    /**
+     * Check for duplicates before creating products
+     */
+    async checkDuplicates() {
+        if (!this.suggestions) return;
+        
+        try {
+            showSimpleToast('Checking for duplicates...', 'info');
+            
+            const response = await fetch('/api/catalog/check-duplicates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ suggestions: this.suggestions })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.duplicateAnalysis = result.analysis;
+                this.existingItems = result.existing_items;
+                this.similarProducts = result.similar_products;
+                this.showDuplicateAnalysis();
+            } else {
+                throw new Error(result.error || 'Duplicate check failed');
+            }
+            
+        } catch (error) {
+            console.error('Duplicate check error:', error);
+            showModernAlert('Error checking duplicates: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Display duplicate analysis
+     */
+    showDuplicateAnalysis() {
+        const container = document.getElementById('suggestionsResults');
+        if (!container) return;
+        
+        const analysis = this.duplicateAnalysis;
+        
+        const html = `
+            <div class="space-y-6">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <h4 class="font-semibold text-yellow-800 mb-3">🔍 Duplicate Analysis</h4>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">${analysis.total_types}</div>
+                            <div class="text-sm text-gray-600">Total Types</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">${analysis.new_types}</div>
+                            <div class="text-sm text-gray-600">New Types</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">${analysis.total_products}</div>
+                            <div class="text-sm text-gray-600">Total Products</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">${analysis.new_products}</div>
+                            <div class="text-sm text-gray-600">New Products</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-sm text-yellow-700">
+                        <strong>${analysis.duplicate_percentage.toFixed(1)}%</strong> of products already exist in your database.
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    ${this.renderExistingItems()}
+                    ${this.renderSimilarProducts()}
+                </div>
+                
+                <div class="flex justify-between mt-6 pt-6 border-t border-gray-200">
+                    <button type="button" onclick="window.catalogScanner.displaySuggestions()" 
+                            class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
+                        ← Back to Suggestions
+                    </button>
+                    <button type="button" onclick="window.catalogScanner.createProducts()" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Create Products (Skip Duplicates)
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    }
+
+    /**
+     * Render existing items list
+     */
+    renderExistingItems() {
+        const existingItems = this.existingItems;
+        let html = '';
+        
+        // Existing product types
+        const existingTypes = Object.entries(existingItems.product_types)
+            .filter(([name, data]) => data.exists);
+        
+        if (existingTypes.length > 0) {
+            html += `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h5 class="font-semibold text-red-800 mb-2">⚠️ Existing Product Types (${existingTypes.length})</h5>
+                    <div class="space-y-1">
+                        ${existingTypes.map(([name, data]) => `
+                            <div class="text-sm text-red-700 flex items-center">
+                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                ${name}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Existing products
+        const existingProducts = Object.entries(existingItems.products)
+            .filter(([name, data]) => data.exists);
+        
+        if (existingProducts.length > 0) {
+            html += `
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h5 class="font-semibold text-orange-800 mb-2">⚠️ Existing Products (${existingProducts.length})</h5>
+                    <div class="space-y-2">
+                        ${existingProducts.map(([name, data]) => `
+                            <div class="text-sm text-orange-700 flex items-center justify-between">
+                                <span class="flex items-center">
+                                    <span class="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                                    ${name}
+                                </span>
+                                <span class="text-xs bg-orange-100 px-2 py-1 rounded">
+                                    Current: AED ${data.current_rate} | New: AED ${data.new_rate}
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        return html;
+    }
+
+    /**
+     * Render similar products
+     */
+    renderSimilarProducts() {
+        const similarProducts = this.similarProducts;
+        const similarEntries = Object.entries(similarProducts);
+        
+        if (similarEntries.length === 0) return '';
+        
+        let html = `
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h5 class="font-semibold text-blue-800 mb-2">🔍 Similar Products Found (${similarEntries.length})</h5>
+                <div class="space-y-3">
+        `;
+        
+        for (const [productName, similar] of similarEntries) {
+            html += `
+                <div class="text-sm">
+                    <div class="font-medium text-blue-800 mb-1">"${productName}" might be similar to:</div>
+                    <div class="ml-4 space-y-1">
+                        ${similar.slice(0, 3).map(item => `
+                            <div class="text-blue-700 flex items-center justify-between">
+                                <span>• ${item.product_name} (${(item.similarity * 100).toFixed(0)}% match)</span>
+                                <span class="text-xs bg-blue-100 px-2 py-1 rounded">AED ${item.rate}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+        
+        return html;
     }
 
     /**

@@ -5233,6 +5233,61 @@ def scan_catalog():
         logger.error(f"Catalog scan error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/catalog/check-duplicates', methods=['POST'])
+def check_catalog_duplicates():
+    """Check for duplicates before creating products"""
+    try:
+        user_id = get_current_user_id()
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User not authenticated'}), 401
+        
+        data = request.get_json()
+        suggestions = data.get('suggestions', {})
+        
+        if not suggestions:
+            return jsonify({'success': False, 'error': 'No suggestions provided'}), 400
+        
+        # Check existing items
+        existing_items = check_existing_items(user_id, suggestions)
+        
+        # Find similar products
+        similar_products = {}
+        for type_suggestion in suggestions.get('product_types', []):
+            for product_suggestion in type_suggestion.get('products', []):
+                product_name = product_suggestion['name']
+                similar = find_similar_products(user_id, product_name)
+                if similar:
+                    similar_products[product_name] = similar
+        
+        # Calculate statistics
+        total_types = len(suggestions.get('product_types', []))
+        total_products = sum(len(t.get('products', [])) for t in suggestions.get('product_types', []))
+        
+        existing_types = sum(1 for t in existing_items['product_types'].values() if t['exists'])
+        existing_products = sum(1 for p in existing_items['products'].values() if p['exists'])
+        
+        new_types = total_types - existing_types
+        new_products = total_products - existing_products
+        
+        return jsonify({
+            'success': True,
+            'analysis': {
+                'total_types': total_types,
+                'total_products': total_products,
+                'existing_types': existing_types,
+                'existing_products': existing_products,
+                'new_types': new_types,
+                'new_products': new_products,
+                'duplicate_percentage': (existing_products / total_products * 100) if total_products > 0 else 0
+            },
+            'existing_items': existing_items,
+            'similar_products': similar_products
+        })
+        
+    except Exception as e:
+        logger.error(f"Duplicate check error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/catalog/auto-create', methods=['POST'])
 def auto_create_products():
     """Automatically create product types and products from catalog scan"""
@@ -5740,6 +5795,94 @@ def ocr_extract_batch():
     except Exception as e:
         logger.error(f"Batch OCR extraction error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# Add to app.py - Enhanced duplicate detection
+
+def check_existing_items(user_id, suggestions):
+    """Check which items already exist in the database"""
+    conn = get_db_connection()
+    existing_items = {
+        'product_types': {},
+        'products': {}
+    }
+    
+    try:
+        # Check existing product types
+        for type_suggestion in suggestions.get('product_types', []):
+            type_name = type_suggestion['name']
+            existing_type = conn.execute(
+                'SELECT type_id, type_name FROM product_types WHERE user_id = ? AND type_name = ?', 
+                (user_id, type_name)
+            ).fetchone()
+            
+            if existing_type:
+                existing_items['product_types'][type_name] = {
+                    'exists': True,
+                    'type_id': existing_type['type_id'],
+                    'type_name': existing_type['type_name']
+                }
+            else:
+                existing_items['product_types'][type_name] = {
+                    'exists': False
+                }
+        
+        # Check existing products
+        for type_suggestion in suggestions.get('product_types', []):
+            for product_suggestion in type_suggestion.get('products', []):
+                product_name = product_suggestion['name']
+                existing_product = conn.execute(
+                    'SELECT product_id, product_name, rate FROM products WHERE user_id = ? AND product_name = ?', 
+                    (user_id, product_name)
+                ).fetchone()
+                
+                if existing_product:
+                    existing_items['products'][product_name] = {
+                        'exists': True,
+                        'product_id': existing_product['product_id'],
+                        'product_name': existing_product['product_name'],
+                        'current_rate': existing_product['rate'],
+                        'new_rate': product_suggestion['rate']
+                    }
+                else:
+                    existing_items['products'][product_name] = {
+                        'exists': False
+                    }
+        
+        return existing_items
+        
+    finally:
+        conn.close()
+
+def find_similar_products(user_id, product_name, threshold=0.8):
+    """Find similar products using fuzzy matching"""
+    from difflib import SequenceMatcher
+    
+    conn = get_db_connection()
+    similar_products = []
+    
+    try:
+        # Get all existing products
+        existing_products = conn.execute(
+            'SELECT product_id, product_name, rate FROM products WHERE user_id = ?', 
+            (user_id,)
+        ).fetchall()
+        
+        for product in existing_products:
+            similarity = SequenceMatcher(None, product_name.lower(), product['product_name'].lower()).ratio()
+            if similarity >= threshold:
+                similar_products.append({
+                    'product_id': product['product_id'],
+                    'product_name': product['product_name'],
+                    'rate': product['rate'],
+                    'similarity': similarity
+                })
+        
+        # Sort by similarity
+        similar_products.sort(key=lambda x: x['similarity'], reverse=True)
+        return similar_products
+        
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     setup_ocr()  # Initialize OCR
