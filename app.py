@@ -4251,7 +4251,19 @@ def send_bill_whatsapp(bill_id):
         
         # Generate WhatsApp message
         whatsapp_message = generate_whatsapp_message(bill_data, shop_settings, language)
-        
+
+        # Append printable invoice link at the end of the message (environment-aware)
+        try:
+            base_url = request.host_url.rstrip('/')  # e.g., http://localhost:5000 or https://tajir.up.railway.app
+            print_url = f"{base_url}/api/bills/{bill_id}/print"
+            if language == 'ar':
+                whatsapp_message += f"\n\n📄 رابط الفاتورة: {print_url}"
+            else:
+                whatsapp_message += f"\n\n📄 View/Print Invoice: {print_url}"
+        except Exception as _ignore:
+            # If anything goes wrong forming the URL, proceed without the link to avoid crashing
+            pass
+
         # Generate WhatsApp share link
         whatsapp_url = generate_whatsapp_share_link(phone_number, whatsapp_message)
         

@@ -3477,9 +3477,9 @@ function initializeBillingSystem() {
         if (whatsappResult.success && whatsappResult.whatsapp_url) {
           window.open(whatsappResult.whatsapp_url, '_blank');
           
-          // Also open PDF in new tab
-          const pdfUrl = `${window.location.origin}/api/bills/${billId}/pdf`;
-          window.open(pdfUrl, '_blank');
+          // Also open printable invoice in new tab using existing endpoint
+          const printUrl = `${window.location.origin}/api/bills/${billId}/print`;
+          window.open(printUrl, '_blank');
           
           if (window.showSimpleToast) {
             window.showSimpleToast('WhatsApp opened with bill details!', 'success');
