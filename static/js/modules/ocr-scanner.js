@@ -21,6 +21,7 @@ class OCRScanner {
      * Initialize the OCR Scanner
      */
     constructor() {
+        console.log('OCR Scanner: Constructor called');
         this.isInitialized = false;
         this.currentStep = 1;
         this.uploadedFiles = [];
@@ -37,6 +38,7 @@ class OCRScanner {
      * Initialize the scanner
      */
     init() {
+        console.log('OCR Scanner: init called');
         this.createModal();
         this.bindEvents();
         this.isInitialized = true;
@@ -105,7 +107,7 @@ class OCRScanner {
 
                                 <div class="flex justify-end mt-6">
                                     <button onclick="window.ocrScanner.showStep(2)" id="ocrNextBtn" 
-                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors opacity-50 cursor-not-allowed" 
                                             disabled>
                                         Extract Text
                                     </button>
@@ -120,7 +122,7 @@ class OCRScanner {
                                     </div>
                                     <h3 class="text-lg font-medium text-gray-900 mb-2">Processing Images</h3>
                                     <p class="text-gray-600">Extracting text from your images...</p>
-                                    <div id="ocrProgress" class="mt-4">
+                                    <div id="ocrProgressContainer" class="mt-4">
                                         <div class="bg-gray-200 rounded-full h-2">
                                             <div id="ocrProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
                                         </div>
@@ -160,7 +162,10 @@ class OCRScanner {
 
         // Add modal to body if it doesn't exist
         if (!document.getElementById('ocrModal')) {
+            console.log('OCR Scanner: Creating modal in DOM');
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+        } else {
+            console.log('OCR Scanner: Modal already exists in DOM');
         }
     }
 
@@ -227,7 +232,17 @@ class OCRScanner {
 
         this.uploadedFiles.push(...validFiles);
         this.displayFilePreview();
-        document.getElementById('ocrNextBtn').disabled = false;
+        
+        // Enable the button and ensure it's visible
+        const nextBtn = document.getElementById('ocrNextBtn');
+        if (nextBtn) {
+            nextBtn.disabled = false;
+            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            nextBtn.classList.add('opacity-100', 'cursor-pointer');
+            console.log('OCR Scanner: Button enabled and made visible');
+        } else {
+            console.error('OCR Scanner: Next button not found!');
+        }
     }
 
     /**
@@ -269,7 +284,15 @@ class OCRScanner {
         
         if (this.uploadedFiles.length === 0) {
             document.getElementById('ocrFilePreview').classList.add('hidden');
-            document.getElementById('ocrNextBtn').disabled = true;
+            
+            // Disable the button and make it appear disabled
+            const nextBtn = document.getElementById('ocrNextBtn');
+            if (nextBtn) {
+                nextBtn.disabled = true;
+                nextBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                nextBtn.classList.remove('opacity-100', 'cursor-pointer');
+                console.log('OCR Scanner: Button disabled');
+            }
         }
     }
 
@@ -277,7 +300,11 @@ class OCRScanner {
      * Process uploaded images
      */
     async processImages() {
-        if (this.isProcessing) return;
+        console.log('OCR Scanner: processImages called');
+        if (this.isProcessing) {
+            console.log('OCR Scanner: Already processing, returning');
+            return;
+        }
 
         this.showStep(2);
         
@@ -288,24 +315,91 @@ class OCRScanner {
 
         const progressBar = document.getElementById('ocrProgressBar');
         const progressText = document.getElementById('ocrProgressText');
+        const progressContainer = document.getElementById('ocrProgressContainer');
+        
+        console.log('OCR Scanner: Progress elements found:', {
+            progressBar: !!progressBar,
+            progressText: !!progressText,
+            progressContainer: !!progressContainer
+        });
         
         try {
             this.isProcessing = true;
             
+            // Show progress container
+            if (progressContainer) {
+                console.log('OCR Scanner: Showing progress container');
+                progressContainer.classList.remove('hidden');
+            } else {
+                console.error('OCR Scanner: Progress container not found!');
+            }
+            
+            if (progressText) {
+                progressText.textContent = 'Checking server connection...';
+            }
+            if (progressBar) {
+                progressBar.style.width = '10%';
+            }
+
+            // Check server connectivity first
+            try {
+                const healthController = new AbortController();
+                const healthTimeout = setTimeout(() => healthController.abort(), 5000);
+                
+                const healthCheck = await fetch('/api/plan/status', { 
+                    method: 'GET',
+                    signal: healthController.signal
+                });
+                
+                clearTimeout(healthTimeout);
+                
+                if (!healthCheck.ok) {
+                    throw new Error('Server is not responding properly');
+                }
+            } catch (healthError) {
+                if (healthError.name === 'AbortError') {
+                    throw new Error('Server connection timed out. Please check your connection.');
+                }
+                throw new Error('Cannot connect to server. Please make sure the application is running.');
+            }
+
             progressText.textContent = 'Uploading images...';
-            progressBar.style.width = '25%';
+            progressBar.style.width = '20%';
+
+            // Add timeout for better UX
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
             const response = await fetch('/api/ocr/extract-batch', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                signal: controller.signal
             });
 
-            progressBar.style.width = '75%';
-            progressText.textContent = 'Processing images...';
+            clearTimeout(timeoutId);
+
+            progressBar.style.width = '60%';
+            progressText.textContent = 'Processing images with OCR...';
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const errorText = await response.text();
+                let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.error || errorMessage;
+                } catch (e) {
+                    // If not JSON, use the text as is
+                    if (errorText) {
+                        errorMessage = errorText;
+                    }
+                }
+                
+                throw new Error(errorMessage);
             }
+
+            progressBar.style.width = '80%';
+            progressText.textContent = 'Extracting text...';
 
             const result = await response.json();
 
@@ -314,17 +408,35 @@ class OCRScanner {
 
             if (result.success) {
                 this.extractedTexts = result.results;
-                setTimeout(() => this.showStep(3), 500);
+                
+                // Check if any results were successful
+                const successfulResults = result.results.filter(r => r.success);
+                if (successfulResults.length === 0) {
+                    throw new Error('No text could be extracted from the images. Please try with clearer images.');
+                }
+                
+                setTimeout(() => this.showStep(3), 1000);
             } else {
                 throw new Error(result.error || 'Failed to extract text');
             }
 
         } catch (error) {
             console.error('OCR processing error:', error);
-            showModernAlert(`Error processing images: ${error.message}`, 'error');
+            
+            // Handle specific error types
+            let errorMessage = error.message;
+            if (error.name === 'AbortError') {
+                errorMessage = 'Request timed out. Please try again with smaller images or fewer files.';
+            } else if (error.message.includes('Failed to fetch') || error.message.includes('Cannot connect to server')) {
+                errorMessage = 'Cannot connect to server. Please make sure the application is running and try again.';
+            }
+            
+            showModernAlert(`Error processing images: ${errorMessage}`, 'error');
             this.showStep(1);
         } finally {
             this.isProcessing = false;
+            // Hide progress container
+            progressContainer.classList.add('hidden');
         }
     }
 
@@ -382,18 +494,29 @@ class OCRScanner {
      * @param {number} step - Step number to show
      */
     showStep(step) {
+        console.log(`OCR Scanner: showStep called with step ${step}`);
         this.currentStep = step;
         
         // Hide all steps
-        document.querySelectorAll('.ocr-step').forEach(el => el.classList.add('hidden'));
+        const allSteps = document.querySelectorAll('.ocr-step');
+        console.log(`OCR Scanner: Found ${allSteps.length} step elements`);
+        allSteps.forEach(el => el.classList.add('hidden'));
         
         // Show current step
-        document.getElementById(`ocrStep${step}`).classList.remove('hidden');
+        const currentStepElement = document.getElementById(`ocrStep${step}`);
+        if (currentStepElement) {
+            console.log(`OCR Scanner: Showing step ${step}`);
+            currentStepElement.classList.remove('hidden');
+        } else {
+            console.error(`OCR Scanner: Step ${step} element not found!`);
+        }
         
         // Handle step-specific actions
         if (step === 2) {
+            console.log('OCR Scanner: Step 2 - calling processImages');
             this.processImages();
         } else if (step === 3) {
+            console.log('OCR Scanner: Step 3 - calling displayResults');
             this.displayResults();
         }
     }
@@ -402,38 +525,63 @@ class OCRScanner {
      * Show the modal
      */
     showModal() {
-        document.getElementById('ocrModal').classList.remove('hidden');
-        this.showStep(1);
-        this.reset();
+        console.log('OCR Scanner: showModal called');
+        const modal = document.getElementById('ocrModal');
+        if (modal) {
+            console.log('OCR Scanner: Modal found, showing...');
+            modal.classList.remove('hidden');
+            this.resetState();
+            this.showStep(1);
+        } else {
+            console.error('OCR Scanner: Modal not found!');
+            showModernAlert('OCR Scanner modal not found. Please refresh the page and try again.', 'error');
+        }
     }
 
     /**
      * Close the modal
      */
     closeModal() {
-        document.getElementById('ocrModal').classList.add('hidden');
-        this.reset();
+        console.log('OCR Scanner: closeModal called');
+        const modal = document.getElementById('ocrModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            this.resetState();
+        }
     }
 
     /**
-     * Reset scanner state
+     * Reset modal state
      */
-    reset() {
-        this.currentStep = 1;
+    resetState() {
+        console.log('OCR Scanner: resetState called');
         this.uploadedFiles = [];
         this.extractedTexts = [];
         this.isProcessing = false;
+        this.currentStep = 1;
         
-        // Reset file input
+        // Reset UI elements
         const fileInput = document.getElementById('ocrFileInput');
         if (fileInput) fileInput.value = '';
         
-        // Reset UI
         const filePreview = document.getElementById('ocrFilePreview');
         if (filePreview) filePreview.classList.add('hidden');
         
         const nextBtn = document.getElementById('ocrNextBtn');
-        if (nextBtn) nextBtn.disabled = true;
+        if (nextBtn) {
+            nextBtn.disabled = true;
+            nextBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            nextBtn.classList.remove('opacity-100', 'cursor-pointer');
+            console.log('OCR Scanner: Button reset to disabled state');
+        }
+        
+        const progressContainer = document.getElementById('ocrProgressContainer');
+        if (progressContainer) {
+            console.log('OCR Scanner: Hiding progress container');
+            progressContainer.classList.add('hidden');
+        } else {
+            console.error('OCR Scanner: Progress container not found!');
+        }
         
         const progressBar = document.getElementById('ocrProgressBar');
         if (progressBar) progressBar.style.width = '0%';
@@ -445,17 +593,28 @@ class OCRScanner {
 
 // Initialize OCR scanner when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    const ocrScanner = new OCRScanner();
-    window.ocrScanner = ocrScanner;
-    console.log('OCR Scanner initialized:', window.ocrScanner);
+    console.log('OCR Scanner: DOMContentLoaded event fired');
+    try {
+        const ocrScanner = new OCRScanner();
+        window.ocrScanner = ocrScanner;
+        console.log('OCR Scanner initialized on DOMContentLoaded:', window.ocrScanner);
+    } catch (error) {
+        console.error('Failed to initialize OCR Scanner on DOMContentLoaded:', error);
+    }
 });
 
 // Also initialize immediately if DOM is already loaded
 if (document.readyState === 'loading') {
+    console.log('OCR Scanner: DOM is still loading, waiting for DOMContentLoaded');
     // DOM is still loading, wait for DOMContentLoaded
 } else {
+    console.log('OCR Scanner: DOM is already loaded, initializing immediately');
     // DOM is already loaded, initialize immediately
-    const ocrScanner = new OCRScanner();
-    window.ocrScanner = ocrScanner;
-    console.log('OCR Scanner initialized immediately:', window.ocrScanner);
+    try {
+        const ocrScanner = new OCRScanner();
+        window.ocrScanner = ocrScanner;
+        console.log('OCR Scanner initialized immediately:', window.ocrScanner);
+    } catch (error) {
+        console.error('Failed to initialize OCR Scanner immediately:', error);
+    }
 }

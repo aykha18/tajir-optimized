@@ -5908,6 +5908,8 @@ def find_similar_products(user_id, product_name, threshold=0.8):
     finally:
         conn.close()
 
+
+
 if __name__ == '__main__':
     setup_ocr()  # Initialize OCR
     init_db()
