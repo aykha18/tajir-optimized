@@ -444,15 +444,150 @@ if (typeof window.MobileBilling === 'undefined') {
         <div class="product-card-content">
           <div class="product-name">${product.product_name}</div>
           <div class="product-type">${product.type_name || ''}</div>
-                     <div class="product-price">${product.rate}</div>
+          <div class="product-price">AED ${product.rate}</div>
+          <button class="add-to-bill-btn" onclick="window.TajirPWA.mobileBilling.addToMobileBill(${product.product_id})">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Add
+          </button>
         </div>
-        <button class="add-to-bill-btn" onclick="window.TajirPWA.mobileBilling.addToMobileBill(${product.product_id})">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-        </button>
       </div>
     `).join('');
+
+    // Add enhanced interactions
+    this.setupEnhancedProductInteractions();
+  }
+
+  setupEnhancedProductInteractions() {
+    const productCards = document.querySelectorAll('.product-card-mobile');
+    
+    productCards.forEach(card => {
+      // Add haptic feedback on touch
+      card.addEventListener('touchstart', () => {
+        if (navigator.vibrate) {
+          navigator.vibrate(10);
+        }
+      });
+
+      // Add long press for product details
+      let longPressTimer;
+      
+      card.addEventListener('touchstart', () => {
+        longPressTimer = setTimeout(() => {
+          this.showProductDetails(card);
+        }, 500);
+      });
+
+      card.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+      });
+
+      card.addEventListener('touchmove', () => {
+        clearTimeout(longPressTimer);
+      });
+    });
+  }
+
+  showProductDetails(card) {
+    const productId = card.dataset.productId;
+    const productName = card.dataset.productName;
+    const productPrice = card.dataset.productPrice;
+    
+    // Create a simple product details modal
+    const modal = document.createElement('div');
+    modal.className = 'product-details-modal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease-out;
+    `;
+    
+    modal.innerHTML = `
+      <div style="
+        background: var(--mb-surface);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: scaleIn 0.3s ease-out;
+      ">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 style="font-size: 18px; font-weight: 600; margin: 0;">${productName}</h3>
+          <button class="close-modal-btn" style="
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            background: var(--mb-surface-variant);
+            border: none;
+            color: var(--mb-on-surface-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+          ">×</button>
+        </div>
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="
+            width: 80px;
+            height: 80px;
+            border-radius: 40px;
+            background: var(--mb-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: white;
+            font-size: 24px;
+          ">📦</div>
+          <h4 style="font-size: 16px; margin: 0 0 8px;">${productName}</h4>
+          <p style="font-size: 20px; font-weight: 600; color: var(--mb-primary); margin: 0;">AED ${productPrice}</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <button class="add-quantity-btn" style="
+            flex: 1;
+            height: 48px;
+            border-radius: 24px;
+            background: var(--mb-primary);
+            border: none;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+          ">Add to Bill</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Setup modal interactions
+    const closeBtn = modal.querySelector('.close-modal-btn');
+    const addBtn = modal.querySelector('.add-quantity-btn');
+    
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+    });
+    
+    addBtn.addEventListener('click', () => {
+      this.addToMobileBill(productId);
+      modal.remove();
+    });
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
   }
 
   filterProducts(searchTerm) {
@@ -585,24 +720,147 @@ if (typeof window.MobileBilling === 'undefined') {
     if (!billItems) return;
 
     if (this.currentBill.items.length === 0) {
-      billItems.innerHTML = '<div class="text-center text-gray-500 py-8">No items in bill</div>';
+      billItems.innerHTML = `
+        <div style="
+          text-align: center;
+          color: var(--mb-on-surface-muted);
+          padding: 32px 16px;
+          font-size: 14px;
+        ">
+          <div style="
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            background: var(--mb-surface-variant);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: var(--mb-on-surface-muted);
+            font-size: 20px;
+          ">📋</div>
+          No items in bill
+        </div>
+      `;
       return;
     }
 
     billItems.innerHTML = this.currentBill.items.map(item => `
-      <div class="list-item-mobile" data-product-id="${item.product_id}">
-        <div class="flex-1">
-          <div class="font-semibold">${item.product_name}</div>
-          <div class="text-sm text-gray-600">${item.price} x ${item.quantity}</div>
+      <div class="bill-item-enhanced" data-product-id="${item.product_id}" style="
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        background: var(--mb-surface);
+        border-radius: 12px;
+        margin-bottom: 8px;
+        box-shadow: var(--md-elevation-1);
+        transition: all var(--md-transition-medium);
+      ">
+        <div style="
+          width: 40px;
+          height: 40px;
+          border-radius: 20px;
+          background: var(--mb-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 12px;
+          color: white;
+          font-size: 16px;
+          font-weight: 600;
+        ">📦</div>
+        <div style="flex: 1;">
+          <div style="
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--mb-on-surface);
+            margin-bottom: 2px;
+          ">${item.product_name}</div>
+          <div style="
+            font-size: 12px;
+            color: var(--mb-on-surface-muted);
+          ">AED ${item.price} per unit</div>
         </div>
-        <div class="text-right">
-          <div class="font-bold">${item.total.toFixed(2)}</div>
-          <button class="remove-item-btn-mobile" onclick="window.TajirPWA.mobileBilling.removeFromMobileBill(${item.product_id})">
-            Remove
-          </button>
+        <div style="
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: var(--mb-surface-variant);
+          border-radius: 16px;
+          padding: 4px;
+        ">
+          <button class="quantity-decrease" onclick="window.TajirPWA.mobileBilling.updateQuantity(${item.product_id}, -1)" style="
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            background: var(--mb-primary);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+          ">-</button>
+          <span style="
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--mb-on-surface);
+            min-width: 20px;
+            text-align: center;
+          ">${item.quantity}</span>
+          <button class="quantity-increase" onclick="window.TajirPWA.mobileBilling.updateQuantity(${item.product_id}, 1)" style="
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            background: var(--mb-primary);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+          ">+</button>
+        </div>
+        <div style="
+          text-align: right;
+          margin-left: 12px;
+        ">
+          <div style="
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--mb-primary);
+            margin-bottom: 4px;
+          ">AED ${item.total.toFixed(2)}</div>
+          <button class="remove-item-btn" onclick="window.TajirPWA.mobileBilling.removeFromMobileBill(${item.product_id})" style="
+            font-size: 12px;
+            color: var(--md-error);
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: all var(--md-transition-medium);
+          ">Remove</button>
         </div>
       </div>
     `).join('');
+  }
+
+  updateQuantity(productId, change) {
+    const item = this.currentBill.items.find(item => item.product_id === productId);
+    if (item) {
+      const newQuantity = item.quantity + change;
+      if (newQuantity > 0) {
+        item.quantity = newQuantity;
+        item.total = item.quantity * item.price;
+        this.mobileBillDirty = true;
+        this.updateMobileBillDisplay();
+        this.calculateMobileTotals();
+      } else if (newQuantity === 0) {
+        this.removeFromMobileBill(productId);
+      }
+    }
   }
 
   removeFromMobileBill(productId) {
@@ -826,41 +1084,76 @@ if (typeof window.MobileBilling === 'undefined') {
     if (window.TajirPWA && window.TajirPWA.mobileNavigation) {
       window.TajirPWA.mobileNavigation.showMobileNotification(message, type);
     } else {
-      // Create a simple custom notification if mobile navigation is not available
+      // Create enhanced custom notification
       const notification = document.createElement('div');
       notification.className = `mobile-notification ${type}`;
       
-      // Create icon based on type
+      // Create enhanced icon based on type
       let icon = '';
+      let iconColor = '';
       switch (type) {
         case 'success':
-          icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+          icon = '✅';
+          iconColor = 'var(--md-success)';
           break;
         case 'error':
-          icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+          icon = '❌';
+          iconColor = 'var(--md-error)';
           break;
         case 'warning':
-          icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>';
+          icon = '⚠️';
+          iconColor = '#f59e0b';
           break;
         default:
-          icon = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+          icon = 'ℹ️';
+          iconColor = 'var(--mb-primary)';
       }
       
       notification.innerHTML = `
-        ${icon}
-        <span class="message">${message}</span>
+        <div style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 20px;
+          background: var(--mb-surface);
+          border: 1px solid ${iconColor};
+          border-radius: 16px;
+          box-shadow: var(--md-elevation-3);
+          font-size: 14px;
+          font-weight: 500;
+          color: ${iconColor};
+          max-width: 90vw;
+          animation: slideInUp 0.3s ease-out;
+        ">
+          <span style="font-size: 18px;">${icon}</span>
+          <span>${message}</span>
+        </div>
+      `;
+
+      // Position notification
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+        transition: all var(--md-transition-medium);
       `;
 
       document.body.appendChild(notification);
 
-      // Show notification
+      // Show notification with animation
       setTimeout(() => {
-        notification.classList.add('show');
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(-50%) translateY(0)';
       }, 100);
 
       // Hide and remove after 3 seconds
       setTimeout(() => {
-        notification.classList.remove('show');
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(-50%) translateY(-20px)';
         setTimeout(() => {
           if (notification.parentElement) {
             notification.remove();
