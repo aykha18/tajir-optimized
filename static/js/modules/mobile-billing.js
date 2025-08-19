@@ -67,6 +67,11 @@ if (typeof window.MobileBilling === 'undefined') {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
               <input type="text" id="mobile-product-search" placeholder="Search products..." class="input-mobile">
+              <button class="barcode-scan-btn" title="Scan Barcode">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1V6a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1zM5 20h2a1 1 0 001-1v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1z"></path>
+                </svg>
+              </button>
             </div>
             
             <!-- Product Grid -->
@@ -200,6 +205,14 @@ if (typeof window.MobileBilling === 'undefined') {
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         this.filterMobileProducts(e.target.value);
+      });
+    }
+
+    // Barcode scan button
+    const barcodeBtn = container.querySelector('.barcode-scan-btn');
+    if (barcodeBtn) {
+      barcodeBtn.addEventListener('click', () => {
+        this.initiateBarcodeScan();
       });
     }
 
@@ -492,72 +505,24 @@ if (typeof window.MobileBilling === 'undefined') {
     // Create a simple product details modal
     const modal = document.createElement('div');
     modal.className = 'product-details-modal';
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      animation: fadeIn 0.3s ease-out;
-    `;
     
     modal.innerHTML = `
-      <div style="
-        background: var(--mb-surface);
-        border-radius: 16px;
-        padding: 24px;
-        max-width: 90vw;
-        max-height: 90vh;
-        overflow-y: auto;
-        animation: scaleIn 0.3s ease-out;
-      ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h3 style="font-size: 18px; font-weight: 600; margin: 0;">${productName}</h3>
-          <button class="close-modal-btn" style="
-            width: 32px;
-            height: 32px;
-            border-radius: 16px;
-            background: var(--mb-surface-variant);
-            border: none;
-            color: var(--mb-on-surface-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-          ">×</button>
+      <div class="product-modal-content">
+        <div class="modal-header">
+          <h3>${productName}</h3>
+          <button class="close-modal-btn">×</button>
         </div>
-        <div style="text-align: center; margin-bottom: 20px;">
-          <div style="
-            width: 80px;
-            height: 80px;
-            border-radius: 40px;
-            background: var(--mb-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            color: white;
-            font-size: 24px;
-          ">📦</div>
-          <h4 style="font-size: 16px; margin: 0 0 8px;">${productName}</h4>
-          <p style="font-size: 20px; font-weight: 600; color: var(--mb-primary); margin: 0;">AED ${productPrice}</p>
+        <div class="product-modal-body">
+          <div class="product-image-large">
+            <div class="product-icon">📦</div>
+          </div>
+          <div class="product-details">
+            <h4>${productName}</h4>
+            <p class="product-price-large">AED ${productPrice}</p>
+          </div>
         </div>
-        <div style="display: flex; gap: 12px;">
-          <button class="add-quantity-btn" style="
-            flex: 1;
-            height: 48px;
-            border-radius: 24px;
-            background: var(--mb-primary);
-            border: none;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-          ">Add to Bill</button>
+        <div class="product-modal-footer">
+          <button class="add-to-bill-modal-btn">Add to Bill</button>
         </div>
       </div>
     `;
@@ -566,7 +531,7 @@ if (typeof window.MobileBilling === 'undefined') {
     
     // Setup modal interactions
     const closeBtn = modal.querySelector('.close-modal-btn');
-    const addBtn = modal.querySelector('.add-quantity-btn');
+    const addBtn = modal.querySelector('.add-to-bill-modal-btn');
     
     closeBtn.addEventListener('click', () => {
       modal.remove();
@@ -718,7 +683,7 @@ if (typeof window.MobileBilling === 'undefined') {
       billItems.innerHTML = `
         <div style="
           text-align: center;
-          color: var(--mb-on-surface-muted);
+          color: var(--md-on-surface-muted);
           padding: 32px 16px;
           font-size: 14px;
         ">
@@ -726,12 +691,12 @@ if (typeof window.MobileBilling === 'undefined') {
             width: 48px;
             height: 48px;
             border-radius: 24px;
-            background: var(--mb-surface-variant);
+            background: var(--md-surface-variant);
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 16px;
-            color: var(--mb-on-surface-muted);
+            color: var(--md-on-surface-muted);
             font-size: 20px;
           ">📋</div>
           No items in bill
@@ -741,102 +706,20 @@ if (typeof window.MobileBilling === 'undefined') {
     }
 
     billItems.innerHTML = this.currentBill.items.map(item => `
-      <div class="bill-item-enhanced" data-product-id="${item.product_id}" style="
-        display: flex;
-        align-items: center;
-        padding: 12px;
-        background: var(--mb-surface);
-        border-radius: 12px;
-        margin-bottom: 8px;
-        box-shadow: var(--md-elevation-1);
-        transition: all var(--md-transition-medium);
-      ">
-        <div style="
-          width: 40px;
-          height: 40px;
-          border-radius: 20px;
-          background: var(--mb-primary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-right: 12px;
-          color: white;
-          font-size: 16px;
-          font-weight: 600;
-        ">📦</div>
-        <div style="flex: 1;">
-          <div style="
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--mb-on-surface);
-            margin-bottom: 2px;
-          ">${item.product_name}</div>
-          <div style="
-            font-size: 12px;
-            color: var(--mb-on-surface-muted);
-          ">AED ${item.price} per unit</div>
+      <div class="bill-item-enhanced" data-product-id="${item.product_id}">
+        <div>📦</div>
+        <div>
+          <div>${item.product_name}</div>
+          <div>AED ${item.price} per unit</div>
         </div>
-        <div style="
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: var(--mb-surface-variant);
-          border-radius: 16px;
-          padding: 4px;
-        ">
-          <button class="quantity-decrease" onclick="window.TajirPWA.mobileBilling.updateQuantity(${item.product_id}, -1)" style="
-            width: 24px;
-            height: 24px;
-            border-radius: 12px;
-            background: var(--mb-primary);
-            border: none;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 600;
-          ">-</button>
-          <span style="
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--mb-on-surface);
-            min-width: 20px;
-            text-align: center;
-          ">${item.quantity}</span>
-          <button class="quantity-increase" onclick="window.TajirPWA.mobileBilling.updateQuantity(${item.product_id}, 1)" style="
-            width: 24px;
-            height: 24px;
-            border-radius: 12px;
-            background: var(--mb-primary);
-            border: none;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 600;
-          ">+</button>
+        <div>
+          <button class="quantity-decrease" onclick="window.TajirPWA.mobileBilling.updateQuantity(${item.product_id}, -1)">-</button>
+          <span>${item.quantity}</span>
+          <button class="quantity-increase" onclick="window.TajirPWA.mobileBilling.updateQuantity(${item.product_id}, 1)">+</button>
         </div>
-        <div style="
-          text-align: right;
-          margin-left: 12px;
-        ">
-          <div style="
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--mb-primary);
-            margin-bottom: 4px;
-          ">AED ${item.total.toFixed(2)}</div>
-          <button class="remove-item-btn" onclick="window.TajirPWA.mobileBilling.removeFromMobileBill(${item.product_id})" style="
-            font-size: 12px;
-            color: var(--md-error);
-            background: none;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 8px;
-            transition: all var(--md-transition-medium);
-          ">Remove</button>
+        <div>
+          <div>AED ${item.total.toFixed(2)}</div>
+          <button class="remove-item-btn" onclick="window.TajirPWA.mobileBilling.removeFromMobileBill(${item.product_id})">Remove</button>
         </div>
       </div>
     `).join('');
@@ -1085,56 +968,25 @@ if (typeof window.MobileBilling === 'undefined') {
       
       // Create enhanced icon based on type
       let icon = '';
-      let iconColor = '';
       switch (type) {
         case 'success':
           icon = '✅';
-          iconColor = 'var(--md-success)';
           break;
         case 'error':
           icon = '❌';
-          iconColor = 'var(--md-error)';
           break;
         case 'warning':
           icon = '⚠️';
-          iconColor = '#f59e0b';
           break;
         default:
           icon = 'ℹ️';
-          iconColor = 'var(--mb-primary)';
       }
       
       notification.innerHTML = `
-        <div style="
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 16px 20px;
-          background: var(--mb-surface);
-          border: 1px solid ${iconColor};
-          border-radius: 16px;
-          box-shadow: var(--md-elevation-3);
-          font-size: 14px;
-          font-weight: 500;
-          color: ${iconColor};
-          max-width: 90vw;
-          animation: slideInUp 0.3s ease-out;
-        ">
-          <span style="font-size: 18px;">${icon}</span>
+        <div>
+          <span>${icon}</span>
           <span>${message}</span>
         </div>
-      `;
-
-      // Position notification
-      notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1000;
-        opacity: 0;
-        transform: translateX(-50%) translateY(-20px);
-        transition: all var(--md-transition-medium);
       `;
 
       document.body.appendChild(notification);
@@ -1183,6 +1035,97 @@ if (typeof window.MobileBilling === 'undefined') {
   // Check if bill has items
   hasItems() {
     return this.currentBill.items.length > 0;
+  }
+
+  // Barcode scanning functionality
+  initiateBarcodeScan() {
+    // Check if barcode scanner module is available
+    if (window.TajirPWA && window.TajirPWA.barcodeScanner) {
+      window.TajirPWA.barcodeScanner.startScan()
+        .then(barcode => {
+          this.searchByBarcode(barcode);
+        })
+        .catch(error => {
+          this.showMobileNotification('Barcode scanning failed', 'error');
+        });
+    } else {
+      // Fallback: show manual barcode input
+      this.showBarcodeInputModal();
+    }
+  }
+
+  searchByBarcode(barcode) {
+    // Search for product by barcode
+    const productCards = document.querySelectorAll('.product-card-mobile');
+    let found = false;
+
+    productCards.forEach(card => {
+      const productBarcode = card.dataset.barcode;
+      if (productBarcode === barcode) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('barcode-found');
+        setTimeout(() => {
+          card.classList.remove('barcode-found');
+        }, 2000);
+        found = true;
+        this.showMobileNotification('Product found!', 'success');
+      }
+    });
+
+    if (!found) {
+      this.showMobileNotification('Product not found for this barcode', 'warning');
+    }
+  }
+
+  showBarcodeInputModal() {
+    const modal = document.createElement('div');
+    modal.className = 'product-details-modal';
+    
+    modal.innerHTML = `
+      <div class="product-modal-content">
+        <div class="modal-header">
+          <h3>Enter Barcode</h3>
+          <button class="close-modal-btn">×</button>
+        </div>
+        <div class="product-modal-body">
+          <input type="text" id="barcode-input" placeholder="Enter barcode number..." class="input-mobile" style="width: 100%; margin-bottom: 16px;">
+        </div>
+        <div class="product-modal-footer">
+          <button class="add-to-bill-modal-btn" id="search-barcode-btn">Search</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const closeBtn = modal.querySelector('.close-modal-btn');
+    const searchBtn = modal.querySelector('#search-barcode-btn');
+    const barcodeInput = modal.querySelector('#barcode-input');
+    
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+    });
+    
+    searchBtn.addEventListener('click', () => {
+      const barcode = barcodeInput.value.trim();
+      if (barcode) {
+        this.searchByBarcode(barcode);
+        modal.remove();
+      } else {
+        this.showMobileNotification('Please enter a barcode', 'error');
+      }
+    });
+    
+    barcodeInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchBtn.click();
+      }
+    });
+    
+    // Focus on input
+    setTimeout(() => {
+      barcodeInput.focus();
+    }, 100);
   }
 }
 

@@ -1,468 +1,944 @@
-/* 🎨 Material Design 3 Enhanced Billing UI - Tailor POS */
+/* ========================================
+   BILLING UI ENHANCED - PHASE 1 COMPLETE
+   Material Design 3 + Enhanced Mobile Billing
+   ======================================== */
 
-/* 🎨 Material Design 3 Color System */
+/* ========================================
+   MATERIAL DESIGN 3 VARIABLES
+   ======================================== */
 :root {
-  --md-primary-500: #6366f1;
-  --md-primary-600: #5855eb;
-  --md-primary-700: #4f46e5;
-  --md-secondary-500: #a855f7;
-  --md-secondary-600: #9333ea;
-  --md-surface: #ffffff;
-  --md-surface-variant: #f8fafc;
-  --md-outline: #e2e8f0;
-  --md-outline-variant: #cbd5e1;
-  --md-on-surface: #1e293b;
-  --md-on-surface-muted: #64748b;
-  --md-error: #ef4444;
-  --md-error-container: #fef2f2;
-  --md-success: #10b981;
-  --md-success-container: #f0fdf4;
+  /* Color System */
+  --md-primary: #6750a4;
+  --md-primary-container: #eaddff;
+  --md-on-primary: #ffffff;
+  --md-on-primary-container: #21005e;
   
-  /* 🎨 Elevation System */
-  --md-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-  --md-elevation-2: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
-  --md-elevation-3: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
-  --md-elevation-4: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  --md-secondary: #625b71;
+  --md-secondary-container: #e8def8;
+  --md-on-secondary: #ffffff;
+  --md-on-secondary-container: #1e192b;
   
-  /* 🎨 Animation System */
-  --md-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --md-transition-medium: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --md-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --md-tertiary: #7d5260;
+  --md-tertiary-container: #ffd8e4;
+  --md-on-tertiary: #ffffff;
+  --md-on-tertiary-container: #31111d;
   
-  /* 🎨 Border Radius System */
-  --md-radius-sm: 8px;
-  --md-radius-md: 12px;
-  --md-radius-lg: 16px;
-  --md-radius-xl: 20px;
-  --md-radius-2xl: 24px;
+  --md-surface: #fffbfe;
+  --md-surface-variant: #e7e0ec;
+  --md-on-surface: #1c1b1f;
+  --md-on-surface-variant: #49454f;
+  --md-on-surface-muted: #79747e;
+  
+  --md-outline: #79747e;
+  --md-outline-variant: #cac4d0;
+  
+  --md-error: #ba1a1a;
+  --md-error-container: #ffdad6;
+  --md-on-error: #ffffff;
+  --md-on-error-container: #410002;
+  
+  --md-success: #0d904f;
+  --md-success-container: #9cf5d6;
+  --md-on-success: #ffffff;
+  --md-on-success-container: #002114;
+  
+  --md-warning: #f57c00;
+  --md-warning-container: #ffdcc2;
+  --md-on-warning: #ffffff;
+  --md-on-warning-container: #2d1600;
+  
+  /* Elevation System */
+  --md-elevation-0: none;
+  --md-elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --md-elevation-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --md-elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.30);
+  --md-elevation-4: 0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 3px 0px rgba(0, 0, 0, 0.30);
+  --md-elevation-5: 0px 8px 12px 6px rgba(0, 0, 0, 0.15), 0px 4px 4px 0px rgba(0, 0, 0, 0.30);
+  
+  /* Animation System */
+  --md-transition-fast: 0.1s ease-out;
+  --md-transition-medium: 0.2s ease-out;
+  --md-transition-slow: 0.3s ease-out;
+  
+  /* Border Radius System */
+  --md-radius-small: 4px;
+  --md-radius-medium: 8px;
+  --md-radius-large: 12px;
+  --md-radius-extra-large: 16px;
+  --md-radius-full: 50%;
+  
+  /* Spacing System */
+  --md-spacing-xs: 4px;
+  --md-spacing-sm: 8px;
+  --md-spacing-md: 16px;
+  --md-spacing-lg: 24px;
+  --md-spacing-xl: 32px;
+  --md-spacing-xxl: 48px;
 }
 
-/* 🎨 Dark Mode Support */
+/* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   :root {
-    --md-surface: #0f172a;
-    --md-surface-variant: #1e293b;
-    --md-outline: #334155;
-    --md-outline-variant: #475569;
-    --md-on-surface: #f1f5f9;
-    --md-on-surface-muted: #94a3b8;
+    --md-primary: #d0bcff;
+    --md-primary-container: #4f378b;
+    --md-on-primary: #371e73;
+    --md-on-primary-container: #eaddff;
+    
+    --md-secondary: #ccc2dc;
+    --md-secondary-container: #4a4458;
+    --md-on-secondary: #332d41;
+    --md-on-secondary-container: #e8def8;
+    
+    --md-tertiary: #efb8c8;
+    --md-tertiary-container: #633b48;
+    --md-on-tertiary: #492532;
+    --md-on-tertiary-container: #ffd8e4;
+    
+    --md-surface: #1c1b1f;
+    --md-surface-variant: #49454f;
+    --md-on-surface: #e6e1e5;
+    --md-on-surface-variant: #cac4d0;
+    --md-on-surface-muted: #938f99;
+    
+    --md-outline: #938f99;
+    --md-outline-variant: #49454f;
+    
+    --md-error: #ffb4ab;
+    --md-error-container: #93000a;
+    --md-on-error: #690005;
+    --md-on-error-container: #ffdad6;
+    
+    --md-success: #7dd8a7;
+    --md-success-container: #005c3a;
+    --md-on-success: #003825;
+    --md-on-success-container: #9cf5d6;
+    
+    --md-warning: #ffb77d;
+    --md-warning-container: #8b4d00;
+    --md-on-warning: #4a2800;
+    --md-on-warning-container: #ffdcc2;
   }
 }
 
-/* 🎨 Enhanced Mobile Billing Container */
+/* ========================================
+   ENHANCED MOBILE BILLING CONTAINER
+   ======================================== */
 #mobile-billing-container {
-  --mb-primary: var(--md-primary-500);
-  --mb-secondary: var(--md-secondary-500);
-  --mb-surface: var(--md-surface);
-  --mb-surface-variant: var(--md-surface-variant);
-  --mb-outline: var(--md-outline);
-  --mb-on-surface: var(--md-on-surface);
-  --mb-on-surface-muted: var(--md-on-surface-muted);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--md-surface);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideInUp 0.3s ease-out;
 }
 
-@media (max-width: 768px) {
-  /* 🎨 Enhanced Container & Layout */
-  #mobile-billing-container.container-mobile {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(8px);
-    padding: 12px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
+.container-mobile {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--md-surface);
+  overflow: hidden;
+}
 
-  #mobile-billing-container .section-mobile {
-    max-width: 680px;
-    margin: 0 auto;
-    width: 100%;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
+.section-mobile {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
-  /* 🎨 Enhanced Card Design */
-  #mobile-billing-container .card-mobile {
-    background: var(--mb-surface-variant);
-    border: 1px solid var(--mb-outline);
-    border-radius: var(--md-radius-lg);
-    box-shadow: var(--md-elevation-1);
-    overflow: hidden;
-    transition: all var(--md-transition-medium);
-  }
+.card-mobile {
+  background: var(--md-surface);
+  border-radius: var(--md-radius-extra-large);
+  box-shadow: var(--md-elevation-1);
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
-  #mobile-billing-container .card-mobile:hover {
-    box-shadow: var(--md-elevation-2);
-  }
+.card-mobile-header {
+  padding: var(--md-spacing-md) var(--md-spacing-lg);
+  background: linear-gradient(135deg, var(--md-primary) 0%, var(--md-secondary) 100%);
+  color: var(--md-on-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--md-elevation-2);
+  position: relative;
+  overflow: hidden;
+}
 
-  #mobile-billing-container .card-mobile + .card-mobile {
-    margin-top: 16px;
-  }
+/* Shimmer Animation for Header */
+.card-mobile-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
 
-  /* 🎨 Enhanced Gradient Header */
-  #mobile-billing-container .card-mobile-header {
-    background: linear-gradient(135deg, var(--mb-primary) 0%, var(--mb-secondary) 100%);
-    color: white;
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: var(--md-elevation-2);
-    position: relative;
-    overflow: hidden;
-  }
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
 
-  #mobile-billing-container .card-mobile-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-    animation: shimmer 2s infinite;
-  }
+.card-mobile-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
 
-  @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
+.card-mobile-header button {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: var(--md-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--md-transition-medium);
+  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
+}
 
-  #mobile-billing-container .card-mobile-header h2,
-  #mobile-billing-container .card-mobile-header h3 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
-    position: relative;
-    z-index: 1;
-  }
+.card-mobile-header button:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.3);
+}
 
-  /* 🎨 Enhanced Body */
-  #mobile-billing-container .card-mobile-body {
-    padding: 16px;
-  }
+.card-mobile-body {
+  flex: 1;
+  padding: var(--md-spacing-md);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-spacing-md);
+}
 
-  /* 🎨 Enhanced Search Interface */
-  #mobile-billing-container .search-mobile {
-    background: var(--mb-surface);
-    border: 2px solid var(--mb-outline);
-    border-radius: var(--md-radius-2xl);
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: var(--md-elevation-1);
-    margin-bottom: 16px;
-    transition: all var(--md-transition-medium);
-  }
+/* ========================================
+   ENHANCED PRODUCT SEARCH
+   ======================================== */
+.search-mobile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-extra-large);
+  padding: 0 var(--md-spacing-md);
+  box-shadow: var(--md-elevation-1);
+  transition: all var(--md-transition-medium);
+  margin-bottom: var(--md-spacing-md);
+}
 
-  #mobile-billing-container .search-mobile:focus-within {
-    border-color: var(--mb-primary);
-    box-shadow: var(--md-elevation-2);
-    transform: translateY(-1px);
-  }
+.search-mobile:focus-within {
+  box-shadow: var(--md-elevation-2);
+  transform: translateY(-1px);
+  background: var(--md-surface);
+  border: 2px solid var(--md-primary);
+}
 
-  #mobile-billing-container .search-mobile input.input-mobile {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--mb-on-surface);
-    font-size: 16px;
-    width: 100%;
-    font-weight: 500;
-  }
+.search-mobile svg {
+  width: 20px;
+  height: 20px;
+  color: var(--md-outline-variant);
+  margin-right: var(--md-spacing-sm);
+  flex-shrink: 0;
+}
 
-  #mobile-billing-container .search-mobile input.input-mobile::placeholder {
-    color: var(--mb-on-surface-muted);
-  }
+.input-mobile {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: var(--md-spacing-md) 0;
+  font-size: 16px;
+  color: var(--md-on-surface);
+  outline: none;
+  font-family: inherit;
+}
 
-  /* 🎨 Enhanced Product Grid */
-  #mobile-billing-container #mobile-product-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 16px;
-    padding-bottom: 140px; /* Space for sticky summary */
-  }
+.input-mobile::placeholder {
+  color: var(--md-outline-variant);
+  font-weight: 400;
+}
 
-  /* 🎨 Enhanced Product Cards */
-  #mobile-billing-container .product-card-mobile,
-  #mobile-billing-container .card-mobile.cursor-pointer {
-    background: var(--mb-surface);
-    border: 2px solid var(--mb-outline);
-    border-radius: var(--md-radius-lg);
-    box-shadow: var(--md-elevation-1);
-    transition: all var(--md-transition-medium);
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
+/* Barcode Scan Button */
+.barcode-scan-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-radius-full);
+  background: var(--md-primary);
+  border: none;
+  color: var(--md-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--md-spacing-sm);
+  transition: all var(--md-transition-medium);
+  flex-shrink: 0;
+}
 
-  #mobile-billing-container .product-card-mobile:active,
-  #mobile-billing-container .card-mobile.cursor-pointer:active {
-    transform: scale(0.95);
-    box-shadow: var(--md-elevation-3);
-    border-color: var(--mb-primary);
-  }
+.barcode-scan-btn:active {
+  transform: scale(0.95);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
 
-  #mobile-billing-container .product-card-mobile:hover,
-  #mobile-billing-container .card-mobile.cursor-pointer:hover {
-    border-color: var(--mb-primary);
-    box-shadow: var(--md-elevation-2);
-  }
+/* ========================================
+   ENHANCED PRODUCT GRID
+   ======================================== */
+#mobile-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--md-spacing-md);
+  padding-bottom: 120px; /* Space for bill summary */
+  overflow-y: auto;
+  flex: 1;
+}
 
-  #mobile-billing-container .product-card-content {
-    padding: 16px;
-    text-align: center;
-  }
+.product-card-mobile {
+  background: var(--md-surface);
+  border-radius: var(--md-radius-extra-large);
+  padding: var(--md-spacing-md);
+  box-shadow: var(--md-elevation-1);
+  transition: all var(--md-transition-medium);
+  cursor: pointer;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-out;
+}
 
-  #mobile-billing-container .product-name {
-    font-weight: 600;
-    color: var(--mb-on-surface);
-    font-size: 14px;
-    margin-bottom: 8px;
-    line-height: 1.3;
-  }
+.product-card-mobile:active {
+  transform: scale(0.95);
+  box-shadow: var(--md-elevation-3);
+}
 
-  #mobile-billing-container .product-price {
-    color: var(--mb-primary);
-    font-weight: 700;
-    font-size: 16px;
-    margin-bottom: 12px;
-  }
+.product-card-mobile:hover {
+  border-color: var(--md-primary);
+  box-shadow: var(--md-elevation-2);
+}
 
-  /* 🎨 Enhanced Add to Bill Button */
-  #mobile-billing-container .add-to-bill-btn {
-    width: 100%;
-    height: 36px;
-    border-radius: 18px;
-    background: var(--mb-primary);
-    border: none;
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all var(--md-transition-medium);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
+.product-card-mobile.added-to-bill {
+  border-color: var(--md-success);
+  background: var(--md-success-container);
+  animation: pulse 0.6s ease-out;
+}
 
-  #mobile-billing-container .add-to-bill-btn:active {
-    transform: scale(0.95);
-    background: var(--md-primary-700);
-  }
+.product-card-mobile.barcode-found {
+  border-color: var(--md-primary);
+  background: var(--md-primary-container);
+  animation: pulse 0.6s ease-out;
+  box-shadow: var(--md-elevation-3);
+}
 
-  /* 🎨 Enhanced Bill Items */
-  #mobile-billing-container .list-mobile .bill-item {
-    border-bottom: 1px solid var(--mb-outline);
-    padding: 12px 0;
-    transition: all var(--md-transition-medium);
-  }
+.product-card-content {
+  text-align: center;
+}
 
-  #mobile-billing-container .list-mobile .bill-item:last-child {
-    border-bottom: none;
-  }
+.product-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  margin-bottom: var(--md-spacing-xs);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
-  /* 🎨 Enhanced Sticky Bill Summary */
-  #mobile-billing-container .bill-summary-mobile {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--mb-surface-variant);
-    border-top: 1px solid var(--mb-outline);
-    box-shadow: var(--md-elevation-4);
-    padding: 16px 20px;
-    z-index: 70;
-    backdrop-filter: blur(20px);
-  }
+.product-type {
+  font-size: 12px;
+  color: var(--md-outline-variant);
+  margin-bottom: var(--md-spacing-sm);
+  font-weight: 400;
+}
 
-  #mobile-billing-container .bill-summary-row-mobile {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 0;
-  }
+.product-price {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--md-primary);
+  margin-bottom: var(--md-spacing-md);
+}
 
-  #mobile-billing-container .bill-summary-label {
-    color: var(--mb-on-surface-muted);
-    font-size: 14px;
-  }
+.add-to-bill-btn {
+  width: 100%;
+  height: 36px;
+  border-radius: 18px;
+  background: var(--md-primary);
+  border: none;
+  color: var(--md-on-primary);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--md-transition-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-spacing-xs);
+}
 
-  #mobile-billing-container .bill-summary-value {
-    color: var(--mb-on-surface);
-    font-weight: 500;
-    font-size: 14px;
-  }
+.add-to-bill-btn:active {
+  transform: scale(0.95);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
 
-  #mobile-billing-container .bill-summary-total {
-    color: var(--mb-primary);
-    font-weight: 700;
-    font-size: 20px;
-    border-top: 1px solid var(--mb-outline);
-    padding-top: 8px;
-    margin-top: 8px;
-  }
+.add-to-bill-btn svg {
+  width: 16px;
+  height: 16px;
+}
 
-  /* 🎨 Enhanced Action Buttons */
-  #mobile-billing-container #clear-mobile-bill {
-    background: var(--md-error-container);
-    border: 1px solid var(--md-error);
-    color: var(--md-error);
-    padding: 8px 16px;
-    border-radius: var(--md-radius-md);
-    font-size: 14px;
-    font-weight: 500;
-    transition: all var(--md-transition-medium);
-  }
+/* ========================================
+   ENHANCED BILL SUMMARY
+   ======================================== */
+.bill-summary-mobile {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--md-surface);
+  border-top: 1px solid var(--md-outline);
+  padding: var(--md-spacing-md) var(--md-spacing-lg);
+  box-shadow: var(--md-elevation-3);
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  animation: slideInUp 0.3s ease-out;
+}
 
-  #mobile-billing-container #clear-mobile-bill:active {
-    transform: scale(0.95);
-    background: var(--md-error);
-    color: white;
-  }
+.bill-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--md-spacing-sm);
+}
 
-  /* 🎨 Enhanced Process Bill Button */
-  #mobile-billing-container #mobile-process-bill-btn {
-    width: 100%;
-    height: 48px;
-    border-radius: var(--md-radius-2xl);
-    background: linear-gradient(135deg, var(--mb-primary) 0%, var(--mb-secondary) 100%);
-    border: none;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    transition: all var(--md-transition-medium);
-    box-shadow: var(--md-elevation-2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 12px;
-  }
+.bill-summary-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+  margin: 0;
+}
 
-  #mobile-billing-container #mobile-process-bill-btn:active {
-    transform: scale(0.98);
-    box-shadow: var(--md-elevation-3);
-  }
+#clear-mobile-bill {
+  padding: var(--md-spacing-sm) var(--md-spacing-md);
+  border-radius: var(--md-radius-large);
+  background: var(--md-error-container);
+  border: none;
+  color: var(--md-error);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--md-transition-medium);
+}
 
-  #mobile-billing-container #mobile-process-bill-btn:disabled {
-    background: var(--mb-outline);
-    color: var(--mb-on-surface-muted);
-    box-shadow: none;
-  }
+#clear-mobile-bill:active {
+  transform: scale(0.95);
+  background: var(--md-error);
+  color: var(--md-on-error);
+}
 
-  /* 🎨 Enhanced Animations */
-  @keyframes slideInUp {
-    from {
-      transform: translateY(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
+.bill-summary-row-mobile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: var(--md-spacing-xs);
+}
 
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
+.bill-summary-label {
+  color: var(--md-outline-variant);
+  font-weight: 400;
+}
 
-  @keyframes scaleIn {
-    from {
-      transform: scale(0.9);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
+.bill-summary-value {
+  font-weight: 500;
+  color: var(--md-on-surface);
+}
 
-  @keyframes pulse {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.05);
-    }
-  }
+.bill-summary-total {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--md-primary);
+  border-top: 1px solid var(--md-outline);
+  padding-top: var(--md-spacing-sm);
+  margin-top: var(--md-spacing-sm);
+}
 
-  /* 🎨 Apply Animations */
-  #mobile-billing-container .product-card-mobile {
-    animation: fadeIn 0.3s ease-out;
-  }
+/* ========================================
+   ENHANCED BILL ITEMS
+   ======================================== */
+.list-mobile {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: var(--md-spacing-sm);
+}
 
-  #mobile-billing-container .product-card-mobile.added-to-bill {
-    animation: pulse 0.2s ease-out;
-  }
+.bill-item-enhanced {
+  display: flex;
+  align-items: center;
+  padding: var(--md-spacing-sm);
+  background: var(--md-surface);
+  border-radius: var(--md-radius-large);
+  margin-bottom: var(--md-spacing-sm);
+  box-shadow: var(--md-elevation-1);
+  transition: all var(--md-transition-medium);
+  animation: scaleIn 0.2s ease-out;
+}
 
-  #mobile-billing-container .bill-summary-mobile {
-    animation: slideInUp 0.3s ease-out;
-  }
+.bill-item-enhanced:last-child {
+  margin-bottom: 0;
+}
 
-  #mobile-billing-container .card-mobile {
-    animation: scaleIn 0.2s ease-out;
-  }
+.bill-item-enhanced:active {
+  transform: scale(0.98);
+}
 
-  /* 🎨 Enhanced Loading States */
-  .loading-spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--mb-outline);
-    border-top: 2px solid var(--mb-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
+.bill-item-enhanced > div:first-child {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-radius-full);
+  background: var(--md-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: var(--md-spacing-sm);
+  color: var(--md-on-primary);
+  font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
 
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+.bill-item-enhanced > div:nth-child(2) {
+  flex: 1;
+}
 
-  /* 🎨 Enhanced Notifications */
-  .mobile-notification {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--mb-surface);
-    border: 1px solid var(--mb-outline);
-    border-radius: var(--md-radius-lg);
-    padding: 12px 16px;
-    box-shadow: var(--md-elevation-3);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 500;
+.bill-item-enhanced > div:nth-child(2) > div:first-child {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  margin-bottom: 2px;
+}
+
+.bill-item-enhanced > div:nth-child(2) > div:last-child {
+  font-size: 12px;
+  color: var(--md-outline-variant);
+}
+
+/* Quantity Controls */
+.bill-item-enhanced > div:nth-child(3) {
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-sm);
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-large);
+  padding: 4px;
+  margin-right: var(--md-spacing-sm);
+}
+
+.quantity-decrease,
+.quantity-increase {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--md-radius-full);
+  background: var(--md-primary);
+  border: none;
+  color: var(--md-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all var(--md-transition-medium);
+}
+
+.quantity-decrease:active,
+.quantity-increase:active {
+  transform: scale(0.9);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.bill-item-enhanced > div:nth-child(3) > span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Price and Remove */
+.bill-item-enhanced > div:last-child {
+  text-align: right;
+  margin-left: var(--md-spacing-sm);
+}
+
+.bill-item-enhanced > div:last-child > div:first-child {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--md-primary);
+  margin-bottom: 4px;
+}
+
+.remove-item-btn {
+  font-size: 12px;
+  color: var(--md-error);
+  background: none;
+  border: none;
+  padding: 4px var(--md-spacing-sm);
+  border-radius: var(--md-radius-medium);
+  transition: all var(--md-transition-medium);
+}
+
+.remove-item-btn:active {
+  background: var(--md-error-container);
+  transform: scale(0.95);
+}
+
+/* ========================================
+   ENHANCED ACTION BUTTONS
+   ======================================== */
+.billing-actions-mobile {
+  margin-top: var(--md-spacing-md);
+}
+
+#mobile-process-bill-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 24px;
+  background: var(--md-primary);
+  border: none;
+  color: var(--md-on-primary);
+  font-size: 16px;
+  font-weight: 600;
+  transition: all var(--md-transition-medium);
+  box-shadow: var(--md-elevation-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-spacing-sm);
+}
+
+#mobile-process-bill-btn:active {
+  transform: scale(0.98);
+  box-shadow: var(--md-elevation-3);
+}
+
+#mobile-process-bill-btn:disabled {
+  background: var(--md-outline-variant);
+  color: var(--md-outline);
+  box-shadow: none;
+}
+
+#mobile-process-bill-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ========================================
+   ENHANCED NOTIFICATIONS
+   ======================================== */
+.mobile-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+  transition: all var(--md-transition-medium);
+  max-width: 90vw;
+}
+
+.mobile-notification > div {
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-sm);
+  padding: var(--md-spacing-md) var(--md-spacing-lg);
+  background: var(--md-surface);
+  border-radius: var(--md-radius-extra-large);
+  box-shadow: var(--md-elevation-3);
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 90vw;
+  animation: slideInUp 0.3s ease-out;
+}
+
+.mobile-notification.success > div {
+  border: 1px solid var(--md-success);
+  color: var(--md-success);
+}
+
+.mobile-notification.error > div {
+  border: 1px solid var(--md-error);
+  color: var(--md-error);
+}
+
+.mobile-notification.warning > div {
+  border: 1px solid var(--md-warning);
+  color: var(--md-warning);
+}
+
+.mobile-notification.info > div {
+  border: 1px solid var(--md-primary);
+  color: var(--md-primary);
+}
+
+.mobile-notification > div > span:first-child {
+  font-size: 18px;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
     opacity: 0;
-    transform: translateY(-20px);
-    transition: all var(--md-transition-medium);
   }
-
-  .mobile-notification.show {
-    opacity: 1;
+  to {
     transform: translateY(0);
+    opacity: 1;
   }
+}
 
-  .mobile-notification.success {
-    border-color: var(--md-success);
-    color: var(--md-success);
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
   }
-
-  .mobile-notification.error {
-    border-color: var(--md-error);
-    color: var(--md-error);
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
+}
 
-  .mobile-notification.info {
-    border-color: var(--mb-primary);
-    color: var(--mb-primary);
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 480px) {
+  #mobile-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--md-spacing-sm);
+  }
+  
+  .product-card-mobile {
+    padding: var(--md-spacing-sm);
+  }
+  
+  .product-name {
+    font-size: 13px;
+  }
+  
+  .product-price {
+    font-size: 15px;
+  }
+  
+  .add-to-bill-btn {
+    height: 32px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 360px) {
+  #mobile-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  
+  .card-mobile-body {
+    padding: var(--md-spacing-sm);
+  }
+  
+  .bill-summary-mobile {
+    padding: var(--md-spacing-sm) var(--md-spacing-md);
+  }
+}
+
+/* ========================================
+   ENHANCED MODALS
+   ======================================== */
+.product-details-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.product-modal-content {
+  background: var(--md-surface);
+  border-radius: var(--md-radius-extra-large);
+  padding: var(--md-spacing-lg);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: scaleIn 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--md-spacing-lg);
+}
+
+.modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+  margin: 0;
+}
+
+.close-modal-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--md-radius-full);
+  background: var(--md-surface-variant);
+  border: none;
+  color: var(--md-outline-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all var(--md-transition-medium);
+}
+
+.close-modal-btn:active {
+  transform: scale(0.9);
+  background: var(--md-outline-variant);
+}
+
+.product-modal-body {
+  text-align: center;
+  margin-bottom: var(--md-spacing-lg);
+}
+
+.product-image-large {
+  margin-bottom: var(--md-spacing-md);
+}
+
+.product-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--md-radius-full);
+  background: var(--md-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--md-spacing-md);
+  color: var(--md-on-primary);
+  font-size: 24px;
+}
+
+.product-details h4 {
+  font-size: 16px;
+  margin: 0 0 var(--md-spacing-sm);
+  color: var(--md-on-surface);
+}
+
+.product-price-large {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--md-primary);
+  margin: 0;
+}
+
+.product-modal-footer {
+  display: flex;
+  gap: var(--md-spacing-sm);
+}
+
+.add-to-bill-modal-btn {
+  flex: 1;
+  height: 48px;
+  border-radius: 24px;
+  background: var(--md-primary);
+  border: none;
+  color: var(--md-on-primary);
+  font-size: 16px;
+  font-weight: 600;
+  transition: all var(--md-transition-medium);
+}
+
+.add-to-bill-modal-btn:active {
+  transform: scale(0.95);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+.add-to-bill-btn:focus,
+.quantity-decrease:focus,
+.quantity-increase:focus,
+.remove-item-btn:focus,
+#clear-mobile-bill:focus,
+#mobile-process-bill-btn:focus,
+.close-modal-btn:focus,
+.add-to-bill-modal-btn:focus {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .product-card-mobile {
+    border: 2px solid var(--md-outline);
+  }
+  
+  .bill-item-enhanced {
+    border: 1px solid var(--md-outline);
   }
 }
