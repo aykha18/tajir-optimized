@@ -226,8 +226,8 @@ if (typeof window.MobileBilling === 'undefined') {
       container.style.display = 'block';
       container.classList.add('fade-in-mobile');
       
-      // Sync data from main billing system when opening
-      this.syncFromMainBilling();
+      // Start with a clean bill when opening mobile billing
+      this.clearMobileBill();
       
       // Load products if not already loaded
       this.loadMobileProducts();
@@ -245,9 +245,6 @@ if (typeof window.MobileBilling === 'undefined') {
     if (container) {
       // Sync mobile bill data to main billing system before hiding
       this.syncToMainBilling();
-      
-      // Clear the mobile bill after syncing
-      this.clearMobileBill();
       
       container.classList.add('slide-up-mobile');
       setTimeout(() => {
@@ -323,8 +320,6 @@ if (typeof window.MobileBilling === 'undefined') {
       // Show success notification
       this.showMobileNotification(`${this.currentBill.items.length} items transferred to main billing`, 'success');
       
-      // Clear mobile bill after successful sync
-      this.clearMobileBill();
       // Reset dirty flag
       this.mobileBillDirty = false;
       
