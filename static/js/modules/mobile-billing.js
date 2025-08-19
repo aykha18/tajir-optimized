@@ -17,6 +17,8 @@ if (typeof window.MobileBilling === 'undefined') {
     };
     this.isInitialized = false;
     this.mobileNavigation = null;
+    // Tracks if the user modified the mobile bill after opening
+    this.mobileBillDirty = false;
   }
 
   async init() {
@@ -257,7 +259,8 @@ if (typeof window.MobileBilling === 'undefined') {
 
   // Sync mobile bill data to main billing system
   syncToMainBilling() {
-    if (this.currentBill.items.length === 0) {
+    // Avoid duplicating when user didn't change anything
+    if (!this.mobileBillDirty || this.currentBill.items.length === 0) {
   
       return;
     }
@@ -322,6 +325,8 @@ if (typeof window.MobileBilling === 'undefined') {
       
       // Clear mobile bill after successful sync
       this.clearMobileBill();
+      // Reset dirty flag
+      this.mobileBillDirty = false;
       
     } catch (error) {
       console.error('Error syncing mobile bill to main billing:', error);
@@ -339,6 +344,7 @@ if (typeof window.MobileBilling === 'undefined') {
         this.currentBill.items = [];
         this.updateMobileBillDisplay();
         this.calculateMobileTotals();
+        this.mobileBillDirty = false;
 
         return;
       }
@@ -358,6 +364,8 @@ if (typeof window.MobileBilling === 'undefined') {
       this.currentBill.items = mobileItems;
       this.updateMobileBillDisplay();
       this.calculateMobileTotals();
+      // Just mirrored from main; not dirty yet
+      this.mobileBillDirty = false;
       
 
       
@@ -496,6 +504,8 @@ if (typeof window.MobileBilling === 'undefined') {
 
     this.updateBillDisplay();
     this.calculateTotals();
+    // Mark as modified
+    this.mobileBillDirty = true;
     
     // Show success feedback
     this.showMobileNotification(`${product.product_name} added to bill`, 'success');
@@ -526,6 +536,8 @@ if (typeof window.MobileBilling === 'undefined') {
 
     this.updateMobileBillDisplay();
     this.calculateMobileTotals();
+    // Mark as modified
+    this.mobileBillDirty = true;
     
     // Show success feedback
     this.showMobileNotification(`${productName} added to bill`, 'success');
@@ -597,6 +609,7 @@ if (typeof window.MobileBilling === 'undefined') {
     this.currentBill.items = this.currentBill.items.filter(item => item.product_id !== productId);
     this.updateMobileBillDisplay();
     this.calculateMobileTotals();
+    this.mobileBillDirty = true;
     this.showMobileNotification('Item removed from bill', 'info');
   }
 
@@ -659,6 +672,7 @@ if (typeof window.MobileBilling === 'undefined') {
     };
     this.updateMobileBillDisplay();
     this.calculateMobileTotals();
+    this.mobileBillDirty = false;
     // Removed notification to prevent "Bill Cleared" message
   }
 
