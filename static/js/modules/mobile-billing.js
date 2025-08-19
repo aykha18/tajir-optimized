@@ -19,6 +19,9 @@ if (typeof window.MobileBilling === 'undefined') {
     this.mobileNavigation = null;
     // Tracks if the user modified the mobile bill after opening
     this.mobileBillDirty = false;
+    // Prevent duplicate notifications
+    this.lastNotification = null;
+    this.notificationTimeout = null;
   }
 
   async init() {
@@ -236,6 +239,12 @@ if (typeof window.MobileBilling === 'undefined') {
   showMobileBilling() {
     const container = document.getElementById('mobile-billing-container');
     if (container) {
+      // Clean up any existing notifications first
+      const existingNotifications = document.querySelectorAll('.mobile-notification');
+      existingNotifications.forEach(notification => {
+        notification.remove();
+      });
+      
       container.style.display = 'block';
       container.classList.add('fade-in-mobile');
       
@@ -258,6 +267,12 @@ if (typeof window.MobileBilling === 'undefined') {
     if (container) {
       // Sync mobile bill data to main billing system before hiding
       this.syncToMainBilling();
+      
+      // Clean up any existing notifications
+      const existingNotifications = document.querySelectorAll('.mobile-notification');
+      existingNotifications.forEach(notification => {
+        notification.remove();
+      });
       
       container.classList.add('slide-up-mobile');
       setTimeout(() => {
@@ -959,6 +974,30 @@ if (typeof window.MobileBilling === 'undefined') {
   }
 
   showMobileNotification(message, type = 'info') {
+    // Prevent duplicate notifications by checking for existing ones
+    const existingNotifications = document.querySelectorAll('.mobile-notification');
+    existingNotifications.forEach(notification => {
+      notification.remove();
+    });
+
+    // Debounce notifications to prevent rapid successive calls
+    const notificationKey = `${message}-${type}`;
+    if (this.lastNotification === notificationKey) {
+      return; // Skip duplicate notification
+    }
+
+    // Clear any existing timeout
+    if (this.notificationTimeout) {
+      clearTimeout(this.notificationTimeout);
+    }
+
+    // Set debounce timeout
+    this.notificationTimeout = setTimeout(() => {
+      this.lastNotification = null;
+    }, 1000);
+
+    this.lastNotification = notificationKey;
+
     if (window.TajirPWA && window.TajirPWA.mobileNavigation) {
       window.TajirPWA.mobileNavigation.showMobileNotification(message, type);
     } else {
