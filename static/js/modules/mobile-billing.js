@@ -13,7 +13,10 @@ if (typeof window.MobileBilling === 'undefined') {
       total: 0,
       tax: 0,
       discount: 0,
-      finalTotal: 0
+      discountType: 'percentage', // 'percentage' or 'amount'
+      discountValue: 0,
+      finalTotal: 0,
+      paymentMethod: null
     };
     this.isInitialized = false;
     this.mobileNavigation = null;
@@ -22,6 +25,8 @@ if (typeof window.MobileBilling === 'undefined') {
     // Prevent duplicate notifications
     this.lastNotification = null;
     this.notificationTimeout = null;
+    // Payment flow state
+    this.paymentInProgress = false;
   }
 
   async init() {
@@ -89,27 +94,65 @@ if (typeof window.MobileBilling === 'undefined') {
                 <button id="clear-mobile-bill" class="text-red-500 text-sm">Clear</button>
               </div>
               <div class="card-mobile-body">
+                <!-- Customer Selection -->
+                <div class="customer-selection">
+                  <div class="customer-selection-header">
+                    <h4>Customer</h4>
+                    <button class="select-customer-btn" id="select-customer-btn">Select</button>
+                  </div>
+                  <div id="selected-customer-display" style="display: none;">
+                    <div class="selected-customer">
+                      <div class="customer-avatar" id="customer-avatar">👤</div>
+                      <div class="customer-info">
+                        <h5 id="customer-name">Customer Name</h5>
+                        <p id="customer-phone">Phone Number</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Discount Management -->
+                <div class="discount-management">
+                  <div class="discount-header">
+                    <h4>Discount</h4>
+                    <div class="discount-controls">
+                      <input type="number" id="discount-input" class="discount-input" placeholder="0" min="0" step="0.01">
+                      <div class="discount-type-selector">
+                        <button class="discount-type-btn active" data-type="percentage">%</button>
+                        <button class="discount-type-btn" data-type="amount">AED</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
                 <div id="mobile-bill-items" class="list-mobile">
                   <!-- Bill items will be shown here -->
                 </div>
                 
-                <!-- Bill Summary -->
-                <div class="bill-summary-mobile">
+                <!-- Enhanced Bill Summary -->
+                <div class="bill-summary-payment">
+                  <div class="payment-info">
+                    <h4>Bill Summary</h4>
+                    <div class="payment-method-display" id="payment-method-display" style="display: none;">
+                      <span id="payment-method-icon">💳</span>
+                      <span id="payment-method-text">Card</span>
+                    </div>
+                  </div>
                   <div class="bill-summary-row-mobile">
                     <span class="bill-summary-label">Subtotal:</span>
-                                         <span class="bill-summary-value" id="mobile-subtotal">0.00</span>
-                   </div>
-                   <div class="bill-summary-row-mobile">
-                     <span class="bill-summary-label">Tax (5%):</span>
-                     <span class="bill-summary-value" id="mobile-tax-amount">0.00</span>
-                   </div>
-                   <div class="bill-summary-row-mobile">
-                     <span class="bill-summary-label">Discount:</span>
-                     <span class="bill-summary-value" id="mobile-discount-amount">0.00</span>
-                   </div>
-                   <div class="bill-summary-row-mobile">
-                     <span class="bill-summary-label">Total:</span>
-                     <span class="bill-summary-total" id="mobile-final-total">0.00</span>
+                    <span class="bill-summary-value" id="mobile-subtotal">0.00</span>
+                  </div>
+                  <div class="bill-summary-row-mobile">
+                    <span class="bill-summary-label">Tax (5%):</span>
+                    <span class="bill-summary-value" id="mobile-tax-amount">0.00</span>
+                  </div>
+                  <div class="bill-summary-row-mobile">
+                    <span class="bill-summary-label">Discount:</span>
+                    <span class="bill-summary-value" id="mobile-discount-amount">0.00</span>
+                  </div>
+                  <div class="bill-summary-row-mobile">
+                    <span class="bill-summary-label">Total:</span>
+                    <span class="bill-summary-total" id="mobile-final-total">0.00</span>
                   </div>
                 </div>
               </div>
@@ -231,9 +274,33 @@ if (typeof window.MobileBilling === 'undefined') {
     const processBtn = container.querySelector('#mobile-process-bill-btn');
     if (processBtn) {
       processBtn.addEventListener('click', () => {
-        this.processMobileBill();
+        this.initiateEnhancedPayment();
       });
     }
+
+    // Customer selection
+    const selectCustomerBtn = container.querySelector('#select-customer-btn');
+    if (selectCustomerBtn) {
+      selectCustomerBtn.addEventListener('click', () => {
+        this.showCustomerSelection();
+      });
+    }
+
+    // Discount management
+    const discountInput = container.querySelector('#discount-input');
+    if (discountInput) {
+      discountInput.addEventListener('input', (e) => {
+        this.updateDiscount(e.target.value);
+      });
+    }
+
+    // Discount type selector
+    const discountTypeBtns = container.querySelectorAll('.discount-type-btn');
+    discountTypeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.setDiscountType(btn.dataset.type);
+      });
+    });
   }
 
   showMobileBilling() {
@@ -804,10 +871,15 @@ if (typeof window.MobileBilling === 'undefined') {
       total: 0,
       tax: 0,
       discount: 0,
-      finalTotal: 0
+      discountType: 'percentage',
+      discountValue: 0,
+      finalTotal: 0,
+      paymentMethod: null
     };
     this.updateMobileBillDisplay();
     this.calculateMobileTotals();
+    this.updateCustomerDisplay();
+    this.updatePaymentMethodDisplay();
     this.mobileBillDirty = false;
     // Removed notification to prevent "Bill Cleared" message
   }
@@ -1150,6 +1222,403 @@ if (typeof window.MobileBilling === 'undefined') {
     setTimeout(() => {
       barcodeInput.focus();
     }, 100);
+  }
+
+  // ========================================
+  // PHASE 3: ENHANCED PAYMENT FLOW METHODS
+  // ========================================
+
+  initiateEnhancedPayment() {
+    if (this.currentBill.items.length === 0) {
+      this.showMobileNotification('Please add items to the bill first', 'error');
+      return;
+    }
+
+    if (this.paymentInProgress) {
+      return; // Prevent multiple payment attempts
+    }
+
+    this.showPaymentMethodSelection();
+  }
+
+  showPaymentMethodSelection() {
+    const modal = document.createElement('div');
+    modal.className = 'payment-method-modal';
+    modal.innerHTML = `
+      <div class="payment-method-content">
+        <div class="payment-method-header">
+          <h3>Select Payment Method</h3>
+          <button class="close-payment-modal">×</button>
+        </div>
+        <div class="payment-methods">
+          <div class="payment-method-option" data-method="cash">
+            <div class="payment-method-icon">💵</div>
+            <div class="payment-method-info">
+              <h4>Cash</h4>
+              <p>Pay with cash</p>
+            </div>
+          </div>
+          <div class="payment-method-option" data-method="card">
+            <div class="payment-method-icon">💳</div>
+            <div class="payment-method-info">
+              <h4>Card</h4>
+              <p>Credit/Debit card</p>
+            </div>
+          </div>
+          <div class="payment-method-option" data-method="digital">
+            <div class="payment-method-icon">📱</div>
+            <div class="payment-method-info">
+              <h4>Digital Payment</h4>
+              <p>Apple Pay, Google Pay</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    this.setupPaymentMethodSelection(modal);
+  }
+
+  setupPaymentMethodSelection(modal) {
+    const options = modal.querySelectorAll('.payment-method-option');
+    
+    options.forEach(option => {
+      option.addEventListener('click', () => {
+        const method = option.dataset.method;
+        this.processPayment(method);
+        modal.remove();
+      });
+    });
+
+    const closeBtn = modal.querySelector('.close-payment-modal');
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+    });
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+  }
+
+  async processPayment(method) {
+    try {
+      this.paymentInProgress = true;
+      this.currentBill.paymentMethod = method;
+      
+      this.showPaymentProgress();
+      
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Process payment based on method
+      switch (method) {
+        case 'cash':
+          await this.processCashPayment();
+          break;
+        case 'card':
+          await this.processCardPayment();
+          break;
+        case 'digital':
+          await this.processDigitalPayment();
+          break;
+      }
+      
+      this.showPaymentSuccess();
+    } catch (error) {
+      this.showPaymentError(error.message);
+    } finally {
+      this.paymentInProgress = false;
+    }
+  }
+
+  showPaymentProgress() {
+    const progressModal = document.createElement('div');
+    progressModal.className = 'payment-progress-modal';
+    progressModal.innerHTML = `
+      <div class="payment-progress-content">
+        <div class="payment-progress-spinner"></div>
+        <h4>Processing Payment...</h4>
+        <p>Please wait while we process your payment</p>
+      </div>
+    `;
+    
+    document.body.appendChild(progressModal);
+  }
+
+  hidePaymentProgress() {
+    const progressModal = document.querySelector('.payment-progress-modal');
+    if (progressModal) {
+      progressModal.remove();
+    }
+  }
+
+  showPaymentSuccess() {
+    this.hidePaymentProgress();
+    
+    const successModal = document.createElement('div');
+    successModal.className = 'payment-success-modal';
+    successModal.innerHTML = `
+      <div class="payment-success-content">
+        <div class="payment-success-icon">✅</div>
+        <h4>Payment Successful!</h4>
+        <p>Your bill has been created successfully</p>
+        <div class="payment-success-actions">
+          <button class="print-receipt-btn">Print Receipt</button>
+          <button class="new-bill-btn">New Bill</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(successModal);
+    this.setupSuccessModal(successModal);
+  }
+
+  setupSuccessModal(modal) {
+    const printBtn = modal.querySelector('.print-receipt-btn');
+    const newBillBtn = modal.querySelector('.new-bill-btn');
+    
+    printBtn.addEventListener('click', () => {
+      this.printReceipt();
+      modal.remove();
+    });
+    
+    newBillBtn.addEventListener('click', () => {
+      this.startNewBill();
+      modal.remove();
+    });
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+  }
+
+  showPaymentError(message) {
+    this.hidePaymentProgress();
+    this.showMobileNotification(message || 'Payment failed', 'error');
+  }
+
+  async processCashPayment() {
+    // Simulate cash payment processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    this.showMobileNotification('Cash payment processed', 'success');
+  }
+
+  async processCardPayment() {
+    // Simulate card payment processing
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    this.showMobileNotification('Card payment processed', 'success');
+  }
+
+  async processDigitalPayment() {
+    // Simulate digital payment processing
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    this.showMobileNotification('Digital payment processed', 'success');
+  }
+
+  // Customer Selection Methods
+  showCustomerSelection() {
+    // For now, show a simple customer selection modal
+    // In a real implementation, this would fetch customers from the database
+    const modal = document.createElement('div');
+    modal.className = 'product-details-modal';
+    
+    modal.innerHTML = `
+      <div class="product-modal-content">
+        <div class="modal-header">
+          <h3>Select Customer</h3>
+          <button class="close-modal-btn">×</button>
+        </div>
+        <div class="product-modal-body">
+          <div class="customer-option" data-customer-id="1">
+            <div class="customer-avatar">👤</div>
+            <div class="customer-info">
+              <h5>John Doe</h5>
+              <p>+971 50 123 4567</p>
+            </div>
+          </div>
+          <div class="customer-option" data-customer-id="2">
+            <div class="customer-avatar">👤</div>
+            <div class="customer-info">
+              <h5>Jane Smith</h5>
+              <p>+971 55 987 6543</p>
+            </div>
+          </div>
+          <div class="customer-option" data-customer-id="3">
+            <div class="customer-avatar">👤</div>
+            <div class="customer-info">
+              <h5>Walk-in Customer</h5>
+              <p>No phone number</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    this.setupCustomerSelection(modal);
+  }
+
+  setupCustomerSelection(modal) {
+    const customerOptions = modal.querySelectorAll('.customer-option');
+    
+    customerOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const customerId = option.dataset.customerId;
+        const customerName = option.querySelector('h5').textContent;
+        const customerPhone = option.querySelector('p').textContent;
+        
+        this.selectCustomer(customerId, customerName, customerPhone);
+        modal.remove();
+      });
+    });
+
+    const closeBtn = modal.querySelector('.close-modal-btn');
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+    });
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+  }
+
+  selectCustomer(customerId, customerName, customerPhone) {
+    this.currentBill.customer = {
+      id: customerId,
+      name: customerName,
+      phone: customerPhone
+    };
+    
+    this.updateCustomerDisplay();
+    this.showMobileNotification(`Customer selected: ${customerName}`, 'success');
+  }
+
+  updateCustomerDisplay() {
+    const display = document.getElementById('selected-customer-display');
+    const avatar = document.getElementById('customer-avatar');
+    const name = document.getElementById('customer-name');
+    const phone = document.getElementById('customer-phone');
+    
+    if (this.currentBill.customer) {
+      display.style.display = 'block';
+      avatar.textContent = this.currentBill.customer.name.charAt(0).toUpperCase();
+      name.textContent = this.currentBill.customer.name;
+      phone.textContent = this.currentBill.customer.phone;
+    } else {
+      display.style.display = 'none';
+    }
+  }
+
+  // Discount Management Methods
+  updateDiscount(value) {
+    this.currentBill.discountValue = parseFloat(value) || 0;
+    this.calculateMobileTotals();
+    this.mobileBillDirty = true;
+  }
+
+  setDiscountType(type) {
+    this.currentBill.discountType = type;
+    
+    // Update UI
+    const buttons = document.querySelectorAll('.discount-type-btn');
+    buttons.forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.type === type) {
+        btn.classList.add('active');
+      }
+    });
+    
+    this.calculateMobileTotals();
+    this.mobileBillDirty = true;
+  }
+
+  // Enhanced Total Calculation
+  calculateMobileTotals() {
+    const subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
+    const tax = subtotal * 0.05; // 5% tax
+    
+    // Calculate discount
+    let discount = 0;
+    if (this.currentBill.discountType === 'percentage') {
+      discount = subtotal * (this.currentBill.discountValue / 100);
+    } else {
+      discount = this.currentBill.discountValue;
+    }
+    
+    const finalTotal = subtotal + tax - discount;
+
+    this.currentBill.subtotal = subtotal;
+    this.currentBill.tax = tax;
+    this.currentBill.discount = discount;
+    this.currentBill.finalTotal = finalTotal;
+
+    // Update display
+    document.getElementById('mobile-subtotal').textContent = `${subtotal.toFixed(2)}`;
+    document.getElementById('mobile-tax-amount').textContent = `${tax.toFixed(2)}`;
+    document.getElementById('mobile-discount-amount').textContent = `${discount.toFixed(2)}`;
+    document.getElementById('mobile-final-total').textContent = `${finalTotal.toFixed(2)}`;
+    
+    // Update payment method display
+    this.updatePaymentMethodDisplay();
+  }
+
+  updatePaymentMethodDisplay() {
+    const display = document.getElementById('payment-method-display');
+    const icon = document.getElementById('payment-method-icon');
+    const text = document.getElementById('payment-method-text');
+    
+    if (this.currentBill.paymentMethod) {
+      display.style.display = 'flex';
+      
+      switch (this.currentBill.paymentMethod) {
+        case 'cash':
+          icon.textContent = '💵';
+          text.textContent = 'Cash';
+          break;
+        case 'card':
+          icon.textContent = '💳';
+          text.textContent = 'Card';
+          break;
+        case 'digital':
+          icon.textContent = '📱';
+          text.textContent = 'Digital';
+          break;
+      }
+    } else {
+      display.style.display = 'none';
+    }
+  }
+
+  printReceipt() {
+    // Generate and print receipt
+    const receiptData = {
+      items: this.currentBill.items,
+      subtotal: this.currentBill.subtotal,
+      tax: this.currentBill.tax,
+      discount: this.currentBill.discount,
+      total: this.currentBill.finalTotal,
+      customer: this.currentBill.customer,
+      paymentMethod: this.currentBill.paymentMethod,
+      timestamp: new Date().toISOString()
+    };
+    
+    this.generateReceiptHTML(receiptData);
+    this.showMobileNotification('Receipt printed successfully', 'success');
+  }
+
+  startNewBill() {
+    this.clearMobileBill();
+    this.showMobileNotification('New bill started', 'success');
   }
 }
 
