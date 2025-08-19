@@ -106,7 +106,7 @@ class OCRScanner {
                                 </div>
 
                                 <div class="flex justify-end mt-6">
-                                    <button onclick="window.ocrScanner.showStep(2)" id="ocrNextBtn" 
+                                    <button onclick="window.ocrScanner.startProcessing()" id="ocrNextBtn" 
                                             class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors opacity-50 cursor-not-allowed" 
                                             disabled>
                                         Extract Text
@@ -122,11 +122,11 @@ class OCRScanner {
                                     </div>
                                     <h3 class="text-lg font-medium text-gray-900 mb-2">Processing Images</h3>
                                     <p class="text-gray-600">Extracting text from your images...</p>
-                                    <div id="ocrProgressContainer" class="mt-4">
+                                                                         <div id="ocrProgressContainer" class="mt-4" style="display: block;">
                                         <div class="bg-gray-200 rounded-full h-2">
-                                            <div id="ocrProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                            <div id="ocrProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%; display: block;"></div>
                                         </div>
-                                        <p id="ocrProgressText" class="text-sm text-gray-500 mt-2">Starting...</p>
+                                        <p id="ocrProgressText" class="text-sm text-gray-500 mt-2" style="display: block;">Starting...</p>
                                     </div>
                                 </div>
                             </div>
@@ -239,6 +239,9 @@ class OCRScanner {
             nextBtn.disabled = false;
             nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             nextBtn.classList.add('opacity-100', 'cursor-pointer');
+            nextBtn.style.display = 'block';
+            nextBtn.style.visibility = 'visible';
+            nextBtn.style.opacity = '1';
             console.log('OCR Scanner: Button enabled and made visible');
         } else {
             console.error('OCR Scanner: Next button not found!');
@@ -297,6 +300,17 @@ class OCRScanner {
     }
 
     /**
+     * Start the processing workflow
+     */
+    startProcessing() {
+        console.log('OCR Scanner: startProcessing called');
+        this.showStep(2);
+        setTimeout(() => {
+            this.processImages();
+        }, 200);
+    }
+
+    /**
      * Process uploaded images
      */
     async processImages() {
@@ -306,7 +320,11 @@ class OCRScanner {
             return;
         }
 
+        // First, ensure we're on step 2 and show the processing UI
         this.showStep(2);
+        
+        // Wait a moment for the DOM to update
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         const formData = new FormData();
         this.uploadedFiles.forEach(file => {
@@ -323,23 +341,26 @@ class OCRScanner {
             progressContainer: !!progressContainer
         });
         
+        // Ensure all progress elements are visible
+        if (progressContainer) {
+            console.log('OCR Scanner: Showing progress container');
+            progressContainer.classList.remove('hidden');
+            progressContainer.style.display = 'block';
+        } else {
+            console.error('OCR Scanner: Progress container not found!');
+        }
+        
+        if (progressText) {
+            progressText.textContent = 'Checking server connection...';
+            progressText.style.display = 'block';
+        }
+        if (progressBar) {
+            progressBar.style.width = '10%';
+            progressBar.style.display = 'block';
+        }
+        
         try {
             this.isProcessing = true;
-            
-            // Show progress container
-            if (progressContainer) {
-                console.log('OCR Scanner: Showing progress container');
-                progressContainer.classList.remove('hidden');
-            } else {
-                console.error('OCR Scanner: Progress container not found!');
-            }
-            
-            if (progressText) {
-                progressText.textContent = 'Checking server connection...';
-            }
-            if (progressBar) {
-                progressBar.style.width = '10%';
-            }
 
             // Check server connectivity first
             try {
@@ -432,11 +453,27 @@ class OCRScanner {
             }
             
             showModernAlert(`Error processing images: ${errorMessage}`, 'error');
-            this.showStep(1);
+            
+            // Ensure we go back to step 1 and show the button properly
+            setTimeout(() => {
+                this.showStep(1);
+                const nextBtn = document.getElementById('ocrNextBtn');
+                if (nextBtn && this.uploadedFiles.length > 0) {
+                    nextBtn.disabled = false;
+                    nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    nextBtn.classList.add('opacity-100', 'cursor-pointer');
+                    nextBtn.style.display = 'block';
+                    nextBtn.style.visibility = 'visible';
+                    nextBtn.style.opacity = '1';
+                }
+            }, 100);
         } finally {
             this.isProcessing = false;
             // Hide progress container
-            progressContainer.classList.add('hidden');
+            if (progressContainer) {
+                progressContainer.classList.add('hidden');
+                progressContainer.style.display = 'none';
+            }
         }
     }
 
@@ -500,13 +537,17 @@ class OCRScanner {
         // Hide all steps
         const allSteps = document.querySelectorAll('.ocr-step');
         console.log(`OCR Scanner: Found ${allSteps.length} step elements`);
-        allSteps.forEach(el => el.classList.add('hidden'));
+        allSteps.forEach(el => {
+            el.classList.add('hidden');
+            el.style.display = 'none';
+        });
         
         // Show current step
         const currentStepElement = document.getElementById(`ocrStep${step}`);
         if (currentStepElement) {
             console.log(`OCR Scanner: Showing step ${step}`);
             currentStepElement.classList.remove('hidden');
+            currentStepElement.style.display = 'block';
         } else {
             console.error(`OCR Scanner: Step ${step} element not found!`);
         }
@@ -514,7 +555,7 @@ class OCRScanner {
         // Handle step-specific actions
         if (step === 2) {
             console.log('OCR Scanner: Step 2 - calling processImages');
-            this.processImages();
+            // Don't call processImages here, it will be called from the button click
         } else if (step === 3) {
             console.log('OCR Scanner: Step 3 - calling displayResults');
             this.displayResults();

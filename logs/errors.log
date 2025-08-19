@@ -1477,3 +1477,6 @@
 2025-08-18 23:55:34,563 - root - ERROR - extract_text_from_image:5674 - Error extracting text from image: Could not read image file
 2025-08-18 23:57:24,169 - root - ERROR - extract_text_from_image:5674 - Error extracting text from image: Could not read image file
 2025-08-18 23:57:24,478 - root - ERROR - extract_text_from_image:5674 - Error extracting text from image: Could not read image file
+2025-08-19 00:58:57,305 - root - ERROR - extract_text_from_image:5674 - Error extracting text from image: Could not read image file
+2025-08-19 01:03:05,762 - root - ERROR - extract_text_from_image:5674 - Error extracting text from image: Could not read image file
+2025-08-19 01:03:05,762 - root - ERROR - extract_text_from_image:5674 - Error extracting text from image: Could not read image file

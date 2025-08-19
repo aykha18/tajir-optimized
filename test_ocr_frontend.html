@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>OCR Frontend Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Health Check Test</h3>
+        <button onclick="testHealthCheck()">Test Server Connection</button>
+        <div id="healthResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. OCR Endpoint Test</h3>
+        <input type="file" id="testFile" accept="image/*">
+        <button onclick="testOCREndpoint()">Test OCR Processing</button>
+        <div id="ocrResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Console Logs</h3>
+        <div id="consoleLogs"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('consoleLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+            console.log(message);
+        }
+
+        async function testHealthCheck() {
+            const result = document.getElementById('healthResult');
+            result.innerHTML = '<div class="info">Testing...</div>';
+            
+            try {
+                log('Testing health check endpoint...');
+                const response = await fetch('/api/plan/status', {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(5000)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `<div class="success">✅ Health check passed! Days remaining: ${data.days_remaining}</div>`;
+                    log('Health check successful', 'success');
+                } else {
+                    result.innerHTML = `<div class="error">❌ Health check failed: ${response.status} ${response.statusText}</div>`;
+                    log(`Health check failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Health check error: ${error.message}</div>`;
+                log(`Health check error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testOCREndpoint() {
+            const result = document.getElementById('ocrResult');
+            const fileInput = document.getElementById('testFile');
+            
+            if (!fileInput.files[0]) {
+                result.innerHTML = '<div class="error">❌ Please select a file first</div>';
+                return;
+            }
+            
+            result.innerHTML = '<div class="info">Testing OCR...</div>';
+            
+            try {
+                log('Testing OCR endpoint...');
+                const formData = new FormData();
+                formData.append('images', fileInput.files[0]);
+                
+                const response = await fetch('/api/ocr/extract-batch', {
+                    method: 'POST',
+                    body: formData,
+                    signal: AbortSignal.timeout(30000)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `<div class="success">✅ OCR successful! Confidence: ${data.results[0].confidence.toFixed(1)}%</div>`;
+                    log('OCR test successful', 'success');
+                } else {
+                    const errorText = await response.text();
+                    result.innerHTML = `<div class="error">❌ OCR failed: ${response.status} ${response.statusText}</div>`;
+                    log(`OCR failed: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ OCR error: ${error.message}</div>`;
+                log(`OCR error: ${error.message}`, 'error');
+            }
+        }
+
+        // Test on page load
+        window.addEventListener('load', () => {
+            log('Page loaded, testing health check...');
+            testHealthCheck();
+        });
+    </script>
+</body>
+</html>

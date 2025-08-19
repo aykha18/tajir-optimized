@@ -1725,9 +1725,9 @@ function initializeBillingSystem() {
     const masterInput = document.getElementById('masterName');
     const masterInputMobile = document.getElementById('masterNameMobile');
     
-          if (!masterInput && !masterInputMobile) {
-        return;
-      }
+    if (!masterInput && !masterInputMobile) {
+      return;
+    }
 
     let employees = [];
     let masterDropdown;
@@ -1818,7 +1818,7 @@ function initializeBillingSystem() {
           // Set global selected master ID
           window.selectedMasterId = firstEmployee.employee_id;
           
-                  }
+        }
       }
     }
 
@@ -1937,12 +1937,12 @@ function initializeBillingSystem() {
     // Event listeners for desktop
     if (masterInput) {
 
-              masterInput.addEventListener('input', function() {
+      masterInput.addEventListener('input', function() {
  
-          const query = this.value;
-          const filteredEmployees = filterEmployees(query);
-          
-          if (filteredEmployees.length > 0) {
+        const query = this.value;
+        const filteredEmployees = filterEmployees(query);
+        
+        if (filteredEmployees.length > 0) {
           renderDropdownOptions(filteredEmployees);
           showDropdown(this);
         } else {
@@ -2617,31 +2617,31 @@ function initializeBillingSystem() {
           onOk: async (amount) => {
             try {
               console.log('Payment processing started for amount:', amount);
-              payBtn.disabled = true;
-              payBtn.textContent = 'Processing...';
+            payBtn.disabled = true;
+            payBtn.textContent = 'Processing...';
               
               // Add timeout to prevent hanging
               const controller = new AbortController();
               const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
               
-              const resp = await fetch(`/api/bills/${billId}/payment`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+            const resp = await fetch(`/api/bills/${billId}/payment`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ amount_paid: amount }),
                 signal: controller.signal
-              });
+            });
               
               clearTimeout(timeoutId);
-              const result = await resp.json();
+            const result = await resp.json();
               console.log('Payment API response:', result);
               
-              if (result && result.bill && !result.error) {
-                showPaymentProgressModal(() => {
-                  showModernAlert('Payment recorded. Bill is now ' + (result.bill.status || 'updated'), 'success');
-                  document.getElementById('searchInvoiceInput').dispatchEvent(new Event('input'));
-                });
-              } else {
-                showModernAlert(result?.error || 'Failed to update payment', 'error');
+            if (result && result.bill && !result.error) {
+              showPaymentProgressModal(() => {
+                showModernAlert('Payment recorded. Bill is now ' + (result.bill.status || 'updated'), 'success');
+                document.getElementById('searchInvoiceInput').dispatchEvent(new Event('input'));
+              });
+            } else {
+              showModernAlert(result?.error || 'Failed to update payment', 'error');
                 payBtn.disabled = false;
                 payBtn.textContent = 'Mark as Paid';
               }
@@ -2710,104 +2710,104 @@ function initializeBillingSystem() {
         
         // If bill is not saved, save it first
         if (!billId) {
-          // Generate bill number if not exists
-          const billNumberInput = document.getElementById('billNumber');
-          if (billNumberInput && !billNumberInput.value.trim()) {
-            const timestamp = Date.now();
-            billNumberInput.value = `BILL-${timestamp}`;
-          }
+        // Generate bill number if not exists
+        const billNumberInput = document.getElementById('billNumber');
+        if (billNumberInput && !billNumberInput.value.trim()) {
+          const timestamp = Date.now();
+          billNumberInput.value = `BILL-${timestamp}`;
+        }
 
-          // Collect bill data
-          const masterNameElement = document.getElementById('masterName');
-          const masterNameMobileElement = document.getElementById('masterNameMobile');
-          let masterId = null;
-          
-          // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
-          let selectedMasterElement = masterNameElement;
-          if (!selectedMasterElement || !selectedMasterElement.getAttribute('data-selected-master')) {
-            selectedMasterElement = masterNameMobileElement;
-          }
-          
-          if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
-            try {
-              const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
-              masterId = selectedMaster.master_id;
-
-            } catch (e) {
-              console.warn('Failed to parse selected master data:', e);
-            }
-          } else {
-            // Try to use global selectedMasterId as fallback
-            if (window.selectedMasterId) {
-              masterId = window.selectedMasterId;
-            }
-          }
-          
-          // Calculate totals from bill array (same logic as updateTotals function)
-          const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
-          const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
-          const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
-          const totalBeforeAdvance = subtotal + totalVat;
-          const amountDue = totalBeforeAdvance - totalAdvance;
-          
-          const billData = {
-            bill: {
-              bill_number: document.getElementById('billNumber')?.value || '',
-              customer_name: document.getElementById('billCustomer')?.value || '',
-              customer_phone: document.getElementById('billMobile')?.value || '',
-              customer_city: document.getElementById('billCity')?.value || '',
-              customer_area: document.getElementById('billArea')?.value || '',
-              customer_trn: document.getElementById('billTRN')?.value || '',
-              customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
-              business_name: document.getElementById('billBusinessName')?.value || '',
-              business_address: document.getElementById('billBusinessAddress')?.value || '',
-              bill_date: document.getElementById('billDate')?.value || '',
-              delivery_date: document.getElementById('deliveryDate')?.value || '',
-              trial_date: document.getElementById('trialDate')?.value || '',
-              master_id: masterId,
-              master_name: document.getElementById('masterName')?.value || '',
-              notes: document.getElementById('billNotes')?.value || '',
-              subtotal: subtotal,
-              discount: 0, // No discount field in current UI
-              vat_amount: totalVat,
-              total_amount: amountDue,
-              advance_paid: totalAdvance,
-              balance_amount: amountDue
-            },
-            items: bill
-          };
-
+        // Collect bill data
+        const masterNameElement = document.getElementById('masterName');
+        const masterNameMobileElement = document.getElementById('masterNameMobile');
+        let masterId = null;
+        
+        // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
+        let selectedMasterElement = masterNameElement;
+        if (!selectedMasterElement || !selectedMasterElement.getAttribute('data-selected-master')) {
+          selectedMasterElement = masterNameMobileElement;
+        }
+        
+        if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
           try {
-            // Save bill first
-            const saveResponse = await fetch('/api/bills', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(billData)
-            });
+            const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
+            masterId = selectedMaster.master_id;
 
-            const saveResult = await saveResponse.json();
-            
-            if (saveResult.error) {
-              showModernAlert(saveResult.error, 'error', 'Save Failed');
-              return;
-            }
+          } catch (e) {
+            console.warn('Failed to parse selected master data:', e);
+          }
+        } else {
+          // Try to use global selectedMasterId as fallback
+          if (window.selectedMasterId) {
+            masterId = window.selectedMasterId;
+          }
+        }
+        
+        // Calculate totals from bill array (same logic as updateTotals function)
+        const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
+        const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
+        const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
+        const totalBeforeAdvance = subtotal + totalVat;
+        const amountDue = totalBeforeAdvance - totalAdvance;
+        
+        const billData = {
+          bill: {
+            bill_number: document.getElementById('billNumber')?.value || '',
+            customer_name: document.getElementById('billCustomer')?.value || '',
+            customer_phone: document.getElementById('billMobile')?.value || '',
+            customer_city: document.getElementById('billCity')?.value || '',
+            customer_area: document.getElementById('billArea')?.value || '',
+            customer_trn: document.getElementById('billTRN')?.value || '',
+            customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
+            business_name: document.getElementById('billBusinessName')?.value || '',
+            business_address: document.getElementById('billBusinessAddress')?.value || '',
+            bill_date: document.getElementById('billDate')?.value || '',
+            delivery_date: document.getElementById('deliveryDate')?.value || '',
+            trial_date: document.getElementById('trialDate')?.value || '',
+            master_id: masterId,
+            master_name: document.getElementById('masterName')?.value || '',
+            notes: document.getElementById('billNotes')?.value || '',
+            subtotal: subtotal,
+            discount: 0, // No discount field in current UI
+            vat_amount: totalVat,
+            total_amount: amountDue,
+            advance_paid: totalAdvance,
+            balance_amount: amountDue
+          },
+          items: bill
+        };
 
-            if (saveResult.bill_id) {
+        try {
+          // Save bill first
+          const saveResponse = await fetch('/api/bills', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(billData)
+          });
+
+          const saveResult = await saveResponse.json();
+          
+          if (saveResult.error) {
+            showModernAlert(saveResult.error, 'error', 'Save Failed');
+            return;
+          }
+
+          if (saveResult.bill_id) {
               // Store the current bill ID
               window.currentBillId = saveResult.bill_id;
               billId = saveResult.bill_id;
-              
-              // Show success message
+            
+            // Show success message
               showSimpleToast('Bill saved successfully!', 'success');
-            } else {
-              showModernAlert('Failed to save bill', 'error', 'Save Failed');
+          } else {
+            showModernAlert('Failed to save bill', 'error', 'Save Failed');
               return;
-            }
-          } catch (error) {
-            console.error('Error saving bill:', error);
-            showModernAlert('Failed to save bill. Please try again.', 'error', 'Save Failed');
+          }
+        } catch (error) {
+          console.error('Error saving bill:', error);
+          showModernAlert('Failed to save bill. Please try again.', 'error', 'Save Failed');
             return;
           }
         }
@@ -3011,7 +3011,7 @@ function initializeBillingSystem() {
       window.paymentMode = 'advance';
     }
   }
-
+  
   // Make functions globally available
   window.initializeBillingSystem = initializeBillingSystem;
   window.showPaymentModal = showPaymentModal;
@@ -3101,11 +3101,11 @@ function initializeBillingSystem() {
     }
     
     if (billQuantityMobileElement) {
-            billQuantityMobileElement.value = item.quantity;
+      billQuantityMobileElement.value = item.quantity;
     }
     
     if (billPriceMobileElement) {
-            billPriceMobileElement.value = item.rate; // Changed from item.price to item.rate
+      billPriceMobileElement.value = item.rate; // Changed from item.price to item.rate
     }
     
     if (billDiscountMobileElement) billDiscountMobileElement.value = item.discount || 0;
@@ -3160,17 +3160,17 @@ function initializeBillingSystem() {
 
   // WhatsApp functionality
   function initializeWhatsApp() {
-    const whatsappBtn = document.getElementById('whatsappBtn');
-    
-    if (whatsappBtn) {
+      const whatsappBtn = document.getElementById('whatsappBtn');
+      
+      if (whatsappBtn) {
       // Remove any existing event listeners to prevent duplicates
       whatsappBtn.removeEventListener('click', handleWhatsAppClick);
-      whatsappBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleWhatsAppClick();
-      });
-    }
+        whatsappBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleWhatsAppClick();
+        });
+      }
   }
 
   // Function to prepare bill data for saving
@@ -3352,14 +3352,14 @@ function initializeBillingSystem() {
 
   async function handleWhatsAppClick() {
     try {
-      // Check if there are items in the bill
-      if (bill.length === 0) {
-        if (window.showSimpleToast) {
-          window.showSimpleToast('Please add items to the bill first', 'warning');
-        }
-        return;
+    // Check if there are items in the bill
+    if (bill.length === 0) {
+      if (window.showSimpleToast) {
+        window.showSimpleToast('Please add items to the bill first', 'warning');
       }
-      
+      return;
+    }
+    
       // Check if customer mobile is provided
       const customerMobile = document.getElementById('billMobile')?.value?.trim();
       if (!customerMobile) {
@@ -3378,7 +3378,7 @@ function initializeBillingSystem() {
         return;
       }
     
-          let billId = window.currentBillId; // Check if bill is already saved
+      let billId = window.currentBillId; // Check if bill is already saved
       let billData = null;
       
       // If bill is not saved, ask user if they want to save it first
@@ -3547,7 +3547,7 @@ function initializeBillingSystem() {
             } else if (cleanPhone.length === 9) {
               phoneWithCode = '971' + cleanPhone;
             } else {
-              phoneWithCode = '971' + cleanPhone;
+            phoneWithCode = '971' + cleanPhone;
             }
           }
           

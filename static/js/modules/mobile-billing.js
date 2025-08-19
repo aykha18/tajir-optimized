@@ -274,7 +274,17 @@ if (typeof window.MobileBilling === 'undefined') {
     const processBtn = container.querySelector('#mobile-process-bill-btn');
     if (processBtn) {
       processBtn.addEventListener('click', () => {
-        this.initiateEnhancedPayment();
+        // Check if button is disabled
+        if (processBtn.disabled || processBtn.classList.contains('disabled')) {
+          return;
+        }
+        
+        // Check current button text to determine action
+        if (processBtn.textContent === 'Select Customer') {
+          this.showCustomerSelection();
+        } else {
+          this.initiateEnhancedPayment();
+        }
       });
     }
 
@@ -326,6 +336,9 @@ if (typeof window.MobileBilling === 'undefined') {
       if (searchInput) {
         setTimeout(() => searchInput.focus(), 300);
       }
+      
+      // Initialize button state
+      this.updateProcessButtonState();
     }
   }
 
@@ -790,6 +803,9 @@ if (typeof window.MobileBilling === 'undefined') {
         </div>
       </div>
     `).join('');
+    
+    // Update process button state
+    this.updateProcessButtonState();
   }
 
   updateQuantity(productId, change) {
@@ -880,6 +896,7 @@ if (typeof window.MobileBilling === 'undefined') {
     this.calculateMobileTotals();
     this.updateCustomerDisplay();
     this.updatePaymentMethodDisplay();
+    this.updateProcessButtonState();
     this.mobileBillDirty = false;
     // Removed notification to prevent "Bill Cleared" message
   }
@@ -958,20 +975,114 @@ if (typeof window.MobileBilling === 'undefined') {
     }
   }
 
-  printReceipt(billData) {
-    // Check if printer is available
-    if ('printer' in navigator) {
-      const receiptContent = this.generateReceiptHTML(billData);
+  async printBill(billData) {
+    try {
+      // Check if we have a saved bill ID
+      if (billData.bill_id) {
+        // Use existing print endpoint
+        const printUrl = `${window.location.origin}/api/bills/${billData.bill_id}/print`;
+        window.open(printUrl, '_blank');
+        this.showMobileNotification('Print window opened', 'success');
+      } else {
+        // For draft bills, show a message
+        this.showMobileNotification('Please save the bill first to print', 'warning');
+      }
+    } catch (error) {
+      console.error('Error printing bill:', error);
+      this.showMobileNotification('Failed to print bill', 'error');
+    }
+  }
+
+  async sendWhatsApp(billData) {
+    try {
+      const customerPhone = billData.customer?.phone || billData.customer_phone;
       
-      navigator.printer.print(receiptContent).then(() => {
-        this.showMobileNotification('Receipt printed successfully', 'success');
-      }).catch(error => {
-        console.error('Print failed:', error);
-        this.showMobileNotification('Print failed', 'error');
-      });
-    } else {
-      // Fallback: show receipt in modal
-      this.showReceiptModal(billData);
+      if (!customerPhone) {
+        this.showMobileNotification('Customer phone number is required for WhatsApp', 'warning');
+        return;
+      }
+
+      // Check if we have a saved bill ID
+      if (billData.bill_id) {
+        // Use existing WhatsApp endpoint
+        const whatsappResponse = await fetch(`/api/bills/${billData.bill_id}/whatsapp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            phone: customerPhone,
+            language: 'en'
+          })
+        });
+
+        if (whatsappResponse.ok) {
+          const whatsappResult = await whatsappResponse.json();
+          if (whatsappResult.success && whatsappResult.whatsapp_url) {
+            window.open(whatsappResult.whatsapp_url, '_blank');
+            this.showMobileNotification('WhatsApp opened with bill details', 'success');
+          } else {
+            throw new Error('Failed to generate WhatsApp link');
+          }
+        } else {
+          throw new Error('Failed to send WhatsApp');
+        }
+      } else {
+        // For draft bills, create a WhatsApp message manually
+        const customerName = billData.customer?.name || billData.customer_name || 'Customer';
+        const totalAmount = billData.total_amount || '0';
+        const billNumber = billData.bill_number || 'Draft';
+        const billDate = billData.bill_date || new Date().toLocaleDateString();
+        
+        // Create detailed bill message
+        let message = `*🧾 TAJIR POS - DRAFT BILL*\n\n`;
+        message += `*Customer Details:*\n`;
+        message += `• Name: ${customerName}\n`;
+        if (customerPhone) message += `• Phone: ${customerPhone}\n\n`;
+        
+        message += `*Bill Details:*\n`;
+        message += `• Bill #: ${billNumber} (Draft)\n`;
+        message += `• Date: ${billDate}\n\n`;
+        
+        // Add items details
+        if (billData.items && billData.items.length > 0) {
+          message += `*Items:*\n`;
+          billData.items.forEach((item, index) => {
+            message += `${index + 1}. ${item.product_name} - Qty: ${item.quantity} - Rate: ${item.rate} - Total: ${item.total}\n`;
+          });
+          message += `\n`;
+        }
+        
+        message += `*Total Amount: ${totalAmount}*\n\n`;
+        message += `*Note: This is a draft bill. Please save it in the POS system for permanent record.*`;
+        
+        // Encode the message for WhatsApp
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Construct WhatsApp URL
+        const cleanPhone = customerPhone.replace(/\D/g, '');
+        let phoneWithCode = cleanPhone;
+        
+        // Handle UAE phone numbers properly
+        if (cleanPhone.length > 0) {
+          if (cleanPhone.startsWith('971')) {
+            phoneWithCode = cleanPhone;
+          } else if (cleanPhone.startsWith('0')) {
+            phoneWithCode = '971' + cleanPhone.substring(1);
+          } else if (cleanPhone.length === 9) {
+            phoneWithCode = '971' + cleanPhone;
+          } else {
+            phoneWithCode = '971' + cleanPhone;
+          }
+        }
+        
+        const whatsappUrl = `https://wa.me/${phoneWithCode}?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank');
+        this.showMobileNotification('WhatsApp opened with draft bill details', 'success');
+      }
+    } catch (error) {
+      console.error('Error sending WhatsApp:', error);
+      this.showMobileNotification('Failed to send WhatsApp. Please try again.', 'error');
     }
   }
 
@@ -1238,6 +1349,13 @@ if (typeof window.MobileBilling === 'undefined') {
       return; // Prevent multiple payment attempts
     }
 
+    // Check if customer is selected
+    if (!this.currentBill.customer) {
+      this.showMobileNotification('Please select a customer before proceeding to payment', 'error');
+      this.showCustomerSelection();
+      return;
+    }
+
     this.showPaymentMethodSelection();
   }
 
@@ -1327,7 +1445,17 @@ if (typeof window.MobileBilling === 'undefined') {
           break;
       }
       
-      this.showPaymentSuccess();
+      // Prepare bill data for success modal
+      const billData = {
+        customer: this.currentBill.customer,
+        bill_number: this.currentBill.billNumber || 'Draft',
+        total_amount: this.currentBill.total,
+        bill_date: new Date().toLocaleDateString(),
+        items: this.currentBill.items,
+        payment_method: this.paymentMethod
+      };
+      
+      this.showPaymentSuccess(billData);
     } catch (error) {
       this.showPaymentError(error.message);
     } finally {
@@ -1356,8 +1484,11 @@ if (typeof window.MobileBilling === 'undefined') {
     }
   }
 
-  showPaymentSuccess() {
+  showPaymentSuccess(billData) {
     this.hidePaymentProgress();
+    
+    // Store bill data for print and WhatsApp functionality
+    this.lastProcessedBill = billData;
     
     const successModal = document.createElement('div');
     successModal.className = 'payment-success-modal';
@@ -1366,28 +1497,74 @@ if (typeof window.MobileBilling === 'undefined') {
         <div class="payment-success-icon">✅</div>
         <h4>Payment Successful!</h4>
         <p>Your bill has been created successfully</p>
+        
+        <!-- Bill Summary -->
+        <div class="bill-summary-success">
+          <div class="bill-info-row">
+            <span class="bill-label">Customer:</span>
+            <span class="bill-value">${billData.customer?.name || 'N/A'}</span>
+          </div>
+          <div class="bill-info-row">
+            <span class="bill-label">Bill #:</span>
+            <span class="bill-value">${billData.bill_number || 'N/A'}</span>
+          </div>
+          <div class="bill-info-row">
+            <span class="bill-label">Total:</span>
+            <span class="bill-value">AED ${billData.total_amount || '0.00'}</span>
+          </div>
+          <div class="bill-info-row">
+            <span class="bill-label">Payment:</span>
+            <span class="bill-value">${this.paymentMethod || 'N/A'}</span>
+          </div>
+        </div>
+        
         <div class="payment-success-actions">
-          <button class="print-receipt-btn">Print Receipt</button>
-          <button class="new-bill-btn">New Bill</button>
+          <button class="print-receipt-btn" title="Print bill receipt">
+            <span class="btn-icon">📄</span>
+            <span class="btn-text">Print</span>
+          </button>
+          <button class="whatsapp-btn" title="Send bill via WhatsApp">
+            <span class="btn-icon">📱</span>
+            <span class="btn-text">WhatsApp</span>
+          </button>
+          <button class="new-bill-btn" title="Start a new bill">
+            <span class="btn-icon">🆕</span>
+            <span class="btn-text">New Bill</span>
+          </button>
+          <button class="close-success-btn" title="Close">
+            <span class="btn-icon">✕</span>
+            <span class="btn-text">Close</span>
+          </button>
         </div>
       </div>
     `;
     
     document.body.appendChild(successModal);
-    this.setupSuccessModal(successModal);
+    this.setupEnhancedSuccessModal(successModal, billData);
   }
 
-  setupSuccessModal(modal) {
+  setupEnhancedSuccessModal(modal, billData) {
     const printBtn = modal.querySelector('.print-receipt-btn');
+    const whatsappBtn = modal.querySelector('.whatsapp-btn');
     const newBillBtn = modal.querySelector('.new-bill-btn');
+    const closeBtn = modal.querySelector('.close-success-btn');
     
     printBtn.addEventListener('click', () => {
-      this.printReceipt();
+      this.printBill(billData);
+      modal.remove();
+    });
+    
+    whatsappBtn.addEventListener('click', () => {
+      this.sendWhatsApp(billData);
       modal.remove();
     });
     
     newBillBtn.addEventListener('click', () => {
       this.startNewBill();
+      modal.remove();
+    });
+
+    closeBtn.addEventListener('click', () => {
       modal.remove();
     });
 
@@ -1424,8 +1601,6 @@ if (typeof window.MobileBilling === 'undefined') {
 
   // Customer Selection Methods
   showCustomerSelection() {
-    // For now, show a simple customer selection modal
-    // In a real implementation, this would fetch customers from the database
     const modal = document.createElement('div');
     modal.className = 'product-details-modal';
     
@@ -1436,25 +1611,42 @@ if (typeof window.MobileBilling === 'undefined') {
           <button class="close-modal-btn">×</button>
         </div>
         <div class="product-modal-body">
-          <div class="customer-option" data-customer-id="1">
-            <div class="customer-avatar">👤</div>
-            <div class="customer-info">
-              <h5>John Doe</h5>
-              <p>+971 50 123 4567</p>
-            </div>
+          <!-- Search Section -->
+          <div class="customer-search-section">
+            <input type="text" id="customer-search-input" placeholder="Search customers..." class="customer-search-input">
+            <button id="add-new-customer-btn" class="add-new-customer-btn">+ Add New</button>
           </div>
-          <div class="customer-option" data-customer-id="2">
-            <div class="customer-avatar">👤</div>
-            <div class="customer-info">
-              <h5>Jane Smith</h5>
-              <p>+971 55 987 6543</p>
-            </div>
+          
+          <!-- Customer List -->
+          <div id="customer-list-container" class="customer-list-container">
+            <div class="loading-customers">Loading customers...</div>
           </div>
-          <div class="customer-option" data-customer-id="3">
-            <div class="customer-avatar">👤</div>
-            <div class="customer-info">
-              <h5>Walk-in Customer</h5>
-              <p>No phone number</p>
+          
+          <!-- Add New Customer Form (Hidden by default) -->
+          <div id="add-customer-form" class="add-customer-form" style="display: none;">
+            <h4>Add New Customer</h4>
+            <div class="form-group">
+              <label for="new-customer-name">Name *</label>
+              <input type="text" id="new-customer-name" placeholder="Customer name" required>
+            </div>
+            <div class="form-group">
+              <label for="new-customer-phone">Phone</label>
+              <input type="tel" id="new-customer-phone" placeholder="+971 50 123 4567">
+            </div>
+            <div class="form-group">
+              <label for="new-customer-address">Address</label>
+              <textarea id="new-customer-address" placeholder="Customer address"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="new-customer-type">Customer Type</label>
+              <select id="new-customer-type">
+                <option value="Individual">Individual</option>
+                <option value="Business">Business</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button id="save-customer-btn" class="save-customer-btn">Save Customer</button>
+              <button id="cancel-add-customer-btn" class="cancel-add-customer-btn">Cancel</button>
             </div>
           </div>
         </div>
@@ -1462,23 +1654,15 @@ if (typeof window.MobileBilling === 'undefined') {
     `;
     
     document.body.appendChild(modal);
-    this.setupCustomerSelection(modal);
+    this.setupEnhancedCustomerSelection(modal);
   }
 
-  setupCustomerSelection(modal) {
-    const customerOptions = modal.querySelectorAll('.customer-option');
+  setupEnhancedCustomerSelection(modal) {
+    // Load customers and setup search
+    this.loadAllCustomers(modal);
+    this.setupCustomerSearch(modal);
+    this.setupAddCustomerForm(modal);
     
-    customerOptions.forEach(option => {
-      option.addEventListener('click', () => {
-        const customerId = option.dataset.customerId;
-        const customerName = option.querySelector('h5').textContent;
-        const customerPhone = option.querySelector('p').textContent;
-        
-        this.selectCustomer(customerId, customerName, customerPhone);
-        modal.remove();
-      });
-    });
-
     const closeBtn = modal.querySelector('.close-modal-btn');
     closeBtn.addEventListener('click', () => {
       modal.remove();
@@ -1492,6 +1676,154 @@ if (typeof window.MobileBilling === 'undefined') {
     });
   }
 
+  async loadAllCustomers(modal) {
+    try {
+      const response = await fetch('/api/customers');
+      const customers = await response.json();
+      
+      const container = modal.querySelector('#customer-list-container');
+      this.renderCustomerList(container, customers);
+    } catch (error) {
+      console.error('Error loading customers:', error);
+      const container = modal.querySelector('#customer-list-container');
+      container.innerHTML = '<div class="error-loading">Failed to load customers. Please try again.</div>';
+    }
+  }
+
+  renderCustomerList(container, customers) {
+    if (customers.length === 0) {
+      container.innerHTML = '<div class="no-customers">No customers found. Add a new customer to get started.</div>';
+      return;
+    }
+
+    const customerHtml = customers.map(customer => `
+      <div class="customer-option" data-customer-id="${customer.customer_id}" data-customer-name="${customer.customer_name}" data-customer-phone="${customer.mobile || ''}" data-customer-address="${customer.address || ''}">
+        <div class="customer-avatar">${customer.customer_name.charAt(0).toUpperCase()}</div>
+        <div class="customer-info">
+          <h5>${customer.customer_name}</h5>
+          <p>${customer.mobile || 'No phone number'}</p>
+          ${customer.address ? `<small>${customer.address}</small>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    container.innerHTML = customerHtml;
+    
+    // Add click handlers to customer options
+    const customerOptions = container.querySelectorAll('.customer-option');
+    customerOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const customerId = option.dataset.customerId;
+        const customerName = option.dataset.customerName;
+        const customerPhone = option.dataset.customerPhone;
+        
+        this.selectCustomer(customerId, customerName, customerPhone);
+        modal.remove();
+      });
+    });
+  }
+
+  setupCustomerSearch(modal) {
+    const searchInput = modal.querySelector('#customer-search-input');
+    let searchTimeout;
+
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        this.searchCustomers(e.target.value, modal);
+      }, 300);
+    });
+  }
+
+  async searchCustomers(query, modal) {
+    try {
+      const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
+      const customers = await response.json();
+      
+      const container = modal.querySelector('#customer-list-container');
+      this.renderCustomerList(container, customers);
+    } catch (error) {
+      console.error('Error searching customers:', error);
+    }
+  }
+
+  setupAddCustomerForm(modal) {
+    const addNewBtn = modal.querySelector('#add-new-customer-btn');
+    const addForm = modal.querySelector('#add-customer-form');
+    const customerList = modal.querySelector('#customer-list-container');
+    const searchSection = modal.querySelector('.customer-search-section');
+
+    addNewBtn.addEventListener('click', () => {
+      // Show form, hide list and search
+      addForm.style.display = 'block';
+      customerList.style.display = 'none';
+      searchSection.style.display = 'none';
+    });
+
+    const cancelBtn = modal.querySelector('#cancel-add-customer-btn');
+    cancelBtn.addEventListener('click', () => {
+      // Hide form, show list and search
+      addForm.style.display = 'none';
+      customerList.style.display = 'block';
+      searchSection.style.display = 'block';
+      this.loadAllCustomers(modal);
+    });
+
+    const saveBtn = modal.querySelector('#save-customer-btn');
+    saveBtn.addEventListener('click', () => {
+      this.saveNewCustomer(modal);
+    });
+  }
+
+  async saveNewCustomer(modal) {
+    const nameInput = modal.querySelector('#new-customer-name');
+    const phoneInput = modal.querySelector('#new-customer-phone');
+    const addressInput = modal.querySelector('#new-customer-address');
+    const typeInput = modal.querySelector('#new-customer-type');
+
+    const customerData = {
+      customer_name: nameInput.value.trim(),
+      mobile: phoneInput.value.trim(),
+      address: addressInput.value.trim(),
+      customer_type: typeInput.value
+    };
+
+    if (!customerData.customer_name) {
+      this.showMobileNotification('Customer name is required', 'error');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(customerData)
+      });
+
+      if (response.ok) {
+        const newCustomer = await response.json();
+        
+        // Auto-select the newly created customer
+        this.selectCustomer(
+          newCustomer.customer_id,
+          newCustomer.customer_name,
+          newCustomer.mobile || ''
+        );
+        
+        modal.remove();
+        this.showMobileNotification('Customer added successfully', 'success');
+      } else {
+        const error = await response.json();
+        this.showMobileNotification(error.error || 'Failed to add customer', 'error');
+      }
+    } catch (error) {
+      console.error('Error adding customer:', error);
+      this.showMobileNotification('Failed to add customer. Please try again.', 'error');
+    }
+  }
+
   selectCustomer(customerId, customerName, customerPhone) {
     this.currentBill.customer = {
       id: customerId,
@@ -1500,6 +1832,7 @@ if (typeof window.MobileBilling === 'undefined') {
     };
     
     this.updateCustomerDisplay();
+    this.updateProcessButtonState();
     this.showMobileNotification(`Customer selected: ${customerName}`, 'success');
   }
 
@@ -1570,6 +1903,7 @@ if (typeof window.MobileBilling === 'undefined') {
     
     // Update payment method display
     this.updatePaymentMethodDisplay();
+    this.updateProcessButtonState();
   }
 
   updatePaymentMethodDisplay() {
@@ -1596,6 +1930,28 @@ if (typeof window.MobileBilling === 'undefined') {
       }
     } else {
       display.style.display = 'none';
+    }
+  }
+
+  updateProcessButtonState() {
+    const processBtn = document.getElementById('mobile-process-bill-btn');
+    if (!processBtn) return;
+    
+    const hasItems = this.currentBill.items.length > 0;
+    const hasCustomer = this.currentBill.customer;
+    
+    if (!hasItems) {
+      processBtn.textContent = 'Add Items First';
+      processBtn.disabled = true;
+      processBtn.classList.add('disabled');
+    } else if (!hasCustomer) {
+      processBtn.textContent = 'Select Customer';
+      processBtn.disabled = false;
+      processBtn.classList.remove('disabled');
+    } else {
+      processBtn.textContent = 'Process Bill';
+      processBtn.disabled = false;
+      processBtn.classList.remove('disabled');
     }
   }
 
