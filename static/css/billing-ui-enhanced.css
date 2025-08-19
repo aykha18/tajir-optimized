@@ -408,8 +408,8 @@
 }
 
 /* ========================================
-   ENHANCED BILL SUMMARY
-   ======================================== */
+    ENHANCED BILL SUMMARY - PHASE 2
+    ======================================== */
 .bill-summary-mobile {
   position: fixed;
   bottom: 0;
@@ -422,6 +422,57 @@
   z-index: 100;
   backdrop-filter: blur(20px);
   animation: slideInUp 0.3s ease-out;
+  border-radius: var(--md-radius-extra-large) var(--md-radius-extra-large) 0 0;
+}
+
+/* Enhanced Bill Summary Header */
+.bill-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--md-spacing-sm);
+  padding-bottom: var(--md-spacing-sm);
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.bill-summary-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-sm);
+}
+
+.bill-summary-header h3::before {
+  content: '📋';
+  font-size: 20px;
+}
+
+#clear-mobile-bill {
+  padding: var(--md-spacing-sm) var(--md-spacing-md);
+  border-radius: var(--md-radius-large);
+  background: var(--md-error-container);
+  border: none;
+  color: var(--md-error);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--md-transition-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-xs);
+}
+
+#clear-mobile-bill::before {
+  content: '🗑️';
+  font-size: 14px;
+}
+
+#clear-mobile-bill:active {
+  transform: scale(0.95);
+  background: var(--md-error);
+  color: var(--md-on-error);
 }
 
 .bill-summary-header {
@@ -461,34 +512,98 @@
   align-items: center;
   font-size: 14px;
   margin-bottom: var(--md-spacing-xs);
+  padding: var(--md-spacing-xs) 0;
+  transition: all var(--md-transition-medium);
+}
+
+.bill-summary-row-mobile:hover {
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-medium);
+  padding: var(--md-spacing-xs) var(--md-spacing-sm);
+  margin: 0 calc(-1 * var(--md-spacing-sm)) var(--md-spacing-xs);
 }
 
 .bill-summary-label {
   color: var(--md-outline-variant);
   font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-xs);
+}
+
+.bill-summary-label::before {
+  font-size: 12px;
+}
+
+.bill-summary-row-mobile:nth-child(1) .bill-summary-label::before {
+  content: '💰';
+}
+
+.bill-summary-row-mobile:nth-child(2) .bill-summary-label::before {
+  content: '📊';
+}
+
+.bill-summary-row-mobile:nth-child(3) .bill-summary-label::before {
+  content: '🎫';
 }
 
 .bill-summary-value {
   font-weight: 500;
   color: var(--md-on-surface);
+  font-family: 'Courier New', monospace;
+  background: var(--md-surface-variant);
+  padding: 2px var(--md-spacing-xs);
+  border-radius: var(--md-radius-small);
+  min-width: 60px;
+  text-align: right;
 }
 
 .bill-summary-total {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--md-primary);
-  border-top: 1px solid var(--md-outline);
+  border-top: 2px solid var(--md-primary);
   padding-top: var(--md-spacing-sm);
   margin-top: var(--md-spacing-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bill-summary-total::before {
+  content: '💳';
+  font-size: 18px;
 }
 
 /* ========================================
-   ENHANCED BILL ITEMS
-   ======================================== */
+    ENHANCED BILL ITEMS - PHASE 2
+    ======================================== */
 .list-mobile {
   max-height: 200px;
   overflow-y: auto;
   margin-bottom: var(--md-spacing-sm);
+  padding: var(--md-spacing-xs);
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-large);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.list-mobile::-webkit-scrollbar {
+  width: 4px;
+}
+
+.list-mobile::-webkit-scrollbar-track {
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-small);
+}
+
+.list-mobile::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: var(--md-radius-small);
+}
+
+.list-mobile::-webkit-scrollbar-thumb:hover {
+  background: var(--md-outline);
 }
 
 .bill-item-enhanced {
@@ -501,6 +616,24 @@
   box-shadow: var(--md-elevation-1);
   transition: all var(--md-transition-medium);
   animation: scaleIn 0.2s ease-out;
+  border: 1px solid var(--md-outline-variant);
+  position: relative;
+  overflow: hidden;
+}
+
+.bill-item-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--md-primary);
+  border-radius: var(--md-radius-small) 0 0 var(--md-radius-small);
+}
+
+.bill-item-enhanced:last-child {
+  margin-bottom: 0;
 }
 
 .bill-item-enhanced:last-child {
@@ -542,21 +675,23 @@
   color: var(--md-outline-variant);
 }
 
-/* Quantity Controls */
+/* Quantity Controls - Enhanced */
 .bill-item-enhanced > div:nth-child(3) {
   display: flex;
   align-items: center;
   gap: var(--md-spacing-sm);
   background: var(--md-surface-variant);
   border-radius: var(--md-radius-large);
-  padding: 4px;
+  padding: 6px;
   margin-right: var(--md-spacing-sm);
+  border: 1px solid var(--md-outline-variant);
+  box-shadow: var(--md-elevation-1);
 }
 
 .quantity-decrease,
 .quantity-increase {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--md-radius-full);
   background: var(--md-primary);
   border: none;
@@ -564,9 +699,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   transition: all var(--md-transition-medium);
+  box-shadow: var(--md-elevation-1);
+  position: relative;
+  overflow: hidden;
+}
+
+.quantity-decrease::before,
+.quantity-increase::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all var(--md-transition-medium);
+}
+
+.quantity-decrease:active::before,
+.quantity-increase:active::before {
+  width: 100%;
+  height: 100%;
 }
 
 .quantity-decrease:active,
@@ -574,14 +732,20 @@
   transform: scale(0.9);
   background: var(--md-primary-container);
   color: var(--md-on-primary-container);
+  box-shadow: var(--md-elevation-2);
 }
 
 .bill-item-enhanced > div:nth-child(3) > span {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--md-on-surface);
-  min-width: 20px;
+  min-width: 24px;
   text-align: center;
+  background: var(--md-surface);
+  padding: 4px var(--md-spacing-xs);
+  border-radius: var(--md-radius-small);
+  border: 1px solid var(--md-outline-variant);
+  font-family: 'Courier New', monospace;
 }
 
 /* Price and Remove */
@@ -621,35 +785,76 @@
 
 #mobile-process-bill-btn {
   width: 100%;
-  height: 48px;
-  border-radius: 24px;
-  background: var(--md-primary);
+  height: 56px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--md-primary) 0%, var(--md-secondary) 100%);
   border: none;
   color: var(--md-on-primary);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   transition: all var(--md-transition-medium);
-  box-shadow: var(--md-elevation-2);
+  box-shadow: var(--md-elevation-3);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--md-spacing-sm);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#mobile-process-bill-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+#mobile-process-bill-btn:hover::before {
+  left: 100%;
 }
 
 #mobile-process-bill-btn:active {
   transform: scale(0.98);
-  box-shadow: var(--md-elevation-3);
+  box-shadow: var(--md-elevation-4);
+  background: linear-gradient(135deg, var(--md-primary-container) 0%, var(--md-secondary-container) 100%);
+  color: var(--md-on-primary-container);
 }
 
 #mobile-process-bill-btn:disabled {
   background: var(--md-outline-variant);
   color: var(--md-outline);
   box-shadow: none;
+  transform: none;
+}
+
+#mobile-process-bill-btn:disabled::before {
+  display: none;
 }
 
 #mobile-process-bill-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 /* ========================================
@@ -909,8 +1114,106 @@
 }
 
 /* ========================================
-   ACCESSIBILITY
-   ======================================== */
+    PHASE 2 ENHANCEMENTS
+    ======================================== */
+
+/* Enhanced Empty State */
+.bill-empty-state {
+  text-align: center;
+  padding: var(--md-spacing-xl) var(--md-spacing-lg);
+  color: var(--md-on-surface-muted);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.bill-empty-state-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  background: var(--md-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--md-spacing-md);
+  color: var(--md-on-surface-muted);
+  font-size: 32px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Enhanced Bill Item Animations */
+.bill-item-enhanced {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Enhanced Hover Effects */
+.bill-item-enhanced:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-3);
+  border-color: var(--md-primary);
+}
+
+/* Enhanced Focus States */
+.bill-item-enhanced:focus-within {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* Enhanced Loading States */
+.bill-summary-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--md-spacing-lg);
+  color: var(--md-on-surface-muted);
+}
+
+.bill-summary-loading::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--md-outline-variant);
+  border-top: 2px solid var(--md-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: var(--md-spacing-sm);
+}
+
+/* Enhanced Success States */
+.bill-summary-success {
+  background: var(--md-success-container);
+  border-color: var(--md-success);
+  color: var(--md-on-success-container);
+}
+
+.bill-summary-success .bill-summary-total {
+  color: var(--md-success);
+}
+
+/* ========================================
+    ACCESSIBILITY
+    ======================================== */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

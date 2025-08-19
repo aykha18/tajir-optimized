@@ -696,25 +696,10 @@ if (typeof window.MobileBilling === 'undefined') {
 
     if (this.currentBill.items.length === 0) {
       billItems.innerHTML = `
-        <div style="
-          text-align: center;
-          color: var(--md-on-surface-muted);
-          padding: 32px 16px;
-          font-size: 14px;
-        ">
-          <div style="
-            width: 48px;
-            height: 48px;
-            border-radius: 24px;
-            background: var(--md-surface-variant);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            color: var(--md-on-surface-muted);
-            font-size: 20px;
-          ">📋</div>
-          No items in bill
+        <div class="bill-empty-state">
+          <div class="bill-empty-state-icon">📋</div>
+          <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">No items in bill</div>
+          <div style="font-size: 14px; color: var(--md-on-surface-muted);">Add products to get started</div>
         </div>
       `;
       return;
