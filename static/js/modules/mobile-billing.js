@@ -16,7 +16,8 @@ if (typeof window.MobileBilling === 'undefined') {
       discountType: 'percentage', // 'percentage' or 'amount'
       discountValue: 0,
       finalTotal: 0,
-      paymentMethod: null
+      paymentMethod: null,
+      deliveryDate: this.getDefaultDeliveryDate() // Add default delivery date
     };
     this.isInitialized = false;
     this.mobileNavigation = null;
@@ -890,7 +891,8 @@ if (typeof window.MobileBilling === 'undefined') {
       discountType: 'percentage',
       discountValue: 0,
       finalTotal: 0,
-      paymentMethod: null
+      paymentMethod: null,
+      deliveryDate: this.getDefaultDeliveryDate() // Reset to default delivery date
     };
     this.updateMobileBillDisplay();
     this.calculateMobileTotals();
@@ -982,7 +984,7 @@ if (typeof window.MobileBilling === 'undefined') {
         // Use existing print endpoint
         const printUrl = `${window.location.origin}/api/bills/${billData.bill_id}/print`;
         window.open(printUrl, '_blank');
-        this.showMobileNotification('Print window opened', 'success');
+        // Don't show notification here as it will be handled by resetMobileBillingAfterSuccess
       } else {
         // For draft bills, show a message
         this.showMobileNotification('Please save the bill first to print', 'warning');
@@ -1016,17 +1018,17 @@ if (typeof window.MobileBilling === 'undefined') {
           })
         });
 
-        if (whatsappResponse.ok) {
-          const whatsappResult = await whatsappResponse.json();
-          if (whatsappResult.success && whatsappResult.whatsapp_url) {
-            window.open(whatsappResult.whatsapp_url, '_blank');
-            this.showMobileNotification('WhatsApp opened with bill details', 'success');
-          } else {
-            throw new Error('Failed to generate WhatsApp link');
-          }
-        } else {
-          throw new Error('Failed to send WhatsApp');
-        }
+                 if (whatsappResponse.ok) {
+           const whatsappResult = await whatsappResponse.json();
+           if (whatsappResult.success && whatsappResult.whatsapp_url) {
+             window.open(whatsappResult.whatsapp_url, '_blank');
+             // Don't show notification here as it will be handled by resetMobileBillingAfterSuccess
+           } else {
+             throw new Error('Failed to generate WhatsApp link');
+           }
+         } else {
+           throw new Error('Failed to send WhatsApp');
+         }
       } else {
         // For draft bills, create a WhatsApp message manually
         const customerName = billData.customer?.name || billData.customer_name || 'Customer';
@@ -1038,22 +1040,26 @@ if (typeof window.MobileBilling === 'undefined') {
         let message = `*🧾 TAJIR POS - DRAFT BILL*\n\n`;
         message += `*Customer Details:*\n`;
         message += `• Name: ${customerName}\n`;
-        if (customerPhone) message += `• Phone: ${customerPhone}\n\n`;
+        if (customerPhone) message += `• Phone: ${customerPhone}\n`;
         
-        message += `*Bill Details:*\n`;
-        message += `• Bill #: ${billNumber} (Draft)\n`;
-        message += `• Date: ${billDate}\n\n`;
+                 message += `\n*Bill Details:*\n`;
+         message += `• Bill #: ${billNumber} (Draft)\n`;
+         message += `• Date: ${billDate}\n`;
+         message += `• Delivery: ${billData.delivery_date || this.currentBill.deliveryDate || 'N/A'}\n`;
+         message += `• Subtotal: AED ${billData.subtotal?.toFixed(2) || '0.00'}\n`;
+         message += `• Tax (5%): AED ${billData.tax?.toFixed(2) || '0.00'}\n`;
+         message += `• Discount: AED ${billData.discount?.toFixed(2) || '0.00'}\n`;
+         message += `• Total: AED ${totalAmount}\n\n`;
         
         // Add items details
         if (billData.items && billData.items.length > 0) {
           message += `*Items:*\n`;
           billData.items.forEach((item, index) => {
-            message += `${index + 1}. ${item.product_name} - Qty: ${item.quantity} - Rate: ${item.rate} - Total: ${item.total}\n`;
+            message += `${index + 1}. ${item.product_name} - Qty: ${item.quantity} - Rate: AED ${item.price} - Total: AED ${item.total.toFixed(2)}\n`;
           });
           message += `\n`;
         }
         
-        message += `*Total Amount: ${totalAmount}*\n\n`;
         message += `*Note: This is a draft bill. Please save it in the POS system for permanent record.*`;
         
         // Encode the message for WhatsApp
@@ -1076,9 +1082,9 @@ if (typeof window.MobileBilling === 'undefined') {
           }
         }
         
-        const whatsappUrl = `https://wa.me/${phoneWithCode}?text=${encodedMessage}`;
-        window.open(whatsappUrl, '_blank');
-        this.showMobileNotification('WhatsApp opened with draft bill details', 'success');
+                 const whatsappUrl = `https://wa.me/${phoneWithCode}?text=${encodedMessage}`;
+         window.open(whatsappUrl, '_blank');
+         // Don't show notification here as it will be handled by resetMobileBillingAfterSuccess
       }
     } catch (error) {
       console.error('Error sending WhatsApp:', error);
@@ -1445,17 +1451,14 @@ if (typeof window.MobileBilling === 'undefined') {
           break;
       }
       
-      // Prepare bill data for success modal
-      const billData = {
-        customer: this.currentBill.customer,
-        bill_number: this.currentBill.billNumber || 'Draft',
-        total_amount: this.currentBill.total,
-        bill_date: new Date().toLocaleDateString(),
-        items: this.currentBill.items,
-        payment_method: this.paymentMethod
-      };
+      // Save bill to database with complete details
+      const savedBillData = await this.saveBillToDatabase(method);
       
-      this.showPaymentSuccess(billData);
+      if (savedBillData) {
+        this.showPaymentSuccess(savedBillData);
+      } else {
+        throw new Error('Failed to save bill to database');
+      }
     } catch (error) {
       this.showPaymentError(error.message);
     } finally {
@@ -1509,13 +1512,33 @@ if (typeof window.MobileBilling === 'undefined') {
             <span class="bill-value">${billData.bill_number || 'N/A'}</span>
           </div>
           <div class="bill-info-row">
+            <span class="bill-label">Subtotal:</span>
+            <span class="bill-value">AED ${billData.subtotal?.toFixed(2) || '0.00'}</span>
+          </div>
+          <div class="bill-info-row">
+            <span class="bill-label">Tax (5%):</span>
+            <span class="bill-value">AED ${billData.tax?.toFixed(2) || '0.00'}</span>
+          </div>
+          <div class="bill-info-row">
+            <span class="bill-label">Discount:</span>
+            <span class="bill-value">AED ${billData.discount?.toFixed(2) || '0.00'}</span>
+          </div>
+          <div class="bill-info-row">
             <span class="bill-label">Total:</span>
-            <span class="bill-value">AED ${billData.total_amount || '0.00'}</span>
+            <span class="bill-value">AED ${billData.total_amount?.toFixed(2) || '0.00'}</span>
           </div>
           <div class="bill-info-row">
             <span class="bill-label">Payment:</span>
-            <span class="bill-value">${this.paymentMethod || 'N/A'}</span>
+            <span class="bill-value">${billData.payment_method || 'N/A'}</span>
           </div>
+                     <div class="bill-info-row">
+             <span class="bill-label">Date:</span>
+             <span class="bill-value">${billData.bill_date || 'N/A'}</span>
+           </div>
+           <div class="bill-info-row">
+             <span class="bill-label">Delivery:</span>
+             <span class="bill-value">${billData.delivery_date || this.currentBill.deliveryDate || 'N/A'}</span>
+           </div>
         </div>
         
         <div class="payment-success-actions">
@@ -1551,11 +1574,13 @@ if (typeof window.MobileBilling === 'undefined') {
     
     printBtn.addEventListener('click', () => {
       this.printBill(billData);
+      this.resetMobileBillingAfterSuccess();
       modal.remove();
     });
     
     whatsappBtn.addEventListener('click', () => {
       this.sendWhatsApp(billData);
+      this.resetMobileBillingAfterSuccess();
       modal.remove();
     });
     
@@ -1565,12 +1590,14 @@ if (typeof window.MobileBilling === 'undefined') {
     });
 
     closeBtn.addEventListener('click', () => {
+      this.resetMobileBillingAfterSuccess();
       modal.remove();
     });
 
     // Close on backdrop click
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
+        this.resetMobileBillingAfterSuccess();
         modal.remove();
       }
     });
@@ -1622,33 +1649,41 @@ if (typeof window.MobileBilling === 'undefined') {
             <div class="loading-customers">Loading customers...</div>
           </div>
           
-          <!-- Add New Customer Form (Hidden by default) -->
-          <div id="add-customer-form" class="add-customer-form" style="display: none;">
-            <h4>Add New Customer</h4>
-            <div class="form-group">
-              <label for="new-customer-name">Name *</label>
-              <input type="text" id="new-customer-name" placeholder="Customer name" required>
-            </div>
-            <div class="form-group">
-              <label for="new-customer-phone">Phone</label>
-              <input type="tel" id="new-customer-phone" placeholder="+971 50 123 4567">
-            </div>
-            <div class="form-group">
-              <label for="new-customer-address">Address</label>
-              <textarea id="new-customer-address" placeholder="Customer address"></textarea>
-            </div>
-            <div class="form-group">
-              <label for="new-customer-type">Customer Type</label>
-              <select id="new-customer-type">
-                <option value="Individual">Individual</option>
-                <option value="Business">Business</option>
-              </select>
-            </div>
-            <div class="form-actions">
-              <button id="save-customer-btn" class="save-customer-btn">Save Customer</button>
-              <button id="cancel-add-customer-btn" class="cancel-add-customer-btn">Cancel</button>
-            </div>
-          </div>
+                     <!-- Add New Customer Form (Hidden by default) -->
+           <div id="add-customer-form" class="add-customer-form" style="display: none;">
+             <h4>Add New Customer</h4>
+             <div class="form-group">
+               <label for="new-customer-name">Name *</label>
+               <input type="text" id="new-customer-name" placeholder="Customer name" required>
+             </div>
+             <div class="form-group">
+               <label for="new-customer-phone">Phone</label>
+               <input type="tel" id="new-customer-phone" placeholder="+971 50 123 4567">
+             </div>
+             <div class="form-group">
+               <label for="new-customer-city">City</label>
+               <input type="text" id="new-customer-city" placeholder="Dubai, Abu Dhabi, etc.">
+             </div>
+             <div class="form-group">
+               <label for="new-customer-area">Area</label>
+               <input type="text" id="new-customer-area" placeholder="Deira, Bur Dubai, etc.">
+             </div>
+             <div class="form-group">
+               <label for="new-customer-address">Address</label>
+               <textarea id="new-customer-address" placeholder="Customer address"></textarea>
+             </div>
+             <div class="form-group">
+               <label for="new-customer-type">Customer Type</label>
+               <select id="new-customer-type">
+                 <option value="Individual">Individual</option>
+                 <option value="Business">Business</option>
+               </select>
+             </div>
+             <div class="form-actions">
+               <button id="save-customer-btn" class="save-customer-btn">Save Customer</button>
+               <button id="cancel-add-customer-btn" class="cancel-add-customer-btn">Cancel</button>
+             </div>
+           </div>
         </div>
       </div>
     `;
@@ -1682,7 +1717,7 @@ if (typeof window.MobileBilling === 'undefined') {
       const customers = await response.json();
       
       const container = modal.querySelector('#customer-list-container');
-      this.renderCustomerList(container, customers);
+      this.renderCustomerList(container, customers, modal);
     } catch (error) {
       console.error('Error loading customers:', error);
       const container = modal.querySelector('#customer-list-container');
@@ -1690,19 +1725,19 @@ if (typeof window.MobileBilling === 'undefined') {
     }
   }
 
-  renderCustomerList(container, customers) {
+  renderCustomerList(container, customers, modal) {
     if (customers.length === 0) {
       container.innerHTML = '<div class="no-customers">No customers found. Add a new customer to get started.</div>';
       return;
     }
 
-    const customerHtml = customers.map(customer => `
-      <div class="customer-option" data-customer-id="${customer.customer_id}" data-customer-name="${customer.customer_name}" data-customer-phone="${customer.mobile || ''}" data-customer-address="${customer.address || ''}">
-        <div class="customer-avatar">${customer.customer_name.charAt(0).toUpperCase()}</div>
+        const customerHtml = customers.map(customer => `
+                 <div class="customer-option" data-customer-id="${customer.customer_id}" data-customer-name="${customer.name || ''}" data-customer-phone="${customer.phone || ''}" data-customer-city="${customer.city || ''}" data-customer-area="${customer.area || ''}" data-customer-address="${customer.address || ''}">
+        <div class="customer-avatar">${(customer.name || 'U').charAt(0).toUpperCase()}</div>
         <div class="customer-info">
-          <h5>${customer.customer_name}</h5>
-          <p>${customer.mobile || 'No phone number'}</p>
-          ${customer.address ? `<small>${customer.address}</small>` : ''}
+            <h5>${customer.name || 'Unknown Customer'}</h5>
+            <p>${customer.phone || 'No phone number'}</p>
+            ${customer.address ? `<small>${customer.address}</small>` : ''}
         </div>
       </div>
     `).join('');
@@ -1712,14 +1747,16 @@ if (typeof window.MobileBilling === 'undefined') {
     // Add click handlers to customer options
     const customerOptions = container.querySelectorAll('.customer-option');
     customerOptions.forEach(option => {
-      option.addEventListener('click', () => {
-        const customerId = option.dataset.customerId;
-        const customerName = option.dataset.customerName;
-        const customerPhone = option.dataset.customerPhone;
-        
-        this.selectCustomer(customerId, customerName, customerPhone);
-        modal.remove();
-      });
+             option.addEventListener('click', () => {
+         const customerId = option.dataset.customerId;
+         const customerName = option.dataset.customerName;
+         const customerPhone = option.dataset.customerPhone;
+         const customerCity = option.dataset.customerCity;
+         const customerArea = option.dataset.customerArea;
+         
+         this.selectCustomer(customerId, customerName, customerPhone, customerCity, customerArea);
+         modal.remove();
+       });
     });
   }
 
@@ -1741,7 +1778,7 @@ if (typeof window.MobileBilling === 'undefined') {
       const customers = await response.json();
       
       const container = modal.querySelector('#customer-list-container');
-      this.renderCustomerList(container, customers);
+      this.renderCustomerList(container, customers, modal);
     } catch (error) {
       console.error('Error searching customers:', error);
     }
@@ -1778,17 +1815,21 @@ if (typeof window.MobileBilling === 'undefined') {
   async saveNewCustomer(modal) {
     const nameInput = modal.querySelector('#new-customer-name');
     const phoneInput = modal.querySelector('#new-customer-phone');
+    const cityInput = modal.querySelector('#new-customer-city');
+    const areaInput = modal.querySelector('#new-customer-area');
     const addressInput = modal.querySelector('#new-customer-address');
     const typeInput = modal.querySelector('#new-customer-type');
 
     const customerData = {
-      customer_name: nameInput.value.trim(),
-      mobile: phoneInput.value.trim(),
+      name: nameInput.value.trim(),
+      phone: phoneInput.value.trim(),
+      city: cityInput.value.trim(),
+      area: areaInput.value.trim(),
       address: addressInput.value.trim(),
       customer_type: typeInput.value
     };
 
-    if (!customerData.customer_name) {
+    if (!customerData.name) {
       this.showMobileNotification('Customer name is required', 'error');
       return;
     }
@@ -1802,19 +1843,29 @@ if (typeof window.MobileBilling === 'undefined') {
         body: JSON.stringify(customerData)
       });
 
-      if (response.ok) {
-        const newCustomer = await response.json();
-        
-        // Auto-select the newly created customer
-        this.selectCustomer(
-          newCustomer.customer_id,
-          newCustomer.customer_name,
-          newCustomer.mobile || ''
-        );
-        
-        modal.remove();
-        this.showMobileNotification('Customer added successfully', 'success');
-      } else {
+             if (response.ok) {
+         const newCustomer = await response.json();
+         
+         // Log the response to debug the structure
+         console.log('New customer response:', newCustomer);
+         
+                   // Auto-select the newly created customer
+          // Handle different possible response structures
+          const customerId = newCustomer.id || newCustomer.customer_id;
+          const customerName = newCustomer.name || newCustomer.customer_name || customerData.name;
+          const customerPhone = newCustomer.phone || newCustomer.mobile || customerData.phone;
+          const customerCity = newCustomer.city || customerData.city || '';
+          const customerArea = newCustomer.area || customerData.area || '';
+          
+          if (customerId && customerName) {
+            this.selectCustomer(customerId, customerName, customerPhone, customerCity, customerArea);
+            modal.remove();
+            this.showMobileNotification('Customer added successfully', 'success');
+          } else {
+            this.showMobileNotification('Customer added but failed to select. Please select manually.', 'warning');
+            modal.remove();
+          }
+       } else {
         const error = await response.json();
         this.showMobileNotification(error.error || 'Failed to add customer', 'error');
       }
@@ -1824,11 +1875,19 @@ if (typeof window.MobileBilling === 'undefined') {
     }
   }
 
-  selectCustomer(customerId, customerName, customerPhone) {
+  selectCustomer(customerId, customerName, customerPhone, customerCity = '', customerArea = '') {
+    // Ensure we have valid customer data
+    if (!customerId || !customerName) {
+      this.showMobileNotification('Invalid customer data', 'error');
+      return;
+    }
+    
     this.currentBill.customer = {
       id: customerId,
-      name: customerName,
-      phone: customerPhone
+      name: customerName || 'Unknown Customer',
+      phone: customerPhone || '',
+      city: customerCity || '',
+      area: customerArea || ''
     };
     
     this.updateCustomerDisplay();
@@ -1842,11 +1901,11 @@ if (typeof window.MobileBilling === 'undefined') {
     const name = document.getElementById('customer-name');
     const phone = document.getElementById('customer-phone');
     
-    if (this.currentBill.customer) {
+    if (this.currentBill.customer && this.currentBill.customer.name) {
       display.style.display = 'block';
-      avatar.textContent = this.currentBill.customer.name.charAt(0).toUpperCase();
-      name.textContent = this.currentBill.customer.name;
-      phone.textContent = this.currentBill.customer.phone;
+      avatar.textContent = (this.currentBill.customer.name || 'U').charAt(0).toUpperCase();
+      name.textContent = this.currentBill.customer.name || 'Unknown Customer';
+      phone.textContent = this.currentBill.customer.phone || 'No phone number';
     } else {
       display.style.display = 'none';
     }
@@ -1975,6 +2034,142 @@ if (typeof window.MobileBilling === 'undefined') {
   startNewBill() {
     this.clearMobileBill();
     this.showMobileNotification('New bill started', 'success');
+  }
+
+  // Get default delivery date (3 days from today)
+  getDefaultDeliveryDate() {
+    const today = new Date();
+    const delivery = new Date();
+    delivery.setDate(today.getDate() + 3);
+    return delivery.toISOString().split('T')[0]; // YYYY-MM-DD format
+  }
+
+  // Reset mobile billing after successful bill operations
+  resetMobileBillingAfterSuccess() {
+    // Clear the current bill
+    this.clearMobileBill();
+    
+    // Reset payment progress state
+    this.paymentInProgress = false;
+    
+    // Clear any existing notifications
+    const existingNotifications = document.querySelectorAll('.mobile-notification');
+    existingNotifications.forEach(notification => {
+      notification.remove();
+    });
+    
+    // Reset the process button state
+    this.updateProcessButtonState();
+    
+    // Show success notification
+    this.showMobileNotification('Bill completed successfully. Ready for next bill.', 'success');
+  }
+
+  // Save bill to database with complete details
+  async saveBillToDatabase(paymentMethod) {
+    try {
+      // Check if we have items and customer
+      if (this.currentBill.items.length === 0) {
+        this.showMobileNotification('No items in bill to save', 'error');
+        return null;
+      }
+
+      if (!this.currentBill.customer) {
+        this.showMobileNotification('Customer information is required', 'error');
+        return null;
+      }
+
+      // Generate bill number
+      const timestamp = Date.now();
+      const billNumber = `BILL-${timestamp}`;
+
+      // Calculate totals
+      const subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
+      const tax = subtotal * 0.05; // 5% VAT
+      const discount = this.currentBill.discount || 0;
+      const finalTotal = subtotal + tax - discount;
+
+      // Prepare bill items in the format expected by the API
+      const billItems = this.currentBill.items.map(item => ({
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        rate: item.price,
+        discount: 0, // No discount per item in mobile billing
+        advance_paid: 0, // No advance per item in mobile billing
+        total: item.total,
+        vat_amount: item.total * 0.05 // 5% VAT per item
+      }));
+
+             // Prepare bill data in the format expected by the API
+       const billData = {
+         bill: {
+           bill_number: billNumber,
+           customer_name: this.currentBill.customer.name,
+           customer_phone: this.currentBill.customer.phone,
+           customer_city: this.currentBill.customer.city || '',
+           customer_area: this.currentBill.customer.area || '',
+           customer_trn: '',
+           customer_type: 'Individual',
+           business_name: '',
+           business_address: '',
+           bill_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+           delivery_date: this.currentBill.deliveryDate, // Use the delivery date from current bill
+           trial_date: this.currentBill.deliveryDate, // Set trial date same as delivery date
+           master_id: null, // No master selection in mobile billing
+           master_name: '',
+           notes: '',
+           subtotal: subtotal,
+           discount: discount,
+           vat_amount: tax,
+           total_amount: finalTotal,
+           advance_paid: 0, // No advance in mobile billing
+           balance_amount: finalTotal,
+           payment_method: paymentMethod
+         },
+         items: billItems
+       };
+
+      // Save bill to database
+      const response = await fetch('/api/bills', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(billData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save bill');
+      }
+
+      const result = await response.json();
+      
+             if (result.bill_id) {
+         // Return complete bill data for success modal
+         return {
+           bill_id: result.bill_id,
+           customer: this.currentBill.customer,
+           bill_number: billNumber,
+           total_amount: finalTotal,
+           bill_date: new Date().toLocaleDateString(),
+           delivery_date: this.currentBill.deliveryDate,
+           items: this.currentBill.items,
+           payment_method: paymentMethod,
+           subtotal: subtotal,
+           tax: tax,
+           discount: discount
+         };
+       } else {
+         throw new Error('No bill ID returned from server');
+       }
+
+    } catch (error) {
+      console.error('Error saving bill to database:', error);
+      this.showMobileNotification('Failed to save bill: ' + error.message, 'error');
+      return null;
+    }
   }
 }
 
