@@ -254,6 +254,12 @@ class MobileNavigation {
         <button data-action="expenses" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Expenses</button>
         <button data-action="settings" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Shop Settings</button>
         <button data-action="product-types" style="padding:12px;border:1px solid #374151;border-radius:8px;background:#1f2937;color:#e5e7eb;text-align:left;">Product Types</button>
+        <button data-action="clear-cache" style="padding:12px;border:1px solid #dc2626;border-radius:8px;background:#1f2937;color:#fca5a5;text-align:left;">
+          <svg style="width:16px;height:16px;display:inline-block;margin-right:8px;vertical-align:middle;" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          Clear Cache
+        </button>
         <button data-action="close" style="padding:12px;border:1px solid #4b5563;border-radius:8px;background:#111827;color:#9ca3af;text-align:center;">Close</button>
       </div>
     `;
@@ -281,6 +287,13 @@ class MobileNavigation {
         settings: 'shopSettingsSec',
         'product-types': 'productTypeSec'
       };
+      
+      if (action === 'clear-cache') {
+        this.handleClearCache();
+        handleClose();
+        return;
+      }
+      
       const target = map[action];
       if (target) {
         if (target === 'expenses') {
@@ -399,6 +412,127 @@ class MobileNavigation {
         }
       }, 300);
     }, duration);
+  }
+
+  async handleClearCache() {
+    try {
+      // Show confirmation dialog
+      const confirmed = await this.showConfirmDialog('Are you sure you want to clear all app cache? This will remove all stored data and may require you to log in again.');
+      
+      if (!confirmed) {
+        return;
+      }
+
+      // Show loading notification
+      this.showMobileNotification('Clearing cache...', 'info');
+      
+      // Set clearing flag
+      window.isClearingCache = true;
+      
+      // Clear all cache using existing function
+      if (typeof clearAllCache === 'function') {
+        await clearAllCache();
+      } else {
+        // Fallback cache clearing
+        await this.clearAllCacheFallback();
+      }
+      
+      // Show success message
+      this.showMobileNotification('Cache cleared successfully! The app will refresh in 3 seconds.', 'success');
+      
+      // Reset clearing flag
+      window.isClearingCache = false;
+      
+      // Refresh the app after 3 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      this.showMobileNotification('Error clearing cache. Please try again.', 'error');
+      window.isClearingCache = false;
+    }
+  }
+
+  async clearAllCacheFallback() {
+    // Clear localStorage
+    localStorage.clear();
+    
+    // Clear sessionStorage
+    sessionStorage.clear();
+    
+    // Clear IndexedDB
+    if ('indexedDB' in window) {
+      const databases = await indexedDB.databases();
+      for (const db of databases) {
+        if (db.name) {
+          indexedDB.deleteDatabase(db.name);
+        }
+      }
+    }
+    
+    // Clear service worker cache
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+        }
+      } catch (error) {
+        console.error('Error clearing service worker cache:', error);
+      }
+    }
+  }
+
+  async showConfirmDialog(message) {
+    return new Promise((resolve) => {
+      // Create confirmation dialog
+      const overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.inset = '0';
+      overlay.style.background = 'rgba(0,0,0,0.5)';
+      overlay.style.zIndex = '100001';
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+      overlay.style.padding = '20px';
+
+      const dialog = document.createElement('div');
+      dialog.style.background = '#1f2937';
+      dialog.style.border = '1px solid #374151';
+      dialog.style.borderRadius = '12px';
+      dialog.style.padding = '20px';
+      dialog.style.maxWidth = '90vw';
+      dialog.style.width = '320px';
+      dialog.style.color = '#e5e7eb';
+
+      dialog.innerHTML = `
+        <div style="margin-bottom:16px;font-weight:600;color:#fca5a5;">Clear Cache</div>
+        <div style="margin-bottom:20px;line-height:1.5;">${message}</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="cancel-cache" style="padding:8px 16px;border:1px solid #374151;border-radius:6px;background:#111827;color:#9ca3af;">Cancel</button>
+          <button id="confirm-cache" style="padding:8px 16px;border:1px solid #dc2626;border-radius:6px;background:#dc2626;color:#ffffff;">Clear Cache</button>
+        </div>
+      `;
+
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+
+      const handleResult = (result) => {
+        if (overlay.parentElement) {
+          overlay.parentElement.removeChild(overlay);
+        }
+        resolve(result);
+      };
+
+      dialog.querySelector('#cancel-cache').addEventListener('click', () => handleResult(false));
+      dialog.querySelector('#confirm-cache').addEventListener('click', () => handleResult(true));
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) handleResult(false);
+      });
+    });
   }
 
   // Mobile-optimized form handling
