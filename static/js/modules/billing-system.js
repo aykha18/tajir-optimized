@@ -2680,6 +2680,45 @@ function initializeBillingSystem() {
         }
       });
     }
+
+    // Setup Mobile Billing Banner
+    const mobileBillingBannerBtn = document.getElementById('mobileBillingBannerBtn');
+    if (mobileBillingBannerBtn) {
+      mobileBillingBannerBtn.addEventListener('click', function() {
+        if (window.TajirPWA && window.TajirPWA.mobileBilling) {
+          try {
+            window.TajirPWA.mobileBilling.showMobileBilling();
+            // Hide the banner after clicking
+            const banner = document.getElementById('mobileBillingBanner');
+            if (banner) {
+              banner.style.opacity = '0';
+              banner.style.transform = 'translateY(-20px)';
+              setTimeout(() => {
+                banner.style.display = 'none';
+              }, 300);
+            }
+          } catch (error) {
+            console.error('Error showing mobile billing from banner:', error);
+            showModernAlert('Mobile billing encountered an error. Please try again.', 'error', 'Error');
+          }
+        } else {
+          console.warn('Mobile billing not available');
+          showModernAlert('Mobile billing is not available. Please refresh the page.', 'warning', 'Feature Unavailable');
+        }
+      });
+    }
+
+    // Auto-hide mobile billing banner after 10 seconds
+    const mobileBillingBanner = document.getElementById('mobileBillingBanner');
+    if (mobileBillingBanner) {
+      setTimeout(() => {
+        mobileBillingBanner.style.opacity = '0';
+        mobileBillingBanner.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+          mobileBillingBanner.style.display = 'none';
+        }, 300);
+      }, 10000);
+    }
   }
 
 

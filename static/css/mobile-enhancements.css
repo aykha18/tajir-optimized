@@ -907,6 +907,78 @@
     min-height: 48px !important;
     min-width: 48px !important;
   }
+}
+
+/* Enhanced Mobile Billing Button */
+#mobileBillingToggle {
+  position: relative !important;
+  overflow: hidden !important;
+  z-index: 1 !important;
+}
+
+#mobileBillingToggle::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent) !important;
+  transition: left 0.5s !important;
+  z-index: -1 !important;
+}
+
+#mobileBillingToggle:hover::before {
+  left: 100% !important;
+}
+
+#mobileBillingToggle .animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+/* Mobile Billing Banner */
+#mobileBillingBanner {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+#mobileBillingBanner::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%) !important;
+  animation: shimmer 3s ease-in-out infinite !important;
+  pointer-events: none !important;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+#mobileBillingBannerBtn {
+  position: relative !important;
+  z-index: 2 !important;
+  transition: all 0.3s ease !important;
+}
+
+#mobileBillingBannerBtn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+/* Hide recent customers on mobile */
+@media (max-width: 768px) {
+  .recent-customers {
+    display: none !important;
+  }
+  
+  #recentCustomersContainer {
+    display: none !important;
+  }
 } 
 
 /* EXPENSE MANAGEMENT MOBILE OPTIMIZATIONS */

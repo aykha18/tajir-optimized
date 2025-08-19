@@ -164,6 +164,26 @@
 
     <!-- CONTENT -->
     <div class="mx-auto px-6 py-4 mobile-container">
+      <!-- Mobile Billing Recommendation Banner (only on mobile) -->
+      <div id="mobileBillingBanner" class="md:hidden mb-4 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg border border-blue-500">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold text-sm">📱 Use Mobile Billing for Better Experience</h3>
+              <p class="text-blue-100 text-xs">Touch-friendly interface with enhanced features</p>
+            </div>
+          </div>
+          <button id="mobileBillingBannerBtn" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-blue-50 transition-colors">
+            Try Now
+          </button>
+        </div>
+      </div>
+      
       <!-- BILLING -->
       <section id="billingSec" class="page space-y-2 mobile-form max-w-7xl mx-auto">
         <div class="flex justify-between items-center">
@@ -278,33 +298,15 @@
         <div class="modern-card">
           <div class="flex justify-between items-center mb-2">
             <h4 class="text-xs font-medium text-neutral-300">Add Product</h4>
-            <!-- Mobile Billing Toggle and Recent Customers Icon (only visible on mobile) -->
+            <!-- Mobile Billing Toggle (only visible on mobile) -->
             <div class="flex items-center gap-2 md:hidden">
-              <!-- Mobile Recent Customers Icon -->
-              <div id="mobileRecentCustomersIcon" class="relative">
-                <button type="button" id="mobileRecentCustomersBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white w-8 h-8 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110" title="Recent Customers">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                  </svg>
-                </button>
-                
-                <!-- Mobile Recent Customers Dropdown -->
-                <div id="mobileRecentCustomersDropdown" class="absolute top-10 right-0 bg-neutral-800 border border-neutral-600 rounded-lg shadow-xl w-64 max-h-64 overflow-y-auto hidden" style="transform: translateX(-100%);">
-                  <div class="p-3 border-b border-neutral-600">
-                    <h4 class="text-sm font-medium text-neutral-200">Recent Customers</h4>
-                  </div>
-                  <div id="mobileRecentCustomersList" class="p-2">
-                    <!-- Mobile recent customers will be populated here -->
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Mobile Billing Toggle -->
-              <button id="mobileBillingToggle" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700 transition-colors">
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <!-- Enhanced Mobile Billing Toggle -->
+              <button id="mobileBillingToggle" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                 </svg>
-                Mobile Billing
+                <span>📱 Mobile Billing</span>
+                <span class="bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full font-bold animate-pulse">RECOMMENDED</span>
               </button>
             </div>
           </div>
@@ -1476,24 +1478,7 @@
   </div>
 </div>
 
-        <!-- Mobile Recent Customers Sticky Icon - Fixed at extreme right -->
-        <div id="mobileRecentCustomersIcon" class="fixed top-1/2 right-6 z-50 md:hidden" style="transform: translateY(-50%);">
-          <button type="button" id="mobileRecentCustomersBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110" title="Recent Customers">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-            </svg>
-          </button>
-          
-          <!-- Mobile Recent Customers Dropdown -->
-          <div id="mobileRecentCustomersDropdown" class="absolute top-0 right-0 bg-neutral-800 border border-neutral-600 rounded-lg shadow-xl w-64 max-h-64 overflow-y-auto hidden" style="transform: translateX(-100%) translateY(-50%);">
-            <div class="p-3 border-b border-neutral-600">
-              <h4 class="text-sm font-medium text-neutral-200">Recent Customers</h4>
-            </div>
-            <div id="mobileRecentCustomersList" class="p-2">
-              <!-- Mobile recent customers will be populated here -->
-            </div>
-          </div>
-        </div>
+
 
     </body>
 </code_block_to_apply_changes_from>
