@@ -2912,7 +2912,7 @@ def get_billing_config():
         conn = get_db_connection()
         settings = conn.execute('''
             SELECT enable_trial_date, enable_delivery_date, enable_advance_payment, 
-                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days
+                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id
             FROM shop_settings WHERE user_id = ?
         ''', (user_id,)).fetchone()
         conn.close()
@@ -2925,7 +2925,8 @@ def get_billing_config():
                 'enable_customer_notes': bool(settings['enable_customer_notes']),
                 'enable_employee_assignment': bool(settings['enable_employee_assignment']),
                 'default_delivery_days': int(settings['default_delivery_days']),
-                'default_trial_days': int(settings['default_trial_days']) if 'default_trial_days' in settings.keys() else 3
+                'default_trial_days': int(settings['default_trial_days']) if 'default_trial_days' in settings.keys() else 3,
+                'default_employee_id': settings['default_employee_id']
             }
         else:
             # Default configuration
@@ -2936,7 +2937,8 @@ def get_billing_config():
                 'enable_customer_notes': True,
                 'enable_employee_assignment': True,
                 'default_delivery_days': 3,
-                'default_trial_days': 3
+                'default_trial_days': 3,
+                'default_employee_id': None
             }
         
         return jsonify({
@@ -2954,7 +2956,8 @@ def get_billing_config():
                 'enable_customer_notes': True,
                 'enable_employee_assignment': True,
                 'default_delivery_days': 3,
-                'default_trial_days': 3
+                'default_trial_days': 3,
+                'default_employee_id': None
             }
         }), 500
 
@@ -2985,6 +2988,7 @@ def update_shop_settings():
         enable_employee_assignment = data.get('enable_employee_assignment', True)
         default_delivery_days = data.get('default_delivery_days', 3)
         default_trial_days = data.get('default_trial_days', 3)
+        default_employee_id = data.get('default_employee_id')
         
         conn = get_db_connection()
         
@@ -2999,25 +3003,25 @@ def update_shop_settings():
                     shop_mobile = ?, working_hours = ?, invoice_static_info = ?,
                     use_dynamic_invoice_template = ?, payment_mode = ?, 
                     enable_trial_date = ?, enable_delivery_date = ?, enable_advance_payment = ?,
-                    enable_customer_notes = ?, enable_employee_assignment = ?, default_delivery_days = ?, default_trial_days = ?,
+                    enable_customer_notes = ?, enable_employee_assignment = ?, default_delivery_days = ?, default_trial_days = ?, default_employee_id = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = ?
             ''', (shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
                   invoice_static_info, use_dynamic_invoice_template, payment_mode,
                   enable_trial_date, enable_delivery_date, enable_advance_payment,
-                  enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, user_id))
+                  enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id, user_id))
         else:
             # Create new shop settings for this user
             conn.execute('''
                 INSERT INTO shop_settings (user_id, shop_name, address, trn, city, area, logo_url, 
                     shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template, payment_mode,
                     enable_trial_date, enable_delivery_date, enable_advance_payment,
-                    enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (user_id, shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
                   invoice_static_info, use_dynamic_invoice_template, payment_mode,
                   enable_trial_date, enable_delivery_date, enable_advance_payment,
-                  enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days))
+                  enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id))
         
         conn.commit()
         conn.close()

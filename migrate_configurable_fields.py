@@ -38,6 +38,7 @@ def migrate_configurable_fields():
             ('enable_employee_assignment', 'BOOLEAN DEFAULT 1'),
             ('default_delivery_days', 'INTEGER DEFAULT 3'),
             ('default_trial_days', 'INTEGER DEFAULT 3'),
+            ('default_employee_id', 'INTEGER'),
             ('city', 'TEXT DEFAULT ""'),
             ('area', 'TEXT DEFAULT ""')
         ]
@@ -73,6 +74,7 @@ def migrate_configurable_fields():
                 enable_employee_assignment = 1,
                 default_delivery_days = 3,
                 default_trial_days = 3,
+                default_employee_id = NULL,
                 city = '',
                 area = ''
             WHERE enable_trial_date IS NULL

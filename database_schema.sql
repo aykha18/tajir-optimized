@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS shop_settings (
     enable_employee_assignment BOOLEAN DEFAULT 1,
     default_delivery_days INTEGER DEFAULT 3,
     default_trial_days INTEGER DEFAULT 3,
+    default_employee_id INTEGER,
     city TEXT DEFAULT '',
     area TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

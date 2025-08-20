@@ -120,11 +120,11 @@ function initializeShopSettings() {
           if (paymentModeFullField) paymentModeFullField.checked = paymentMode === 'full';
           
                      // Set configurable billing fields
-           if (enableTrialDateField) enableTrialDateField.checked = Boolean(settings.enable_trial_date);
-           if (enableDeliveryDateField) enableDeliveryDateField.checked = Boolean(settings.enable_delivery_date);
-           if (enableAdvancePaymentField) enableAdvancePaymentField.checked = Boolean(settings.enable_advance_payment);
-           if (enableCustomerNotesField) enableCustomerNotesField.checked = Boolean(settings.enable_customer_notes);
-           if (enableEmployeeAssignmentField) enableEmployeeAssignmentField.checked = Boolean(settings.enable_employee_assignment);
+           if (enableTrialDateField) enableTrialDateField.checked = settings.enable_trial_date === true || settings.enable_trial_date === 1 || settings.enable_trial_date === '1';
+           if (enableDeliveryDateField) enableDeliveryDateField.checked = settings.enable_delivery_date === true || settings.enable_delivery_date === 1 || settings.enable_delivery_date === '1';
+           if (enableAdvancePaymentField) enableAdvancePaymentField.checked = settings.enable_advance_payment === true || settings.enable_advance_payment === 1 || settings.enable_advance_payment === '1';
+           if (enableCustomerNotesField) enableCustomerNotesField.checked = settings.enable_customer_notes === true || settings.enable_customer_notes === 1 || settings.enable_customer_notes === '1';
+           if (enableEmployeeAssignmentField) enableEmployeeAssignmentField.checked = settings.enable_employee_assignment === true || settings.enable_employee_assignment === 1 || settings.enable_employee_assignment === '1';
           if (defaultDeliveryDaysField) defaultDeliveryDaysField.value = settings.default_delivery_days || 3;
           if (defaultTrialDaysField) defaultTrialDaysField.value = settings.default_trial_days || 3;
           if (defaultEmployeeIdField) defaultEmployeeIdField.disabled = !(enableEmployeeAssignmentField?.checked ?? true);
@@ -208,23 +208,23 @@ function initializeShopSettings() {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                      <div>
                      <span class="text-neutral-400">Trial Date:</span>
-                     <span class="text-white ml-2">${Boolean(settings.enable_trial_date) ? 'Enabled' : 'Disabled'}</span>
+                     <span class="text-white ml-2">${(settings.enable_trial_date === true || settings.enable_trial_date === 1 || settings.enable_trial_date === '1') ? 'Enabled' : 'Disabled'}</span>
                    </div>
                    <div>
                      <span class="text-neutral-400">Delivery Date:</span>
-                     <span class="text-white ml-2">${Boolean(settings.enable_delivery_date) ? 'Enabled' : 'Disabled'}</span>
+                     <span class="text-white ml-2">${(settings.enable_delivery_date === true || settings.enable_delivery_date === 1 || settings.enable_delivery_date === '1') ? 'Enabled' : 'Disabled'}</span>
                    </div>
                    <div>
                      <span class="text-neutral-400">Advance Payment:</span>
-                     <span class="text-white ml-2">${Boolean(settings.enable_advance_payment) ? 'Enabled' : 'Disabled'}</span>
+                     <span class="text-white ml-2">${(settings.enable_advance_payment === true || settings.enable_advance_payment === 1 || settings.enable_advance_payment === '1') ? 'Enabled' : 'Disabled'}</span>
                    </div>
                    <div>
                      <span class="text-neutral-400">Customer Notes:</span>
-                     <span class="text-white ml-2">${Boolean(settings.enable_customer_notes) ? 'Enabled' : 'Disabled'}</span>
+                     <span class="text-white ml-2">${(settings.enable_customer_notes === true || settings.enable_customer_notes === 1 || settings.enable_customer_notes === '1') ? 'Enabled' : 'Disabled'}</span>
                    </div>
                    <div>
                      <span class="text-neutral-400">Employee Assignment:</span>
-                     <span class="text-white ml-2">${Boolean(settings.enable_employee_assignment) ? 'Enabled' : 'Disabled'}</span>
+                     <span class="text-white ml-2">${(settings.enable_employee_assignment === true || settings.enable_employee_assignment === 1 || settings.enable_employee_assignment === '1') ? 'Enabled' : 'Disabled'}</span>
                    </div>
                   <div>
                     <span class="text-neutral-400">Default Delivery Days:</span>
