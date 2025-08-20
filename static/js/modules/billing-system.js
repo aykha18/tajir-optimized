@@ -73,6 +73,13 @@ function applyBillingConfiguration() {
     const deliveryDateLabel = document.querySelector('label[for="deliveryDate"]');
     const deliveryDateContainer = deliveryDateField?.closest('.form-group') || deliveryDateField?.parentElement;
     
+    console.log('=== DELIVERY DATE DEBUG ===');
+    console.log('Delivery date field found:', !!deliveryDateField);
+    console.log('Delivery date container found:', !!deliveryDateContainer);
+    console.log('Enable delivery date:', billingConfig.enable_delivery_date);
+    console.log('Current delivery date value:', deliveryDateField?.value);
+    console.log('Default delivery days:', billingConfig.default_delivery_days);
+    
     if (deliveryDateContainer) {
         if (billingConfig.enable_delivery_date) {
             deliveryDateContainer.style.display = '';
@@ -82,12 +89,20 @@ function applyBillingConfiguration() {
                 const delivery = new Date();
                 const defaultDays = billingConfig.default_delivery_days || 3;
                 delivery.setDate(today.getDate() + defaultDays);
-                deliveryDateField.value = delivery.toISOString().split('T')[0];
+                const newDeliveryDate = delivery.toISOString().split('T')[0];
+                deliveryDateField.value = newDeliveryDate;
+                console.log('Set delivery date to:', newDeliveryDate);
+            } else if (deliveryDateField && deliveryDateField.value) {
+                console.log('Delivery date already has value:', deliveryDateField.value);
             }
         } else {
             deliveryDateContainer.style.display = 'none';
+            console.log('Delivery date disabled, hiding container');
         }
+    } else {
+        console.log('Delivery date container not found');
     }
+    console.log('=== END DELIVERY DATE DEBUG ===');
     
     // Advance Payment field
     const advancePaymentField = document.getElementById('advancePayment');
@@ -152,6 +167,38 @@ function applyBillingConfiguration() {
                 datalist.remove();
             }
             console.log('Employee assignment disabled, cleared field');
+        }
+    }
+    
+    // Set basic default dates (bill date and bill number) after configuration is applied
+    setBasicDefaultDates();
+}
+
+// Set basic default dates (bill date and bill number) without interfering with configurable fields
+async function setBasicDefaultDates() {
+    console.log('=== setBasicDefaultDates START ===');
+    const today = new Date();
+    
+    console.log('Today:', today.toISOString().slice(0, 10));
+    console.log('Billing config available:', !!billingConfig);
+    
+    const billDateElement = document.getElementById('billDate');
+    const billNumberElement = document.getElementById('billNumber');
+    
+    console.log('Bill date element found:', !!billDateElement);
+    console.log('Bill number element found:', !!billNumberElement);
+    
+    // Set default bill date to today
+    if (billDateElement) {
+        billDateElement.value = today.toISOString().slice(0, 10);
+        console.log('Set bill date to:', billDateElement.value);
+    }
+    
+    // Set auto-generated bill number
+    if (billNumberElement) {
+        const nextBillNumber = await getNextBillNumber();
+        if (nextBillNumber) {
+            billNumberElement.value = nextBillNumber;
         }
     }
 }
@@ -670,35 +717,38 @@ function initializeBillingSystem() {
   }
 
   async function setDefaultBillingDates() {
+    console.log('=== setDefaultBillingDates START ===');
     const today = new Date();
     const defaultDays = billingConfig?.default_delivery_days || 3;
     const deliveryDate = new Date(today.getTime() + defaultDays * 24 * 60 * 60 * 1000); // Configurable days from now
     
-    const billDateElement = document.getElementById('billDate');
+    console.log('Today:', today.toISOString().slice(0, 10));
+    console.log('Default days:', defaultDays);
+    console.log('Calculated delivery date:', deliveryDate.toISOString().slice(0, 10));
+    console.log('Billing config available:', !!billingConfig);
+    
     const deliveryDateElement = document.getElementById('deliveryDate');
     const trialDateElement = document.getElementById('trialDate');
-    const billNumberElement = document.getElementById('billNumber');
     
-    // Set default dates
-    if (billDateElement) {
-      billDateElement.value = today.toISOString().slice(0, 10);
-    }
+    console.log('Delivery date element found:', !!deliveryDateElement);
+    console.log('Trial date element found:', !!trialDateElement);
     
-    if (deliveryDateElement) {
+    // Only set delivery date if it's enabled in billing config
+    if (deliveryDateElement && billingConfig?.enable_delivery_date) {
+      console.log('Before setting delivery date, current value:', deliveryDateElement.value);
       deliveryDateElement.value = deliveryDate.toISOString().slice(0, 10);
+      console.log('Set delivery date to:', deliveryDateElement.value);
+    } else if (deliveryDateElement) {
+      console.log('Delivery date disabled in config, skipping');
     }
     
-    if (trialDateElement) {
+    // Only set trial date if it's enabled in billing config
+    if (trialDateElement && billingConfig?.enable_trial_date) {
       // Trial date should be the same as delivery date
       trialDateElement.value = deliveryDate.toISOString().slice(0, 10);
-    }
-    
-    // Set auto-generated bill number
-    if (billNumberElement) {
-      const nextBillNumber = await getNextBillNumber();
-      if (nextBillNumber) {
-        billNumberElement.value = nextBillNumber;
-      }
+      console.log('Set trial date to:', trialDateElement.value);
+    } else if (trialDateElement) {
+      console.log('Trial date disabled in config, skipping');
     }
   }
 
@@ -1733,35 +1783,54 @@ function initializeBillingSystem() {
 
   // FEATURE 3: Smart Defaults
   function setupSmartDefaults() {
+    console.log('=== setupSmartDefaults START ===');
     const billDateInput = document.getElementById('billDate');
     const deliveryDateInput = document.getElementById('deliveryDate');
     
-    if (!billDateInput || !deliveryDateInput) return;
+    console.log('Bill date input found:', !!billDateInput);
+    console.log('Delivery date input found:', !!deliveryDateInput);
+    
+    if (!billDateInput || !deliveryDateInput) {
+      console.log('setupSmartDefaults: Required inputs not found, returning');
+      return;
+    }
 
     // Set default bill date to today
     const today = new Date().toISOString().split('T')[0];
     billDateInput.value = today;
 
-    // Set default delivery date to bill date + configurable days
+    // Set default delivery date to bill date + configurable days (only if enabled)
     function updateDeliveryDate() {
-      if (billDateInput.value) {
+      console.log('=== updateDeliveryDate called ===');
+      if (billDateInput.value && billingConfig?.enable_delivery_date) {
         const billDate = new Date(billDateInput.value);
         const deliveryDate = new Date(billDate);
         const defaultDays = billingConfig?.default_delivery_days || 3;
         deliveryDate.setDate(deliveryDate.getDate() + defaultDays);
-        deliveryDateInput.value = deliveryDate.toISOString().split('T')[0];
+        const newDeliveryDate = deliveryDate.toISOString().split('T')[0];
+        deliveryDateInput.value = newDeliveryDate;
+        console.log('updateSmartDefaults: Set delivery date to:', newDeliveryDate);
+      } else if (billDateInput.value) {
+        console.log('updateSmartDefaults: Delivery date disabled in config, skipping');
+      } else {
+        console.log('updateSmartDefaults: No bill date value');
       }
     }
 
-    // Update delivery date when bill date changes
-    billDateInput.addEventListener('change', updateDeliveryDate);
-    
-    // Set initial delivery date
-    updateDeliveryDate();
+    // Update delivery date when bill date changes (only if enabled)
+    if (billingConfig?.enable_delivery_date) {
+      billDateInput.addEventListener('change', updateDeliveryDate);
+      
+      // Set initial delivery date
+      console.log('setupSmartDefaults: Calling updateDeliveryDate for initial setup');
+      updateDeliveryDate();
+    } else {
+      console.log('setupSmartDefaults: Delivery date disabled, skipping smart defaults');
+    }
 
-    // Set default trial date to delivery date (same as delivery date)
+    // Set default trial date to delivery date (same as delivery date) - only if enabled
     const trialDateInput = document.getElementById('trialDate');
-    if (trialDateInput) {
+    if (trialDateInput && billingConfig?.enable_trial_date) {
       function updateTrialDate() {
         if (deliveryDateInput.value) {
           // Trial date should be the same as delivery date
@@ -1777,6 +1846,8 @@ function initializeBillingSystem() {
       
       trialDateInput.addEventListener('change', updateTrialDate);
       updateTrialDate();
+    } else if (trialDateInput) {
+      console.log('setupSmartDefaults: Trial date disabled in config, skipping');
     }
   }
 
@@ -3099,7 +3170,6 @@ function initializeBillingSystem() {
 
   // Initialize billing system
   loadBillingConfiguration(); // Load billing configuration first
-  setDefaultBillingDates(); // This is now async but we don't need to await it
   setupMobileCustomerFetch();
   setupCustomerTypeHandler();
   loadRecentCustomers(); // Load recent customers for quick selection
@@ -3899,7 +3969,40 @@ function initializeBillingSystem() {
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeBillingSystem);
+  document.addEventListener('DOMContentLoaded', async () => {
+    console.log('=== DOMContentLoaded: Starting async billing initialization ===');
+    try {
+      // First, load billing configuration
+      await loadBillingConfiguration();
+      
+      // Apply configuration to show/hide fields
+      applyBillingConfiguration();
+      
+      // Then call the original initialization
+      initializeBillingSystem();
+    } catch (error) {
+      console.error('Error in async billing initialization:', error);
+      // Fallback to original initialization
+      initializeBillingSystem();
+    }
+  });
 } else {
-  initializeBillingSystem();
+  // DOM is already loaded, run async initialization
+  (async () => {
+    console.log('=== DOM already loaded: Starting async billing initialization ===');
+    try {
+      // First, load billing configuration
+      await loadBillingConfiguration();
+      
+      // Apply configuration to show/hide fields
+      applyBillingConfiguration();
+      
+      // Then call the original initialization
+      initializeBillingSystem();
+    } catch (error) {
+      console.error('Error in async billing initialization:', error);
+      // Fallback to original initialization
+      initializeBillingSystem();
+    }
+  })();
 }
