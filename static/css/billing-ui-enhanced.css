@@ -2200,3 +2200,64 @@
     font-size: 14px;
   }
 }
+
+/* Payment Options Sections */
+.payment-options {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--md-neutral-700);
+}
+
+.payment-options > div {
+  margin-bottom: 15px;
+}
+
+.payment-options label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-neutral-300);
+  margin-bottom: 8px;
+}
+
+.payment-options input,
+.payment-options textarea,
+.payment-options select {
+  width: 100%;
+  padding: 12px;
+  background: var(--md-neutral-800);
+  border: 1px solid var(--md-neutral-600);
+  border-radius: 12px;
+  color: var(--md-neutral-100);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.payment-options input:focus,
+.payment-options textarea:focus,
+.payment-options select:focus {
+  outline: none;
+  border-color: var(--md-primary-500);
+  box-shadow: 0 0 0 3px var(--md-primary-500-20);
+}
+
+.payment-options textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.payment-options select {
+  cursor: pointer;
+}
+
+.payment-options input::placeholder,
+.payment-options textarea::placeholder {
+  color: var(--md-neutral-500);
+}
+
+/* Hide sections when disabled */
+.advance-payment-section[style*="display: none"],
+.customer-notes-section[style*="display: none"],
+.employee-assignment-section[style*="display: none"] {
+  display: none !important;
+}

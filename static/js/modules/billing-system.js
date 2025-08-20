@@ -5,6 +5,121 @@ let bill = []; // Primary declaration of 'bill'
 let currentBillNumber = '';
 let selectedMasterId = null;
 
+// Add billing configuration loading and field management
+let billingConfig = {
+    enable_trial_date: true,
+    enable_delivery_date: true,
+    enable_advance_payment: true,
+    enable_customer_notes: true,
+    enable_employee_assignment: true,
+    default_delivery_days: 3
+};
+
+// Load billing configuration from shop settings
+async function loadBillingConfiguration() {
+    try {
+        const response = await fetch('/api/shop-settings/billing-config');
+        const data = await response.json();
+        
+        if (data.success) {
+            billingConfig = data.config;
+            applyBillingConfiguration();
+        }
+    } catch (error) {
+        console.error('Error loading billing configuration:', error);
+        // Use default configuration
+        applyBillingConfiguration();
+    }
+}
+
+// Apply billing configuration to show/hide fields
+function applyBillingConfiguration() {
+    // Trial Date field
+    const trialDateField = document.getElementById('trialDate');
+    const trialDateLabel = document.querySelector('label[for="trialDate"]');
+    const trialDateContainer = trialDateField?.closest('.form-group') || trialDateField?.parentElement;
+    
+    if (trialDateContainer) {
+        if (billingConfig.enable_trial_date) {
+            trialDateContainer.style.display = '';
+        } else {
+            trialDateContainer.style.display = 'none';
+        }
+    }
+    
+    // Delivery Date field
+    const deliveryDateField = document.getElementById('deliveryDate');
+    const deliveryDateLabel = document.querySelector('label[for="deliveryDate"]');
+    const deliveryDateContainer = deliveryDateField?.closest('.form-group') || deliveryDateField?.parentElement;
+    
+    if (deliveryDateContainer) {
+        if (billingConfig.enable_delivery_date) {
+            deliveryDateContainer.style.display = '';
+            // Set default delivery date if field is enabled
+            if (deliveryDateField && !deliveryDateField.value) {
+                const today = new Date();
+                const delivery = new Date();
+                delivery.setDate(today.getDate() + billingConfig.default_delivery_days);
+                deliveryDateField.value = delivery.toISOString().split('T')[0];
+            }
+        } else {
+            deliveryDateContainer.style.display = 'none';
+        }
+    }
+    
+    // Advance Payment field
+    const advancePaymentField = document.getElementById('advancePayment');
+    const advancePaymentLabel = document.querySelector('label[for="advancePayment"]');
+    const advancePaymentContainer = advancePaymentField?.closest('.form-group') || advancePaymentField?.parentElement;
+    
+    if (advancePaymentContainer) {
+        if (billingConfig.enable_advance_payment) {
+            advancePaymentContainer.style.display = '';
+        } else {
+            advancePaymentContainer.style.display = 'none';
+            // Clear advance payment if disabled
+            if (advancePaymentField) {
+                advancePaymentField.value = '';
+                updateBillSummary();
+            }
+        }
+    }
+    
+    // Customer Notes field
+    const customerNotesField = document.getElementById('customerNotes');
+    const customerNotesLabel = document.querySelector('label[for="customerNotes"]');
+    const customerNotesContainer = customerNotesField?.closest('.form-group') || customerNotesField?.parentElement;
+    
+    if (customerNotesContainer) {
+        if (billingConfig.enable_customer_notes) {
+            customerNotesContainer.style.display = '';
+        } else {
+            customerNotesContainer.style.display = 'none';
+            // Clear customer notes if disabled
+            if (customerNotesField) {
+                customerNotesField.value = '';
+            }
+        }
+    }
+    
+    // Employee Assignment field
+    const employeeField = document.getElementById('employee');
+    const employeeLabel = document.querySelector('label[for="employee"]');
+    const employeeContainer = employeeField?.closest('.form-group') || employeeField?.parentElement;
+    
+    if (employeeContainer) {
+        if (billingConfig.enable_employee_assignment) {
+            employeeContainer.style.display = '';
+        } else {
+            employeeContainer.style.display = 'none';
+            // Clear employee assignment if disabled
+            if (employeeField) {
+                employeeField.value = '';
+            }
+        }
+    }
+}
+
 function initializeBillingSystem() {
 
 

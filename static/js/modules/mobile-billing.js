@@ -28,6 +28,16 @@ if (typeof window.MobileBilling === 'undefined') {
     this.notificationTimeout = null;
     // Payment flow state
     this.paymentInProgress = false;
+    
+    // Add billing configuration
+    this.billingConfig = {
+        enable_trial_date: true,
+        enable_delivery_date: true,
+        enable_advance_payment: true,
+        enable_customer_notes: true,
+        enable_employee_assignment: true,
+        default_delivery_days: 3
+    };
   }
 
   async init() {
@@ -340,6 +350,9 @@ if (typeof window.MobileBilling === 'undefined') {
       
       // Initialize button state
       this.updateProcessButtonState();
+      
+      // Load and apply billing configuration
+      this.loadBillingConfiguration();
     }
   }
 
@@ -858,6 +871,7 @@ if (typeof window.MobileBilling === 'undefined') {
 
     this.currentBill.subtotal = subtotal;
     this.currentBill.tax = tax;
+    this.currentBill.discount = discount;
     this.currentBill.finalTotal = finalTotal;
 
     // Update display
@@ -865,6 +879,10 @@ if (typeof window.MobileBilling === 'undefined') {
     document.getElementById('mobile-tax-amount').textContent = `${tax.toFixed(2)}`;
     document.getElementById('mobile-discount-amount').textContent = `${discount.toFixed(2)}`;
     document.getElementById('mobile-final-total').textContent = `${finalTotal.toFixed(2)}`;
+    
+    // Update payment method display
+    this.updatePaymentMethodDisplay();
+    this.updateProcessButtonState();
   }
 
   clearBill() {
@@ -1397,11 +1415,33 @@ if (typeof window.MobileBilling === 'undefined') {
             </div>
           </div>
         </div>
+        
+        <div class="payment-options">
+          <div class="advance-payment-section">
+            <label>Advance Payment (Optional)</label>
+            <input type="number" id="mobileAdvancePayment" min="0" step="0.01" placeholder="0">
+          </div>
+          
+          <div class="customer-notes-section">
+            <label>Customer Notes (Optional)</label>
+            <textarea id="mobileCustomerNotes" rows="2" placeholder="Any special instructions..."></textarea>
+          </div>
+          
+          <div class="employee-assignment-section">
+            <label>Assign to Employee (Optional)</label>
+            <select id="mobileEmployee">
+              <option value="">Select Employee</option>
+            </select>
+          </div>
+        </div>
       </div>
     `;
     
     document.body.appendChild(modal);
     this.setupPaymentMethodSelection(modal);
+    
+    // Apply billing configuration to payment modal
+    this.applyPaymentConfiguration(modal);
   }
 
   setupPaymentMethodSelection(modal) {
@@ -1432,6 +1472,23 @@ if (typeof window.MobileBilling === 'undefined') {
     try {
       this.paymentInProgress = true;
       this.currentBill.paymentMethod = method;
+      
+      // Collect values from configurable fields if they exist
+      const advancePaymentInput = document.getElementById('mobileAdvancePayment');
+      const customerNotesInput = document.getElementById('mobileCustomerNotes');
+      const employeeSelect = document.getElementById('mobileEmployee');
+      
+      if (advancePaymentInput && this.billingConfig.enable_advance_payment) {
+        this.currentBill.advancePayment = parseFloat(advancePaymentInput.value) || 0;
+      }
+      
+      if (customerNotesInput && this.billingConfig.enable_customer_notes) {
+        this.currentBill.customerNotes = customerNotesInput.value || '';
+      }
+      
+      if (employeeSelect && this.billingConfig.enable_employee_assignment) {
+        this.currentBill.employeeId = employeeSelect.value || null;
+      }
       
       this.showPaymentProgress();
       
@@ -2040,7 +2097,7 @@ if (typeof window.MobileBilling === 'undefined') {
   getDefaultDeliveryDate() {
     const today = new Date();
     const delivery = new Date();
-    delivery.setDate(today.getDate() + 3);
+    delivery.setDate(today.getDate() + this.billingConfig.default_delivery_days);
     return delivery.toISOString().split('T')[0]; // YYYY-MM-DD format
   }
 
@@ -2114,8 +2171,11 @@ if (typeof window.MobileBilling === 'undefined') {
            business_name: '',
            business_address: '',
            bill_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-           delivery_date: this.currentBill.deliveryDate, // Use the delivery date from current bill
-           trial_date: this.currentBill.deliveryDate, // Set trial date same as delivery date
+                       delivery_date: this.billingConfig.enable_delivery_date ? (this.currentBill.deliveryDate || '') : '',
+            trial_date: this.billingConfig.enable_trial_date ? (this.currentBill.deliveryDate || '') : '',
+            advance_payment: this.billingConfig.enable_advance_payment ? (this.currentBill.advancePayment || 0) : 0,
+            customer_notes: this.billingConfig.enable_customer_notes ? (this.currentBill.customerNotes || '') : '',
+            employee_id: this.billingConfig.enable_employee_assignment ? (this.currentBill.employeeId || null) : null,
            master_id: null, // No master selection in mobile billing
            master_name: '',
            notes: '',
@@ -2154,7 +2214,7 @@ if (typeof window.MobileBilling === 'undefined') {
            bill_number: billNumber,
            total_amount: finalTotal,
            bill_date: new Date().toLocaleDateString(),
-           delivery_date: this.currentBill.deliveryDate,
+           delivery_date: this.billingConfig.enable_delivery_date ? (this.currentBill.deliveryDate || '') : '',
            items: this.currentBill.items,
            payment_method: paymentMethod,
            subtotal: subtotal,
@@ -2169,6 +2229,77 @@ if (typeof window.MobileBilling === 'undefined') {
       console.error('Error saving bill to database:', error);
       this.showMobileNotification('Failed to save bill: ' + error.message, 'error');
       return null;
+    }
+  }
+
+  // Load billing configuration from shop settings
+  async loadBillingConfiguration() {
+      try {
+          const response = await fetch('/api/shop-settings/billing-config');
+          const data = await response.json();
+          
+          if (data.success) {
+              this.billingConfig = data.config;
+              this.applyBillingConfiguration();
+          }
+      } catch (error) {
+          console.error('Error loading billing configuration:', error);
+          // Use default configuration
+          this.applyBillingConfiguration();
+      }
+  }
+
+    // Apply billing configuration to show/hide fields in mobile billing
+  applyBillingConfiguration() {
+    // This will be called when the mobile billing interface is shown
+    // We'll apply the configuration in showMobileBilling and other relevant methods
+  }
+  
+  // Apply billing configuration to payment modal
+  applyPaymentConfiguration(modal) {
+    // Advance Payment field
+    const advancePaymentSection = modal.querySelector('.advance-payment-section');
+    if (advancePaymentSection) {
+      if (this.billingConfig.enable_advance_payment) {
+        advancePaymentSection.style.display = '';
+      } else {
+        advancePaymentSection.style.display = 'none';
+        // Clear advance payment if disabled
+        const advanceInput = modal.querySelector('#mobileAdvancePayment');
+        if (advanceInput) {
+          advanceInput.value = '';
+        }
+      }
+    }
+    
+    // Customer Notes field
+    const customerNotesSection = modal.querySelector('.customer-notes-section');
+    if (customerNotesSection) {
+      if (this.billingConfig.enable_customer_notes) {
+        customerNotesSection.style.display = '';
+      } else {
+        customerNotesSection.style.display = 'none';
+        // Clear customer notes if disabled
+        const notesInput = modal.querySelector('#mobileCustomerNotes');
+        if (notesInput) {
+          notesInput.value = '';
+        }
+      }
+    }
+    
+    // Employee Assignment field
+    const employeeSection = modal.querySelector('.employee-assignment-section');
+    if (employeeSection) {
+      if (this.billingConfig.enable_employee_assignment) {
+        employeeSection.style.display = '';
+      } else {
+        employeeSection.style.display = 'none';
+        // Clear employee assignment if disabled
+        const employeeSelect = modal.querySelector('#mobileEmployee');
+        if (employeeSelect) {
+          employeeSelect.value = '';
+        }
+      }
     }
   }
 }
