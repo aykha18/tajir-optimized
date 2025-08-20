@@ -1212,7 +1212,19 @@
             <h3 class="text-xl font-semibold text-white">Shop Information</h3>
           </div>
 
+          <!-- Tabs -->
+          <div id="shopSettingsTabs" class="flex items-center gap-2 mb-6">
+            <button id="tabShopInfo" type="button" class="px-4 py-2 rounded-lg text-sm font-medium bg-neutral-700 text-white border border-neutral-600">
+              Shop Information
+            </button>
+            <button id="tabBillingConfig" type="button" class="px-4 py-2 rounded-lg text-sm font-medium bg-transparent text-neutral-300 hover:text-white border border-neutral-600/40 hover:border-neutral-500/60">
+              Billing Configuration
+            </button>
+          </div>
+
           <form id="shopSettingsForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 transform transition-all duration-300">
+            <!-- Shop Information Tab Content -->
+            <div id="shopInfoTabContent" class="contents">
             <!-- Row 1: Shop Name, Shop Mobile, City -->
             <div class="lg:col-span-2 flex flex-col">
               <label for="shopName" class="text-sm font-medium text-neutral-300 mb-1 flex items-center gap-2">
@@ -1311,7 +1323,10 @@
                 </label>
               </div>
             </div>
+            </div>
 
+            <!-- Billing Configuration Tab Content -->
+            <div id="billingConfigTabContent" class="hidden contents">
             <!-- Billing Configuration Section -->
             <div class="lg:col-span-6">
               <div class="bg-gradient-to-br from-purple-800/20 to-indigo-800/20 border border-purple-700/30 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
@@ -1430,6 +1445,7 @@
                   </div>
                 </div>
               </div>
+            </div>
             </div>
 
             <!-- Buttons Row -->

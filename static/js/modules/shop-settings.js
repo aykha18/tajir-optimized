@@ -8,6 +8,10 @@ function initializeShopSettings() {
   const shopSettingsContent = document.getElementById('shopSettingsContent');
   const shopSettingsSection = document.getElementById('shopSettingsSec');
   const isMobile = window.innerWidth <= 1024;
+  const tabShopInfo = document.getElementById('tabShopInfo');
+  const tabBillingConfig = document.getElementById('tabBillingConfig');
+  const shopInfoTabContent = document.getElementById('shopInfoTabContent');
+  const billingConfigTabContent = document.getElementById('billingConfigTabContent');
 
   // Ensure the shop settings section is visible
   if (shopSettingsSection) {
@@ -16,6 +20,35 @@ function initializeShopSettings() {
   } else {
     console.error('Shop settings section not found');
   }
+
+  // Tabs behavior
+  function activateTab(tab) {
+    if (!tabShopInfo || !tabBillingConfig || !shopInfoTabContent || !billingConfigTabContent) return;
+    if (tab === 'shop') {
+      tabShopInfo.classList.add('bg-neutral-700','text-white');
+      tabShopInfo.classList.remove('bg-transparent','text-neutral-300');
+      tabBillingConfig.classList.remove('bg-neutral-700','text-white');
+      tabBillingConfig.classList.add('bg-transparent','text-neutral-300');
+      shopInfoTabContent.classList.remove('hidden');
+      billingConfigTabContent.classList.add('hidden');
+    } else {
+      tabBillingConfig.classList.add('bg-neutral-700','text-white');
+      tabBillingConfig.classList.remove('bg-transparent','text-neutral-300');
+      tabShopInfo.classList.remove('bg-neutral-700','text-white');
+      tabShopInfo.classList.add('bg-transparent','text-neutral-300');
+      billingConfigTabContent.classList.remove('hidden');
+      shopInfoTabContent.classList.add('hidden');
+    }
+  }
+
+  if (tabShopInfo) {
+    tabShopInfo.addEventListener('click', () => activateTab('shop'));
+  }
+  if (tabBillingConfig) {
+    tabBillingConfig.addEventListener('click', () => activateTab('billing'));
+  }
+  // Default active tab
+  activateTab('shop');
 
   // Load shop settings on page load
   function loadShopSettings() {
