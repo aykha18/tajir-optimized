@@ -43,6 +43,15 @@ CREATE TABLE IF NOT EXISTS shop_settings (
     invoice_static_info TEXT DEFAULT '',
     use_dynamic_invoice_template BOOLEAN DEFAULT 0,
     payment_mode TEXT DEFAULT 'advance' CHECK (payment_mode IN ('advance', 'full')),
+    -- Configurable Input Fields
+    enable_trial_date BOOLEAN DEFAULT 1,
+    enable_delivery_date BOOLEAN DEFAULT 1,
+    enable_advance_payment BOOLEAN DEFAULT 1,
+    enable_customer_notes BOOLEAN DEFAULT 1,
+    enable_employee_assignment BOOLEAN DEFAULT 1,
+    default_delivery_days INTEGER DEFAULT 3,
+    city TEXT DEFAULT '',
+    area TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)

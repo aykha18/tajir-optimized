@@ -2904,6 +2904,57 @@ def get_payment_mode():
             'payment_mode': 'advance'  # Default fallback
         }), 500
 
+@app.route('/api/shop-settings/billing-config', methods=['GET'])
+def get_billing_config():
+    """Get billing field configuration for the current user."""
+    try:
+        user_id = get_current_user_id()
+        conn = get_db_connection()
+        settings = conn.execute('''
+            SELECT enable_trial_date, enable_delivery_date, enable_advance_payment, 
+                   enable_customer_notes, enable_employee_assignment, default_delivery_days
+            FROM shop_settings WHERE user_id = ?
+        ''', (user_id,)).fetchone()
+        conn.close()
+        
+        if settings:
+            config = {
+                'enable_trial_date': bool(settings['enable_trial_date']),
+                'enable_delivery_date': bool(settings['enable_delivery_date']),
+                'enable_advance_payment': bool(settings['enable_advance_payment']),
+                'enable_customer_notes': bool(settings['enable_customer_notes']),
+                'enable_employee_assignment': bool(settings['enable_employee_assignment']),
+                'default_delivery_days': int(settings['default_delivery_days'])
+            }
+        else:
+            # Default configuration
+            config = {
+                'enable_trial_date': True,
+                'enable_delivery_date': True,
+                'enable_advance_payment': True,
+                'enable_customer_notes': True,
+                'enable_employee_assignment': True,
+                'default_delivery_days': 3
+            }
+        
+        return jsonify({
+            'success': True,
+            'config': config
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'config': {
+                'enable_trial_date': True,
+                'enable_delivery_date': True,
+                'enable_advance_payment': True,
+                'enable_customer_notes': True,
+                'enable_employee_assignment': True,
+                'default_delivery_days': 3
+            }
+        }), 500
+
 @app.route('/api/shop-settings', methods=['PUT'])
 def update_shop_settings():
     """Update shop settings."""
@@ -2923,6 +2974,14 @@ def update_shop_settings():
         use_dynamic_invoice_template = data.get('use_dynamic_invoice_template', False)
         payment_mode = data.get('payment_mode', 'advance')
         
+        # Configurable input fields
+        enable_trial_date = data.get('enable_trial_date', True)
+        enable_delivery_date = data.get('enable_delivery_date', True)
+        enable_advance_payment = data.get('enable_advance_payment', True)
+        enable_customer_notes = data.get('enable_customer_notes', True)
+        enable_employee_assignment = data.get('enable_employee_assignment', True)
+        default_delivery_days = data.get('default_delivery_days', 3)
+        
         conn = get_db_connection()
         
         # Check if shop settings exist for this user
@@ -2934,18 +2993,27 @@ def update_shop_settings():
                 UPDATE shop_settings 
                 SET shop_name = ?, address = ?, trn = ?, city = ?, area = ?, logo_url = ?, 
                     shop_mobile = ?, working_hours = ?, invoice_static_info = ?,
-                    use_dynamic_invoice_template = ?, payment_mode = ?, updated_at = CURRENT_TIMESTAMP
+                    use_dynamic_invoice_template = ?, payment_mode = ?, 
+                    enable_trial_date = ?, enable_delivery_date = ?, enable_advance_payment = ?,
+                    enable_customer_notes = ?, enable_employee_assignment = ?, default_delivery_days = ?,
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = ?
             ''', (shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
-                  invoice_static_info, use_dynamic_invoice_template, payment_mode, user_id))
+                  invoice_static_info, use_dynamic_invoice_template, payment_mode,
+                  enable_trial_date, enable_delivery_date, enable_advance_payment,
+                  enable_customer_notes, enable_employee_assignment, default_delivery_days, user_id))
         else:
             # Create new shop settings for this user
             conn.execute('''
                 INSERT INTO shop_settings (user_id, shop_name, address, trn, city, area, logo_url, 
-                    shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template, payment_mode)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template, payment_mode,
+                    enable_trial_date, enable_delivery_date, enable_advance_payment,
+                    enable_customer_notes, enable_employee_assignment, default_delivery_days)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (user_id, shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
-                  invoice_static_info, use_dynamic_invoice_template, payment_mode))
+                  invoice_static_info, use_dynamic_invoice_template, payment_mode,
+                  enable_trial_date, enable_delivery_date, enable_advance_payment,
+                  enable_customer_notes, enable_employee_assignment, default_delivery_days))
         
         conn.commit()
         conn.close()
