@@ -82,6 +82,7 @@ function initializeShopSettings() {
           const enableCustomerNotesField = document.getElementById('enableCustomerNotes');
           const enableEmployeeAssignmentField = document.getElementById('enableEmployeeAssignment');
           const defaultDeliveryDaysField = document.getElementById('defaultDeliveryDays');
+          const defaultTrialDaysField = document.getElementById('defaultTrialDays');
           
           if (shopNameField) shopNameField.value = settings.shop_name || '';
           if (shopMobileField) shopMobileField.value = settings.shop_mobile || '';
@@ -103,6 +104,27 @@ function initializeShopSettings() {
           if (enableCustomerNotesField) enableCustomerNotesField.checked = settings.enable_customer_notes !== false; // Default to true
           if (enableEmployeeAssignmentField) enableEmployeeAssignmentField.checked = settings.enable_employee_assignment !== false; // Default to true
           if (defaultDeliveryDaysField) defaultDeliveryDaysField.value = settings.default_delivery_days || 3;
+          if (defaultTrialDaysField) defaultTrialDaysField.value = settings.default_trial_days || 3;
+          
+          // Trigger field state updates after loading settings
+          setTimeout(() => {
+            const updateFieldStates = () => {
+              const enableTrialDate = document.getElementById('enableTrialDate');
+              const enableDeliveryDate = document.getElementById('enableDeliveryDate');
+              const defaultTrialDays = document.getElementById('defaultTrialDays');
+              const defaultDeliveryDays = document.getElementById('defaultDeliveryDays');
+              
+              if (defaultTrialDays) {
+                defaultTrialDays.disabled = !enableTrialDate?.checked;
+              }
+              
+              if (defaultDeliveryDays) {
+                defaultDeliveryDays.disabled = !enableDeliveryDate?.checked;
+              }
+            };
+            
+            updateFieldStates();
+          }, 100);
           
           // Show form with animation
           if (shopSettingsForm) {
@@ -180,6 +202,10 @@ function initializeShopSettings() {
                     <span class="text-neutral-400">Default Delivery Days:</span>
                     <span class="text-white ml-2">${settings.default_delivery_days || 3} days</span>
                   </div>
+                  <div>
+                    <span class="text-neutral-400">Default Trial Days:</span>
+                    <span class="text-white ml-2">${settings.default_trial_days || 3} days</span>
+                  </div>
                 </div>
               </div>
             `;
@@ -221,7 +247,8 @@ function initializeShopSettings() {
       enable_advance_payment: shopSettingsForm?.querySelector('#enableAdvancePayment')?.checked || false,
       enable_customer_notes: shopSettingsForm?.querySelector('#enableCustomerNotes')?.checked || false,
       enable_employee_assignment: shopSettingsForm?.querySelector('#enableEmployeeAssignment')?.checked || false,
-      default_delivery_days: parseInt(shopSettingsForm?.querySelector('#defaultDeliveryDays')?.value || '3')
+      default_delivery_days: parseInt(shopSettingsForm?.querySelector('#defaultDeliveryDays')?.value || '3'),
+      default_trial_days: parseInt(shopSettingsForm?.querySelector('#defaultTrialDays')?.value || '3')
     };
 
     // Mobile-friendly inline validation
@@ -520,6 +547,46 @@ function initializeShopSettings() {
     }
   }
 
+  // Initialize conditional field enabling
+  function initializeConditionalFields() {
+    const enableTrialDate = document.getElementById('enableTrialDate');
+    const enableDeliveryDate = document.getElementById('enableDeliveryDate');
+    const defaultTrialDays = document.getElementById('defaultTrialDays');
+    const defaultDeliveryDays = document.getElementById('defaultDeliveryDays');
+    
+    // Function to update field states
+    function updateFieldStates() {
+      if (defaultTrialDays) {
+        defaultTrialDays.disabled = !enableTrialDate?.checked;
+        if (!enableTrialDate?.checked) {
+          defaultTrialDays.value = '';
+        } else if (!defaultTrialDays.value) {
+          defaultTrialDays.value = '3';
+        }
+      }
+      
+      if (defaultDeliveryDays) {
+        defaultDeliveryDays.disabled = !enableDeliveryDate?.checked;
+        if (!enableDeliveryDate?.checked) {
+          defaultDeliveryDays.value = '';
+        } else if (!defaultDeliveryDays.value) {
+          defaultDeliveryDays.value = '3';
+        }
+      }
+    }
+    
+    // Add event listeners
+    if (enableTrialDate) {
+      enableTrialDate.addEventListener('change', updateFieldStates);
+    }
+    if (enableDeliveryDate) {
+      enableDeliveryDate.addEventListener('change', updateFieldStates);
+    }
+    
+    // Initial state update
+    updateFieldStates();
+  }
+
   function applyPreset(type) {
     const enableTrialDate = document.getElementById('enableTrialDate');
     const enableDeliveryDate = document.getElementById('enableDeliveryDate');
@@ -527,6 +594,7 @@ function initializeShopSettings() {
     const enableCustomerNotes = document.getElementById('enableCustomerNotes');
     const enableEmployeeAssignment = document.getElementById('enableEmployeeAssignment');
     const defaultDeliveryDays = document.getElementById('defaultDeliveryDays');
+    const defaultTrialDays = document.getElementById('defaultTrialDays');
 
     switch (type) {
       case 'tailor':
@@ -537,6 +605,7 @@ function initializeShopSettings() {
         if (enableCustomerNotes) enableCustomerNotes.checked = true;
         if (enableEmployeeAssignment) enableEmployeeAssignment.checked = true;
         if (defaultDeliveryDays) defaultDeliveryDays.value = 3;
+        if (defaultTrialDays) defaultTrialDays.value = 3;
         showModernAlert('Tailor Shop preset applied! All billing features enabled.', 'success');
         break;
 
@@ -548,6 +617,7 @@ function initializeShopSettings() {
         if (enableCustomerNotes) enableCustomerNotes.checked = true;
         if (enableEmployeeAssignment) enableEmployeeAssignment.checked = false;
         if (defaultDeliveryDays) defaultDeliveryDays.value = 1;
+        if (defaultTrialDays) defaultTrialDays.value = 1;
         showModernAlert('Perfume Shop preset applied! Trial and delivery dates disabled.', 'success');
         break;
 
@@ -559,6 +629,7 @@ function initializeShopSettings() {
         if (enableCustomerNotes) enableCustomerNotes.checked = true;
         if (enableEmployeeAssignment) enableEmployeeAssignment.checked = false;
         if (defaultDeliveryDays) defaultDeliveryDays.value = 2;
+        if (defaultTrialDays) defaultTrialDays.value = 1;
         showModernAlert('Laundry Shop preset applied! Trial date disabled, delivery date enabled.', 'success');
         break;
 
@@ -570,9 +641,36 @@ function initializeShopSettings() {
         if (enableCustomerNotes) enableCustomerNotes.checked = true;
         if (enableEmployeeAssignment) enableEmployeeAssignment.checked = false;
         if (defaultDeliveryDays) defaultDeliveryDays.value = 1;
+        if (defaultTrialDays) defaultTrialDays.value = 1;
         showModernAlert('General Store preset applied! Basic billing features only.', 'success');
         break;
     }
+    
+    // Trigger field state updates after preset changes
+    const updateFieldStates = () => {
+      const defaultTrialDays = document.getElementById('defaultTrialDays');
+      const defaultDeliveryDays = document.getElementById('defaultDeliveryDays');
+      
+      if (defaultTrialDays) {
+        defaultTrialDays.disabled = !enableTrialDate?.checked;
+        if (!enableTrialDate?.checked) {
+          defaultTrialDays.value = '';
+        } else if (!defaultTrialDays.value) {
+          defaultTrialDays.value = '3';
+        }
+      }
+      
+      if (defaultDeliveryDays) {
+        defaultDeliveryDays.disabled = !enableDeliveryDate?.checked;
+        if (!enableDeliveryDate?.checked) {
+          defaultDeliveryDays.value = '';
+        } else if (!defaultDeliveryDays.value) {
+          defaultDeliveryDays.value = '3';
+        }
+      }
+    };
+    
+    updateFieldStates();
   }
 
   // Load settings when the section is accessed
@@ -580,6 +678,7 @@ function initializeShopSettings() {
   initializeAutocomplete();
   initializeChangePassword();
   initializePresets();
+  initializeConditionalFields(); // Call the new function here
 }
 
 // Make functions globally available
