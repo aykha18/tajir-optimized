@@ -42,6 +42,14 @@ function initializeShopSettings() {
           const paymentModeAdvanceField = document.getElementById('paymentModeAdvance');
           const paymentModeFullField = document.getElementById('paymentModeFull');
           
+          // Configurable billing fields
+          const enableTrialDateField = document.getElementById('enableTrialDate');
+          const enableDeliveryDateField = document.getElementById('enableDeliveryDate');
+          const enableAdvancePaymentField = document.getElementById('enableAdvancePayment');
+          const enableCustomerNotesField = document.getElementById('enableCustomerNotes');
+          const enableEmployeeAssignmentField = document.getElementById('enableEmployeeAssignment');
+          const defaultDeliveryDaysField = document.getElementById('defaultDeliveryDays');
+          
           if (shopNameField) shopNameField.value = settings.shop_name || '';
           if (shopMobileField) shopMobileField.value = settings.shop_mobile || '';
           if (shopCityField) shopCityField.value = settings.city || '';
@@ -54,6 +62,14 @@ function initializeShopSettings() {
           const paymentMode = settings.payment_mode || 'advance';
           if (paymentModeAdvanceField) paymentModeAdvanceField.checked = paymentMode === 'advance';
           if (paymentModeFullField) paymentModeFullField.checked = paymentMode === 'full';
+          
+          // Set configurable billing fields
+          if (enableTrialDateField) enableTrialDateField.checked = settings.enable_trial_date !== false; // Default to true
+          if (enableDeliveryDateField) enableDeliveryDateField.checked = settings.enable_delivery_date !== false; // Default to true
+          if (enableAdvancePaymentField) enableAdvancePaymentField.checked = settings.enable_advance_payment !== false; // Default to true
+          if (enableCustomerNotesField) enableCustomerNotesField.checked = settings.enable_customer_notes !== false; // Default to true
+          if (enableEmployeeAssignmentField) enableEmployeeAssignmentField.checked = settings.enable_employee_assignment !== false; // Default to true
+          if (defaultDeliveryDaysField) defaultDeliveryDaysField.value = settings.default_delivery_days || 3;
           
           // Show form with animation
           if (shopSettingsForm) {
@@ -102,6 +118,37 @@ function initializeShopSettings() {
                   <span class="text-white ml-2">${settings.payment_mode === 'full' ? 'Full Payment Only' : 'Allow Advance Payments'}</span>
                 </div>
               </div>
+              
+              <!-- Billing Configuration Display -->
+              <div class="mt-6 pt-6 border-t border-neutral-700/30">
+                <h5 class="text-sm font-semibold text-neutral-300 mb-3">Billing Configuration</h5>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <span class="text-neutral-400">Trial Date:</span>
+                    <span class="text-white ml-2">${settings.enable_trial_date !== false ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                  <div>
+                    <span class="text-neutral-400">Delivery Date:</span>
+                    <span class="text-white ml-2">${settings.enable_delivery_date !== false ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                  <div>
+                    <span class="text-neutral-400">Advance Payment:</span>
+                    <span class="text-white ml-2">${settings.enable_advance_payment !== false ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                  <div>
+                    <span class="text-neutral-400">Customer Notes:</span>
+                    <span class="text-white ml-2">${settings.enable_customer_notes !== false ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                  <div>
+                    <span class="text-neutral-400">Employee Assignment:</span>
+                    <span class="text-white ml-2">${settings.enable_employee_assignment !== false ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                  <div>
+                    <span class="text-neutral-400">Default Delivery Days:</span>
+                    <span class="text-white ml-2">${settings.default_delivery_days || 3} days</span>
+                  </div>
+                </div>
+              </div>
             `;
             shopSettingsDisplay.style.display = 'block';
             shopSettingsDisplay.style.visibility = 'visible';
@@ -134,7 +181,14 @@ function initializeShopSettings() {
       address: shopSettingsForm?.querySelector('#shopAddress')?.value || '',
       trn: shopSettingsForm?.querySelector('#shopTRN')?.value || '',
       use_dynamic_invoice_template: shopSettingsForm?.querySelector('#useDynamicInvoiceTemplate')?.checked || false,
-      payment_mode: shopSettingsForm?.querySelector('input[name="paymentMode"]:checked')?.value || 'advance'
+      payment_mode: shopSettingsForm?.querySelector('input[name="paymentMode"]:checked')?.value || 'advance',
+      // Configurable billing fields
+      enable_trial_date: shopSettingsForm?.querySelector('#enableTrialDate')?.checked || false,
+      enable_delivery_date: shopSettingsForm?.querySelector('#enableDeliveryDate')?.checked || false,
+      enable_advance_payment: shopSettingsForm?.querySelector('#enableAdvancePayment')?.checked || false,
+      enable_customer_notes: shopSettingsForm?.querySelector('#enableCustomerNotes')?.checked || false,
+      enable_employee_assignment: shopSettingsForm?.querySelector('#enableEmployeeAssignment')?.checked || false,
+      default_delivery_days: parseInt(shopSettingsForm?.querySelector('#defaultDeliveryDays')?.value || '3')
     };
 
     // Mobile-friendly inline validation
@@ -412,10 +466,87 @@ function initializeShopSettings() {
     }
   }
 
+  // Initialize preset functionality
+  function initializePresets() {
+    const presetTailor = document.getElementById('presetTailor');
+    const presetPerfume = document.getElementById('presetPerfume');
+    const presetLaundry = document.getElementById('presetLaundry');
+    const presetGeneral = document.getElementById('presetGeneral');
+
+    if (presetTailor) {
+      presetTailor.addEventListener('click', () => applyPreset('tailor'));
+    }
+    if (presetPerfume) {
+      presetPerfume.addEventListener('click', () => applyPreset('perfume'));
+    }
+    if (presetLaundry) {
+      presetLaundry.addEventListener('click', () => applyPreset('laundry'));
+    }
+    if (presetGeneral) {
+      presetGeneral.addEventListener('click', () => applyPreset('general'));
+    }
+  }
+
+  function applyPreset(type) {
+    const enableTrialDate = document.getElementById('enableTrialDate');
+    const enableDeliveryDate = document.getElementById('enableDeliveryDate');
+    const enableAdvancePayment = document.getElementById('enableAdvancePayment');
+    const enableCustomerNotes = document.getElementById('enableCustomerNotes');
+    const enableEmployeeAssignment = document.getElementById('enableEmployeeAssignment');
+    const defaultDeliveryDays = document.getElementById('defaultDeliveryDays');
+
+    switch (type) {
+      case 'tailor':
+        // Tailor Shop: All features enabled
+        if (enableTrialDate) enableTrialDate.checked = true;
+        if (enableDeliveryDate) enableDeliveryDate.checked = true;
+        if (enableAdvancePayment) enableAdvancePayment.checked = true;
+        if (enableCustomerNotes) enableCustomerNotes.checked = true;
+        if (enableEmployeeAssignment) enableEmployeeAssignment.checked = true;
+        if (defaultDeliveryDays) defaultDeliveryDays.value = 3;
+        showModernAlert('Tailor Shop preset applied! All billing features enabled.', 'success');
+        break;
+
+      case 'perfume':
+        // Perfume Shop: Disable trial and delivery dates
+        if (enableTrialDate) enableTrialDate.checked = false;
+        if (enableDeliveryDate) enableDeliveryDate.checked = false;
+        if (enableAdvancePayment) enableAdvancePayment.checked = true;
+        if (enableCustomerNotes) enableCustomerNotes.checked = true;
+        if (enableEmployeeAssignment) enableEmployeeAssignment.checked = false;
+        if (defaultDeliveryDays) defaultDeliveryDays.value = 1;
+        showModernAlert('Perfume Shop preset applied! Trial and delivery dates disabled.', 'success');
+        break;
+
+      case 'laundry':
+        // Laundry Shop: Disable trial date, keep delivery date
+        if (enableTrialDate) enableTrialDate.checked = false;
+        if (enableDeliveryDate) enableDeliveryDate.checked = true;
+        if (enableAdvancePayment) enableAdvancePayment.checked = true;
+        if (enableCustomerNotes) enableCustomerNotes.checked = true;
+        if (enableEmployeeAssignment) enableEmployeeAssignment.checked = false;
+        if (defaultDeliveryDays) defaultDeliveryDays.value = 2;
+        showModernAlert('Laundry Shop preset applied! Trial date disabled, delivery date enabled.', 'success');
+        break;
+
+      case 'general':
+        // General Store: Basic features only
+        if (enableTrialDate) enableTrialDate.checked = false;
+        if (enableDeliveryDate) enableDeliveryDate.checked = false;
+        if (enableAdvancePayment) enableAdvancePayment.checked = true;
+        if (enableCustomerNotes) enableCustomerNotes.checked = true;
+        if (enableEmployeeAssignment) enableEmployeeAssignment.checked = false;
+        if (defaultDeliveryDays) defaultDeliveryDays.value = 1;
+        showModernAlert('General Store preset applied! Basic billing features only.', 'success');
+        break;
+    }
+  }
+
   // Load settings when the section is accessed
   loadShopSettings();
   initializeAutocomplete();
   initializeChangePassword();
+  initializePresets();
 }
 
 // Make functions globally available
