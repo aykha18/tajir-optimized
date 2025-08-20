@@ -23,6 +23,10 @@ async function loadBillingConfiguration() {
         
         if (data.success) {
             billingConfig = data.config;
+            console.log('Billing configuration loaded:', billingConfig);
+            applyBillingConfiguration();
+        } else {
+            console.log('Billing config response not successful, using defaults');
             applyBillingConfiguration();
         }
     } catch (error) {
@@ -34,6 +38,8 @@ async function loadBillingConfiguration() {
 
 // Apply billing configuration to show/hide fields
 function applyBillingConfiguration() {
+    console.log('Applying billing configuration:', billingConfig);
+    
     // Trial Date field
     const trialDateField = document.getElementById('trialDate');
     const trialDateLabel = document.querySelector('label[for="trialDate"]');
@@ -42,6 +48,21 @@ function applyBillingConfiguration() {
     if (trialDateContainer) {
         if (billingConfig.enable_trial_date) {
             trialDateContainer.style.display = '';
+            // Set default trial date if field is enabled and no value set
+            if (trialDateField && !trialDateField.value) {
+                const deliveryDateField = document.getElementById('deliveryDate');
+                if (deliveryDateField && deliveryDateField.value) {
+                    // Trial date should be the same as delivery date
+                    trialDateField.value = deliveryDateField.value;
+                } else {
+                    // Set default trial date based on config
+                    const today = new Date();
+                    const trial = new Date();
+                    const defaultDays = billingConfig.default_trial_days || billingConfig.default_delivery_days || 3;
+                    trial.setDate(today.getDate() + defaultDays);
+                    trialDateField.value = trial.toISOString().split('T')[0];
+                }
+            }
         } else {
             trialDateContainer.style.display = 'none';
         }
@@ -59,7 +80,8 @@ function applyBillingConfiguration() {
             if (deliveryDateField && !deliveryDateField.value) {
                 const today = new Date();
                 const delivery = new Date();
-                delivery.setDate(today.getDate() + billingConfig.default_delivery_days);
+                const defaultDays = billingConfig.default_delivery_days || 3;
+                delivery.setDate(today.getDate() + defaultDays);
                 deliveryDateField.value = delivery.toISOString().split('T')[0];
             }
         } else {
@@ -102,21 +124,94 @@ function applyBillingConfiguration() {
         }
     }
     
-    // Employee Assignment field
-    const employeeField = document.getElementById('employee');
-    const employeeLabel = document.querySelector('label[for="employee"]');
+    // Employee Assignment field (using existing masterName field)
+    const employeeField = document.getElementById('masterName');
+    const employeeLabel = document.querySelector('label[for="masterName"]');
     const employeeContainer = employeeField?.closest('.form-group') || employeeField?.parentElement;
+    
+    console.log('Employee field found:', !!employeeField);
+    console.log('Employee container found:', !!employeeContainer);
+    console.log('Enable employee assignment:', billingConfig.enable_employee_assignment);
     
     if (employeeContainer) {
         if (billingConfig.enable_employee_assignment) {
             employeeContainer.style.display = '';
+            console.log('Employee assignment enabled, populating dropdown...');
+            // Populate employee dropdown if enabled
+            populateEmployeeDropdown();
         } else {
-            employeeContainer.style.display = 'none';
-            // Clear employee assignment if disabled
+            // Don't hide the field, just clear it and remove datalist
             if (employeeField) {
                 employeeField.value = '';
+                employeeField.removeAttribute('list');
+                employeeField.removeAttribute('data-selected-employee-id');
             }
+            // Remove datalist if it exists
+            const datalist = document.getElementById('employeeDatalist');
+            if (datalist) {
+                datalist.remove();
+            }
+            console.log('Employee assignment disabled, cleared field');
         }
+    }
+}
+
+// Populate employee dropdown with available employees
+async function populateEmployeeDropdown() {
+    const employeeField = document.getElementById('masterName');
+    if (!employeeField) {
+        console.log('Employee field not found, skipping dropdown population');
+        return;
+    }
+    
+    try {
+        console.log('Fetching employees from /api/employees...');
+        const response = await fetch('/api/employees');
+        const employees = await response.json();
+        
+        console.log('Employees response:', employees);
+        
+        // Create or get existing datalist for autocomplete
+        let datalist = document.getElementById('employeeDatalist');
+        if (!datalist) {
+            datalist = document.createElement('datalist');
+            datalist.id = 'employeeDatalist';
+            document.body.appendChild(datalist);
+        }
+        
+        // Clear existing options
+        datalist.innerHTML = '';
+        
+        // Add employee options to datalist
+        if (Array.isArray(employees)) {
+            employees.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.name || `Employee #${emp.employee_id}`;
+                option.setAttribute('data-employee-id', emp.employee_id || emp.id || '');
+                datalist.appendChild(option);
+            });
+            
+            // Set the datalist for the input field
+            employeeField.setAttribute('list', 'employeeDatalist');
+            
+            console.log('Employee datalist populated with', employees.length, 'employees');
+            
+            // Preselect default employee if configured
+            if (billingConfig.default_employee_id) {
+                const defaultEmployee = employees.find(emp => 
+                    (emp.employee_id || emp.id) == billingConfig.default_employee_id
+                );
+                if (defaultEmployee) {
+                    employeeField.value = defaultEmployee.name || `Employee #${defaultEmployee.employee_id}`;
+                    employeeField.setAttribute('data-selected-employee-id', defaultEmployee.employee_id || defaultEmployee.id);
+                    console.log('Preselected default employee:', defaultEmployee.name);
+                }
+            }
+        } else {
+            console.log('Employees response is not an array:', employees);
+        }
+    } catch (error) {
+        console.error('Error populating employee dropdown:', error);
     }
 }
 
@@ -576,9 +671,11 @@ function initializeBillingSystem() {
 
   async function setDefaultBillingDates() {
     const today = new Date();
-    const deliveryDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+    const defaultDays = billingConfig?.default_delivery_days || 3;
+    const deliveryDate = new Date(today.getTime() + defaultDays * 24 * 60 * 60 * 1000); // Configurable days from now
     
     const billDateElement = document.getElementById('billDate');
+    const deliveryDateElement = document.getElementById('deliveryDate');
     const trialDateElement = document.getElementById('trialDate');
     const billNumberElement = document.getElementById('billNumber');
     
@@ -587,7 +684,12 @@ function initializeBillingSystem() {
       billDateElement.value = today.toISOString().slice(0, 10);
     }
     
+    if (deliveryDateElement) {
+      deliveryDateElement.value = deliveryDate.toISOString().slice(0, 10);
+    }
+    
     if (trialDateElement) {
+      // Trial date should be the same as delivery date
       trialDateElement.value = deliveryDate.toISOString().slice(0, 10);
     }
     
@@ -1640,12 +1742,13 @@ function initializeBillingSystem() {
     const today = new Date().toISOString().split('T')[0];
     billDateInput.value = today;
 
-    // Set default delivery date to bill date + 3 days
+    // Set default delivery date to bill date + configurable days
     function updateDeliveryDate() {
       if (billDateInput.value) {
         const billDate = new Date(billDateInput.value);
         const deliveryDate = new Date(billDate);
-        deliveryDate.setDate(deliveryDate.getDate() + 3);
+        const defaultDays = billingConfig?.default_delivery_days || 3;
+        deliveryDate.setDate(deliveryDate.getDate() + defaultDays);
         deliveryDateInput.value = deliveryDate.toISOString().split('T')[0];
       }
     }
@@ -1656,14 +1759,18 @@ function initializeBillingSystem() {
     // Set initial delivery date
     updateDeliveryDate();
 
-    // Set default trial date to bill date + 1 day
+    // Set default trial date to delivery date (same as delivery date)
     const trialDateInput = document.getElementById('trialDate');
     if (trialDateInput) {
       function updateTrialDate() {
-        if (billDateInput.value) {
+        if (deliveryDateInput.value) {
+          // Trial date should be the same as delivery date
+          trialDateInput.value = deliveryDateInput.value;
+        } else if (billDateInput.value) {
           const billDate = new Date(billDateInput.value);
           const trialDate = new Date(billDate);
-          trialDate.setDate(trialDate.getDate() + 1);
+          const defaultDays = billingConfig?.default_trial_days || billingConfig?.default_delivery_days || 3;
+          trialDate.setDate(trialDate.getDate() + defaultDays);
           trialDateInput.value = trialDate.toISOString().split('T')[0];
         }
       }
@@ -2130,6 +2237,9 @@ function initializeBillingSystem() {
     // Load employees on initialization
     
     loadEmployees();
+    
+    // Load billing configuration on initialization
+    loadBillingConfiguration();
   }
 
   // Make selected master ID available globally
@@ -2988,6 +3098,7 @@ function initializeBillingSystem() {
   }
 
   // Initialize billing system
+  loadBillingConfiguration(); // Load billing configuration first
   setDefaultBillingDates(); // This is now async but we don't need to await it
   setupMobileCustomerFetch();
   setupCustomerTypeHandler();

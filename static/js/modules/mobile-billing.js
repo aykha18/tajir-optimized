@@ -286,15 +286,23 @@ if (typeof window.MobileBilling === 'undefined') {
     const processBtn = container.querySelector('#mobile-process-bill-btn');
     if (processBtn) {
       processBtn.addEventListener('click', () => {
+        console.log('=== PROCESS BUTTON CLICKED ===');
+        console.log('Button text:', processBtn.textContent);
+        console.log('Button disabled:', processBtn.disabled);
+        console.log('Button has disabled class:', processBtn.classList.contains('disabled'));
+        
         // Check if button is disabled
         if (processBtn.disabled || processBtn.classList.contains('disabled')) {
+          console.log('Button is disabled, returning');
           return;
         }
         
         // Check current button text to determine action
         if (processBtn.textContent === 'Select Customer') {
+          console.log('Showing customer selection');
           this.showCustomerSelection();
         } else {
+          console.log('Initiating enhanced payment');
           this.initiateEnhancedPayment();
         }
       });
@@ -1365,22 +1373,31 @@ if (typeof window.MobileBilling === 'undefined') {
   // ========================================
 
   async initiateEnhancedPayment() {
+    console.log('=== initiateEnhancedPayment CALLED ===');
+    console.log('Current bill items:', this.currentBill.items.length);
+    console.log('Current customer:', this.currentBill.customer);
+    console.log('Payment in progress:', this.paymentInProgress);
+    
     if (this.currentBill.items.length === 0) {
+      console.log('No items in bill, showing error');
       this.showMobileNotification('Please add items to the bill first', 'error');
       return;
     }
 
     if (this.paymentInProgress) {
+      console.log('Payment already in progress, returning');
       return; // Prevent multiple payment attempts
     }
 
     // Check if customer is selected
     if (!this.currentBill.customer) {
+      console.log('No customer selected, showing customer selection');
       this.showMobileNotification('Please select a customer before proceeding to payment', 'error');
       this.showCustomerSelection();
       return;
     }
 
+    console.log('Proceeding to show payment method selection');
     await this.showPaymentMethodSelection();
   }
 
