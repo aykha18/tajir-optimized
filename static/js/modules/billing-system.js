@@ -50,18 +50,13 @@ function applyBillingConfiguration() {
             trialDateContainer.style.display = '';
             // Set default trial date if field is enabled and no value set
             if (trialDateField && !trialDateField.value) {
-                const deliveryDateField = document.getElementById('deliveryDate');
-                if (deliveryDateField && deliveryDateField.value) {
-                    // Trial date should be the same as delivery date
-                    trialDateField.value = deliveryDateField.value;
-                } else {
-                    // Set default trial date based on config
-                    const today = new Date();
-                    const trial = new Date();
-                    const defaultDays = billingConfig.default_trial_days || billingConfig.default_delivery_days || 3;
-                    trial.setDate(today.getDate() + defaultDays);
-                    trialDateField.value = trial.toISOString().split('T')[0];
-                }
+                // Set default trial date based on config
+                const today = new Date();
+                const trial = new Date();
+                const defaultDays = billingConfig.default_trial_days || 2; // Use trial days, fallback to 2
+                trial.setDate(today.getDate() + defaultDays);
+                trialDateField.value = trial.toISOString().split('T')[0];
+                console.log('Set trial date to:', trialDateField.value, 'using', defaultDays, 'days');
             }
         } else {
             trialDateContainer.style.display = 'none';
@@ -95,6 +90,8 @@ function applyBillingConfiguration() {
             } else if (deliveryDateField && deliveryDateField.value) {
                 console.log('Delivery date already has value:', deliveryDateField.value);
             }
+
+
         } else {
             deliveryDateContainer.style.display = 'none';
             console.log('Delivery date disabled, hiding container');
@@ -172,6 +169,18 @@ function applyBillingConfiguration() {
     
     // Set basic default dates (bill date and bill number) after configuration is applied
     setBasicDefaultDates();
+}
+
+// Get next bill number from API
+async function getNextBillNumber() {
+    try {
+        const response = await fetch('/api/next-bill-number');
+        const data = await response.json();
+        return data.bill_number;
+    } catch (error) {
+        console.error('Error getting next bill number:', error);
+        return null;
+    }
 }
 
 // Set basic default dates (bill date and bill number) without interfering with configurable fields
@@ -705,16 +714,7 @@ function initializeBillingSystem() {
      }
   }
 
-  async function getNextBillNumber() {
-    try {
-      const response = await fetch('/api/next-bill-number');
-      const data = await response.json();
-      return data.bill_number;
-    } catch (error) {
-      console.error('Error getting next bill number:', error);
-      return null;
-    }
-  }
+
 
   async function setDefaultBillingDates() {
     console.log('=== setDefaultBillingDates START ===');
@@ -1832,19 +1832,19 @@ function initializeBillingSystem() {
     const trialDateInput = document.getElementById('trialDate');
     if (trialDateInput && billingConfig?.enable_trial_date) {
       function updateTrialDate() {
-        if (deliveryDateInput.value) {
-          // Trial date should be the same as delivery date
-          trialDateInput.value = deliveryDateInput.value;
-        } else if (billDateInput.value) {
+        if (billDateInput.value) {
           const billDate = new Date(billDateInput.value);
           const trialDate = new Date(billDate);
-          const defaultDays = billingConfig?.default_trial_days || billingConfig?.default_delivery_days || 3;
+          const defaultDays = billingConfig?.default_trial_days || 2; // Use trial days, fallback to 2
           trialDate.setDate(trialDate.getDate() + defaultDays);
           trialDateInput.value = trialDate.toISOString().split('T')[0];
+          console.log('updateTrialDate: Set trial date to:', trialDateInput.value, 'using', defaultDays, 'days');
         }
       }
       
-      trialDateInput.addEventListener('change', updateTrialDate);
+      // Keep trial date in sync when delivery or bill date changes
+      deliveryDateInput.addEventListener('change', updateTrialDate);
+      billDateInput.addEventListener('change', updateTrialDate);
       updateTrialDate();
     } else if (trialDateInput) {
       console.log('setupSmartDefaults: Trial date disabled in config, skipping');

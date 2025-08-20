@@ -286,23 +286,15 @@ if (typeof window.MobileBilling === 'undefined') {
     const processBtn = container.querySelector('#mobile-process-bill-btn');
     if (processBtn) {
       processBtn.addEventListener('click', () => {
-        console.log('=== PROCESS BUTTON CLICKED ===');
-        console.log('Button text:', processBtn.textContent);
-        console.log('Button disabled:', processBtn.disabled);
-        console.log('Button has disabled class:', processBtn.classList.contains('disabled'));
-        
         // Check if button is disabled
         if (processBtn.disabled || processBtn.classList.contains('disabled')) {
-          console.log('Button is disabled, returning');
           return;
         }
         
         // Check current button text to determine action
         if (processBtn.textContent === 'Select Customer') {
-          console.log('Showing customer selection');
           this.showCustomerSelection();
         } else {
-          console.log('Initiating enhanced payment');
           this.initiateEnhancedPayment();
         }
       });
@@ -1373,43 +1365,29 @@ if (typeof window.MobileBilling === 'undefined') {
   // ========================================
 
   async initiateEnhancedPayment() {
-    console.log('=== initiateEnhancedPayment CALLED ===');
-    console.log('Current bill items:', this.currentBill.items.length);
-    console.log('Current customer:', this.currentBill.customer);
-    console.log('Payment in progress:', this.paymentInProgress);
-    
     if (this.currentBill.items.length === 0) {
-      console.log('No items in bill, showing error');
       this.showMobileNotification('Please add items to the bill first', 'error');
       return;
     }
 
     if (this.paymentInProgress) {
-      console.log('Payment already in progress, returning');
       return; // Prevent multiple payment attempts
     }
 
     // Check if customer is selected
     if (!this.currentBill.customer) {
-      console.log('No customer selected, showing customer selection');
       this.showMobileNotification('Please select a customer before proceeding to payment', 'error');
       this.showCustomerSelection();
       return;
     }
 
-    console.log('Proceeding to show payment method selection');
     await this.showPaymentMethodSelection();
   }
 
   async showPaymentMethodSelection() {
-    console.log('=== showPaymentMethodSelection START ===');
-    console.log('Current billingConfig:', this.billingConfig);
-    
     // Ensure billing configuration is loaded first
     if (!this.billingConfig || !this.billingConfig.default_delivery_days) {
-      console.log('Loading billing configuration...');
       await this.loadBillingConfiguration();
-      console.log('Billing config after loading:', this.billingConfig);
     }
     
     const modal = document.createElement('div');
@@ -1477,19 +1455,14 @@ if (typeof window.MobileBilling === 'undefined') {
     this.setupPaymentMethodSelection(modal);
     
     // Apply billing configuration to payment modal
-    console.log('Applying payment configuration...');
     this.applyPaymentConfiguration(modal);
 
     // Populate employees list if enabled
-    console.log('Employee assignment enabled:', this.billingConfig.enable_employee_assignment);
     if (this.billingConfig.enable_employee_assignment) {
-      console.log('Fetching employees...');
       fetch('/api/employees')
         .then(res => res.json())
         .then(list => {
-          console.log('Employees fetched:', list);
           const select = modal.querySelector('#mobileEmployee');
-          console.log('Employee select element:', select);
           if (select && Array.isArray(list)) {
             list.forEach(emp => {
               const opt = document.createElement('option');
@@ -1497,11 +1470,8 @@ if (typeof window.MobileBilling === 'undefined') {
               opt.textContent = emp.name || `#${opt.value}`;
               select.appendChild(opt);
             });
-            console.log('Employee options added to select');
-            
             // Preselect default employee if configured
             if (this.billingConfig.default_employee_id) {
-              console.log('Preselecting default employee:', this.billingConfig.default_employee_id);
               select.value = this.billingConfig.default_employee_id;
             }
           }
@@ -1517,22 +1487,11 @@ if (typeof window.MobileBilling === 'undefined') {
     const defaultDeliveryDate = this.getDefaultDeliveryDate();
     const defaultTrialDate = this.getDefaultTrialDate();
     
-    console.log('=== DATE DEBUGGING ===');
-    console.log('Trial input element:', trialInput);
-    console.log('Delivery input element:', deliveryInput);
-    console.log('Default delivery date:', defaultDeliveryDate);
-    console.log('Default trial date:', defaultTrialDate);
-    console.log('Billing config:', this.billingConfig);
-    console.log('enable_trial_date:', this.billingConfig.enable_trial_date);
-    console.log('enable_delivery_date:', this.billingConfig.enable_delivery_date);
-    
     if (trialInput) {
       trialInput.value = defaultTrialDate;
-      console.log('Trial date set to:', trialInput.value);
     }
     if (deliveryInput) {
       deliveryInput.value = defaultDeliveryDate;
-      console.log('Delivery date set to:', deliveryInput.value);
     }
     
     // Sync trial date with delivery date when delivery date changes
@@ -1568,9 +1527,6 @@ if (typeof window.MobileBilling === 'undefined') {
   }
 
   async processPayment(method) {
-    console.log('=== processPayment START ===');
-    console.log('Payment method:', method);
-    console.log('Current billing config:', this.billingConfig);
     
     try {
       this.paymentInProgress = true;
@@ -1583,42 +1539,25 @@ if (typeof window.MobileBilling === 'undefined') {
       const trialInput = document.getElementById('mobileTrialDate');
       const deliveryInput = document.getElementById('mobileDeliveryDate');
       
-      console.log('=== FIELD ELEMENTS ===');
-      console.log('Advance payment input:', advancePaymentInput);
-      console.log('Customer notes input:', customerNotesInput);
-      console.log('Employee select:', employeeSelect);
-      console.log('Trial date input:', trialInput);
-      console.log('Delivery date input:', deliveryInput);
-      
-      console.log('=== COLLECTING FIELD VALUES ===');
-      
       if (advancePaymentInput && this.billingConfig.enable_advance_payment) {
         this.currentBill.advancePayment = parseFloat(advancePaymentInput.value) || 0;
-        console.log('Advance payment collected:', this.currentBill.advancePayment);
       }
       
       if (customerNotesInput && this.billingConfig.enable_customer_notes) {
         this.currentBill.customerNotes = customerNotesInput.value || '';
-        console.log('Customer notes collected:', this.currentBill.customerNotes);
       }
       
       if (employeeSelect && this.billingConfig.enable_employee_assignment) {
         this.currentBill.employeeId = employeeSelect.value || null;
-        console.log('Employee ID collected:', this.currentBill.employeeId);
       }
       
       if (trialInput && this.billingConfig.enable_trial_date) {
         this.currentBill.trialDate = trialInput.value || this.getDefaultTrialDate();
-        console.log('Trial date collected:', this.currentBill.trialDate);
       }
       
       if (deliveryInput && this.billingConfig.enable_delivery_date) {
         this.currentBill.deliveryDate = deliveryInput.value || this.getDefaultDeliveryDate();
-        console.log('Delivery date collected:', this.currentBill.deliveryDate);
       }
-      
-      console.log('=== FINAL BILL DATA ===');
-      console.log('Current bill after collecting values:', this.currentBill);
       
       this.showPaymentProgress();
       
@@ -2033,8 +1972,7 @@ if (typeof window.MobileBilling === 'undefined') {
              if (response.ok) {
          const newCustomer = await response.json();
          
-         // Log the response to debug the structure
-         console.log('New customer response:', newCustomer);
+         // Auto-select the newly created customer
          
                    // Auto-select the newly created customer
           // Handle different possible response structures
@@ -2370,20 +2308,13 @@ if (typeof window.MobileBilling === 'undefined') {
 
   // Load billing configuration from shop settings
   async loadBillingConfiguration() {
-      console.log('=== loadBillingConfiguration START ===');
       try {
-          console.log('Fetching billing config from /api/shop-settings/billing-config');
           const response = await fetch('/api/shop-settings/billing-config');
-          console.log('Response status:', response.status);
           const data = await response.json();
-          console.log('Billing config response:', data);
           
           if (data.success) {
-              console.log('Setting billing config to:', data.config);
               this.billingConfig = data.config;
               this.applyBillingConfiguration();
-          } else {
-              console.log('Billing config response not successful');
           }
       } catch (error) {
           console.error('Error loading billing configuration:', error);
@@ -2400,28 +2331,18 @@ if (typeof window.MobileBilling === 'undefined') {
   
   // Apply billing configuration to payment modal
   applyPaymentConfiguration(modal) {
-    console.log('=== applyPaymentConfiguration START ===');
-    console.log('Modal:', modal);
-    console.log('Billing config:', this.billingConfig);
-    
     // Trial Date field
     const trialSection = modal.querySelector('.trial-date-section');
-    console.log('Trial section found:', trialSection);
     if (trialSection) {
       const shouldShow = this.billingConfig.enable_trial_date;
-      console.log('Trial section should show:', shouldShow);
       trialSection.style.display = shouldShow ? '' : 'none';
-      console.log('Trial section display set to:', trialSection.style.display);
     }
     
     // Delivery Date field
     const deliverySection = modal.querySelector('.delivery-date-section');
-    console.log('Delivery section found:', deliverySection);
     if (deliverySection) {
       const shouldShow = this.billingConfig.enable_delivery_date;
-      console.log('Delivery section should show:', shouldShow);
       deliverySection.style.display = shouldShow ? '' : 'none';
-      console.log('Delivery section display set to:', deliverySection.style.display);
     }
     // Advance Payment field
     const advancePaymentSection = modal.querySelector('.advance-payment-section');
