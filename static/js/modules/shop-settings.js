@@ -83,6 +83,28 @@ function initializeShopSettings() {
           const enableEmployeeAssignmentField = document.getElementById('enableEmployeeAssignment');
           const defaultDeliveryDaysField = document.getElementById('defaultDeliveryDays');
           const defaultTrialDaysField = document.getElementById('defaultTrialDays');
+          const defaultEmployeeIdField = document.getElementById('defaultEmployeeId');
+
+          // Populate employees dropdown
+          if (defaultEmployeeIdField) {
+            fetch('/api/employees')
+              .then(res => res.json())
+              .then(list => {
+                if (Array.isArray(list)) {
+                  defaultEmployeeIdField.innerHTML = '<option value="">Select employee</option>';
+                  list.forEach(emp => {
+                    const opt = document.createElement('option');
+                    opt.value = emp.employee_id || emp.id || '';
+                    opt.textContent = emp.name || `#${opt.value}`;
+                    defaultEmployeeIdField.appendChild(opt);
+                  });
+                  if (settings.default_employee_id) {
+                    defaultEmployeeIdField.value = settings.default_employee_id;
+                  }
+                }
+              })
+              .catch(() => {});
+          }
           
           if (shopNameField) shopNameField.value = settings.shop_name || '';
           if (shopMobileField) shopMobileField.value = settings.shop_mobile || '';
@@ -97,14 +119,15 @@ function initializeShopSettings() {
           if (paymentModeAdvanceField) paymentModeAdvanceField.checked = paymentMode === 'advance';
           if (paymentModeFullField) paymentModeFullField.checked = paymentMode === 'full';
           
-          // Set configurable billing fields
-          if (enableTrialDateField) enableTrialDateField.checked = settings.enable_trial_date !== false; // Default to true
-          if (enableDeliveryDateField) enableDeliveryDateField.checked = settings.enable_delivery_date !== false; // Default to true
-          if (enableAdvancePaymentField) enableAdvancePaymentField.checked = settings.enable_advance_payment !== false; // Default to true
-          if (enableCustomerNotesField) enableCustomerNotesField.checked = settings.enable_customer_notes !== false; // Default to true
-          if (enableEmployeeAssignmentField) enableEmployeeAssignmentField.checked = settings.enable_employee_assignment !== false; // Default to true
+                     // Set configurable billing fields
+           if (enableTrialDateField) enableTrialDateField.checked = Boolean(settings.enable_trial_date);
+           if (enableDeliveryDateField) enableDeliveryDateField.checked = Boolean(settings.enable_delivery_date);
+           if (enableAdvancePaymentField) enableAdvancePaymentField.checked = Boolean(settings.enable_advance_payment);
+           if (enableCustomerNotesField) enableCustomerNotesField.checked = Boolean(settings.enable_customer_notes);
+           if (enableEmployeeAssignmentField) enableEmployeeAssignmentField.checked = Boolean(settings.enable_employee_assignment);
           if (defaultDeliveryDaysField) defaultDeliveryDaysField.value = settings.default_delivery_days || 3;
           if (defaultTrialDaysField) defaultTrialDaysField.value = settings.default_trial_days || 3;
+          if (defaultEmployeeIdField) defaultEmployeeIdField.disabled = !(enableEmployeeAssignmentField?.checked ?? true);
           
           // Trigger field state updates after loading settings
           setTimeout(() => {
@@ -113,9 +136,14 @@ function initializeShopSettings() {
               const enableDeliveryDate = document.getElementById('enableDeliveryDate');
               const defaultTrialDays = document.getElementById('defaultTrialDays');
               const defaultDeliveryDays = document.getElementById('defaultDeliveryDays');
+              const defaultEmployeeId = document.getElementById('defaultEmployeeId');
               
               if (defaultTrialDays) {
                 defaultTrialDays.disabled = !enableTrialDate?.checked;
+              }
+              if (defaultEmployeeId) {
+                const enableEmp = document.getElementById('enableEmployeeAssignment');
+                defaultEmployeeId.disabled = !enableEmp?.checked;
               }
               
               if (defaultDeliveryDays) {
@@ -178,26 +206,26 @@ function initializeShopSettings() {
               <div class="mt-6 pt-6 border-t border-neutral-700/30">
                 <h5 class="text-sm font-semibold text-neutral-300 mb-3">Billing Configuration</h5>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <span class="text-neutral-400">Trial Date:</span>
-                    <span class="text-white ml-2">${settings.enable_trial_date !== false ? 'Enabled' : 'Disabled'}</span>
-                  </div>
-                  <div>
-                    <span class="text-neutral-400">Delivery Date:</span>
-                    <span class="text-white ml-2">${settings.enable_delivery_date !== false ? 'Enabled' : 'Disabled'}</span>
-                  </div>
-                  <div>
-                    <span class="text-neutral-400">Advance Payment:</span>
-                    <span class="text-white ml-2">${settings.enable_advance_payment !== false ? 'Enabled' : 'Disabled'}</span>
-                  </div>
-                  <div>
-                    <span class="text-neutral-400">Customer Notes:</span>
-                    <span class="text-white ml-2">${settings.enable_customer_notes !== false ? 'Enabled' : 'Disabled'}</span>
-                  </div>
-                  <div>
-                    <span class="text-neutral-400">Employee Assignment:</span>
-                    <span class="text-white ml-2">${settings.enable_employee_assignment !== false ? 'Enabled' : 'Disabled'}</span>
-                  </div>
+                                     <div>
+                     <span class="text-neutral-400">Trial Date:</span>
+                     <span class="text-white ml-2">${Boolean(settings.enable_trial_date) ? 'Enabled' : 'Disabled'}</span>
+                   </div>
+                   <div>
+                     <span class="text-neutral-400">Delivery Date:</span>
+                     <span class="text-white ml-2">${Boolean(settings.enable_delivery_date) ? 'Enabled' : 'Disabled'}</span>
+                   </div>
+                   <div>
+                     <span class="text-neutral-400">Advance Payment:</span>
+                     <span class="text-white ml-2">${Boolean(settings.enable_advance_payment) ? 'Enabled' : 'Disabled'}</span>
+                   </div>
+                   <div>
+                     <span class="text-neutral-400">Customer Notes:</span>
+                     <span class="text-white ml-2">${Boolean(settings.enable_customer_notes) ? 'Enabled' : 'Disabled'}</span>
+                   </div>
+                   <div>
+                     <span class="text-neutral-400">Employee Assignment:</span>
+                     <span class="text-white ml-2">${Boolean(settings.enable_employee_assignment) ? 'Enabled' : 'Disabled'}</span>
+                   </div>
                   <div>
                     <span class="text-neutral-400">Default Delivery Days:</span>
                     <span class="text-white ml-2">${settings.default_delivery_days || 3} days</span>
@@ -248,7 +276,8 @@ function initializeShopSettings() {
       enable_customer_notes: shopSettingsForm?.querySelector('#enableCustomerNotes')?.checked || false,
       enable_employee_assignment: shopSettingsForm?.querySelector('#enableEmployeeAssignment')?.checked || false,
       default_delivery_days: parseInt(shopSettingsForm?.querySelector('#defaultDeliveryDays')?.value || '3'),
-      default_trial_days: parseInt(shopSettingsForm?.querySelector('#defaultTrialDays')?.value || '3')
+      default_trial_days: parseInt(shopSettingsForm?.querySelector('#defaultTrialDays')?.value || '3'),
+      default_employee_id: shopSettingsForm?.querySelector('#defaultEmployeeId')?.value || null
     };
 
     // Mobile-friendly inline validation
