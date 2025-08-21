@@ -1334,12 +1334,11 @@
 
 /* EXPENSE MANAGEMENT MOBILE OPTIMIZATIONS */
 @media (max-width: 768px) {
-  /* Expense cards mobile optimization */
-  #expensesContainer .bg-neutral-800\/60 {
+  /* Expense cards mobile optimization - Updated for new modern UI */
+  #expensesContainer .bg-gradient-to-br {
     padding: 16px;
     margin-bottom: 12px;
     border-radius: 12px;
-    border: 1px solid #374151;
   }
 
   #expensesContainer .flex.justify-between {
@@ -1366,7 +1365,7 @@
     margin: 8px 0;
   }
 
-  #expensesContainer .text-sm.text-neutral-400 {
+  #expensesContainer .text-sm.text-slate-400 {
     font-size: 14px;
     line-height: 1.4;
   }
@@ -1390,12 +1389,11 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Category cards mobile optimization */
-  #categoriesContainer .bg-neutral-800\/60 {
+  /* Category cards mobile optimization - Updated for new modern UI */
+  #categoriesContainer .bg-gradient-to-br {
     padding: 16px;
     margin-bottom: 12px;
     border-radius: 12px;
-    border: 1px solid #374151;
   }
 
   #categoriesContainer .flex.justify-between {
@@ -1427,66 +1425,20 @@
   }
 
   /* Filter section mobile optimization */
-  .bg-neutral-800\/60.backdrop-blur.rounded-lg.shadow-sm.border.border-neutral-700 {
+  .bg-gradient-to-br.from-slate-800\/80 {
+    padding: 16px;
     margin-bottom: 16px;
   }
 
   .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-4 {
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  /* Tab navigation mobile optimization */
-  nav.-mb-px.flex.space-x-4.sm\:space-x-8 {
-    padding: 0 16px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .tab-button {
-    min-height: 44px;
-    padding: 12px 16px;
-    white-space: nowrap;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Modal mobile optimization */
-  .modal .relative.top-4.sm\:top-20 {
-    margin: 16px;
-    max-height: calc(100vh - 32px);
-    overflow-y: auto;
-  }
-
-  .modal .w-11\/12.sm\:w-96 {
-    width: calc(100% - 32px);
-    max-width: 400px;
-  }
-
-  .modal form {
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
-  }
-
-  .modal .flex.flex-col.sm\:flex-row {
-    gap: 8px;
-  }
-
-  .modal button {
-    min-height: 44px;
-    padding: 12px 16px;
-    font-size: 16px;
-    border-radius: 8px;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Header mobile optimization */
-  .flex.flex-col.sm\:flex-row.justify-between {
-    gap: 16px;
-  }
-
-  .flex.flex-col.sm\:flex-row.space-y-2.sm\:space-y-0 {
-    gap: 8px;
+  /* Statistics cards mobile optimization */
+  .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   /* Export button mobile optimization */
@@ -1498,11 +1450,11 @@
 
 /* Small mobile devices */
 @media (max-width: 480px) {
-  #expensesContainer .bg-neutral-800\/60 {
+  #expensesContainer .bg-gradient-to-br {
     padding: 12px;
   }
 
-  #categoriesContainer .bg-neutral-800\/60 {
+  #categoriesContainer .bg-gradient-to-br {
     padding: 12px;
   }
 
@@ -1555,11 +1507,11 @@
     max-height: calc(100vh - 8px);
   }
 
-  #expensesContainer .bg-neutral-800\/60 {
+  #expensesContainer .bg-gradient-to-br {
     padding: 8px;
   }
 
-  #categoriesContainer .bg-neutral-800\/60 {
+  #categoriesContainer .bg-gradient-to-br {
     padding: 8px;
   }
 
