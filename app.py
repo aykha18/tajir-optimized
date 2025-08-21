@@ -6327,6 +6327,452 @@ def get_filtered_invoice_summary(user_id, filters=None):
         'filters_applied': filters
     }
 
+# Financial Analytics APIs
+@app.route('/api/analytics/financial-overview', methods=['GET'])
+def get_financial_overview():
+    """Get comprehensive financial overview with key metrics"""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    # Get date range from query params
+    from_date = request.args.get('from_date', (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+    to_date = request.args.get('to_date', datetime.now().strftime('%Y-%m-%d'))
+    
+    try:
+        # Revenue calculations
+        revenue_data = conn.execute('''
+            SELECT 
+                COUNT(*) as total_invoices,
+                SUM(total_amount) as total_revenue,
+                SUM(subtotal) as gross_revenue,
+                SUM(vat_amount) as total_vat,
+                AVG(total_amount) as avg_invoice_value,
+                COUNT(DISTINCT customer_id) as unique_customers
+            FROM bills 
+            WHERE user_id = ? 
+            AND DATE(bill_date) BETWEEN ? AND ?
+        ''', (user_id, from_date, to_date)).fetchone()
+        
+        # Expense calculations
+        expense_data = conn.execute('''
+            SELECT 
+                COUNT(*) as total_expenses,
+                SUM(amount) as total_expenses_amount,
+                AVG(amount) as avg_expense_amount
+            FROM expenses 
+            WHERE user_id = ? 
+            AND DATE(expense_date) BETWEEN ? AND ?
+        ''', (user_id, from_date, to_date)).fetchone()
+        
+        # Calculate profit metrics
+        total_revenue = float(revenue_data['total_revenue'] or 0)
+        total_expenses = float(expense_data['total_expenses_amount'] or 0)
+        net_profit = total_revenue - total_expenses
+        gross_profit = float(revenue_data['gross_revenue'] or 0) - total_expenses
+        
+        # Calculate margins
+        gross_margin = (gross_profit / total_revenue * 100) if total_revenue > 0 else 0
+        net_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0
+        
+        # Get top revenue sources
+        top_products = conn.execute('''
+            SELECT 
+                bi.product_name,
+                SUM(bi.total_amount) as revenue,
+                SUM(bi.quantity) as quantity_sold
+            FROM bill_items bi
+            JOIN bills b ON bi.bill_id = b.bill_id
+            WHERE b.user_id = ? 
+            AND DATE(b.bill_date) BETWEEN ? AND ?
+            GROUP BY bi.product_name
+            ORDER BY revenue DESC
+            LIMIT 5
+        ''', (user_id, from_date, to_date)).fetchall()
+        
+        # Get top expense categories
+        top_expense_categories = conn.execute('''
+            SELECT 
+                ec.category_name,
+                SUM(e.amount) as total_amount,
+                COUNT(*) as expense_count
+            FROM expenses e
+            JOIN expense_categories ec ON e.category_id = ec.category_id
+            WHERE e.user_id = ? 
+            AND DATE(e.expense_date) BETWEEN ? AND ?
+            GROUP BY ec.category_id, ec.category_name
+            ORDER BY total_amount DESC
+            LIMIT 5
+        ''', (user_id, from_date, to_date)).fetchall()
+        
+        conn.close()
+        
+        return jsonify({
+            'period': {
+                'from_date': from_date,
+                'to_date': to_date
+            },
+            'revenue': {
+                'total_revenue': total_revenue,
+                'gross_revenue': float(revenue_data['gross_revenue'] or 0),
+                'total_vat': float(revenue_data['total_vat'] or 0),
+                'total_invoices': revenue_data['total_invoices'],
+                'avg_invoice_value': float(revenue_data['avg_invoice_value'] or 0),
+                'unique_customers': revenue_data['unique_customers']
+            },
+            'expenses': {
+                'total_expenses': total_expenses,
+                'total_expense_count': expense_data['total_expenses'],
+                'avg_expense_amount': float(expense_data['avg_expense_amount'] or 0)
+            },
+            'profitability': {
+                'gross_profit': gross_profit,
+                'net_profit': net_profit,
+                'gross_margin': round(gross_margin, 2),
+                'net_margin': round(net_margin, 2)
+            },
+            'top_products': [dict(product) for product in top_products],
+            'top_expense_categories': [dict(category) for category in top_expense_categories]
+        })
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analytics/revenue-trends', methods=['GET'])
+def get_revenue_trends():
+    """Get revenue trends over time"""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    # Get period from query params (daily, weekly, monthly)
+    period = request.args.get('period', 'monthly')
+    months = int(request.args.get('months', 6))
+    
+    try:
+        if period == 'daily':
+            # Daily trends for last 30 days
+            trends = conn.execute('''
+                SELECT 
+                    DATE(bill_date) as date,
+                    SUM(total_amount) as revenue,
+                    COUNT(*) as invoices,
+                    COUNT(DISTINCT customer_id) as customers
+                FROM bills 
+                WHERE user_id = ? 
+                AND bill_date >= date('now', '-30 days')
+                GROUP BY DATE(bill_date)
+                ORDER BY date
+            ''', (user_id,)).fetchall()
+        elif period == 'weekly':
+            # Weekly trends for last 12 weeks
+            trends = conn.execute('''
+                SELECT 
+                    strftime('%Y-W%W', bill_date) as week,
+                    SUM(total_amount) as revenue,
+                    COUNT(*) as invoices,
+                    COUNT(DISTINCT customer_id) as customers
+                FROM bills 
+                WHERE user_id = ? 
+                AND bill_date >= date('now', '-84 days')
+                GROUP BY strftime('%Y-W%W', bill_date)
+                ORDER BY week
+            ''', (user_id,)).fetchall()
+        else:  # monthly
+            # Monthly trends for specified months
+            trends = conn.execute('''
+                SELECT 
+                    strftime('%Y-%m', bill_date) as month,
+                    SUM(total_amount) as revenue,
+                    COUNT(*) as invoices,
+                    COUNT(DISTINCT customer_id) as customers
+                FROM bills 
+                WHERE user_id = ? 
+                AND bill_date >= date('now', '-' || ? || ' months')
+                GROUP BY strftime('%Y-%m', bill_date)
+                ORDER BY month
+            ''', (user_id, months)).fetchall()
+        
+        conn.close()
+        
+        return jsonify({
+            'period': period,
+            'trends': [dict(trend) for trend in trends]
+        })
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analytics/expense-trends', methods=['GET'])
+def get_expense_trends():
+    """Get expense trends over time"""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    # Get period from query params (daily, weekly, monthly)
+    period = request.args.get('period', 'monthly')
+    months = int(request.args.get('months', 6))
+    
+    try:
+        if period == 'daily':
+            # Daily trends for last 30 days
+            trends = conn.execute('''
+                SELECT 
+                    DATE(expense_date) as date,
+                    SUM(amount) as expenses,
+                    COUNT(*) as expense_count
+                FROM expenses 
+                WHERE user_id = ? 
+                AND expense_date >= date('now', '-30 days')
+                GROUP BY DATE(expense_date)
+                ORDER BY date
+            ''', (user_id,)).fetchall()
+        elif period == 'weekly':
+            # Weekly trends for last 12 weeks
+            trends = conn.execute('''
+                SELECT 
+                    strftime('%Y-W%W', expense_date) as week,
+                    SUM(amount) as expenses,
+                    COUNT(*) as expense_count
+                FROM expenses 
+                WHERE user_id = ? 
+                AND expense_date >= date('now', '-84 days')
+                GROUP BY strftime('%Y-W%W', expense_date)
+                ORDER BY week
+            ''', (user_id,)).fetchall()
+        else:  # monthly
+            # Monthly trends for specified months
+            trends = conn.execute('''
+                SELECT 
+                    strftime('%Y-%m', expense_date) as month,
+                    SUM(amount) as expenses,
+                    COUNT(*) as expense_count
+                FROM expenses 
+                WHERE user_id = ? 
+                AND expense_date >= date('now', '-' || ? || ' months')
+                GROUP BY strftime('%Y-%m', expense_date)
+                ORDER BY month
+            ''', (user_id, months)).fetchall()
+        
+        conn.close()
+        
+        return jsonify({
+            'period': period,
+            'trends': [dict(trend) for trend in trends]
+        })
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analytics/cash-flow', methods=['GET'])
+def get_cash_flow():
+    """Get cash flow analysis"""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    from_date = request.args.get('from_date', (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+    to_date = request.args.get('to_date', datetime.now().strftime('%Y-%m-%d'))
+    
+    try:
+        # Cash inflows (revenue)
+        cash_inflows = conn.execute('''
+            SELECT 
+                SUM(total_amount) as total_inflow,
+                SUM(advance_paid) as advance_payments,
+                SUM(balance_amount) as pending_payments
+            FROM bills 
+            WHERE user_id = ? 
+            AND DATE(bill_date) BETWEEN ? AND ?
+        ''', (user_id, from_date, to_date)).fetchone()
+        
+        # Cash outflows (expenses)
+        cash_outflows = conn.execute('''
+            SELECT 
+                SUM(amount) as total_outflow,
+                COUNT(*) as expense_count
+            FROM expenses 
+            WHERE user_id = ? 
+            AND DATE(expense_date) BETWEEN ? AND ?
+        ''', (user_id, from_date, to_date)).fetchone()
+        
+        # Payment method analysis
+        payment_methods = conn.execute('''
+            SELECT 
+                payment_method,
+                COUNT(*) as count,
+                SUM(total_amount) as amount
+            FROM bills 
+            WHERE user_id = ? 
+            AND DATE(bill_date) BETWEEN ? AND ?
+            GROUP BY payment_method
+            ORDER BY amount DESC
+        ''', (user_id, from_date, to_date)).fetchall()
+        
+        conn.close()
+        
+        total_inflow = float(cash_inflows['total_inflow'] or 0)
+        total_outflow = float(cash_outflows['total_outflow'] or 0)
+        net_cash_flow = total_inflow - total_outflow
+        
+        return jsonify({
+            'period': {
+                'from_date': from_date,
+                'to_date': to_date
+            },
+            'cash_flow': {
+                'total_inflow': total_inflow,
+                'total_outflow': total_outflow,
+                'net_cash_flow': net_cash_flow,
+                'advance_payments': float(cash_inflows['advance_payments'] or 0),
+                'pending_payments': float(cash_inflows['pending_payments'] or 0)
+            },
+            'payment_methods': [dict(method) for method in payment_methods]
+        })
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analytics/business-metrics', methods=['GET'])
+def get_business_metrics():
+    """Get key business performance metrics"""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    from_date = request.args.get('from_date', (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+    to_date = request.args.get('to_date', datetime.now().strftime('%Y-%m-%d'))
+    
+    try:
+        # Customer metrics
+        customer_metrics = conn.execute('''
+            SELECT 
+                COUNT(DISTINCT customer_id) as total_customers,
+                COUNT(DISTINCT CASE WHEN bill_date >= date('now', '-7 days') THEN customer_id END) as new_customers_7d,
+                COUNT(DISTINCT CASE WHEN bill_date >= date('now', '-30 days') THEN customer_id END) as new_customers_30d,
+                AVG(total_amount) as avg_order_value,
+                SUM(total_amount) / COUNT(DISTINCT customer_id) as revenue_per_customer
+            FROM bills 
+            WHERE user_id = ? 
+            AND DATE(bill_date) BETWEEN ? AND ?
+        ''', (user_id, from_date, to_date)).fetchone()
+        
+        # Employee performance
+        employee_performance = conn.execute('''
+            SELECT 
+                e.name as employee_name,
+                COUNT(b.bill_id) as bills_handled,
+                SUM(b.total_amount) as total_revenue,
+                AVG(b.total_amount) as avg_bill_value
+            FROM employees e
+            LEFT JOIN bills b ON e.employee_id = b.master_id AND b.user_id = e.user_id
+            WHERE e.user_id = ? 
+            AND (b.bill_date IS NULL OR DATE(b.bill_date) BETWEEN ? AND ?)
+            GROUP BY e.employee_id, e.name
+            ORDER BY total_revenue DESC
+        ''', (user_id, from_date, to_date)).fetchall()
+        
+        # Product performance
+        product_performance = conn.execute('''
+            SELECT 
+                bi.product_name,
+                SUM(bi.quantity) as total_quantity,
+                SUM(bi.total_amount) as total_revenue,
+                AVG(bi.rate) as avg_price,
+                COUNT(DISTINCT b.bill_id) as invoices_count
+            FROM bill_items bi
+            JOIN bills b ON bi.bill_id = b.bill_id
+            WHERE b.user_id = ? 
+            AND DATE(b.bill_date) BETWEEN ? AND ?
+            GROUP BY bi.product_name
+            ORDER BY total_revenue DESC
+            LIMIT 10
+        ''', (user_id, from_date, to_date)).fetchall()
+        
+        conn.close()
+        
+        return jsonify({
+            'period': {
+                'from_date': from_date,
+                'to_date': to_date
+            },
+            'customer_metrics': {
+                'total_customers': customer_metrics['total_customers'],
+                'new_customers_7d': customer_metrics['new_customers_7d'],
+                'new_customers_30d': customer_metrics['new_customers_30d'],
+                'avg_order_value': float(customer_metrics['avg_order_value'] or 0),
+                'revenue_per_customer': float(customer_metrics['revenue_per_customer'] or 0)
+            },
+            'employee_performance': [dict(emp) for emp in employee_performance],
+            'product_performance': [dict(prod) for prod in product_performance]
+        })
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analytics/expense-breakdown', methods=['GET'])
+def get_expense_breakdown():
+    """Get detailed expense breakdown by category"""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    from_date = request.args.get('from_date', (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+    to_date = request.args.get('to_date', datetime.now().strftime('%Y-%m-%d'))
+    
+    try:
+        # Expense breakdown by category
+        category_breakdown = conn.execute('''
+            SELECT 
+                ec.category_name,
+                ec.description,
+                SUM(e.amount) as total_amount,
+                COUNT(*) as expense_count,
+                AVG(e.amount) as avg_amount,
+                MIN(e.amount) as min_amount,
+                MAX(e.amount) as max_amount
+            FROM expenses e
+            JOIN expense_categories ec ON e.category_id = ec.category_id
+            WHERE e.user_id = ? 
+            AND DATE(e.expense_date) BETWEEN ? AND ?
+            GROUP BY ec.category_id, ec.category_name, ec.description
+            ORDER BY total_amount DESC
+        ''', (user_id, from_date, to_date)).fetchall()
+        
+        # Monthly expense trends by category
+        monthly_trends = conn.execute('''
+            SELECT 
+                ec.category_name,
+                strftime('%Y-%m', e.expense_date) as month,
+                SUM(e.amount) as amount
+            FROM expenses e
+            JOIN expense_categories ec ON e.category_id = ec.category_id
+            WHERE e.user_id = ? 
+            AND e.expense_date >= date('now', '-6 months')
+            GROUP BY ec.category_id, ec.category_name, strftime('%Y-%m', e.expense_date)
+            ORDER BY month, amount DESC
+        ''', (user_id,)).fetchall()
+        
+        conn.close()
+        
+        return jsonify({
+            'period': {
+                'from_date': from_date,
+                'to_date': to_date
+            },
+            'category_breakdown': [dict(cat) for cat in category_breakdown],
+            'monthly_trends': [dict(trend) for trend in monthly_trends]
+        })
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/financial-analytics')
+def financial_analytics():
+    """Serve the financial analytics dashboard"""
+    return render_template('financial_analytics.html')
+
 if __name__ == '__main__':
     setup_ocr()  # Initialize OCR
     init_db()
