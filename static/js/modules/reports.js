@@ -276,13 +276,21 @@ async function fetchAndRenderInvoices() {
       const invoices = data.invoices || [];
       
              tbody.innerHTML = invoices.length
-         ? invoices.map((invoice, index) => `
+         ? invoices.map((invoice, index) => {
+             // Calculate total discount amount from discount percentages and amounts
+             let totalDiscountAmount = 0;
+             if (invoice.discount_amounts && invoice.discount_amounts.length > 0) {
+                 totalDiscountAmount = invoice.discount_amounts.reduce((sum, amount) => sum + parseFloat(amount || 0), 0);
+             }
+             
+             return `
            <tr class="hover:bg-neutral-800/50 transition-colors" style="animation-delay: ${index * 0.1}s;">
              <td class="px-4 py-3">${invoice.bill_number}</td>
              <td class="px-4 py-3">${invoice.bill_date}</td>
              <td class="px-4 py-3">${invoice.customer_name}</td>
              <td class="px-4 py-3">${invoice.delivery_date}</td>
              <td class="px-4 py-3">AED ${parseFloat(invoice.subtotal || invoice.total_amount).toFixed(2)}</td>
+             <td class="px-4 py-3">AED ${totalDiscountAmount.toFixed(2)}</td>
              <td class="px-4 py-3">AED ${parseFloat(invoice.vat_amount || 0).toFixed(2)}</td>
              <td class="px-4 py-3">AED ${parseFloat(invoice.total_amount).toFixed(2)}</td>
              <td class="px-4 py-3">
@@ -294,7 +302,8 @@ async function fetchAndRenderInvoices() {
              </td>
              <td class="px-4 py-3">${invoice.products || 'N/A'}</td>
            </tr>
-         `).join('')
+         `;
+         }).join('')
                  : `
            <tr>
              <td colspan="9" class="px-6 py-8 text-center">
@@ -709,7 +718,7 @@ function showInitialTableState(tableBodyId, reportType) {
   
   // Set appropriate colspan based on table type
   const colSpans = {
-    'invoices': 9,
+    'invoices': 10, // Updated to include discount column
     'employees': 5,
     'products': 4
   };

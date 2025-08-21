@@ -252,7 +252,7 @@
                 <th>Product / المنتج</th>
                 <th>Qty / الكمية</th>
                 <th>Rate (AED) / السعر</th>
-                <th>Discount (AED) / الخصم</th>
+                <th>Discount (%) / الخصم</th>
                 <th>VAT ({{ bill.vat_percent or '5.0' }}%) / الضريبة</th>
                 {% if shop_settings.enable_advance_payment %}
                 <th>Advance (AED) / الدفعة المقدمة</th>
@@ -267,7 +267,7 @@
                  <td>{{ item.product_name }}</td>
                  <td>{{ item.quantity }}</td>
                  <td>{{ "%.2f"|format(item.rate) }}</td>
-                 <td>{{ "%.2f"|format(item.discount) }}</td>
+                 <td>{{ "%.1f"|format(item.discount) }}%</td>
                  <td>{{ "%.2f"|format(item.vat_amount) }}</td>
                  {% if shop_settings.enable_advance_payment %}
                  <td>{{ "%.2f"|format(item.advance_paid) }}</td>

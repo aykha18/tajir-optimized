@@ -575,10 +575,13 @@ function initializeBillingSystem() {
         </td>
         <td class="px-3 py-3">${(item.rate || 0).toFixed(2)}</td>
         <td class="px-3 py-3">
-          <input type="number" min="0" step="0.01" value="${(item.discount || 0).toFixed(2)}" 
-                 class="w-20 bg-transparent border-none text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded px-1"
-                 onchange="updateBillItemField(${index}, 'discount', this.value)"
-                 onblur="updateBillItemField(${index}, 'discount', this.value)">
+          <div class="flex flex-col items-center">
+            <input type="number" min="0" max="100" step="0.01" value="${(item.discount || 0).toFixed(2)}" 
+                   class="w-20 bg-transparent border-none text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded px-1"
+                   onchange="updateBillItemField(${index}, 'discount', this.value)"
+                   onblur="updateBillItemField(${index}, 'discount', this.value)">
+            <span class="text-xs text-gray-400">${((item.rate || 0) * (item.quantity || 0) * (item.discount || 0) / 100).toFixed(2)}</span>
+          </div>
         </td>
         <td class="px-3 py-3">
           <input type="number" min="0" step="0.01" value="${(item.advance_paid || 0).toFixed(2)}" 
@@ -2420,7 +2423,9 @@ function initializeBillingSystem() {
       const existingItem = bill[existingItemIndex];
       const newQuantity = existingItem.quantity + quantity;
       const newSubtotal = Math.round(newQuantity * price * 100) / 100;
-      const newTotal = Math.round((newSubtotal - discount) * 100) / 100;
+      // Calculate discount amount from percentage
+      const newDiscountAmount = Math.round((newSubtotal * discount / 100) * 100) / 100;
+      const newTotal = Math.round((newSubtotal - newDiscountAmount) * 100) / 100;
       const newVatAmount = Math.round(newTotal * (vatPercent / 100) * 100) / 100;
       
       
@@ -2484,7 +2489,9 @@ function initializeBillingSystem() {
     
     // Calculate total with better precision
     const subtotal = Math.round(quantity * price * 100) / 100;
-    const total = Math.round((subtotal - discount) * 100) / 100;
+    // Calculate discount amount from percentage
+    const discountAmount = Math.round((subtotal * discount / 100) * 100) / 100;
+    const total = Math.round((subtotal - discountAmount) * 100) / 100;
     const vatAmount = Math.round(total * (vatPercent / 100) * 100) / 100;
     
     // Add item to bill
@@ -3868,8 +3875,11 @@ function initializeBillingSystem() {
     // Calculate subtotal (before discount)
     const subtotal = rate * quantity;
     
+    // Calculate discount amount from percentage
+    const discountAmount = (subtotal * discount / 100);
+    
     // Calculate total after discount
-    const totalAfterDiscount = subtotal - discount;
+    const totalAfterDiscount = subtotal - discountAmount;
     
     // Calculate VAT amount
     const vatAmount = (totalAfterDiscount * vatPercent) / 100;

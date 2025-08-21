@@ -1039,8 +1039,10 @@ def create_bill():
                 # Calculate VAT for each item
                 item_rate = float(item.get('rate', 0))
                 item_quantity = float(item.get('quantity', 1))
-                item_discount = float(item.get('discount', 0))
-                item_subtotal = (item_rate * item_quantity) - item_discount
+                item_discount_percent = float(item.get('discount', 0))
+                item_subtotal_before_discount = item_rate * item_quantity
+                item_discount_amount = item_subtotal_before_discount * (item_discount_percent / 100)
+                item_subtotal = item_subtotal_before_discount - item_discount_amount
                 item_vat_amount = item_subtotal * (vat_percent / 100)
                 item_total_amount = item_subtotal + item_vat_amount
                 
@@ -1055,7 +1057,7 @@ def create_bill():
                 item.get('product_name'),
                 item.get('quantity', 1),
                 item.get('rate', 0),
-                item.get('discount', 0),
+                item_discount_percent,  # Store discount percentage
                 item_vat_amount,
                 item.get('advance_paid', 0),
                 item_total_amount
@@ -1098,8 +1100,17 @@ def create_bill():
             if not customer_phone:
                 return jsonify({'error': 'Customer mobile is required'}), 400
             
-            # Calculate totals
-            subtotal = sum(float(item.get('rate', 0)) * float(item.get('quantity', 1)) for item in items)
+            # Calculate totals with discount
+            subtotal_before_discount = sum(float(item.get('rate', 0)) * float(item.get('quantity', 1)) for item in items)
+            total_discount_amount = 0
+            for item in items:
+                item_rate = float(item.get('rate', 0))
+                item_quantity = float(item.get('quantity', 1))
+                item_discount_percent = float(item.get('discount', 0))
+                item_discount_amount = (item_rate * item_quantity) * (item_discount_percent / 100)
+                total_discount_amount += item_discount_amount
+            
+            subtotal = subtotal_before_discount - total_discount_amount
             vat_percent = 5.0
             vat_amount = subtotal * (vat_percent / 100)
             total_amount = subtotal + vat_amount
@@ -1195,12 +1206,23 @@ def create_bill():
             
             # Insert bill items
             for item in items:
+                # Calculate discount amount from percentage
+                item_rate = float(item.get('rate', 0))
+                item_quantity = float(item.get('quantity', 1))
+                item_discount_percent = float(item.get('discount', 0))
+                item_subtotal_before_discount = item_rate * item_quantity
+                item_discount_amount = item_subtotal_before_discount * (item_discount_percent / 100)
+                item_subtotal = item_subtotal_before_discount - item_discount_amount
+                item_vat_amount = item_subtotal * (vat_percent / 100)
+                item_total_amount = item_subtotal + item_vat_amount
+                
                 conn.execute('''
-                    INSERT INTO bill_items (bill_id, product_name, quantity, rate)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO bill_items (bill_id, product_name, quantity, rate, discount, vat_amount, advance_paid, total_amount)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     bill_id, item.get('product_name', ''), 
-                    item.get('quantity', 1), item.get('rate', 0)
+                    item.get('quantity', 1), item.get('rate', 0),
+                    item_discount_percent, item_vat_amount, item.get('advance_paid', 0), item_total_amount
                 ))
             
             conn.commit()
@@ -2461,7 +2483,9 @@ def report_invoices():
                 e.name as employee_name,
                 GROUP_CONCAT(bi.product_name) as products,
                 GROUP_CONCAT(bi.quantity) as quantities,
-                GROUP_CONCAT(bi.rate) as prices
+                GROUP_CONCAT(bi.rate) as prices,
+                GROUP_CONCAT(bi.discount) as discount_percentages,
+                GROUP_CONCAT(round((bi.rate * bi.quantity * bi.discount / 100), 2)) as discount_amounts
             FROM bills b
             LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
             LEFT JOIN employees e ON b.master_id = e.employee_id
@@ -2540,7 +2564,9 @@ def report_invoices():
                 'employee_name': row[12],
                 'products': row[13].split(',') if row[13] else [],
                 'quantities': [int(q) for q in row[14].split(',')] if row[14] else [],
-                'prices': [float(p) for p in row[15].split(',')] if row[15] else []
+                'prices': [float(p) for p in row[15].split(',')] if row[15] else [],
+                'discount_percentages': [float(d) for d in row[16].split(',')] if row[16] else [],
+                'discount_amounts': [float(d) for d in row[17].split(',')] if row[17] else []
             }
             invoices_data.append(invoice)
         
@@ -4357,11 +4383,16 @@ def send_bill_whatsapp(bill_id):
         
         conn.close()
         
-        # Calculate total discount from bill items
+        # Calculate total discount from bill items (percentage-based)
         total_discount = 0
         for item in items:
             item_dict = dict(item) if not isinstance(item, dict) else item
-            total_discount += float(item_dict.get('discount', 0))
+            rate = float(item_dict.get('rate', 0) or 0)
+            qty = int(item_dict.get('quantity', 0) or 0)
+            discount_percent = float(item_dict.get('discount', 0) or 0)
+            item_subtotal = rate * qty
+            item_discount_amount = item_subtotal * (discount_percent / 100)
+            total_discount += item_discount_amount
         
         # Prepare bill data
         print(f"DEBUG: Preparing bill data from bill keys: {list(bill.keys())}")
@@ -4385,11 +4416,16 @@ def send_bill_whatsapp(bill_id):
             item_dict = dict(item) if not isinstance(item, dict) else item
             rate = float(item_dict.get('rate', 0) or 0)
             qty = int(item_dict.get('quantity', 0) or 0)
-            total = rate * qty
+            discount_percent = float(item_dict.get('discount', 0) or 0)
+            subtotal = rate * qty
+            discount_amount = subtotal * (discount_percent / 100)
+            total = subtotal - discount_amount
             bill_data['items'].append({
                 'product_name': item_dict.get('product_name', 'Unknown Product'),
                 'rate': rate,
                 'qty': qty,
+                'discount_percent': discount_percent,
+                'discount_amount': discount_amount,
                 'total': total
             })
         
@@ -6220,7 +6256,11 @@ def get_filtered_invoice_summary(user_id, filters=None):
             COALESCE(SUM(b.total_amount), 0) as total_revenue,
             COALESCE(SUM(b.vat_amount), 0) as total_vat_collected,
             COALESCE(SUM(b.subtotal), 0) as total_subtotal,
-            COALESCE(SUM(0), 0) as total_discounts,
+            COALESCE(SUM(
+                (SELECT SUM(bi.rate * bi.quantity * bi.discount / 100) 
+                 FROM bill_items bi 
+                 WHERE bi.bill_id = b.bill_id)
+            ), 0) as total_discounts,
             COALESCE(AVG(b.total_amount), 0) as avg_invoice_value,
             COUNT(DISTINCT b.customer_id) as unique_customers,
             SUM(CASE WHEN b.status = 'Paid' THEN 1 ELSE 0 END) as paid_invoices,
