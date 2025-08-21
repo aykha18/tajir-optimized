@@ -1470,6 +1470,15 @@ def print_bill(bill_id):
         SELECT * FROM bill_items WHERE bill_id = ? AND user_id = ?
     ''', (bill_id, user_id)).fetchall()
     
+    # Calculate discount amount for each item
+    items_with_discount = []
+    for item in items:
+        item_dict = dict(item)
+        # Calculate discount amount: (rate * quantity * discount_percentage) / 100
+        discount_amount = (float(item_dict['rate']) * float(item_dict['quantity']) * float(item_dict['discount'])) / 100
+        item_dict['discount_amount'] = round(discount_amount, 2)
+        items_with_discount.append(item_dict)
+    
     # Get shop settings
     shop_settings = conn.execute('SELECT * FROM shop_settings WHERE user_id = ?', (user_id,)).fetchone()
     conn.close()
@@ -1523,7 +1532,7 @@ def print_bill(bill_id):
     
     return render_template('print_bill.html', 
                          bill=bill, 
-                         items=[dict(item) for item in items],
+                         items=items_with_discount,
                          amount_in_words=amount_in_words,
                          arabic_amount_in_words=arabic_amount_in_words,
                          qr_code_base64=qr_code_base64,
@@ -6122,7 +6131,7 @@ def get_invoice_summary_data(user_id, current_date=None):
             SUM(total_amount) as total_revenue,
             SUM(vat_amount) as total_vat_collected,
             SUM(subtotal) as total_subtotal,
-            SUM(discount_amount) as total_discounts,
+            SUM(0) as total_discounts,
             AVG(total_amount) as avg_invoice_value,
             COUNT(DISTINCT customer_id) as unique_customers
         FROM bills 
@@ -6137,7 +6146,7 @@ def get_invoice_summary_data(user_id, current_date=None):
             SUM(total_amount) as total_revenue,
             SUM(vat_amount) as total_vat_collected,
             SUM(subtotal) as total_subtotal,
-            SUM(discount_amount) as total_discounts,
+            SUM(0) as total_discounts,
             AVG(total_amount) as avg_invoice_value,
             COUNT(DISTINCT customer_id) as unique_customers
         FROM bills 
@@ -6152,7 +6161,7 @@ def get_invoice_summary_data(user_id, current_date=None):
             SUM(total_amount) as total_revenue,
             SUM(vat_amount) as total_vat_collected,
             SUM(subtotal) as total_subtotal,
-            SUM(discount_amount) as total_discounts,
+            SUM(0) as total_discounts,
             AVG(total_amount) as avg_invoice_value,
             COUNT(DISTINCT customer_id) as unique_customers
         FROM bills 
