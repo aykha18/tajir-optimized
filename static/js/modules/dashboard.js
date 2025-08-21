@@ -1,5 +1,18 @@
 // Dashboard Module
 
+// Check if Chart.js is available
+if (typeof Chart === 'undefined') {
+  console.warn('Chart.js is not loaded. Dashboard charts will not be displayed.');
+  // Create a fallback Chart constructor that does nothing
+  window.Chart = function() {
+    console.warn('Chart.js not available - chart creation skipped');
+    return {
+      destroy: function() {},
+      update: function() {}
+    };
+  };
+}
+
 // Dashboard data loading function
 async function loadDashboardData() {
   try {
@@ -48,7 +61,27 @@ async function loadDashboardData() {
     const refreshBtn = document.getElementById('refreshDashboardBtn');
     refreshBtn.innerHTML = '<svg data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></svg> Refresh';
     refreshBtn.disabled = false;
-    lucide.createIcons();
+    
+    // Safe lucide icon creation with fallback
+    try {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      } else {
+        console.warn('Lucide library not available, using fallback icons');
+        // Fallback: replace lucide icons with simple text or emoji
+        const lucideIcons = document.querySelectorAll('[data-lucide]');
+        lucideIcons.forEach(icon => {
+          const iconName = icon.getAttribute('data-lucide');
+          if (iconName === 'refresh-cw') {
+            icon.innerHTML = '🔄';
+          } else if (iconName === 'loader-2') {
+            icon.innerHTML = '⏳';
+          }
+        });
+      }
+    } catch (lucideError) {
+      console.warn('Error creating lucide icons:', lucideError);
+    }
   }
 }
 

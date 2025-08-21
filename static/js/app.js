@@ -4,7 +4,16 @@ document.addEventListener('DOMContentLoaded', function() {
   // Reset cache clearing flag on page load
   window.isClearingCache = false;
   
-  lucide.createIcons();
+  // Safe lucide icon creation with fallback
+  try {
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
+    } else {
+      console.warn('Lucide library not available, using fallback icons');
+    }
+  } catch (lucideError) {
+    console.warn('Error creating lucide icons:', lucideError);
+  }
   
   // Custom confirmation dialog function
   window.showConfirmDialog = function(message) {

@@ -240,5 +240,46 @@ function switchTab(tabName) {
 </script>
 
 <!-- Load expense management module -->
+
+<script>
+// Lucide icons fallback
+if (typeof lucide === 'undefined') {
+    console.warn('Lucide icons not loaded, using fallback');
+    window.lucide = {
+        createIcons: function() {
+            console.log('Lucide fallback: createIcons called');
+            // Replace lucide icons with simple text or emoji
+            document.querySelectorAll('[data-lucide]').forEach(el => {
+                const iconName = el.getAttribute('data-lucide');
+                el.innerHTML = getIconFallback(iconName);
+            });
+        }
+    };
+    
+    function getIconFallback(iconName) {
+        const fallbacks = {
+            'plus': '➕',
+            'folder-plus': '📁➕',
+            'download': '⬇️',
+            'currency': '💰',
+            'folder': '📁',
+            'edit': '✏️',
+            'trash': '🗑️',
+            'eye': '👁️',
+            'calendar': '📅',
+            'search': '🔍',
+            'filter': '🔧',
+            'home': '🏠',
+            'users': '👥',
+            'package': '📦',
+            'bar-chart': '📊',
+            'settings': '⚙️',
+            'more-horizontal': '⋯'
+        };
+        return fallbacks[iconName] || '📄';
+    }
+}
+</script>
+
 <script src="{{ url_for('static', filename='js/modules/expenses.js') }}"></script>
 {% endblock %}

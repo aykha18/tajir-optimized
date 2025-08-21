@@ -252,6 +252,34 @@ def init_db():
     except Exception as e:
         logger.error(f"Failed to setup admin user: {e}")
 
+
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to all responses."""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    # Add HSTS header for HTTPS
+    if request.is_secure:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    
+    # Add comprehensive CSP header
+    csp_policy = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https://images.unsplash.com https://*.unsplash.com; "
+        "connect-src 'self' https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://cdn.jsdelivr.net; "
+        "worker-src 'self' blob:; "
+        "child-src 'self' blob:;"
+    )
+    response.headers['Content-Security-Policy'] = csp_policy
+    
+    return response
+
 @app.route('/')
 def index():
     user_plan_info = get_user_plan_info()
@@ -267,6 +295,45 @@ def landing():
                         user_plan_info=user_plan_info,
                         get_user_language=get_user_language,
                         get_translated_text=get_translated_text)
+
+@app.route('/')
+def modern_landing():
+    return render_template('modern_landing.html')
+
+@app.route('/home')
+def home():
+    return render_template('modern_landing.html')
+
+@app.route('/setup-wizard')
+def setup_wizard():
+    user_plan_info = get_user_plan_info()
+    return render_template('setup_wizard.html', 
+                        user_plan_info=user_plan_info,
+                        get_user_language=get_user_language,
+                        get_translated_text=get_translated_text)
+
+# Serve demo videos
+@app.route('/<filename>.mp4')
+def serve_video(filename):
+    """Serve demo video files"""
+    try:
+        return send_from_directory('.', f'{filename}.mp4', mimetype='video/mp4')
+    except FileNotFoundError:
+        abort(404)
+
+# Serve QR code image
+@app.route('/URL QR Code.png')
+def serve_qr_code():
+    """Serve QR code image"""
+    try:
+        return send_from_directory('.', 'URL QR Code.png', mimetype='image/png')
+    except FileNotFoundError:
+        abort(404)
+
+@app.route('/favicon.ico')
+def favicon():
+    """Serve favicon."""
+    return send_from_directory('static/icons', 'icon-144.png', mimetype='image/png')
 
 @app.route('/app')
 def app_page():
@@ -1971,14 +2038,7 @@ def login():
                         get_user_language=get_user_language,
                         get_translated_text=get_translated_text)
 
-@app.route('/setup-wizard')
-def setup_wizard():
-    """Setup wizard for new clients."""
-    user_plan_info = get_user_plan_info()
-    return render_template('setup_wizard.html', 
-                        user_plan_info=user_plan_info,
-                        get_user_language=get_user_language,
-                        get_translated_text=get_translated_text)
+
 
 @app.route('/setup')
 def setup():

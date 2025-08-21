@@ -26,11 +26,21 @@ class PWAManager {
     }
 
     try {
-      this.swRegistration = await navigator.serviceWorker.register('/sw.js?v=1.0.2', {
+      // Unregister any existing service workers first
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let registration of registrations) {
+        await registration.unregister();
+      }
+      
+      this.swRegistration = await navigator.serviceWorker.register('/sw.js?v=1.0.5', {
         scope: '/'
       });
 
       console.log('PWA Manager: Service Worker registered', this.swRegistration);
+
+      // Wait for the service worker to be ready
+      await navigator.serviceWorker.ready;
+      console.log('PWA Manager: Service Worker is ready');
 
       // Handle updates
       this.swRegistration.addEventListener('updatefound', () => {
@@ -38,6 +48,7 @@ class PWAManager {
         console.log('PWA Manager: Service Worker update found');
 
         newWorker.addEventListener('statechange', () => {
+          console.log('PWA Manager: Service Worker state changed to:', newWorker.state);
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             this.showUpdateNotification();
           }

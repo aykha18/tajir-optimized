@@ -272,14 +272,32 @@ class SyncManager {
   }
 
   async registerBackgroundSync() {
-    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        await registration.sync.register('sync-pending-data');
-        console.log('SyncManager: Background sync registered');
-      } catch (error) {
-        console.error('SyncManager: Failed to register background sync', error);
+    if (!('serviceWorker' in navigator) || !('sync' in window)) {
+      console.warn('SyncManager: Background sync not supported');
+      return;
+    }
+
+    try {
+      // Check if we have permission
+      const permission = await navigator.permissions.query({ name: 'background-sync' });
+      
+      if (permission.state === 'denied') {
+        console.warn('SyncManager: Background sync permission denied');
+        return;
       }
+      
+      // Register background sync with better error handling
+      const registration = await navigator.serviceWorker.ready;
+      
+      if (registration.sync) {
+        await registration.sync.register('background-sync');
+        console.log('SyncManager: Background sync registered successfully');
+      } else {
+        console.warn('SyncManager: Background sync not available in service worker');
+      }
+    } catch (error) {
+      console.warn('SyncManager: Failed to register background sync', error.message);
+      // Don't throw error, just log it as a warning
     }
   }
 

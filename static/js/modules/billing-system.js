@@ -1037,7 +1037,13 @@ function initializeBillingSystem() {
         });
         
         // Refresh Lucide icons
-        lucide.createIcons();
+        try {
+          if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+          }
+        } catch (lucideError) {
+          console.warn('Error creating lucide icons:', lucideError);
+        }
       } else {
         container.innerHTML = '<p class="text-neutral-500 text-sm">No recent customers found</p>';
       }

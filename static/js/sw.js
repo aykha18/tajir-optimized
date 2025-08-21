@@ -1,6 +1,6 @@
-const CACHE_NAME = 'tajir-pos-v1.0.1';
-const STATIC_CACHE = 'tajir-static-v1.0.1';
-const DYNAMIC_CACHE = 'tajir-dynamic-v1.0.1';
+const CACHE_NAME = 'tajir-pos-v1.0.2';
+const STATIC_CACHE = 'tajir-static-v1.0.2';
+const DYNAMIC_CACHE = 'tajir-dynamic-v1.0.2';
 
 const STATIC_ASSETS = [
   '/',
