@@ -642,6 +642,165 @@
              Preparing download...
            </div>
           </form>
+          
+          <!-- Invoice Summary Cards -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-lg font-semibold text-white">Invoice Summary</h4>
+              <div class="text-xs text-neutral-400">
+                <span id="summary-date-range">All Time</span>
+                <span id="summary-record-count" class="ml-2">(0 records)</span>
+              </div>
+            </div>
+            
+            <!-- Summary Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <!-- Total Revenue Card -->
+              <div class="bg-gradient-to-br from-emerald-500/10 to-emerald-600/20 p-6 rounded-xl border border-emerald-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-emerald-400 font-medium">Total Revenue</p>
+                    <p id="summary-total-revenue" class="text-2xl font-bold text-emerald-300">AED 0</p>
+                    <p class="text-xs text-emerald-400/70 mt-1">All filtered invoices</p>
+                  </div>
+                  <div class="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Total Invoices Card -->
+              <div class="bg-gradient-to-br from-blue-500/10 to-blue-600/20 p-6 rounded-xl border border-blue-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-blue-400 font-medium">Total Invoices</p>
+                    <p id="summary-total-invoices" class="text-2xl font-bold text-blue-300">0</p>
+                    <p class="text-xs text-blue-400/70 mt-1">Invoice count</p>
+                  </div>
+                  <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- VAT Collected Card -->
+              <div class="bg-gradient-to-br from-purple-500/10 to-purple-600/20 p-6 rounded-xl border border-purple-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-purple-400 font-medium">VAT Collected</p>
+                    <p id="summary-vat-collected" class="text-2xl font-bold text-purple-300">AED 0</p>
+                    <p class="text-xs text-purple-400/70 mt-1">Total VAT amount</p>
+                  </div>
+                  <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Average Invoice Value Card -->
+              <div class="bg-gradient-to-br from-orange-500/10 to-orange-600/20 p-6 rounded-xl border border-orange-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-orange-400 font-medium">Avg. Invoice</p>
+                    <p id="summary-avg-invoice" class="text-2xl font-bold text-orange-300">AED 0</p>
+                    <p class="text-xs text-orange-400/70 mt-1">Per invoice</p>
+                  </div>
+                  <div class="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Status Breakdown Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <!-- Paid Invoices -->
+              <div class="bg-gradient-to-br from-green-500/10 to-green-600/20 p-4 rounded-xl border border-green-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-green-400 font-medium">Paid Invoices</p>
+                    <p id="summary-paid-invoices" class="text-xl font-bold text-green-300">0</p>
+                    <p id="summary-paid-amount" class="text-xs text-green-400/70">AED 0</p>
+                  </div>
+                  <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Pending Invoices -->
+              <div class="bg-gradient-to-br from-yellow-500/10 to-yellow-600/20 p-4 rounded-xl border border-yellow-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-yellow-400 font-medium">Pending Invoices</p>
+                    <p id="summary-pending-invoices" class="text-xl font-bold text-yellow-300">0</p>
+                    <p id="summary-pending-amount" class="text-xs text-yellow-400/70">AED 0</p>
+                  </div>
+                  <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Unique Customers -->
+              <div class="bg-gradient-to-br from-indigo-500/10 to-indigo-600/20 p-4 rounded-xl border border-indigo-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-indigo-400 font-medium">Unique Customers</p>
+                    <p id="summary-unique-customers" class="text-xl font-bold text-indigo-300">0</p>
+                    <p class="text-xs text-indigo-400/70">Active customers</p>
+                  </div>
+                  <div class="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Top Performers Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Top Products -->
+              <div class="bg-neutral-800/60 p-6 rounded-xl border border-neutral-700 shadow-lg">
+                <h5 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                  </svg>
+                  Top Products
+                </h5>
+                <div id="summary-top-products" class="space-y-3">
+                  <div class="text-center text-neutral-500 py-4">No data available</div>
+                </div>
+              </div>
+              
+              <!-- Top Customers -->
+              <div class="bg-neutral-800/60 p-6 rounded-xl border border-neutral-700 shadow-lg">
+                <h5 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                  </svg>
+                  Top Customers
+                </h5>
+                <div id="summary-top-customers" class="space-y-3">
+                  <div class="text-center text-neutral-500 py-4">No data available</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <!-- Data Table -->
           <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80">
             <table class="min-w-full text-sm" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">

@@ -1496,6 +1496,9 @@ def print_bill(bill_id):
         print(f"DEBUG: Error generating QR code: {e}")
         qr_code_base64 = None
     
+    # Get summary data
+    summary_data = get_invoice_summary_data(user_id, datetime.strptime(bill.get('bill_date', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date())
+    
     return render_template('print_bill.html', 
                          bill=bill, 
                          items=[dict(item) for item in items],
@@ -1503,6 +1506,7 @@ def print_bill(bill_id):
                          arabic_amount_in_words=arabic_amount_in_words,
                          qr_code_base64=qr_code_base64,
                          shop_settings=shop_settings,
+                         summary_data=summary_data,
                          get_user_language=get_user_language,
                          get_translated_text=get_translated_text)
 
@@ -5085,6 +5089,21 @@ def add_expense():
         log_dml_error('INSERT', 'expenses', e, user_id, data)
         return jsonify({'error': 'Failed to add expense'}), 500
 
+@app.route('/api/invoice-summary', methods=['POST'])
+def get_invoice_summary():
+    """Get filtered invoice summary data."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_id = session['user_id']
+    filters = request.json.get('filters', {})
+    
+    try:
+        summary_data = get_filtered_invoice_summary(user_id, filters)
+        return jsonify(summary_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/expenses/<int:expense_id>', methods=['GET'])
 def get_expense(expense_id):
     """Get specific expense."""
@@ -6045,7 +6064,219 @@ def find_similar_products(user_id, product_name, threshold=0.8):
     finally:
         conn.close()
 
+def get_invoice_summary_data(user_id, current_date=None):
+    """Get comprehensive summary data for invoices."""
+    if current_date is None:
+        current_date = datetime.now().date()
+    
+    conn = get_db_connection()
+    
+    # Get current month data
+    current_month_start = current_date.replace(day=1)
+    current_month_end = (current_month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    
+    # Get current year data
+    current_year_start = current_date.replace(month=1, day=1)
+    current_year_end = current_date.replace(month=12, day=31)
+    
+    # Current month summary
+    month_data = conn.execute('''
+        SELECT 
+            COUNT(*) as total_invoices,
+            SUM(total_amount) as total_revenue,
+            SUM(vat_amount) as total_vat_collected,
+            SUM(subtotal) as total_subtotal,
+            SUM(discount_amount) as total_discounts,
+            AVG(total_amount) as avg_invoice_value,
+            COUNT(DISTINCT customer_id) as unique_customers
+        FROM bills 
+        WHERE user_id = ? 
+        AND DATE(bill_date) BETWEEN ? AND ?
+    ''', (user_id, current_month_start, current_month_end)).fetchone()
+    
+    # Current year summary
+    year_data = conn.execute('''
+        SELECT 
+            COUNT(*) as total_invoices,
+            SUM(total_amount) as total_revenue,
+            SUM(vat_amount) as total_vat_collected,
+            SUM(subtotal) as total_subtotal,
+            SUM(discount_amount) as total_discounts,
+            AVG(total_amount) as avg_invoice_value,
+            COUNT(DISTINCT customer_id) as unique_customers
+        FROM bills 
+        WHERE user_id = ? 
+        AND DATE(bill_date) BETWEEN ? AND ?
+    ''', (user_id, current_year_start, current_year_end)).fetchone()
+    
+    # All time summary
+    all_time_data = conn.execute('''
+        SELECT 
+            COUNT(*) as total_invoices,
+            SUM(total_amount) as total_revenue,
+            SUM(vat_amount) as total_vat_collected,
+            SUM(subtotal) as total_subtotal,
+            SUM(discount_amount) as total_discounts,
+            AVG(total_amount) as avg_invoice_value,
+            COUNT(DISTINCT customer_id) as unique_customers
+        FROM bills 
+        WHERE user_id = ?
+    ''', (user_id,)).fetchone()
+    
+    # Get top selling products (current month)
+    top_products = conn.execute('''
+        SELECT 
+            bi.product_name,
+            SUM(bi.quantity) as total_quantity,
+            SUM(bi.total_amount) as total_revenue
+        FROM bill_items bi
+        JOIN bills b ON bi.bill_id = b.bill_id
+        WHERE b.user_id = ? 
+        AND DATE(b.bill_date) BETWEEN ? AND ?
+        GROUP BY bi.product_name
+        ORDER BY total_revenue DESC
+        LIMIT 5
+    ''', (user_id, current_month_start, current_month_end)).fetchall()
+    
+    # Get top customers (current month)
+    top_customers = conn.execute('''
+        SELECT 
+            c.name as customer_name,
+            COUNT(b.bill_id) as invoice_count,
+            SUM(b.total_amount) as total_spent
+        FROM bills b
+        JOIN customers c ON b.customer_id = c.customer_id
+        WHERE b.user_id = ? 
+        AND DATE(b.bill_date) BETWEEN ? AND ?
+        GROUP BY c.customer_id, c.name
+        ORDER BY total_spent DESC
+        LIMIT 5
+    ''', (user_id, current_month_start, current_month_end)).fetchall()
+    
+    conn.close()
+    
+    return {
+        'current_month': dict(month_data),
+        'current_year': dict(year_data),
+        'all_time': dict(all_time_data),
+        'top_products': [dict(product) for product in top_products],
+        'top_customers': [dict(customer) for customer in top_customers],
+        'summary_date': current_date.strftime('%B %Y')
+    }
 
+def get_filtered_invoice_summary(user_id, filters=None):
+    """Get summary data for invoices based on filters."""
+    if filters is None:
+        filters = {}
+    
+    conn = get_db_connection()
+    
+    # Build WHERE clause based on filters
+    where_conditions = ['b.user_id = ?']
+    params = [user_id]
+    
+    if filters.get('from_date'):
+        where_conditions.append('DATE(b.bill_date) >= ?')
+        params.append(filters['from_date'])
+    
+    if filters.get('to_date'):
+        where_conditions.append('DATE(b.bill_date) <= ?')
+        params.append(filters['to_date'])
+    
+    if filters.get('products') and filters['products'] != ['All Products']:
+        product_list = filters['products']
+        placeholders = ','.join(['?' for _ in product_list])
+        where_conditions.append(f'''EXISTS (
+            SELECT 1 FROM bill_items bi2 
+            WHERE bi2.bill_id = b.bill_id 
+            AND bi2.product_name IN ({placeholders})
+        )''')
+        params.extend(product_list)
+    
+    if filters.get('employees') and filters['employees'] != ['All Employees']:
+        employee_list = filters['employees']
+        placeholders = ','.join(['?' for _ in employee_list])
+        where_conditions.append(f'b.employee_id IN (SELECT employee_id FROM employees WHERE name IN ({placeholders}))')
+        params.extend(employee_list)
+    
+    if filters.get('city') and filters['city'] != 'All Cities':
+        where_conditions.append('c.city = ?')
+        params.append(filters['city'])
+    
+    if filters.get('area') and filters['area'] != 'All Areas':
+        where_conditions.append('c.area = ?')
+        params.append(filters['area'])
+    
+    if filters.get('status') and filters['status'] != 'All':
+        where_conditions.append('b.status = ?')
+        params.append(filters['status'])
+    
+    where_clause = ' AND '.join(where_conditions)
+    
+    # Main summary query
+    summary_query = f'''
+        SELECT 
+            COUNT(*) as total_invoices,
+            COALESCE(SUM(b.total_amount), 0) as total_revenue,
+            COALESCE(SUM(b.vat_amount), 0) as total_vat_collected,
+            COALESCE(SUM(b.subtotal), 0) as total_subtotal,
+            COALESCE(SUM(0), 0) as total_discounts,
+            COALESCE(AVG(b.total_amount), 0) as avg_invoice_value,
+            COUNT(DISTINCT b.customer_id) as unique_customers,
+            SUM(CASE WHEN b.status = 'Paid' THEN 1 ELSE 0 END) as paid_invoices,
+            SUM(CASE WHEN b.status = 'Paid' THEN b.total_amount ELSE 0 END) as paid_amount,
+            SUM(CASE WHEN b.status = 'Pending' THEN 1 ELSE 0 END) as pending_invoices,
+            SUM(CASE WHEN b.status = 'Pending' THEN b.total_amount ELSE 0 END) as pending_amount
+        FROM bills b
+        LEFT JOIN customers c ON b.customer_id = c.customer_id
+        WHERE {where_clause}
+    '''
+    
+    summary_data = conn.execute(summary_query, params).fetchone()
+    
+    # Top products query
+    top_products_query = f'''
+        SELECT 
+            bi.product_name,
+            SUM(bi.quantity) as total_quantity,
+            SUM(bi.total_amount) as total_revenue,
+            COUNT(DISTINCT b.bill_id) as invoice_count
+        FROM bill_items bi
+        JOIN bills b ON bi.bill_id = b.bill_id
+        LEFT JOIN customers c ON b.customer_id = c.customer_id
+        WHERE {where_clause}
+        GROUP BY bi.product_name
+        ORDER BY total_revenue DESC
+        LIMIT 5
+    '''
+    
+    top_products = conn.execute(top_products_query, params).fetchall()
+    
+    # Top customers query
+    top_customers_query = f'''
+        SELECT 
+            c.name as customer_name,
+            COUNT(b.bill_id) as invoice_count,
+            SUM(b.total_amount) as total_spent,
+            AVG(b.total_amount) as avg_invoice_value
+        FROM bills b
+        JOIN customers c ON b.customer_id = c.customer_id
+        WHERE {where_clause}
+        GROUP BY c.customer_id, c.name
+        ORDER BY total_spent DESC
+        LIMIT 5
+    '''
+    
+    top_customers = conn.execute(top_customers_query, params).fetchall()
+    
+    conn.close()
+    
+    return {
+        'summary': dict(summary_data),
+        'top_products': [dict(product) for product in top_products],
+        'top_customers': [dict(customer) for customer in top_customers],
+        'filters_applied': filters
+    }
 
 if __name__ == '__main__':
     setup_ocr()  # Initialize OCR
