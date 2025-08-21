@@ -82,6 +82,18 @@ function initializeInvoicesReport() {
     previewBtn.addEventListener('click', fetchAndRenderInvoices);
   }
   
+  // Add Preview button event listener for Employees
+  const previewEmployeesBtn = document.getElementById('previewEmployeesBtn');
+  if (previewEmployeesBtn) {
+    previewEmployeesBtn.addEventListener('click', fetchAndRenderEmployees);
+  }
+  
+  // Add Preview button event listener for Products
+  const previewProductsBtn = document.getElementById('previewProductsBtn');
+  if (previewProductsBtn) {
+    previewProductsBtn.addEventListener('click', fetchAndRenderProducts);
+  }
+  
   // Show initial state - encourage user to click Preview
   showInitialTableState('invoices-table-body', 'invoices');
 }
@@ -504,16 +516,13 @@ async function fetchAndRenderProducts() {
 
 function initializeDownloadAndPrint() {
   console.log('initializeDownloadAndPrint called');
-  // Download button functionality - use specific ID
-  const downloadBtn = document.getElementById('downloadInvoicesBtn');
-  const spinner = document.getElementById('download-spinner');
-  console.log('Download button found:', !!downloadBtn);
-  console.log('Spinner found:', !!spinner);
   
-  if (downloadBtn && spinner) {
-    console.log('Download button and spinner found, adding event listener');
-    downloadBtn.addEventListener('click', function() {
-      console.log('Download button clicked');
+  // Invoices Download button functionality
+  const downloadInvoicesBtn = document.getElementById('downloadInvoicesBtn');
+  const spinner = document.getElementById('download-spinner');
+  
+  if (downloadInvoicesBtn && spinner) {
+    downloadInvoicesBtn.addEventListener('click', function() {
       spinner.classList.remove('hidden');
       setTimeout(() => {
         spinner.classList.add('hidden');
@@ -539,28 +548,23 @@ function initializeDownloadAndPrint() {
       if (status && status !== 'All') params.append('status', status);
       selectedProducts.forEach(p => params.append('products[]', p));
       selectedEmployees.forEach(e => params.append('employees[]', e));
-      params.append('client_id', '2'); // Add client_id for testing
+      params.append('client_id', '2');
       const downloadUrl = '/api/reports/invoices/download?' + params.toString();
-      console.log('Download URL:', downloadUrl);
       window.location = downloadUrl;
     });
   }
-
-  // Print button functionality - make selector more specific
-  const printBtn = document.querySelector('#advancedReportsSec .bg-neutral-700, #advancedReportsSec button[data-print="invoices"]');
-  if (printBtn) {
-    printBtn.addEventListener('click', function() {
-      const fromDate = document.getElementById('invFromDate')?.value || '';
-      const toDate = document.getElementById('invToDate')?.value || '';
-      const city = document.getElementById('invCity')?.value || '';
-      const area = document.getElementById('invArea')?.value || '';
-      const status = document.getElementById('invStatus')?.value || '';
-      const productsSelect = document.getElementById('invProducts');
+  
+  // Employees Download button functionality
+  const downloadEmployeesBtn = document.getElementById('downloadEmployeesBtn');
+  if (downloadEmployeesBtn) {
+    downloadEmployeesBtn.addEventListener('click', function() {
+      const fromDate = document.getElementById('empFromDate')?.value || '';
+      const toDate = document.getElementById('empToDate')?.value || '';
+      const city = document.getElementById('empCity')?.value || '';
+      const area = document.getElementById('empArea')?.value || '';
+      const status = document.getElementById('empStatus')?.value || '';
+      const productsSelect = document.getElementById('empProducts');
       const selectedProducts = Array.from(productsSelect?.selectedOptions || [])
-        .map(opt => opt.value)
-        .filter(val => val && val !== 'All');
-      const employeesSelect = document.getElementById('invEmployees');
-      const selectedEmployees = Array.from(employeesSelect?.selectedOptions || [])
         .map(opt => opt.value)
         .filter(val => val && val !== 'All');
       const params = new URLSearchParams();
@@ -570,13 +574,35 @@ function initializeDownloadAndPrint() {
       if (area && area !== 'All') params.append('area', area);
       if (status && status !== 'All') params.append('status', status);
       selectedProducts.forEach(p => params.append('products[]', p));
-      selectedEmployees.forEach(e => params.append('employees[]', e));
-      window.open('/api/reports/invoices/print?' + params.toString(), '_blank');
+      params.append('client_id', '2');
+      const downloadUrl = '/api/reports/employees/download?' + params.toString();
+      window.location = downloadUrl;
+    });
+  }
+  
+  // Products Download button functionality
+  const downloadProductsBtn = document.getElementById('downloadProductsBtn');
+  if (downloadProductsBtn) {
+    downloadProductsBtn.addEventListener('click', function() {
+      const fromDate = document.getElementById('prodFromDate')?.value || '';
+      const toDate = document.getElementById('prodToDate')?.value || '';
+      const city = document.getElementById('prodCity')?.value || '';
+      const area = document.getElementById('prodArea')?.value || '';
+      const status = document.getElementById('prodStatus')?.value || '';
+      const params = new URLSearchParams();
+      if (fromDate) params.append('from_date', fromDate);
+      if (toDate) params.append('to_date', toDate);
+      if (city && city !== 'All') params.append('city', city);
+      if (area && area !== 'All') params.append('area', area);
+      if (status && status !== 'All') params.append('status', status);
+      params.append('client_id', '2');
+      const downloadUrl = '/api/reports/products/download?' + params.toString();
+      window.location = downloadUrl;
     });
   }
 
-  // Invoice print button - make selector more specific
-  const invoicePrintBtn = document.querySelector('#advancedReportsSec #invoicePrintBtn');
+  // Invoices Print button functionality
+  const invoicePrintBtn = document.getElementById('invoicePrintBtn');
   if (invoicePrintBtn) {
     invoicePrintBtn.addEventListener('click', function() {
       const fromDate = document.getElementById('invFromDate')?.value || '';
@@ -601,6 +627,49 @@ function initializeDownloadAndPrint() {
       selectedProducts.forEach(p => params.append('products[]', p));
       selectedEmployees.forEach(e => params.append('employees[]', e));
       window.open('/api/reports/invoices/print?' + params.toString(), '_blank');
+    });
+  }
+  
+  // Employees Print button functionality
+  const employeesPrintBtn = document.getElementById('employeesPrintBtn');
+  if (employeesPrintBtn) {
+    employeesPrintBtn.addEventListener('click', function() {
+      const fromDate = document.getElementById('empFromDate')?.value || '';
+      const toDate = document.getElementById('empToDate')?.value || '';
+      const city = document.getElementById('empCity')?.value || '';
+      const area = document.getElementById('empArea')?.value || '';
+      const status = document.getElementById('empStatus')?.value || '';
+      const productsSelect = document.getElementById('empProducts');
+      const selectedProducts = Array.from(productsSelect?.selectedOptions || [])
+        .map(opt => opt.value)
+        .filter(val => val && val !== 'All');
+      const params = new URLSearchParams();
+      if (fromDate) params.append('from_date', fromDate);
+      if (toDate) params.append('to_date', toDate);
+      if (city && city !== 'All') params.append('city', city);
+      if (area && area !== 'All') params.append('area', area);
+      if (status && status !== 'All') params.append('status', status);
+      selectedProducts.forEach(p => params.append('products[]', p));
+      window.open('/api/reports/employees/print?' + params.toString(), '_blank');
+    });
+  }
+  
+  // Products Print button functionality
+  const productsPrintBtn = document.getElementById('productsPrintBtn');
+  if (productsPrintBtn) {
+    productsPrintBtn.addEventListener('click', function() {
+      const fromDate = document.getElementById('prodFromDate')?.value || '';
+      const toDate = document.getElementById('prodToDate')?.value || '';
+      const city = document.getElementById('prodCity')?.value || '';
+      const area = document.getElementById('prodArea')?.value || '';
+      const status = document.getElementById('prodStatus')?.value || '';
+      const params = new URLSearchParams();
+      if (fromDate) params.append('from_date', fromDate);
+      if (toDate) params.append('to_date', toDate);
+      if (city && city !== 'All') params.append('city', city);
+      if (area && area !== 'All') params.append('area', area);
+      if (status && status !== 'All') params.append('status', status);
+      window.open('/api/reports/products/print?' + params.toString(), '_blank');
     });
   }
 }
