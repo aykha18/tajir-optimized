@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, send_file, session, send_from_directory, redirect, url_for
 import sqlite3
 import os
+import secrets
 from datetime import datetime, date, timedelta
 import json
 from decimal import Decimal
@@ -158,7 +159,7 @@ def log_user_action(action, user_id=None, details=None):
 
 app = Flask(__name__)
 app.config['DATABASE'] = os.getenv('DATABASE_PATH', 'pos_tailor.db')
-app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')  # Add secret key for sessions
+app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))  # Add secret key for sessions
 
 
 
@@ -2091,7 +2092,7 @@ def handle_setup_wizard():
             conn.close()
             return jsonify({'success': False, 'message': 'Contact number must contain digits'}), 400
         
-        default_password = "kyuaykha123"  # Default password
+        default_password = os.getenv('DEFAULT_PASSWORD', 'demo123')  # Default password from environment
         password_hash = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt())
         
         # Normalize email: if empty, use fallback

@@ -1,4 +1,4 @@
-// Expense Management Module
+// Enhanced Expense Management Module
 
 // Define showToast globally if it doesn't already exist
 if (typeof window.showToast === 'undefined') {
@@ -17,7 +17,7 @@ if (typeof window.showToast === 'undefined') {
         setTimeout(() => {
             toast.classList.remove('translate-x-full');
             toast.classList.add('translate-x-0');
-        }, 10); // Small delay to allow CSS transition
+        }, 10);
         
         setTimeout(() => {
             toast.classList.remove('translate-x-0');
@@ -36,9 +36,19 @@ class ExpenseManager {
         this.categories = [];
         this.expenses = [];
         this.currentExpense = null;
+        this.currentCategory = null;
         this.isEditing = false;
         this.isSubmitting = false;
         this.isSubmittingCategory = false;
+        this.statistics = {
+            totalExpenses: 0,
+            monthExpenses: 0,
+            totalCategories: 0,
+            avgPerDay: 0,
+            totalExpensesLastMonth: 0,
+            monthExpensesLastMonth: 0,
+            avgPerDayLastWeek: 0
+        };
         this.init();
     }
 
@@ -48,6 +58,7 @@ class ExpenseManager {
         this.setupEventListeners();
         this.renderCategories();
         this.renderExpenses();
+        this.updateStatistics();
         this.updateDashboard();
     }
 
@@ -73,6 +84,22 @@ class ExpenseManager {
         document.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', () => this.closeModals());
         });
+
+        // Close modals when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeModals();
+                }
+            });
+        });
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeModals();
+            }
+        });
     }
 
     async loadCategories() {
@@ -81,6 +108,7 @@ class ExpenseManager {
             if (response.ok) {
                 this.categories = await response.json();
                 this.populateCategoryDropdowns();
+                this.updateStatistics();
             }
         } catch (error) {
             console.error('Error loading categories:', error);
@@ -105,6 +133,7 @@ class ExpenseManager {
             if (response.ok) {
                 this.expenses = await response.json();
                 this.renderExpenses();
+                this.updateStatistics();
             } else {
                 console.error('ExpenseManager: Failed to load expenses, status:', response.status);
             }
@@ -130,32 +159,127 @@ class ExpenseManager {
                 select.appendChild(option);
             });
         });
+
+        // Also populate the filter dropdown
+        const filterSelect = document.getElementById('expenseCategoryFilter');
+        if (filterSelect) {
+            filterSelect.innerHTML = '<option value="">All Categories</option>';
+            this.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.category_id;
+                option.textContent = category.category_name;
+                filterSelect.appendChild(option);
+            });
+        }
+    }
+
+    updateStatistics() {
+        // Calculate total expenses
+        this.statistics.totalExpenses = this.expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+        
+        // Calculate current month expenses
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        this.statistics.monthExpenses = this.expenses.filter(expense => {
+            const expenseDate = new Date(expense.expense_date);
+            return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+        }).reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+
+        // Calculate total categories
+        this.statistics.totalCategories = this.categories.length;
+
+        // Calculate average per day (last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const recentExpenses = this.expenses.filter(expense => {
+            const expenseDate = new Date(expense.expense_date);
+            return expenseDate >= thirtyDaysAgo;
+        });
+        const totalRecentExpenses = recentExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+        this.statistics.avgPerDay = totalRecentExpenses / 30;
+
+        // Update UI
+        this.updateStatisticsUI();
+    }
+
+    updateStatisticsUI() {
+        const totalExpensesEl = document.getElementById('totalExpenses');
+        const monthExpensesEl = document.getElementById('monthExpenses');
+        const totalCategoriesEl = document.getElementById('totalCategories');
+        const avgPerDayEl = document.getElementById('avgPerDay');
+
+        if (totalExpensesEl) {
+            totalExpensesEl.textContent = `AED ${this.statistics.totalExpenses.toFixed(2)}`;
+        }
+        if (monthExpensesEl) {
+            monthExpensesEl.textContent = `AED ${this.statistics.monthExpenses.toFixed(2)}`;
+        }
+        if (totalCategoriesEl) {
+            totalCategoriesEl.textContent = this.statistics.totalCategories;
+        }
+        if (avgPerDayEl) {
+            avgPerDayEl.textContent = `AED ${this.statistics.avgPerDay.toFixed(2)}`;
+        }
     }
 
     renderCategories() {
         const container = document.getElementById('categoriesContainer');
         if (!container) return;
 
-        container.innerHTML = this.categories.map(category => `
-            <div class="bg-neutral-800/60 backdrop-blur rounded-lg p-4 shadow-sm border border-neutral-700 hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="text-lg font-semibold text-white">${category.category_name}</h3>
-                        <p class="text-sm text-neutral-400 mt-1">${category.description || 'No description'}</p>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button onclick="expenseManager.editCategory(${category.category_id})" 
-                                class="text-indigo-400 hover:text-indigo-300 transition">
-                            <svg data-lucide="edit" class="w-4 h-4"></svg>
-                        </button>
-                        <button onclick="expenseManager.deleteCategory(${category.category_id})" 
-                                class="text-red-400 hover:text-red-300 transition">
-                            <svg data-lucide="trash-2" class="w-4 h-4"></svg>
+        if (this.categories.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="p-4 bg-gradient-to-br from-slate-800/60 to-slate-700/60 backdrop-blur-xl rounded-2xl border border-slate-600/30">
+                        <svg data-lucide="folder" class="w-16 h-16 text-slate-400 mx-auto mb-4"></svg>
+                        <h3 class="text-lg font-semibold text-white mb-2">No Categories Yet</h3>
+                        <p class="text-slate-400 mb-4">Create your first expense category to get started</p>
+                        <button onclick="expenseManager.showCategoryModal()" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200">
+                            <svg data-lucide="plus" class="w-4 h-4 mr-2"></svg>
+                            Add Category
                         </button>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+            return;
+        }
+
+        container.innerHTML = this.categories.map(category => {
+            const categoryExpenses = this.expenses.filter(expense => expense.category_id === category.category_id);
+            const totalAmount = categoryExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+            const expenseCount = categoryExpenses.length;
+
+            return `
+                <div class="bg-gradient-to-br from-slate-800/80 to-slate-700/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-600/30 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-white group-hover:text-indigo-300 transition-colors">${category.category_name}</h3>
+                            <p class="text-sm text-slate-400 mt-1">${category.description || 'No description'}</p>
+                        </div>
+                        <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button onclick="expenseManager.editCategory(${category.category_id})" 
+                                    class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 rounded-lg transition-all duration-200">
+                                <svg data-lucide="edit" class="w-4 h-4"></svg>
+                            </button>
+                            <button onclick="expenseManager.deleteCategory(${category.category_id})" 
+                                    class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200">
+                                <svg data-lucide="trash-2" class="w-4 h-4"></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-3 bg-slate-700/50 rounded-lg">
+                            <p class="text-2xl font-bold text-white">${expenseCount}</p>
+                            <p class="text-xs text-slate-400">Expenses</p>
+                        </div>
+                        <div class="text-center p-3 bg-slate-700/50 rounded-lg">
+                            <p class="text-lg font-bold text-white">AED ${totalAmount.toFixed(2)}</p>
+                            <p class="text-xs text-slate-400">Total</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     renderExpenses() {
@@ -164,50 +288,89 @@ class ExpenseManager {
 
         if (this.expenses.length === 0) {
             container.innerHTML = `
-                <div class="text-center py-8">
-                    <svg data-lucide="currency" class="w-12 h-12 text-neutral-400 mx-auto mb-4"></svg>
-                    <p class="text-neutral-400">No expenses found</p>
+                <div class="text-center py-12">
+                    <div class="p-8 bg-gradient-to-br from-slate-800/60 to-slate-700/60 backdrop-blur-xl rounded-2xl border border-slate-600/30">
+                        <svg data-lucide="currency" class="w-16 h-16 text-slate-400 mx-auto mb-4"></svg>
+                        <h3 class="text-lg font-semibold text-white mb-2">No Expenses Found</h3>
+                        <p class="text-slate-400 mb-4">Start tracking your business expenses to see them here</p>
+                        <button onclick="expenseManager.showExpenseModal()" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200">
+                            <svg data-lucide="plus" class="w-4 h-4 mr-2"></svg>
+                            Add First Expense
+                        </button>
+                    </div>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = this.expenses.map(expense => `
-            <div class="bg-neutral-800/60 backdrop-blur rounded-lg p-4 shadow-sm border border-neutral-700 hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                        <div class="flex items-center space-x-3">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-900 text-indigo-200">
-                                ${expense.category_name}
-                            </span>
-                            <span class="text-sm text-neutral-400">
-                                ${new Date(expense.expense_date).toLocaleDateString()}
-                            </span>
+        container.innerHTML = this.expenses.map(expense => {
+            const date = new Date(expense.expense_date);
+            const formattedDate = date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            const timeAgo = this.getTimeAgo(date);
+
+            return `
+                <div class="bg-gradient-to-br from-slate-800/80 to-slate-700/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-600/30 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30">
+                                    ${expense.category_name}
+                                </span>
+                                <span class="text-sm text-slate-400">
+                                    ${formattedDate}
+                                </span>
+                                <span class="text-xs text-slate-500">
+                                    ${timeAgo}
+                                </span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2 group-hover:text-indigo-300 transition-colors">
+                                AED ${parseFloat(expense.amount).toFixed(2)}
+                            </h3>
+                            <p class="text-sm text-slate-300 mb-3">
+                                ${expense.description || 'No description'}
+                            </p>
+                            <div class="flex items-center space-x-4 text-xs text-slate-500">
+                                <span class="flex items-center">
+                                    <svg data-lucide="credit-card" class="w-3 h-3 mr-1"></svg>
+                                    ${expense.payment_method}
+                                </span>
+                                ${expense.receipt_url ? `
+                                    <a href="${expense.receipt_url}" target="_blank" class="flex items-center text-indigo-400 hover:text-indigo-300 transition-colors">
+                                        <svg data-lucide="file-text" class="w-3 h-3 mr-1"></svg>
+                                        Receipt
+                                    </a>
+                                ` : ''}
+                            </div>
                         </div>
-                        <h3 class="text-lg font-semibold text-white mt-2">
-                            AED ${parseFloat(expense.amount).toFixed(2)}
-                        </h3>
-                        <p class="text-sm text-neutral-400 mt-1">
-                            ${expense.description || 'No description'}
-                        </p>
-                        <div class="flex items-center space-x-4 mt-2 text-xs text-neutral-500">
-                            <span><svg data-lucide="credit-card" class="w-3 h-3 mr-1"></svg>${expense.payment_method}</span>
-                            ${expense.receipt_url ? `<a href="${expense.receipt_url}" target="_blank" class="text-indigo-400 hover:text-indigo-300 transition"><svg data-lucide="file-text" class="w-3 h-3 mr-1"></svg>Receipt</a>` : ''}
+                        <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button onclick="expenseManager.editExpense(${expense.expense_id})" 
+                                    class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 rounded-lg transition-all duration-200">
+                                <svg data-lucide="edit" class="w-4 h-4"></svg>
+                            </button>
+                            <button onclick="expenseManager.deleteExpense(${expense.expense_id})" 
+                                    class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200">
+                                <svg data-lucide="trash-2" class="w-4 h-4"></svg>
+                            </button>
                         </div>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button onclick="expenseManager.editExpense(${expense.expense_id})" 
-                                class="text-indigo-400 hover:text-indigo-300 transition">
-                            <svg data-lucide="edit" class="w-4 h-4"></svg>
-                        </button>
-                        <button onclick="expenseManager.deleteExpense(${expense.expense_id})" 
-                                class="text-red-400 hover:text-red-300 transition">
-                            <svg data-lucide="trash-2" class="w-4 h-4"></svg>
-                        </button>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
+    }
+
+    getTimeAgo(date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+        return `${Math.floor(diffInSeconds / 2592000)}mo ago`;
     }
 
     showCategoryModal(category = null) {
@@ -219,12 +382,15 @@ class ExpenseManager {
         const form = document.getElementById('categoryForm');
         const nameInput = document.getElementById('categoryName');
         const descInput = document.getElementById('categoryDescription');
+        const submitBtn = form.querySelector('button[type="submit"]');
         
         title.textContent = this.isEditing ? 'Edit Category' : 'Add Category';
+        submitBtn.textContent = this.isEditing ? 'Update Category' : 'Save Category';
         nameInput.value = category?.category_name || '';
         descInput.value = category?.description || '';
         
         modal.classList.remove('hidden');
+        nameInput.focus();
     }
 
     showExpenseModal(expense = null) {
@@ -240,8 +406,10 @@ class ExpenseManager {
         const categorySelect = document.getElementById('expenseCategory');
         const paymentSelect = document.getElementById('expensePaymentMethod');
         const receiptInput = document.getElementById('expenseReceiptUrl');
+        const submitBtn = form.querySelector('button[type="submit"]');
         
         title.textContent = this.isEditing ? 'Edit Expense' : 'Add Expense';
+        submitBtn.textContent = this.isEditing ? 'Update Expense' : 'Save Expense';
         dateInput.value = expense?.expense_date || new Date().toISOString().split('T')[0];
         amountInput.value = expense?.amount || '';
         descInput.value = expense?.description || '';
@@ -250,15 +418,13 @@ class ExpenseManager {
         receiptInput.value = expense?.receipt_url || '';
         
         modal.classList.remove('hidden');
+        categorySelect.focus();
     }
 
     async handleCategorySubmit(e) {
         e.preventDefault();
         
-        // Prevent duplicate submissions
-        if (this.isSubmittingCategory) {
-            return;
-        }
+        if (this.isSubmittingCategory) return;
         
         this.isSubmittingCategory = true;
         const submitButton = e.target.querySelector('button[type="submit"]');
@@ -292,6 +458,7 @@ class ExpenseManager {
                 this.closeModals();
                 await this.loadCategories();
                 this.renderCategories();
+                this.updateStatistics();
             } else {
                 const error = await response.json();
                 showToast(error.error || 'Failed to save category', 'error');
@@ -309,10 +476,7 @@ class ExpenseManager {
     async handleExpenseSubmit(e) {
         e.preventDefault();
         
-        // Prevent duplicate submissions
-        if (this.isSubmitting) {
-            return;
-        }
+        if (this.isSubmitting) return;
         
         this.isSubmitting = true;
         const submitButton = e.target.querySelector('button[type="submit"]');
@@ -349,6 +513,7 @@ class ExpenseManager {
                 showToast(this.isEditing ? 'Expense updated successfully' : 'Expense added successfully', 'success');
                 this.closeModals();
                 await this.loadExpenses();
+                this.updateStatistics();
                 this.updateDashboard();
             } else {
                 const error = await response.json();
@@ -385,6 +550,7 @@ class ExpenseManager {
                 showToast('Category deleted successfully', 'success');
                 await this.loadCategories();
                 this.renderCategories();
+                this.updateStatistics();
             } else {
                 const error = await response.json();
                 showToast(error.error || 'Failed to delete category', 'error');
@@ -415,6 +581,7 @@ class ExpenseManager {
             if (response.ok) {
                 showToast('Expense deleted successfully', 'success');
                 await this.loadExpenses();
+                this.updateStatistics();
                 this.updateDashboard();
             } else {
                 const error = await response.json();
