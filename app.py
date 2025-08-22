@@ -273,7 +273,7 @@ def add_security_headers(response):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https://images.unsplash.com https://*.unsplash.com; "
-        "connect-src 'self' https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://cdn.jsdelivr.net; "
+        "connect-src 'self' https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://cdn.jsdelivr.net https://images.unsplash.com https://*.unsplash.com; "
         "worker-src 'self' blob:; "
         "child-src 'self' blob:;"
     )
@@ -366,9 +366,12 @@ def manifest():
 
 @app.route('/sw.js')
 def service_worker():
-    response = send_from_directory('.', 'sw.js')
+    response = send_from_directory('static/js', 'sw.js')
     response.headers['Content-Type'] = 'application/javascript'
     response.headers['Service-Worker-Allowed'] = '/'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
 @app.route('/app-template')
@@ -394,6 +397,10 @@ def expenses():
 @app.route('/sw-debug')
 def sw_debug():
     return send_file('sw_debug.html')
+
+@app.route('/cache-clear-test')
+def cache_clear_test():
+    return send_file('cache-clear-test.html')
 
 @app.route('/test-dropdown')
 def test_dropdown():
@@ -6768,10 +6775,53 @@ def get_expense_breakdown():
         conn.close()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/financial-analytics')
-def financial_analytics():
-    """Serve the financial analytics dashboard"""
-    return render_template('financial_analytics.html')
+@app.route('/api/analytics/top-products', methods=['GET'])
+def get_top_products():
+    """Get top performing products by revenue"""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    from_date = request.args.get('from_date', (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+    to_date = request.args.get('to_date', datetime.now().strftime('%Y-%m-%d'))
+    
+    try:
+        # Top products by revenue
+        top_products = conn.execute('''
+            SELECT 
+                bi.product_name,
+                SUM(bi.quantity) as quantity_sold,
+                SUM(bi.total_amount) as total_revenue,
+                COUNT(DISTINCT b.bill_id) as bill_count,
+                AVG(bi.rate) as avg_unit_price
+            FROM bill_items bi
+            JOIN bills b ON bi.bill_id = b.bill_id
+            WHERE b.user_id = ? 
+            AND DATE(b.bill_date) BETWEEN ? AND ?
+            GROUP BY bi.product_name
+            ORDER BY total_revenue DESC
+            LIMIT 10
+        ''', (user_id, from_date, to_date)).fetchall()
+        
+        conn.close()
+        
+        return jsonify({
+            'period': {
+                'from_date': from_date,
+                'to_date': to_date
+            },
+            'top_products': [dict(product) for product in top_products]
+        })
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+
+@app.route('/financial-insights')
+def financial_insights():
+    """Serve the financial insights page"""
+    return render_template('financial_insights.html')
 
 if __name__ == '__main__':
     setup_ocr()  # Initialize OCR

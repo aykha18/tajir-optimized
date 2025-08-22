@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tajir POS - Cache Clear & Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .button.danger:hover {
+            background: #c82333;
+        }
+        .button.success {
+            background: #28a745;
+        }
+        .button.success:hover {
+            background: #218838;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Tajir POS - Cache Clear & Test</h1>
+        
+        <div class="status">
+            <strong>Current Status:</strong> Use the buttons below to clear cache and test the application
+        </div>
+
+        <div class="test-section">
+            <h3>Step 1: Clear All Cache</h3>
+            <p>This will completely clear all browser storage and force a fresh load:</p>
+            <button class="button danger" onclick="clearAllCache()">🗑️ Clear All Cache</button>
+            <button class="button" onclick="checkServiceWorker()">🔍 Check Service Worker Status</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Step 2: Test Application</h3>
+            <p>After clearing cache, test these pages:</p>
+            <button class="button success" onclick="testMainApp()">🏠 Test Main App</button>
+            <button class="button success" onclick="testFinancialAnalytics()">📊 Test Financial Analytics</button>
+            <button class="button success" onclick="testExpenses()">💰 Test Expenses</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Step 3: Service Worker Test</h3>
+            <p>Test the Service Worker directly:</p>
+            <button class="button" onclick="testServiceWorker()">⚙️ Test Service Worker</button>
+            <button class="button" onclick="forceUpdateServiceWorker()">🔄 Force Update Service Worker</button>
+        </div>
+
+        <div class="log" id="log">
+            <div>Log will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        async function clearAllCache() {
+            log('🚀 Starting comprehensive cache clear...');
+            
+            try {
+                // 1. Unregister all service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    log(`Found ${registrations.length} service worker registrations`);
+                    
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        log('✅ Service Worker unregistered: ' + registration.scope);
+                    }
+                }
+
+                // 2. Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    log(`Found ${cacheNames.length} caches to clear`);
+                    
+                    for (let name of cacheNames) {
+                        await caches.delete(name);
+                        log('✅ Cache deleted: ' + name);
+                    }
+                }
+
+                // 3. Clear IndexedDB
+                if ('indexedDB' in window) {
+                    try {
+                        const databases = await indexedDB.databases();
+                        for (let db of databases) {
+                            await indexedDB.deleteDatabase(db.name);
+                            log('✅ IndexedDB deleted: ' + db.name);
+                        }
+                    } catch (error) {
+                        log('⚠️ IndexedDB clearing failed (normal): ' + error.message);
+                    }
+                }
+
+                // 4. Clear localStorage and sessionStorage
+                localStorage.clear();
+                sessionStorage.clear();
+                log('✅ Local and session storage cleared');
+
+                // 5. Clear cookies
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                log('✅ Cookies cleared');
+
+                log('🎉 All caches cleared successfully!');
+                log('🔄 Reloading page in 3 seconds...');
+                
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 3000);
+
+            } catch (error) {
+                log('❌ Error clearing caches: ' + error.message);
+            }
+        }
+
+        async function checkServiceWorker() {
+            log('🔍 Checking Service Worker status...');
+            
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                log(`Found ${registrations.length} service worker registrations`);
+                
+                for (let registration of registrations) {
+                    log(`Service Worker: ${registration.scope}`);
+                    log(`Active: ${registration.active ? 'Yes' : 'No'}`);
+                    log(`Installing: ${registration.installing ? 'Yes' : 'No'}`);
+                    log(`Waiting: ${registration.waiting ? 'Yes' : 'No'}`);
+                }
+            } else {
+                log('❌ Service Worker not supported');
+            }
+        }
+
+        function testMainApp() {
+            log('🏠 Opening main app...');
+            window.open('/app', '_blank');
+        }
+
+
+
+        function testExpenses() {
+            log('💰 Opening expenses...');
+            window.open('/expenses', '_blank');
+        }
+
+        async function testServiceWorker() {
+            log('⚙️ Testing Service Worker...');
+            
+            try {
+                const response = await fetch('/sw.js');
+                const text = await response.text();
+                const versionMatch = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+                
+                if (versionMatch) {
+                    log('✅ Service Worker version: ' + versionMatch[1]);
+                } else {
+                    log('⚠️ Could not find version in Service Worker');
+                }
+                
+                log('✅ Service Worker is accessible');
+            } catch (error) {
+                log('❌ Service Worker test failed: ' + error.message);
+            }
+        }
+
+        async function forceUpdateServiceWorker() {
+            log('🔄 Forcing Service Worker update...');
+            
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js?v=' + Date.now());
+                    log('✅ Service Worker registered with new version');
+                    
+                    // Force update
+                    await registration.update();
+                    log('✅ Service Worker update triggered');
+                    
+                    // Wait for update
+                    registration.addEventListener('updatefound', () => {
+                        log('🔄 Service Worker update found');
+                    });
+                    
+                } catch (error) {
+                    log('❌ Service Worker update failed: ' + error.message);
+                }
+            } else {
+                log('❌ Service Worker not supported');
+            }
+        }
+
+        // Auto-check on page load
+        window.addEventListener('load', () => {
+            log('📱 Page loaded - checking initial status...');
+            checkServiceWorker();
+        });
+    </script>
+</body>
+</html>

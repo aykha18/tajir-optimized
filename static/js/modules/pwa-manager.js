@@ -25,14 +25,19 @@ class PWAManager {
       return;
     }
 
+    // TEMPORARILY DISABLED - Will re-enable after cache issues are resolved
+    console.log('PWA Manager: Service Worker registration temporarily disabled');
+    return;
+
     try {
       // Unregister any existing service workers first
       const registrations = await navigator.serviceWorker.getRegistrations();
       for (let registration of registrations) {
         await registration.unregister();
+        console.log('PWA Manager: Unregistered old service worker:', registration.scope);
       }
       
-      this.swRegistration = await navigator.serviceWorker.register('/sw.js?v=1.0.6', {
+      this.swRegistration = await navigator.serviceWorker.register('/sw.js?v=1.0.8', {
         scope: '/'
       });
 
@@ -85,6 +90,41 @@ class PWAManager {
       } catch (error) {
         console.error('PWA Manager: Failed to force update service worker', error);
       }
+    }
+  }
+
+  // Manual method to re-enable Service Worker after cache issues are resolved
+  async reEnableServiceWorker() {
+    console.log('PWA Manager: Re-enabling Service Worker...');
+    
+    // First unregister all existing service workers
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let registration of registrations) {
+        await registration.unregister();
+        console.log('PWA Manager: Unregistered service worker:', registration.scope);
+      }
+    }
+    
+    // Clear all caches
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      for (let name of cacheNames) {
+        await caches.delete(name);
+        console.log('PWA Manager: Deleted cache:', name);
+      }
+    }
+    
+    // Now register the new service worker
+    try {
+      this.swRegistration = await navigator.serviceWorker.register('/sw.js?v=1.0.8', {
+        scope: '/'
+      });
+      console.log('PWA Manager: Service Worker re-enabled successfully');
+      return true;
+    } catch (error) {
+      console.error('PWA Manager: Failed to re-enable Service Worker', error);
+      return false;
     }
   }
 
@@ -485,3 +525,27 @@ class PWAManager {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = PWAManager;
 } 
+
+// Global function to re-enable Service Worker (call from browser console)
+window.reEnableServiceWorker = async function() {
+  if (window.pwaManager) {
+    return await window.pwaManager.reEnableServiceWorker();
+  } else {
+    console.error('PWA Manager not initialized');
+    return false;
+  }
+};
+
+// Global function to check Service Worker status
+window.checkServiceWorkerStatus = function() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      console.log('Current Service Worker registrations:', registrations);
+      registrations.forEach(reg => {
+        console.log('Scope:', reg.scope, 'Active:', reg.active, 'Installing:', reg.installing, 'Waiting:', reg.waiting);
+      });
+    });
+  } else {
+    console.log('Service Worker not supported');
+  }
+}; 
