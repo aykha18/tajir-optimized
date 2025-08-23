@@ -1,0 +1,64 @@
+{
+  "product_types": [
+    {
+      "type_name": "Saree",
+      "description": "Traditional Indian saree stitching services"
+    },
+    {
+      "type_name": "Kurti",
+      "description": "Indian kurti with and without lining options"
+    },
+    {
+      "type_name": "Shirt",
+      "description": "Regular shirt stitching services"
+    },
+    {
+      "type_name": "Trouser",
+      "description": "Trouser and pant stitching with lining options"
+    }
+  ],
+  "products": [
+    {
+      "type_name": "Saree",
+      "product_name": "Fall Stitching",
+      "rate": 30.00,
+      "description": "Saree fall stitching service"
+    },
+    {
+      "type_name": "Saree",
+      "product_name": "Petticoat",
+      "rate": 45.00,
+      "description": "Saree petticoat stitching"
+    },
+    {
+      "type_name": "Kurti",
+      "product_name": "Kurti (No Lining)",
+      "rate": 55.00,
+      "description": "Kurti without lining"
+    },
+    {
+      "type_name": "Kurti",
+      "product_name": "Kurti (With Lining)",
+      "rate": 75.00,
+      "description": "Kurti with lining"
+    },
+    {
+      "type_name": "Shirt",
+      "product_name": "Regular Shirt",
+      "rate": 100.00,
+      "description": "Regular shirt stitching"
+    },
+    {
+      "type_name": "Trouser",
+      "product_name": "Trouser (No Lining)",
+      "rate": 80.00,
+      "description": "Trouser without lining"
+    },
+    {
+      "type_name": "Trouser",
+      "product_name": "Trouser (With Lining)",
+      "rate": 120.00,
+      "description": "Trouser with lining"
+    }
+  ]
+}
