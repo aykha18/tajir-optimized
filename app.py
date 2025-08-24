@@ -127,9 +127,10 @@ def log_dml_error(operation, table, error, user_id=None, data=None):
         # Log to database (if possible)
         try:
             conn = get_db_connection()
-            conn.execute('''
+            placeholder = get_placeholder()
+            execute_with_returning(conn, f'''
                 INSERT INTO error_logs (timestamp, level, operation, table_name, error_message, user_id, data_snapshot)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             ''', (
                 datetime.now().isoformat(),
                 'ERROR',
@@ -139,7 +140,6 @@ def log_dml_error(operation, table, error, user_id=None, data=None):
                 user_id,
                 json.dumps(data) if data else None
             ))
-            conn.commit()
             conn.close()
         except Exception as db_log_error:
             # If database logging fails, log to file only
@@ -153,16 +153,16 @@ def log_user_action(action, user_id=None, details=None):
     """Log user actions for audit trail."""
     try:
         conn = get_db_connection()
-        conn.execute('''
+        placeholder = get_placeholder()
+        execute_with_returning(conn, f'''
             INSERT INTO user_actions (timestamp, action, user_id, details)
-            VALUES (?, ?, ?, ?)
+            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
         ''', (
             datetime.now().isoformat(),
             action,
             user_id,
             json.dumps(details) if details else None
         ))
-        conn.commit()
         conn.close()
     except Exception as e:
         logger.error(f"Failed to log user action: {e}")
@@ -216,26 +216,56 @@ def get_placeholder():
 def execute_with_returning(conn, sql, params=None):
     """Execute SQL and return the inserted ID for both SQLite and PostgreSQL"""
     if is_postgresql():
-        # For PostgreSQL, add RETURNING id to get the inserted ID
+        # For PostgreSQL, determine the correct ID column name based on the table
         if sql.strip().upper().startswith('INSERT'):
-            # Add RETURNING clause if not already present
-            if 'RETURNING' not in sql.upper():
-                sql += ' RETURNING id'
-            cursor = conn.cursor()
-            cursor.execute(sql, params)
-            result = cursor.fetchone()
-            conn.commit()
-            return result['id'] if result else None
+            # Extract table name from INSERT statement
+            table_match = re.search(r'INSERT INTO (\w+)', sql, re.IGNORECASE)
+            if table_match:
+                table_name = table_match.group(1)
+                # Map table names to their ID column names
+                id_columns = {
+                    'employees': 'employee_id',
+                    'customers': 'customer_id',
+                    'products': 'product_id',
+                    'product_types': 'type_id',
+                    'bills': 'bill_id',
+                    'bill_items': 'item_id',
+                    'expenses': 'expense_id',
+                    'expense_categories': 'category_id',
+                    'vat_rates': 'vat_id',
+                    'user_plans': 'plan_id',
+                    'shop_settings': 'setting_id',
+                    'users': 'user_id',
+                    'otp_codes': 'id',
+                    'error_logs': 'id',
+                    'user_actions': 'id'
+                }
+                id_column = id_columns.get(table_name, 'id')
+                
+                # Add RETURNING clause if not already present
+                if 'RETURNING' not in sql.upper():
+                    sql += f' RETURNING {id_column}'
+                
+                cursor = conn.cursor()
+                cursor.execute(sql, params)
+                result = cursor.fetchone()
+                return result[id_column] if result else None
+            else:
+                # Fallback to generic 'id' if table name can't be determined
+                if 'RETURNING' not in sql.upper():
+                    sql += ' RETURNING id'
+                cursor = conn.cursor()
+                cursor.execute(sql, params)
+                result = cursor.fetchone()
+                return result['id'] if result else None
         else:
             cursor = conn.cursor()
             cursor.execute(sql, params)
-            conn.commit()
             return None
     else:
         # For SQLite, use the original approach
         cursor = conn.cursor()
         cursor.execute(sql, params)
-        conn.commit()
         if sql.strip().upper().startswith('INSERT'):
             return cursor.lastrowid
         return None
@@ -318,8 +348,8 @@ def init_db():
             # Check if main tables are empty
             conn = get_db_connection()
             try:
-                cur = conn.execute("SELECT COUNT(*) FROM product_types")
-                if cur.fetchone()[0] == 0:
+                cursor = execute_query(conn, "SELECT COUNT(*) FROM product_types")
+                if cursor.fetchone()[0] == 0:
                     need_init = True
             except Exception:
                 # Table doesn't exist, need to initialize
@@ -339,12 +369,10 @@ def init_db():
                     statement = statement.strip()
                     if statement:
                         cursor.execute(statement)
-                conn.commit()
                 cursor.close()
             else:
                 # For SQLite, use executescript
                 conn.executescript(schema)
-                conn.commit()
             logger.info("Database initialized successfully with logging tables")
         except Exception as e:
             log_dml_error("INIT", "database", e)
@@ -556,14 +584,14 @@ def delete_product_type(type_id):
     conn = get_db_connection()
     # Check if products exist for this type
     placeholder = get_placeholder()
-    products = conn.execute(f'SELECT COUNT(*) FROM products WHERE type_id = {placeholder} AND user_id = {placeholder}', (type_id, user_id)).fetchone()[0]
+    cursor = execute_query(conn, f'SELECT COUNT(*) FROM products WHERE type_id = {placeholder} AND user_id = {placeholder}', (type_id, user_id))
+    products = cursor.fetchone()[0]
     if products > 0:
         conn.close()
         return jsonify({'error': 'Cannot delete type with existing products'}), 400
     
     placeholder = get_placeholder()
-    conn.execute(f'DELETE FROM product_types WHERE type_id = {placeholder} AND user_id = {placeholder}', (type_id, user_id))
-    conn.commit()
+    execute_update(conn, f'DELETE FROM product_types WHERE type_id = {placeholder} AND user_id = {placeholder}', (type_id, user_id))
     conn.close()
     return jsonify({'message': 'Product type deleted successfully'})
 
@@ -576,32 +604,35 @@ def get_products():
     conn = get_db_connection()
     if barcode:
         placeholder = get_placeholder()
-        products = conn.execute(f'''
+        cursor = execute_query(conn, f'''
             SELECT p.*, pt.type_name 
             FROM products p 
             JOIN product_types pt ON p.type_id = pt.type_id 
             WHERE p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = 1 AND p.barcode = {placeholder}
             ORDER BY pt.type_name, p.product_name
-        ''', (user_id, user_id, barcode)).fetchall()
+        ''', (user_id, user_id, barcode))
+        products = cursor.fetchall()
     elif search:
         like_search = f"%{search}%"
         placeholder = get_placeholder()
-        products = conn.execute(f'''
+        cursor = execute_query(conn, f'''
             SELECT p.*, pt.type_name 
             FROM products p 
             JOIN product_types pt ON p.type_id = pt.type_id 
             WHERE p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = 1 AND (p.product_name LIKE {placeholder} OR pt.type_name LIKE {placeholder})
             ORDER BY pt.type_name, p.product_name
-        ''', (user_id, user_id, like_search, like_search)).fetchall()
+        ''', (user_id, user_id, like_search, like_search))
+        products = cursor.fetchall()
     else:
         placeholder = get_placeholder()
-        products = conn.execute(f'''
+        cursor = execute_query(conn, f'''
             SELECT p.*, pt.type_name 
             FROM products p 
             JOIN product_types pt ON p.type_id = pt.type_id 
             WHERE p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = 1 
             ORDER BY pt.type_name, p.product_name
-        ''', (user_id, user_id)).fetchall()
+        ''', (user_id, user_id))
+        products = cursor.fetchall()
     conn.close()
     return jsonify([dict(product) for product in products])
 
@@ -629,7 +660,8 @@ def add_product():
     try:
         # Verify the product type belongs to current user
         placeholder = get_placeholder()
-        type_check = conn.execute(f'SELECT type_id FROM product_types WHERE type_id = {placeholder} AND user_id = {placeholder}', (type_id, user_id)).fetchone()
+        cursor = execute_query(conn, f'SELECT type_id FROM product_types WHERE type_id = {placeholder} AND user_id = {placeholder}', (type_id, user_id))
+        type_check = cursor.fetchone()
         if not type_check:
             conn.close()
             return jsonify({'error': 'Invalid product type'}), 400
@@ -651,12 +683,13 @@ def get_product(product_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    product = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT p.*, pt.type_name 
         FROM products p 
         JOIN product_types pt ON p.type_id = pt.type_id 
         WHERE p.product_id = {placeholder} AND p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = 1
-    ''', (product_id, user_id, user_id)).fetchone()
+    ''', (product_id, user_id, user_id))
+    product = cursor.fetchone()
     conn.close()
     
     if product:
@@ -687,8 +720,10 @@ def update_product(product_id):
         conn = get_db_connection()
     # Verify the product and type belong to current user
     placeholder = get_placeholder()
-    product_check = conn.execute(f'SELECT product_id FROM products WHERE product_id = {placeholder} AND user_id = {placeholder}', (product_id, user_id)).fetchone()
-    type_check = conn.execute(f'SELECT type_id FROM product_types WHERE type_id = {placeholder} AND user_id = {placeholder}', (type_id, user_id)).fetchone()
+    cursor = execute_query(conn, f'SELECT product_id FROM products WHERE product_id = {placeholder} AND user_id = {placeholder}', (product_id, user_id))
+    product_check = cursor.fetchone()
+    cursor = execute_query(conn, f'SELECT type_id FROM product_types WHERE type_id = {placeholder} AND user_id = {placeholder}', (type_id, user_id))
+    type_check = cursor.fetchone()
     
     if not product_check:
         conn.close()
@@ -698,12 +733,11 @@ def update_product(product_id):
         return jsonify({'error': 'Invalid product type'}), 400
         
     placeholder = get_placeholder()
-    conn.execute(f'''
+    execute_update(conn, f'''
         UPDATE products 
         SET product_name = {placeholder}, rate = {placeholder}, type_id = {placeholder}, description = {placeholder}, barcode = {placeholder} 
         WHERE product_id = {placeholder} AND user_id = {placeholder}
     ''', (name, rate, type_id, description, barcode or None, product_id, user_id))
-    conn.commit()
     conn.close()
     return jsonify({'message': 'Product updated successfully'})
 
@@ -712,8 +746,7 @@ def delete_product(product_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    conn.execute(f'UPDATE products SET is_active = 0 WHERE product_id = {placeholder} AND user_id = {placeholder}', (product_id, user_id))
-    conn.commit()
+    execute_update(conn, f'UPDATE products SET is_active = 0 WHERE product_id = {placeholder} AND user_id = {placeholder}', (product_id, user_id))
     conn.close()
     return jsonify({'message': 'Product deleted successfully'})
 
@@ -786,14 +819,15 @@ def add_customer():
     # Check for duplicate phone number (normalize stored values)
     if phone_digits:
         placeholder = get_placeholder()
-        existing_customer = conn.execute(
+        cursor = execute_query(conn,
             f"""
             SELECT name FROM customers 
             WHERE user_id = {placeholder} AND 
                   REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = {placeholder}
             """,
             (user_id, phone_digits)
-        ).fetchone()
+        )
+        existing_customer = cursor.fetchone()
         if existing_customer:
             conn.close()
             return jsonify({'error': f'Phone number {phone} is already assigned to customer "{existing_customer["name"]}"'}), 400
@@ -816,7 +850,8 @@ def get_customer(customer_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    customer = conn.execute(f'SELECT * FROM customers WHERE customer_id = {placeholder} AND user_id = {placeholder}', (customer_id, user_id)).fetchone()
+    cursor = execute_query(conn, f'SELECT * FROM customers WHERE customer_id = {placeholder} AND user_id = {placeholder}', (customer_id, user_id))
+    customer = cursor.fetchone()
     conn.close()
     
     if customer:
@@ -861,14 +896,15 @@ def update_customer(customer_id):
     # Check for duplicate phone number (excluding current customer, normalized)
     if phone_digits:
         placeholder = get_placeholder()
-        existing_customer = conn.execute(
+        cursor = execute_query(conn,
             f"""
             SELECT name FROM customers 
             WHERE user_id = {placeholder} AND customer_id != {placeholder} AND 
                   REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = {placeholder}
             """,
             (user_id, customer_id, phone_digits)
-        ).fetchone()
+        )
+        existing_customer = cursor.fetchone()
         if existing_customer:
             conn.close()
             return jsonify({'error': f'Phone number {phone} is already assigned to customer "{existing_customer["name"]}"'}), 400
@@ -880,8 +916,7 @@ def update_customer(customer_id):
             customer_type = {placeholder}, business_name = {placeholder}, business_address = {placeholder}
         WHERE customer_id = {placeholder} AND user_id = {placeholder}
     '''
-    conn.execute(sql, (name, phone_digits, trn, city, area, email, address, customer_type, business_name, business_address, customer_id, user_id))
-    conn.commit()
+    execute_update(conn, sql, (name, phone_digits, trn, city, area, email, address, customer_type, business_name, business_address, customer_id, user_id))
     conn.close()
     return jsonify({'message': 'Customer updated successfully'})
 
@@ -890,8 +925,7 @@ def delete_customer(customer_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    conn.execute(f'DELETE FROM customers WHERE customer_id = {placeholder} AND user_id = {placeholder}', (customer_id, user_id))
-    conn.commit()
+    execute_update(conn, f'DELETE FROM customers WHERE customer_id = {placeholder} AND user_id = {placeholder}', (customer_id, user_id))
     conn.close()
     return jsonify({'message': 'Customer deleted successfully'})
 
@@ -914,7 +948,8 @@ def get_recent_customers():
             LIMIT 3
         """
         
-        recent_customers = conn.execute(query, (user_id, user_id)).fetchall()
+        cursor = execute_query(conn, query, (user_id, user_id))
+        recent_customers = cursor.fetchall()
         conn.close()
         
         # Convert to list of dictionaries
@@ -943,7 +978,8 @@ def get_vat_rates():
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    rates = conn.execute(f'SELECT * FROM vat_rates WHERE user_id = {placeholder} AND is_active = 1 ORDER BY effective_from DESC', (user_id,)).fetchall()
+    cursor = execute_query(conn, f'SELECT * FROM vat_rates WHERE user_id = {placeholder} AND is_active = 1 ORDER BY effective_from DESC', (user_id,))
+    rates = cursor.fetchall()
     conn.close()
     return jsonify([dict(rate) for rate in rates])
 
@@ -968,20 +1004,22 @@ def add_vat_rate():
     conn = get_db_connection()
     # Check for duplicate effective_from and effective_to
     placeholder = get_placeholder()
-    exists = conn.execute(
+    cursor = execute_query(conn,
         f'SELECT 1 FROM vat_rates WHERE user_id = {placeholder} AND effective_from = {placeholder} AND effective_to = {placeholder} AND is_active = 1',
         (user_id, effective_from, effective_to)
-    ).fetchone()
+    )
+    exists = cursor.fetchone()
     if exists:
         conn.close()
         return jsonify({'error': 'A VAT rate with the same effective dates already exists.'}), 400
     # Update previous active row's effective_to if needed
-    prev = conn.execute(f'SELECT vat_id, effective_to FROM vat_rates WHERE user_id = {placeholder} AND is_active = 1 ORDER BY effective_from DESC LIMIT 1', (user_id,)).fetchone()
+    cursor = execute_query(conn, f'SELECT vat_id, effective_to FROM vat_rates WHERE user_id = {placeholder} AND is_active = 1 ORDER BY effective_from DESC LIMIT 1', (user_id,))
+    prev = cursor.fetchone()
     if prev and prev['effective_to'] == '2099-12-31':
         from datetime import datetime, timedelta
         prev_to = (datetime.strptime(effective_from, '%Y-%m-%d') - timedelta(days=1)).strftime('%Y-%m-%d')
         placeholder = get_placeholder()
-        conn.execute(f'UPDATE vat_rates SET effective_to = {placeholder} WHERE vat_id = {placeholder} AND user_id = {placeholder}', (prev_to, prev['vat_id'], user_id))
+        execute_update(conn, f'UPDATE vat_rates SET effective_to = {placeholder} WHERE vat_id = {placeholder} AND user_id = {placeholder}', (prev_to, prev['vat_id'], user_id))
     placeholder = get_placeholder()
     sql = f'''
         INSERT INTO vat_rates (user_id, rate_percentage, effective_from, effective_to) 
@@ -996,8 +1034,7 @@ def delete_vat_rate(vat_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    conn.execute(f'UPDATE vat_rates SET is_active = 0 WHERE vat_id = {placeholder} AND user_id = {placeholder}', (vat_id, user_id))
-    conn.commit()
+    execute_update(conn, f'UPDATE vat_rates SET is_active = 0 WHERE vat_id = {placeholder} AND user_id = {placeholder}', (vat_id, user_id))
     conn.close()
     return jsonify({'message': 'VAT rate deleted successfully'})
 
@@ -1009,18 +1046,20 @@ def get_bills():
     conn = get_db_connection()
     placeholder = get_placeholder()
     if bill_number:
-        bills = conn.execute(
+        cursor = execute_query(conn,
             f'SELECT * FROM bills WHERE bill_number = {placeholder} AND user_id = {placeholder}',
             (bill_number, user_id)
-        ).fetchall()
+        )
+        bills = cursor.fetchall()
     else:
-        bills = conn.execute(f'''
+        cursor = execute_query(conn, f'''
             SELECT b.*, c.name as customer_name 
             FROM bills b 
             LEFT JOIN customers c ON b.customer_id = c.customer_id AND c.user_id = b.user_id
             WHERE b.user_id = {placeholder}
             ORDER BY b.bill_date DESC, b.bill_id DESC
-        ''', (user_id,)).fetchall()
+        ''', (user_id,))
+        bills = cursor.fetchall()
     conn.close()
     return jsonify([dict(bill) for bill in bills])
 
@@ -1067,7 +1106,8 @@ def create_bill():
                 try:
                     conn = get_db_connection()
                     placeholder = get_placeholder()
-                    default_employee = conn.execute(f'SELECT employee_id FROM employees WHERE user_id = {placeholder} ORDER BY name LIMIT 1', (user_id,)).fetchone()
+                    cursor = execute_query(conn, f'SELECT employee_id FROM employees WHERE user_id = {placeholder} ORDER BY name LIMIT 1', (user_id,))
+                    default_employee = cursor.fetchone()
                     conn.close()
                     
                     if default_employee:
@@ -1092,10 +1132,11 @@ def create_bill():
             
             # Check if customer exists
             placeholder = get_placeholder()
-            existing_customer = conn.execute(
+            cursor = execute_query(conn,
                 f'SELECT customer_id FROM customers WHERE phone = {placeholder} AND user_id = {placeholder}', 
                 (re.sub(r'\D', '', customer_phone), user_id)
-            ).fetchone()
+            )
+            existing_customer = cursor.fetchone()
             
             if existing_customer:
                 customer_id = existing_customer['customer_id']
@@ -1201,7 +1242,7 @@ def create_bill():
                     rate, discount, vat_amount, advance_paid, total_amount
                 ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             '''
-                conn.execute(sql, (
+                execute_with_returning(conn, sql, (
                     user_id, bill_id,
                     item.get('product_id'),
                     item.get('product_name'),
@@ -1213,7 +1254,6 @@ def create_bill():
                     item_total_amount
                 ))
             
-            conn.commit()
             print(f"DEBUG: Bill creation completed successfully")
             return jsonify({'success': True, 'bill_id': bill_id})
             
@@ -1274,14 +1314,15 @@ def create_bill():
             
             # Check if customer exists
             placeholder = get_placeholder()
-            existing_customer = conn.execute(
+            cursor = execute_query(conn,
                 f"""
                 SELECT customer_id FROM customers 
                 WHERE user_id = {placeholder} AND 
                       REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = {placeholder}
                 """,
                 (user_id, re.sub(r'\D', '', customer_phone))
-            ).fetchone()
+            )
+            existing_customer = cursor.fetchone()
             
             if existing_customer:
                 customer_id = existing_customer['customer_id']
@@ -1374,13 +1415,12 @@ def create_bill():
                     INSERT INTO bill_items (bill_id, product_name, quantity, rate, discount, vat_amount, advance_paid, total_amount)
                     VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
                 '''
-                conn.execute(sql, (
+                execute_with_returning(conn, sql, (
                     bill_id, item.get('product_name', ''), 
                     item.get('quantity', 1), item.get('rate', 0),
                     item_discount_percent, item_vat_amount, item.get('advance_paid', 0), item_total_amount
                 ))
             
-            conn.commit()
             print(f"DEBUG: Bill creation completed successfully")
             return jsonify({'success': True, 'bill_id': bill_id})
         
@@ -1418,13 +1458,14 @@ def get_bill(bill_id):
     
     # Get bill details
     placeholder = get_placeholder()
-    bill = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT b.*, c.name as customer_name, e.name as master_name
         FROM bills b 
         LEFT JOIN customers c ON b.customer_id = c.customer_id AND c.user_id = b.user_id
         LEFT JOIN employees e ON b.master_id = e.employee_id AND e.user_id = b.user_id
         WHERE b.bill_id = {placeholder} AND b.user_id = {placeholder}
-    ''', (bill_id, user_id)).fetchone()
+    ''', (bill_id, user_id))
+    bill = cursor.fetchone()
     
     if not bill:
         conn.close()
@@ -1433,9 +1474,10 @@ def get_bill(bill_id):
     bill = dict(bill)
     
     # Get bill items
-    items = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT * FROM bill_items WHERE bill_id = {placeholder} AND user_id = {placeholder}
-    ''', (bill_id, user_id)).fetchall()
+    ''', (bill_id, user_id))
+    items = cursor.fetchall()
     
     conn.close()
     
@@ -1449,9 +1491,8 @@ def delete_bill(bill_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    conn.execute(f'DELETE FROM bill_items WHERE bill_id = {placeholder} AND user_id = {placeholder}', (bill_id, user_id))
-    conn.execute(f'DELETE FROM bills WHERE bill_id = {placeholder} AND user_id = {placeholder}', (bill_id, user_id))
-    conn.commit()
+    execute_update(conn, f'DELETE FROM bill_items WHERE bill_id = {placeholder} AND user_id = {placeholder}', (bill_id, user_id))
+    execute_update(conn, f'DELETE FROM bills WHERE bill_id = {placeholder} AND user_id = {placeholder}', (bill_id, user_id))
     conn.close()
     return jsonify({'message': 'Bill deleted successfully'})
 
@@ -1470,7 +1511,8 @@ def update_bill_payment(bill_id):
         return jsonify({'error': 'Invalid amount.'}), 400
     conn = get_db_connection()
     placeholder = get_placeholder()
-    bill = conn.execute(f'SELECT advance_paid, balance_amount, total_amount FROM bills WHERE bill_id = {placeholder} AND user_id = {placeholder}', (bill_id, user_id)).fetchone()
+    cursor = execute_query(conn, f'SELECT advance_paid, balance_amount, total_amount FROM bills WHERE bill_id = {placeholder} AND user_id = {placeholder}', (bill_id, user_id))
+    bill = cursor.fetchone()
     if not bill:
         conn.close()
         return jsonify({'error': 'Bill not found.'}), 404
@@ -1482,9 +1524,9 @@ def update_bill_payment(bill_id):
         return jsonify({'error': 'Payment exceeds total amount.'}), 400
     placeholder = get_placeholder()
     sql = f'UPDATE bills SET advance_paid = {placeholder}, balance_amount = {placeholder}, status = {placeholder} WHERE bill_id = {placeholder} AND user_id = {placeholder}'
-    conn.execute(sql, (new_advance, new_balance, new_status, bill_id, user_id))
-    conn.commit()
-    updated = conn.execute(f'SELECT * FROM bills WHERE bill_id = {placeholder} AND user_id = {placeholder}', (bill_id, user_id)).fetchone()
+    execute_update(conn, sql, (new_advance, new_balance, new_status, bill_id, user_id))
+    cursor = execute_query(conn, f'SELECT * FROM bills WHERE bill_id = {placeholder} AND user_id = {placeholder}', (bill_id, user_id))
+    updated = cursor.fetchone()
     conn.close()
     return jsonify({'bill': dict(updated)})
 
@@ -1496,76 +1538,85 @@ def get_dashboard_data():
     
     # Get total revenue
     placeholder = get_placeholder()
-    total_revenue = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT COALESCE(SUM(total_amount), 0) as total 
         FROM bills 
         WHERE DATE(bill_date) = DATE('now') AND user_id = {placeholder}
-    ''', (user_id,)).fetchone()['total']
+    ''', (user_id,))
+    total_revenue = cursor.fetchone()['total']
     
     # Get total bills today
-    total_bills_today = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT COUNT(*) as count 
         FROM bills 
         WHERE DATE(bill_date) = DATE('now') AND user_id = {placeholder}
-    ''', (user_id,)).fetchone()['count']
+    ''', (user_id,))
+    total_bills_today = cursor.fetchone()['count']
     
     # Get pending bills
-    pending_bills = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT COUNT(*) as count 
         FROM bills 
         WHERE status = 'Pending' AND user_id = {placeholder}
-    ''', (user_id,)).fetchone()['count']
+    ''', (user_id,))
+    pending_bills = cursor.fetchone()['count']
     
     # Get total customers
     placeholder = get_placeholder()
-    total_customers = conn.execute(f'SELECT COUNT(*) as count FROM customers WHERE user_id = {placeholder}', (user_id,)).fetchone()['count']
+    cursor = execute_query(conn, f'SELECT COUNT(*) as count FROM customers WHERE user_id = {placeholder}', (user_id,))
+    total_customers = cursor.fetchone()['count']
     
     # Get total expenses today
-    total_expenses_today = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT COALESCE(SUM(amount), 0) as total 
         FROM expenses 
         WHERE DATE(expense_date) = DATE('now') AND user_id = {placeholder}
-    ''', (user_id,)).fetchone()['total']
+    ''', (user_id,))
+    total_expenses_today = cursor.fetchone()['total']
     
     # Get total expenses this month
-    total_expenses_month = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT COALESCE(SUM(amount), 0) as total 
         FROM expenses 
         WHERE strftime('%Y-%m', expense_date) = strftime('%Y-%m', 'now') AND user_id = {placeholder}
-    ''', (user_id,)).fetchone()['total']
+    ''', (user_id,))
+    total_expenses_month = cursor.fetchone()['total']
     
     # Get monthly revenue data
-    monthly_revenue = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT strftime('%Y-%m', bill_date) as month, 
                SUM(total_amount) as revenue
         FROM bills 
         WHERE bill_date >= date('now', '-6 months') AND user_id = {placeholder}
         GROUP BY strftime('%Y-%m', bill_date)
         ORDER BY month
-    ''', (user_id,)).fetchall()
+    ''', (user_id,))
+    monthly_revenue = cursor.fetchall()
     
     # Get monthly expenses data
-    monthly_expenses = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT strftime('%Y-%m', expense_date) as month, 
                SUM(amount) as expenses
         FROM expenses 
         WHERE expense_date >= date('now', '-6 months') AND user_id = {placeholder}
         GROUP BY strftime('%Y-%m', expense_date)
         ORDER BY month
-    ''', (user_id,)).fetchall()
+    ''', (user_id,))
+    monthly_expenses = cursor.fetchall()
 
     # Top 10 regions by sales (for pie chart)
-    top_regions = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT COALESCE(customer_area, 'Unknown') as area, SUM(total_amount) as sales
         FROM bills
         WHERE customer_area IS NOT NULL AND customer_area != '' AND user_id = {placeholder}
         GROUP BY customer_area
         ORDER BY sales DESC
         LIMIT 10
-    ''', (user_id,)).fetchall()
+    ''', (user_id,))
+    top_regions = cursor.fetchall()
 
     # Top 10 trending products (by quantity sold)
-    trending_products = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT COALESCE(product_name, 'Unknown') as product_name, 
                SUM(quantity) as qty_sold,
                SUM(total_amount) as total_revenue
@@ -1574,10 +1625,11 @@ def get_dashboard_data():
         GROUP BY product_name
         ORDER BY qty_sold DESC
         LIMIT 10
-    ''', (user_id,)).fetchall()
+    ''', (user_id,))
+    trending_products = cursor.fetchall()
 
     # Top 10 most repeated customers (by invoice count)
-    repeated_customers = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT COALESCE(customer_name, 'Unknown') as customer_name, 
                COALESCE(customer_phone, '') as customer_phone, 
                COUNT(*) as invoice_count,
@@ -1587,7 +1639,8 @@ def get_dashboard_data():
         GROUP BY customer_name, customer_phone
         ORDER BY invoice_count DESC
         LIMIT 10
-    ''', (user_id,)).fetchall()
+    ''', (user_id,))
+    repeated_customers = cursor.fetchall()
 
     conn.close()
     
@@ -1613,7 +1666,7 @@ def print_bill(bill_id):
     
     conn = get_db_connection()
     placeholder = get_placeholder()
-    bill = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT b.*, c.name as customer_name, c.phone as customer_phone, 
                c.city as customer_city, c.area as customer_area,
                c.customer_type, c.business_name, c.business_address,
@@ -1622,16 +1675,18 @@ def print_bill(bill_id):
         LEFT JOIN customers c ON b.customer_id = c.customer_id AND c.user_id = b.user_id
         LEFT JOIN employees e ON b.master_id = e.employee_id AND e.user_id = b.user_id
         WHERE b.bill_id = {placeholder} AND b.user_id = {placeholder}
-    ''', (bill_id, user_id)).fetchone()
+    ''', (bill_id, user_id))
+    bill = cursor.fetchone()
     
     if not bill:
         conn.close()
         return jsonify({'error': 'Bill not found'}), 404
     
     # Get bill items
-    items = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT * FROM bill_items WHERE bill_id = {placeholder} AND user_id = {placeholder}
-    ''', (bill_id, user_id)).fetchall()
+    ''', (bill_id, user_id))
+    items = cursor.fetchall()
     
     # Calculate discount amount for each item
     items_with_discount = []
@@ -1644,7 +1699,8 @@ def print_bill(bill_id):
     
     # Get shop settings
     placeholder = get_placeholder()
-    shop_settings = conn.execute(f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
+    cursor = execute_query(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
+    shop_settings = cursor.fetchone()
     conn.close()
     
     bill = dict(bill)
@@ -1711,7 +1767,7 @@ def customer_invoice_heatmap():
     conn = get_db_connection()
     # Get last 6 months (including current)
     placeholder = get_placeholder()
-    months = [row['month'] for row in conn.execute(f"""
+    months = [row['month'] for row in execute_update(conn, f"""
         SELECT DISTINCT strftime('%Y-%m', bill_date) as month
         FROM bills
         WHERE bill_date >= date('now', '-5 months', 'start of month') AND user_id = {placeholder}
@@ -1719,7 +1775,7 @@ def customer_invoice_heatmap():
     """, (user_id,)).fetchall()]
 
     # Get customers with at least one invoice in the last 6 months
-    customers = conn.execute(f"""
+    customers = execute_update(conn, f"""
         SELECT c.customer_id, c.name, COUNT(b.bill_id) as total_invoices
         FROM customers c
         JOIN bills b ON c.customer_id = b.customer_id AND c.user_id = b.user_id
@@ -1735,7 +1791,7 @@ def customer_invoice_heatmap():
     for cid in customer_ids:
         row = []
         for m in months:
-            count = conn.execute(f"""
+            count = execute_update(conn, f"""
                 SELECT COUNT(*) FROM bills
                 WHERE customer_id = {placeholder} AND strftime('%Y-%m', bill_date) = {placeholder} AND user_id = {placeholder}
             """, (cid, m, user_id)).fetchone()[0]
@@ -1756,7 +1812,7 @@ def get_areas():
     if city:
         # Get areas for specific city
         placeholder = get_placeholder()
-        areas = conn.execute(f'''
+        areas = execute_update(conn, f'''
             SELECT ca.area_name 
             FROM city_area ca 
             JOIN cities c ON ca.city_id = c.city_id 
@@ -1765,7 +1821,9 @@ def get_areas():
         ''', (city,)).fetchall()
     else:
         # Get all areas
-        areas = conn.execute('SELECT area_name FROM city_area ORDER BY area_name').fetchall()
+        cursor = execute_query(conn, 'SELECT area_name FROM city_area ORDER BY area_name')
+
+        areas = cursor.fetchall()
     
     conn.close()
     return jsonify([row['area_name'] for row in areas])
@@ -1778,7 +1836,7 @@ def get_cities():
     if area:
         # Get cities for specific area
         placeholder = get_placeholder()
-        cities = conn.execute(f'''
+        cities = execute_update(conn, f'''
             SELECT DISTINCT c.city_name 
             FROM cities c 
             JOIN city_area ca ON c.city_id = ca.city_id 
@@ -1787,7 +1845,9 @@ def get_cities():
         ''', (area,)).fetchall()
     else:
         # Get all cities
-        cities = conn.execute('SELECT city_name FROM cities ORDER BY city_name').fetchall()
+        cursor = execute_query(conn, 'SELECT city_name FROM cities ORDER BY city_name')
+
+        cities = cursor.fetchall()
     
     conn.close()
     return jsonify([row['city_name'] for row in cities])
@@ -1802,9 +1862,11 @@ def get_employees():
     placeholder = get_placeholder()
     if search:
         like_search = f"%{search}%"
-        employees = conn.execute(f'SELECT * FROM employees WHERE user_id = {placeholder} AND (name LIKE {placeholder} OR phone LIKE {placeholder} OR address LIKE {placeholder}) ORDER BY name', (user_id, like_search, like_search, like_search)).fetchall()
+        cursor = execute_query(conn, f'SELECT * FROM employees WHERE user_id = {placeholder} AND (name LIKE {placeholder} OR phone LIKE {placeholder} OR address LIKE {placeholder}) ORDER BY name', (user_id, like_search, like_search, like_search))
+        employees = cursor.fetchall()
     else:
-        employees = conn.execute(f'SELECT * FROM employees WHERE user_id = {placeholder} ORDER BY name', (user_id,)).fetchall()
+        cursor = execute_query(conn, f'SELECT * FROM employees WHERE user_id = {placeholder} ORDER BY name', (user_id,))
+        employees = cursor.fetchall()
     
     conn.close()
     return jsonify([dict(emp) for emp in employees])
@@ -1814,7 +1876,8 @@ def get_employee(employee_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    employee = conn.execute(f'SELECT * FROM employees WHERE employee_id = {placeholder} AND user_id = {placeholder}', (employee_id, user_id)).fetchone()
+    cursor = execute_query(conn, f'SELECT * FROM employees WHERE employee_id = {placeholder} AND user_id = {placeholder}', (employee_id, user_id))
+    employee = cursor.fetchone()
     conn.close()
     
     if employee:
@@ -1840,7 +1903,8 @@ def add_employee():
     # Check for duplicate mobile number
     if mobile:
         placeholder = get_placeholder()
-        existing_employee = conn.execute(f'SELECT name FROM employees WHERE phone = {placeholder} AND user_id = {placeholder}', (mobile, user_id)).fetchone()
+        cursor = execute_query(conn, f'SELECT name FROM employees WHERE phone = {placeholder} AND user_id = {placeholder}', (mobile, user_id))
+        existing_employee = cursor.fetchone()
         if existing_employee:
             conn.close()
             return jsonify({'error': f'Mobile number {mobile} is already assigned to employee "{existing_employee["name"]}"'}), 400
@@ -1880,7 +1944,8 @@ def update_employee(employee_id):
     # Check for duplicate mobile number (excluding current employee)
     if mobile:
         placeholder = get_placeholder()
-        existing_employee = conn.execute(f'SELECT name FROM employees WHERE phone = {placeholder} AND user_id = {placeholder} AND employee_id != {placeholder}', (mobile, user_id, employee_id)).fetchone()
+        cursor = execute_query(conn, f'SELECT name FROM employees WHERE phone = {placeholder} AND user_id = {placeholder} AND employee_id != {placeholder}', (mobile, user_id, employee_id))
+        existing_employee = cursor.fetchone()
         if existing_employee:
             conn.close()
             return jsonify({'error': f'Mobile number {mobile} is already assigned to employee "{existing_employee["name"]}"'}), 400
@@ -1888,16 +1953,14 @@ def update_employee(employee_id):
     try:
         placeholder = get_placeholder()
         sql = f'UPDATE employees SET name = {placeholder}, phone = {placeholder}, address = {placeholder}, position = {placeholder} WHERE employee_id = {placeholder} AND user_id = {placeholder}'
-        conn.execute(sql, (name, mobile, address, position, employee_id, user_id))
-        conn.commit()
+        execute_update(conn, sql, (name, mobile, address, position, employee_id, user_id))
     except Exception as e:
         if 'no such column' in str(e).lower() and 'position' in str(e).lower():
             # Legacy DB without position column
             conn.rollback()
             placeholder = get_placeholder()
             sql = f'UPDATE employees SET name = {placeholder}, phone = {placeholder}, address = {placeholder} WHERE employee_id = {placeholder} AND user_id = {placeholder}'
-            conn.execute(sql, (name, mobile, address, employee_id, user_id))
-            conn.commit()
+            execute_update(conn, sql, (name, mobile, address, employee_id, user_id))
         else:
             conn.rollback()
             log_dml_error('UPDATE', 'employees', e, user_id=user_id, data=data)
@@ -1911,8 +1974,7 @@ def delete_employee(employee_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    conn.execute(f'DELETE FROM employees WHERE employee_id = {placeholder} AND user_id = {placeholder}', (employee_id, user_id))
-    conn.commit()
+    execute_update(conn, f'DELETE FROM employees WHERE employee_id = {placeholder} AND user_id = {placeholder}', (employee_id, user_id))
     conn.close()
     return jsonify({'message': 'Employee deleted successfully'})
 
@@ -1927,14 +1989,16 @@ def get_next_bill_number():
         try:
             conn = get_db_connection()
             # Use a transaction to prevent race conditions
-            conn.execute('BEGIN TRANSACTION')
+            # Note: PostgreSQL doesn't need explicit BEGIN TRANSACTION
+            # The transaction is automatically started
             
             # Find all bills for today with the new format
             placeholder = get_placeholder()
-            bills = conn.execute(f"""
+            cursor = execute_query(conn, f"""
                 SELECT bill_number FROM bills WHERE bill_number LIKE {placeholder} AND user_id = {placeholder}
                 ORDER BY bill_number DESC
-            """, (f'BILL-{today}-%', user_id)).fetchall()
+            """, (f'BILL-{today}-%', user_id))
+            bills = cursor.fetchall()
             
             max_seq = 0
             for b in bills:
@@ -1948,12 +2012,12 @@ def get_next_bill_number():
             bill_number = f'BILL-{today}-{next_seq:03d}'
             
             # Verify this bill number doesn't exist (double-check)
-            existing = conn.execute(f"""
+            cursor = execute_query(conn, f"""
                 SELECT COUNT(*) as count FROM bills WHERE bill_number = {placeholder} AND user_id = {placeholder}
-            """, (bill_number, user_id)).fetchone()
+            """, (bill_number, user_id))
+            existing = cursor.fetchone()
             
             if existing['count'] == 0:
-                conn.commit()
                 conn.close()
                 return jsonify({'next_number': bill_number})
             else:
@@ -1961,7 +2025,6 @@ def get_next_bill_number():
                 max_seq += 1
                 next_seq = max_seq + 1
                 bill_number = f'BILL-{today}-{next_seq:03d}'
-                conn.commit()
                 conn.close()
                 return jsonify({'next_number': bill_number})
                 
@@ -1982,7 +2045,7 @@ def employee_analytics():
     conn = get_db_connection()
     # Top 5 employees by revenue
     placeholder = get_placeholder()
-    top5 = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT e.name, COALESCE(SUM(b.total_amount), 0) as total_revenue
         FROM employees e
         LEFT JOIN bills b ON e.employee_id = b.master_id AND b.user_id = e.user_id
@@ -1990,16 +2053,18 @@ def employee_analytics():
         GROUP BY e.employee_id
         ORDER BY total_revenue DESC
         LIMIT 5
-    ''', (user_id,)).fetchall()
+    ''', (user_id,))
+    top5 = cursor.fetchall()
     # Revenue share for all employees
-    shares = conn.execute(f'''
+    cursor = execute_query(conn, f'''
         SELECT e.name, COALESCE(SUM(b.total_amount), 0) as total_revenue
         FROM employees e
         LEFT JOIN bills b ON e.employee_id = b.master_id AND b.user_id = e.user_id
         WHERE e.user_id = {placeholder}
         GROUP BY e.employee_id
         ORDER BY total_revenue DESC
-    ''', (user_id,)).fetchall()
+    ''', (user_id,))
+    shares = cursor.fetchall()
     conn.close()
     return jsonify({
         'top5': [dict(row) for row in top5],
@@ -2040,12 +2105,13 @@ def get_plan_status():
         conn = get_db_connection()
         # Get the most recent active plan for user_id = 1
         placeholder = get_placeholder()
-        user_plan = conn.execute(f'''
+        cursor = execute_query(conn, f'''
             SELECT * FROM user_plans 
             WHERE user_id = 1 AND is_active = 1 
             ORDER BY created_at DESC 
             LIMIT 1
-        ''').fetchone()
+        ''')
+        user_plan = cursor.fetchone()
         conn.close()
         
         if not user_plan:
@@ -2104,8 +2170,7 @@ def upgrade_plan():
             SET plan_type = {placeholder}, plan_start_date = {placeholder}, is_active = 1, updated_at = CURRENT_TIMESTAMP
             WHERE user_id = 1
         '''
-        conn.execute(sql, (new_plan, datetime.now().strftime('%Y-%m-%d')))
-        conn.commit()
+        execute_update(conn, sql, (new_plan, datetime.now().strftime('%Y-%m-%d')))
         conn.close()
         
         return jsonify({
@@ -2124,12 +2189,13 @@ def get_enabled_features():
         conn = get_db_connection()
         # Get the most recent active plan for user_id = 1
         placeholder = get_placeholder()
-        user_plan = conn.execute(f'''
+        cursor = execute_query(conn, f'''
             SELECT * FROM user_plans 
             WHERE user_id = 1 AND is_active = 1 
             ORDER BY created_at DESC 
             LIMIT 1
-        ''').fetchone()
+        ''')
+        user_plan = cursor.fetchone()
         conn.close()
         
         if not user_plan:
@@ -2157,7 +2223,9 @@ def check_feature_access(feature):
     """Check if a specific feature is enabled for current user."""
     try:
         conn = get_db_connection()
-        user_plan = conn.execute('SELECT * FROM user_plans WHERE user_id = 1 AND is_active = 1').fetchone()
+        cursor = execute_query(conn, 'SELECT * FROM user_plans WHERE user_id = 1 AND is_active = 1')
+
+        user_plan = cursor.fetchone()
         conn.close()
         
         if not user_plan:
@@ -2201,12 +2269,11 @@ def expire_trial():
         days_ago = data.get('days_ago', 16)
         
         conn = get_db_connection()
-        conn.execute('''
+        execute_update(conn, '''
             UPDATE user_plans 
             SET plan_start_date = date('now', '-{} days')
             WHERE user_id = 1 AND plan_type = 'trial' AND is_active = 1
         '''.format(days_ago))
-        conn.commit()
         conn.close()
         
         return jsonify({
@@ -2222,12 +2289,11 @@ def reset_trial():
     """Reset trial to today for testing purposes."""
     try:
         conn = get_db_connection()
-        conn.execute('''
+        execute_update(conn, '''
             UPDATE user_plans 
             SET plan_start_date = date('now')
             WHERE user_id = 1 AND plan_type = 'trial' AND is_active = 1
         ''')
-        conn.commit()
         conn.close()
         
         return jsonify({
@@ -2319,7 +2385,7 @@ def handle_setup_wizard():
             shop_code = generate_shop_code()
             # Check uniqueness of shop_code
             placeholder = get_placeholder()
-            existing = conn.execute(f'SELECT 1 FROM users WHERE shop_code = {placeholder}', (shop_code,)).fetchone()
+            existing = execute_update(conn, f'SELECT 1 FROM users WHERE shop_code = {placeholder}', (shop_code,)).fetchone()
             if not existing:
                 break
             if attempts > 5:
@@ -2331,7 +2397,7 @@ def handle_setup_wizard():
         # Insert new user
         try:
             placeholder = get_placeholder()
-            cursor = conn.execute(f'''
+            cursor = execute_update(conn, f'''
                 INSERT INTO users (email, mobile, shop_code, password_hash, shop_name, shop_type, contact_number, email_address)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             ''', (
@@ -2405,8 +2471,6 @@ def handle_setup_wizard():
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
         '''
         execute_with_returning(conn, sql, (new_user_id, 5.00, '2018-01-01', '2099-12-31', 1))
-        
-        conn.commit()
         conn.close()
         
         return jsonify({
@@ -2450,7 +2514,7 @@ def auth_login():
                 return jsonify({'success': False, 'message': 'Email and password required'})
             
             placeholder = get_placeholder()
-            user = conn.execute(f'SELECT * FROM users WHERE email = {placeholder} AND is_active = 1', (email,)).fetchone()
+            user = execute_update(conn, f'SELECT * FROM users WHERE email = {placeholder} AND is_active = 1', (email,)).fetchone()
             
             if not user:
                 return jsonify({'success': False, 'message': 'Invalid email or password'})
@@ -2468,7 +2532,7 @@ def auth_login():
             
             # Verify OTP
             placeholder = get_placeholder()
-            otp_record = conn.execute(f'''
+            otp_record = execute_update(conn, f'''
                 SELECT * FROM otp_codes 
                 WHERE mobile = {placeholder} AND otp_code = {placeholder} AND is_used = 0 AND expires_at > CURRENT_TIMESTAMP
                 ORDER BY created_at DESC LIMIT 1
@@ -2479,10 +2543,10 @@ def auth_login():
             
             # Mark OTP as used
             placeholder = get_placeholder()
-            conn.execute(f'UPDATE otp_codes SET is_used = 1 WHERE id = {placeholder}', (otp_record['id'],))
+            execute_update(conn, f'UPDATE otp_codes SET is_used = 1 WHERE id = {placeholder}', (otp_record['id'],))
             
             placeholder = get_placeholder()
-            user = conn.execute(f'SELECT * FROM users WHERE mobile = {placeholder} AND is_active = 1', (mobile,)).fetchone()
+            user = execute_update(conn, f'SELECT * FROM users WHERE mobile = {placeholder} AND is_active = 1', (mobile,)).fetchone()
             
             if not user:
                 return jsonify({'success': False, 'message': 'No account found with this mobile number'})
@@ -2495,7 +2559,7 @@ def auth_login():
                 return jsonify({'success': False, 'message': 'Shop code and password required'})
             
             placeholder = get_placeholder()
-            user = conn.execute(f'SELECT * FROM users WHERE shop_code = {placeholder} AND is_active = 1', (shop_code,)).fetchone()
+            user = execute_update(conn, f'SELECT * FROM users WHERE shop_code = {placeholder} AND is_active = 1', (shop_code,)).fetchone()
             
             if not user:
                 return jsonify({'success': False, 'message': 'Invalid shop code or password'})
@@ -2520,8 +2584,6 @@ def auth_login():
             'method': method,
             'timestamp': datetime.now().isoformat()
         })
-        
-        conn.commit()
         conn.close()
         
         return jsonify({
@@ -2558,7 +2620,7 @@ def change_password():
 
         conn = get_db_connection()
         placeholder = get_placeholder()
-        user = conn.execute(f'SELECT user_id, password_hash FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
+        user = execute_update(conn, f'SELECT user_id, password_hash FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
         if not user:
             conn.close()
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -2569,8 +2631,7 @@ def change_password():
 
         new_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         placeholder = get_placeholder()
-        conn.execute(f'UPDATE users SET password_hash = {placeholder}, updated_at = CURRENT_TIMESTAMP WHERE user_id = {placeholder}', (new_hash, user_id))
-        conn.commit()
+        execute_update(conn, f'UPDATE users SET password_hash = {placeholder}, updated_at = CURRENT_TIMESTAMP WHERE user_id = {placeholder}', (new_hash, user_id))
         conn.close()
         return jsonify({'success': True, 'message': 'Password updated successfully'})
     except Exception as e:
@@ -2597,11 +2658,10 @@ def send_otp():
         
         conn = get_db_connection()
         placeholder = get_placeholder()
-        conn.execute(f'''
+        execute_update(conn, f'''
             INSERT INTO otp_codes (mobile, otp_code, expires_at)
             VALUES ({placeholder}, {placeholder}, {placeholder})
         ''', (mobile, otp, expires_at))
-        conn.commit()
         conn.close()
         
         # In production, you would integrate with SMS service here
@@ -3162,7 +3222,7 @@ def get_shop_settings():
         user_id = get_current_user_id()
         conn = get_db_connection()
         placeholder = get_placeholder()
-        settings = conn.execute(f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
+        settings = execute_update(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
         conn.close()
         
         if settings:
@@ -3189,7 +3249,7 @@ def get_payment_mode():
         user_id = get_current_user_id()
         conn = get_db_connection()
         placeholder = get_placeholder()
-        settings = conn.execute(f'SELECT payment_mode FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
+        settings = execute_update(conn, f'SELECT payment_mode FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
         conn.close()
         
         payment_mode = settings['payment_mode'] if settings else 'advance'
@@ -3211,7 +3271,7 @@ def get_billing_config():
         user_id = get_current_user_id()
         conn = get_db_connection()
         placeholder = get_placeholder()
-        settings = conn.execute(f'''
+        settings = execute_update(conn, f'''
             SELECT enable_trial_date, enable_delivery_date, enable_advance_payment, 
                    enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id
             FROM shop_settings WHERE user_id = {placeholder}
@@ -3295,12 +3355,12 @@ def update_shop_settings():
         
         # Check if shop settings exist for this user
         placeholder = get_placeholder()
-        existing_settings = conn.execute(f'SELECT setting_id FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
+        existing_settings = execute_update(conn, f'SELECT setting_id FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
         
         if existing_settings:
             # Update existing shop settings
             placeholder = get_placeholder()
-            conn.execute(f'''
+            execute_update(conn, f'''
                 UPDATE shop_settings 
                 SET shop_name = {placeholder}, address = {placeholder}, trn = {placeholder}, city = {placeholder}, area = {placeholder}, logo_url = {placeholder}, 
                     shop_mobile = {placeholder}, working_hours = {placeholder}, invoice_static_info = {placeholder},
@@ -3315,7 +3375,7 @@ def update_shop_settings():
                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id, user_id))
         else:
             # Create new shop settings for this user
-            conn.execute('''
+            execute_update(conn, '''
                 INSERT INTO shop_settings (user_id, shop_name, address, trn, city, area, logo_url, 
                     shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template, payment_mode,
                     enable_trial_date, enable_delivery_date, enable_advance_payment,
@@ -3325,8 +3385,6 @@ def update_shop_settings():
                   invoice_static_info, use_dynamic_invoice_template, payment_mode,
                   enable_trial_date, enable_delivery_date, enable_advance_payment,
                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id))
-        
-        conn.commit()
         conn.close()
         
         # Log shop settings update
@@ -3990,7 +4048,7 @@ def get_email_config():
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    shop_settings_row = conn.execute(f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
+    shop_settings_row = execute_update(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
     conn.close()
     
     # Convert Row object to dictionary if it exists
@@ -4184,7 +4242,7 @@ def send_email_invoice(bill_id, recipient_email, language='en'):
         # Get bill data
         conn = get_db_connection()
         placeholder = get_placeholder()
-        bill_row = conn.execute(f'''
+        bill_row = execute_update(conn, f'''
             SELECT b.*, c.name as customer_name, c.phone as customer_phone, 
                    c.city as customer_city, c.area as customer_area,
                    s.shop_name, s.address, s.shop_mobile as phone, '' as email
@@ -4201,7 +4259,7 @@ def send_email_invoice(bill_id, recipient_email, language='en'):
         bill = dict(bill_row)
         
         # Get bill items
-        items = conn.execute(f'''
+        items = execute_update(conn, f'''
             SELECT bi.*, p.product_name
             FROM bill_items bi
             JOIN products p ON bi.product_id = p.product_id
@@ -4563,7 +4621,7 @@ def send_bill_whatsapp(bill_id):
             print(f"DEBUG: Querying bill with ID: {bill_id} for user: {get_current_user_id()}")
             
             placeholder = get_placeholder()
-            bill_row = conn.execute(f'''
+            bill_row = execute_update(conn, f'''
                 SELECT b.*, c.name as customer_name, c.phone as customer_phone, 
                        c.city as customer_city, c.area as customer_area,
                        s.shop_name, s.address, s.shop_mobile as phone, '' as email
@@ -4591,7 +4649,7 @@ def send_bill_whatsapp(bill_id):
             return jsonify({'success': False, 'error': f'Database error: {str(e)}'}), 500
         
         # Get bill items
-        items = conn.execute(f'''
+        items = execute_update(conn, f'''
             SELECT bi.*, p.product_name
             FROM bill_items bi
             JOIN products p ON bi.product_id = p.product_id
@@ -4744,7 +4802,7 @@ def admin_auth_login():
         
         # Check if user exists and is admin (user_id = 1 is the admin user)
         placeholder = get_placeholder()
-        user = conn.execute(f'SELECT * FROM users WHERE email = {placeholder} AND user_id = 1 AND is_active = 1', (email,)).fetchone()
+        user = execute_update(conn, f'SELECT * FROM users WHERE email = {placeholder} AND user_id = 1 AND is_active = 1', (email,)).fetchone()
         
         if not user:
             logger.warning(f"Admin user not found for email: {email}")
@@ -4821,10 +4879,10 @@ def admin_stats():
         conn = get_db_connection()
         
         # Total shops
-        total_shops = conn.execute('SELECT COUNT(*) FROM users WHERE is_active = 1').fetchone()[0]
+        total_shops = execute_update(conn, 'SELECT COUNT(*) FROM users WHERE is_active = 1').fetchone()[0]
         
         # Active plans (not expired)
-        active_plans = conn.execute('''
+        active_plans = execute_update(conn, '''
             SELECT COUNT(*) FROM user_plans up
             JOIN users u ON up.user_id = u.user_id
             WHERE up.is_active = 1 AND u.is_active = 1
@@ -4832,7 +4890,7 @@ def admin_stats():
         ''').fetchone()[0]
         
         # Expiring soon (within 7 days)
-        expiring_soon = conn.execute('''
+        expiring_soon = execute_update(conn, '''
             SELECT COUNT(*) FROM user_plans up
             JOIN users u ON up.user_id = u.user_id
             WHERE up.is_active = 1 AND u.is_active = 1
@@ -4841,7 +4899,7 @@ def admin_stats():
         ''').fetchone()[0]
         
         # Expired plans
-        expired_plans = conn.execute('''
+        expired_plans = execute_update(conn, '''
             SELECT COUNT(*) FROM user_plans up
             JOIN users u ON up.user_id = u.user_id
             WHERE up.is_active = 1 AND u.is_active = 1
@@ -4868,7 +4926,7 @@ def admin_shops():
     try:
         conn = get_db_connection()
         
-        shops = conn.execute('''
+        shops = execute_update(conn, '''
             SELECT u.user_id, u.shop_name, u.email, u.mobile, u.created_at,
                    up.plan_type, up.plan_start_date, up.plan_end_date,
                    CASE 
@@ -4902,7 +4960,7 @@ def admin_shop_plan(user_id):
         conn = get_db_connection()
         
         placeholder = get_placeholder()
-        plan = conn.execute(f'''
+        plan = execute_update(conn, f'''
             SELECT up.plan_type as plan, up.plan_start_date as start_date, 
                    up.plan_end_date as expiry_date,
                    CASE 
@@ -4949,14 +5007,14 @@ def admin_upgrade_plan():
         
         # Check if user exists
         placeholder = get_placeholder()
-        user = conn.execute(f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
+        user = execute_update(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
         if not user:
             conn.close()
             return jsonify({'error': 'User not found'}), 404
         
         # Deactivate current plan
         placeholder = get_placeholder()
-        conn.execute(f'UPDATE user_plans SET is_active = 0 WHERE user_id = {placeholder}', (user_id,))
+        execute_update(conn, f'UPDATE user_plans SET is_active = 0 WHERE user_id = {placeholder}', (user_id,))
         
         # Calculate new plan dates
         start_date = datetime.now().date()
@@ -4990,8 +5048,6 @@ def admin_upgrade_plan():
             'start_date': start_date.isoformat(),
             'end_date': end_date.isoformat() if end_date else None
         })
-        
-        conn.commit()
         conn.close()
         
         return jsonify({
@@ -5018,13 +5074,13 @@ def admin_expire_plan():
         
         # Check if user exists
         placeholder = get_placeholder()
-        user = conn.execute(f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
+        user = execute_update(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
         if not user:
             conn.close()
             return jsonify({'error': 'User not found'}), 404
         
         # Get current plan
-        current_plan = conn.execute(f'SELECT plan_type FROM user_plans WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
+        current_plan = execute_update(conn, f'SELECT plan_type FROM user_plans WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
         if not current_plan:
             conn.close()
             return jsonify({'error': 'No active plan found'}), 404
@@ -5037,15 +5093,13 @@ def admin_expire_plan():
             SET plan_end_date = {placeholder}, updated_at = CURRENT_TIMESTAMP
             WHERE user_id = {placeholder} AND is_active = 1
         '''
-        conn.execute(sql, (expire_date, user_id))
+        execute_update(conn, sql, (expire_date, user_id))
         
         # Log the action
         log_user_action('plan_expire', user_id, {
             'plan_type': current_plan['plan_type'],
             'expire_date': expire_date.isoformat()
         })
-        
-        conn.commit()
         conn.close()
         
         return jsonify({
@@ -5064,7 +5118,7 @@ def admin_activity():
     try:
         conn = get_db_connection()
         
-        activities = conn.execute('''
+        activities = execute_update(conn, '''
             SELECT ua.action, ua.details, ua.timestamp, u.shop_name
             FROM user_actions ua
             LEFT JOIN users u ON ua.user_id = u.user_id
@@ -5109,22 +5163,26 @@ def admin_logs():
         conn = get_db_connection()
         
         # Get recent error logs
-        error_logs = conn.execute('''
+        cursor = execute_query(conn, '''
             SELECT el.*, u.shop_name 
             FROM error_logs el 
             LEFT JOIN users u ON el.user_id = u.user_id 
             ORDER BY el.timestamp DESC 
             LIMIT 100
-        ''').fetchall()
+        ''')
+
+        error_logs = cursor.fetchall()
         
         # Get recent user actions
-        user_actions = conn.execute('''
+        cursor = execute_query(conn, '''
             SELECT ua.*, u.shop_name 
             FROM user_actions ua 
             LEFT JOIN users u ON ua.user_id = u.user_id 
             ORDER BY ua.timestamp DESC 
             LIMIT 50
-        ''').fetchall()
+        ''')
+
+        user_actions = cursor.fetchall()
         
         conn.close()
         
@@ -5142,7 +5200,7 @@ def get_expense_categories():
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    categories = conn.execute(f'''
+    categories = execute_update(conn, f'''
         SELECT * FROM expense_categories 
         WHERE user_id = {placeholder} AND is_active = 1 
         ORDER BY category_name
@@ -5196,7 +5254,7 @@ def update_expense_category(category_id):
     try:
         # Check if category exists and belongs to user
         placeholder = get_placeholder()
-        category = conn.execute(f'''
+        category = execute_update(conn, f'''
             SELECT category_id FROM expense_categories 
             WHERE category_id = {placeholder} AND user_id = {placeholder}
         ''', (category_id, user_id)).fetchone()
@@ -5211,8 +5269,7 @@ def update_expense_category(category_id):
             SET category_name = {placeholder}, description = {placeholder} 
             WHERE category_id = {placeholder} AND user_id = {placeholder}
         '''
-        conn.execute(sql, (name, description, category_id, user_id))
-        conn.commit()
+        execute_update(conn, sql, (name, description, category_id, user_id))
         conn.close()
         
         log_user_action('expense_category_updated', user_id, {'category_id': category_id, 'category_name': name})
@@ -5234,7 +5291,7 @@ def delete_expense_category(category_id):
     try:
         # Check if category has expenses
         placeholder = get_placeholder()
-        expense_count = conn.execute(f'''
+        expense_count = execute_update(conn, f'''
             SELECT COUNT(*) FROM expenses 
             WHERE category_id = {placeholder} AND user_id = {placeholder}
         ''', (category_id, user_id)).fetchone()[0]
@@ -5250,8 +5307,7 @@ def delete_expense_category(category_id):
             SET is_active = 0 
             WHERE category_id = {placeholder} AND user_id = {placeholder}
         '''
-        conn.execute(sql, (category_id, user_id))
-        conn.commit()
+        execute_update(conn, sql, (category_id, user_id))
         conn.close()
         
         log_user_action('expense_category_deleted', user_id, {'category_id': category_id})
@@ -5304,7 +5360,10 @@ def get_expenses():
     
     query += ' ORDER BY e.expense_date DESC, e.created_at DESC'
     
-    expenses = conn.execute(query, params).fetchall()
+    cursor = execute_query(conn, query, params)
+
+    
+    expenses = cursor.fetchall()
     conn.close()
     
     return jsonify([dict(expense) for expense in expenses])
@@ -5336,7 +5395,7 @@ def add_expense():
     try:
         # Verify category belongs to user
         placeholder = get_placeholder()
-        category = conn.execute(f'''
+        category = execute_update(conn, f'''
             SELECT category_id FROM expense_categories 
             WHERE category_id = {placeholder} AND user_id = {placeholder} AND is_active = 1
         ''', (category_id, user_id)).fetchone()
@@ -5381,7 +5440,7 @@ def get_expense(expense_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    expense = conn.execute(f'''
+    expense = execute_update(conn, f'''
         SELECT e.*, ec.category_name 
         FROM expenses e 
         JOIN expense_categories ec ON e.category_id = ec.category_id 
@@ -5421,12 +5480,12 @@ def update_expense(expense_id):
     try:
         # Verify expense and category belong to user
         placeholder = get_placeholder()
-        expense = conn.execute(f'''
+        expense = execute_update(conn, f'''
             SELECT expense_id FROM expenses 
             WHERE expense_id = {placeholder} AND user_id = {placeholder}
         ''', (expense_id, user_id)).fetchone()
         
-        category = conn.execute(f'''
+        category = execute_update(conn, f'''
             SELECT category_id FROM expense_categories 
             WHERE category_id = {placeholder} AND user_id = {placeholder} AND is_active = 1
         ''', (category_id, user_id)).fetchone()
@@ -5445,8 +5504,7 @@ def update_expense(expense_id):
             SET category_id = {placeholder}, expense_date = {placeholder}, amount = {placeholder}, description = {placeholder}, payment_method = {placeholder}, receipt_url = {placeholder} 
             WHERE expense_id = {placeholder} AND user_id = {placeholder}
         '''
-        conn.execute(sql, (category_id, expense_date, amount, description, payment_method, receipt_url, expense_id, user_id))
-        conn.commit()
+        execute_update(conn, sql, (category_id, expense_date, amount, description, payment_method, receipt_url, expense_id, user_id))
         conn.close()
         
         log_user_action('expense_updated', user_id, {'expense_id': expense_id, 'amount': amount, 'category_id': category_id})
@@ -5465,7 +5523,7 @@ def delete_expense(expense_id):
     try:
         # Get expense details for logging
         placeholder = get_placeholder()
-        expense = conn.execute(f'''
+        expense = execute_update(conn, f'''
             SELECT amount, category_id FROM expenses 
             WHERE expense_id = {placeholder} AND user_id = {placeholder}
         ''', (expense_id, user_id)).fetchone()
@@ -5475,8 +5533,7 @@ def delete_expense(expense_id):
             return jsonify({'error': 'Expense not found'}), 404
         
         placeholder = get_placeholder()
-        conn.execute(f'DELETE FROM expenses WHERE expense_id = {placeholder} AND user_id = {placeholder}', (expense_id, user_id))
-        conn.commit()
+        execute_update(conn, f'DELETE FROM expenses WHERE expense_id = {placeholder} AND user_id = {placeholder}', (expense_id, user_id))
         conn.close()
         
         log_user_action('expense_deleted', user_id, {
@@ -5525,7 +5582,9 @@ def expense_report():
         JOIN expense_categories ec ON e.category_id = ec.category_id 
         {base_where}
     '''
-    total_result = conn.execute(total_query, params).fetchone()
+    cursor = execute_query(conn, total_query, params)
+
+    total_result = cursor.fetchone()
     
     # Get expenses by category
     category_query = f'''
@@ -5536,7 +5595,9 @@ def expense_report():
         GROUP BY ec.category_id, ec.category_name
         ORDER BY total_amount DESC
     '''
-    category_results = conn.execute(category_query, params).fetchall()
+    cursor = execute_query(conn, category_query, params)
+
+    category_results = cursor.fetchall()
     
     # Get monthly breakdown
     monthly_query = f'''
@@ -5549,7 +5610,9 @@ def expense_report():
         ORDER BY month DESC
         LIMIT 12
     '''
-    monthly_results = conn.execute(monthly_query, params).fetchall()
+    cursor = execute_query(conn, monthly_query, params)
+
+    monthly_results = cursor.fetchall()
     
     conn.close()
     
@@ -5597,7 +5660,10 @@ def download_expenses():
     
     query += ' ORDER BY e.expense_date DESC'
     
-    expenses = conn.execute(query, params).fetchall()
+    cursor = execute_query(conn, query, params)
+
+    
+    expenses = cursor.fetchall()
     conn.close()
     
     # Create CSV
@@ -5771,7 +5837,7 @@ def auto_create_products():
                 
                 # Check if type already exists
                 placeholder = get_placeholder()
-                existing = conn.execute(
+                existing = execute_update(conn, 
                     f'SELECT type_id FROM product_types WHERE user_id = {placeholder} AND type_name = {placeholder}', 
                     (user_id, type_name)
                 ).fetchone()
@@ -5800,7 +5866,7 @@ def auto_create_products():
                     
                     # Check if product already exists
                     placeholder = get_placeholder()
-                    existing_product = conn.execute(
+                    existing_product = execute_update(conn, 
                         f'SELECT product_id FROM products WHERE user_id = {placeholder} AND product_name = {placeholder}', 
                         (user_id, product_name)
                     ).fetchone()
@@ -5819,9 +5885,6 @@ def auto_create_products():
                             'rate': rate,
                             'description': product_description
                         })
-            
-            conn.commit()
-            
             return jsonify({
                 'success': True,
                 'message': f'Successfully created {len(created_types)} product types and {len(created_products)} products',
@@ -6272,7 +6335,7 @@ def check_existing_items(user_id, suggestions):
         for type_suggestion in suggestions.get('product_types', []):
             type_name = type_suggestion['name']
             placeholder = get_placeholder()
-            existing_type = conn.execute(
+            existing_type = execute_update(conn, 
                 f'SELECT type_id, type_name FROM product_types WHERE user_id = {placeholder} AND type_name = {placeholder}', 
                 (user_id, type_name)
             ).fetchone()
@@ -6293,7 +6356,7 @@ def check_existing_items(user_id, suggestions):
             for product_suggestion in type_suggestion.get('products', []):
                 product_name = product_suggestion['name']
                 placeholder = get_placeholder()
-                existing_product = conn.execute(
+                existing_product = execute_update(conn, 
                     f'SELECT product_id, product_name, rate FROM products WHERE user_id = {placeholder} AND product_name = {placeholder}', 
                     (user_id, product_name)
                 ).fetchone()
@@ -6326,7 +6389,7 @@ def find_similar_products(user_id, product_name, threshold=0.8):
     try:
         # Get all existing products
         placeholder = get_placeholder()
-        existing_products = conn.execute(
+        existing_products = execute_update(conn, 
             f'SELECT product_id, product_name, rate FROM products WHERE user_id = {placeholder}', 
             (user_id,)
         ).fetchall()
@@ -6365,7 +6428,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     
     # Current month summary
     placeholder = get_placeholder()
-    month_data = conn.execute(f'''
+    month_data = execute_update(conn, f'''
         SELECT 
             COUNT(*) as total_invoices,
             SUM(total_amount) as total_revenue,
@@ -6380,7 +6443,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     ''', (user_id, current_month_start, current_month_end)).fetchone()
     
     # Current year summary
-    year_data = conn.execute(f'''
+    year_data = execute_update(conn, f'''
         SELECT 
             COUNT(*) as total_invoices,
             SUM(total_amount) as total_revenue,
@@ -6395,7 +6458,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     ''', (user_id, current_year_start, current_year_end)).fetchone()
     
     # All time summary
-    all_time_data = conn.execute(f'''
+    all_time_data = execute_update(conn, f'''
         SELECT 
             COUNT(*) as total_invoices,
             SUM(total_amount) as total_revenue,
@@ -6409,7 +6472,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     ''', (user_id,)).fetchone()
     
     # Get top selling products (current month)
-    top_products = conn.execute(f'''
+    top_products = execute_update(conn, f'''
         SELECT 
             bi.product_name,
             SUM(bi.quantity) as total_quantity,
@@ -6424,7 +6487,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     ''', (user_id, current_month_start, current_month_end)).fetchall()
     
     # Get top customers (current month)
-    top_customers = conn.execute(f'''
+    top_customers = execute_update(conn, f'''
         SELECT 
             c.name as customer_name,
             COUNT(b.bill_id) as invoice_count,
@@ -6521,7 +6584,10 @@ def get_filtered_invoice_summary(user_id, filters=None):
         WHERE {where_clause}
     '''
     
-    summary_data = conn.execute(summary_query, params).fetchone()
+    cursor = execute_query(conn, summary_query, params)
+
+    
+    summary_data = cursor.fetchone()
     
     # Top products query
     top_products_query = f'''
@@ -6539,7 +6605,10 @@ def get_filtered_invoice_summary(user_id, filters=None):
         LIMIT 5
     '''
     
-    top_products = conn.execute(top_products_query, params).fetchall()
+    cursor = execute_query(conn, top_products_query, params)
+
+    
+    top_products = cursor.fetchall()
     
     # Top customers query
     top_customers_query = f'''
@@ -6556,7 +6625,10 @@ def get_filtered_invoice_summary(user_id, filters=None):
         LIMIT 5
     '''
     
-    top_customers = conn.execute(top_customers_query, params).fetchall()
+    cursor = execute_query(conn, top_customers_query, params)
+
+    
+    top_customers = cursor.fetchall()
     
     conn.close()
     
@@ -6581,7 +6653,7 @@ def get_financial_overview():
     try:
         # Revenue calculations
         placeholder = get_placeholder()
-        revenue_data = conn.execute(f'''
+        revenue_data = execute_update(conn, f'''
             SELECT 
                 COUNT(*) as total_invoices,
                 SUM(total_amount) as total_revenue,
@@ -6595,7 +6667,7 @@ def get_financial_overview():
         ''', (user_id, from_date, to_date)).fetchone()
         
         # Expense calculations
-        expense_data = conn.execute(f'''
+        expense_data = execute_update(conn, f'''
             SELECT 
                 COUNT(*) as total_expenses,
                 SUM(amount) as total_expenses_amount,
@@ -6616,7 +6688,7 @@ def get_financial_overview():
         net_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0
         
         # Get top revenue sources
-        top_products = conn.execute(f'''
+        top_products = execute_update(conn, f'''
             SELECT 
                 bi.product_name,
                 SUM(bi.total_amount) as revenue,
@@ -6631,7 +6703,7 @@ def get_financial_overview():
         ''', (user_id, from_date, to_date)).fetchall()
         
         # Get top expense categories
-        top_expense_categories = conn.execute(f'''
+        top_expense_categories = execute_update(conn, f'''
             SELECT 
                 ec.category_name,
                 SUM(e.amount) as total_amount,
@@ -6692,7 +6764,7 @@ def get_revenue_trends():
     try:
         if period == 'daily':
             # Daily trends for last 30 days
-            trends = conn.execute('''
+            trends = execute_update(conn, '''
                 SELECT 
                     DATE(bill_date) as date,
                     SUM(total_amount) as revenue,
@@ -6706,7 +6778,7 @@ def get_revenue_trends():
             ''', (user_id,)).fetchall()
         elif period == 'weekly':
             # Weekly trends for last 12 weeks
-            trends = conn.execute('''
+            trends = execute_update(conn, '''
                 SELECT 
                     strftime('%Y-W%W', bill_date) as week,
                     SUM(total_amount) as revenue,
@@ -6720,7 +6792,7 @@ def get_revenue_trends():
             ''', (user_id,)).fetchall()
         else:  # monthly
             # Monthly trends for specified months
-            trends = conn.execute('''
+            trends = execute_update(conn, '''
                 SELECT 
                     strftime('%Y-%m', bill_date) as month,
                     SUM(total_amount) as revenue,
@@ -6757,7 +6829,7 @@ def get_expense_trends():
     try:
         if period == 'daily':
             # Daily trends for last 30 days
-            trends = conn.execute('''
+            trends = execute_update(conn, '''
                 SELECT 
                     DATE(expense_date) as date,
                     SUM(amount) as expenses,
@@ -6770,7 +6842,7 @@ def get_expense_trends():
             ''', (user_id,)).fetchall()
         elif period == 'weekly':
             # Weekly trends for last 12 weeks
-            trends = conn.execute('''
+            trends = execute_update(conn, '''
                 SELECT 
                     strftime('%Y-W%W', expense_date) as week,
                     SUM(amount) as expenses,
@@ -6783,7 +6855,7 @@ def get_expense_trends():
             ''', (user_id,)).fetchall()
         else:  # monthly
             # Monthly trends for specified months
-            trends = conn.execute('''
+            trends = execute_update(conn, '''
                 SELECT 
                     strftime('%Y-%m', expense_date) as month,
                     SUM(amount) as expenses,
@@ -6817,7 +6889,7 @@ def get_cash_flow():
     
     try:
         # Cash inflows (revenue)
-        cash_inflows = conn.execute('''
+        cash_inflows = execute_update(conn, '''
             SELECT 
                 SUM(total_amount) as total_inflow,
                 SUM(advance_paid) as advance_payments,
@@ -6828,7 +6900,7 @@ def get_cash_flow():
         ''', (user_id, from_date, to_date)).fetchone()
         
         # Cash outflows (expenses)
-        cash_outflows = conn.execute('''
+        cash_outflows = execute_update(conn, '''
             SELECT 
                 SUM(amount) as total_outflow,
                 COUNT(*) as expense_count
@@ -6838,7 +6910,7 @@ def get_cash_flow():
         ''', (user_id, from_date, to_date)).fetchone()
         
         # Payment method analysis
-        payment_methods = conn.execute('''
+        payment_methods = execute_update(conn, '''
             SELECT 
                 payment_method,
                 COUNT(*) as count,
@@ -6886,7 +6958,7 @@ def get_business_metrics():
     
     try:
         # Customer metrics
-        customer_metrics = conn.execute('''
+        customer_metrics = execute_update(conn, '''
             SELECT 
                 COUNT(DISTINCT customer_id) as total_customers,
                 COUNT(DISTINCT CASE WHEN bill_date >= date('now', '-7 days') THEN customer_id END) as new_customers_7d,
@@ -6899,7 +6971,7 @@ def get_business_metrics():
         ''', (user_id, from_date, to_date)).fetchone()
         
         # Employee performance
-        employee_performance = conn.execute('''
+        employee_performance = execute_update(conn, '''
             SELECT 
                 e.name as employee_name,
                 COUNT(b.bill_id) as bills_handled,
@@ -6914,7 +6986,7 @@ def get_business_metrics():
         ''', (user_id, from_date, to_date)).fetchall()
         
         # Product performance
-        product_performance = conn.execute('''
+        product_performance = execute_update(conn, '''
             SELECT 
                 bi.product_name,
                 SUM(bi.quantity) as total_quantity,
@@ -6963,7 +7035,7 @@ def get_expense_breakdown():
     
     try:
         # Expense breakdown by category
-        category_breakdown = conn.execute('''
+        category_breakdown = execute_update(conn, '''
             SELECT 
                 ec.category_name,
                 ec.description,
@@ -6981,7 +7053,7 @@ def get_expense_breakdown():
         ''', (user_id, from_date, to_date)).fetchall()
         
         # Monthly expense trends by category
-        monthly_trends = conn.execute('''
+        monthly_trends = execute_update(conn, '''
             SELECT 
                 ec.category_name,
                 strftime('%Y-%m', e.expense_date) as month,
@@ -7020,7 +7092,7 @@ def get_top_products():
     
     try:
         # Top products by revenue
-        top_products = conn.execute('''
+        top_products = execute_update(conn, '''
             SELECT 
                 bi.product_name,
                 SUM(bi.quantity) as quantity_sold,

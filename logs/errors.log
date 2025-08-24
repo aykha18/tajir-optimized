@@ -1496,3 +1496,11 @@ LINE 6:     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
                                         ^
 
 2025-08-25 01:38:16,107 - root - ERROR - log_dml_error:146 - Failed to log to database: 'psycopg2.extensions.connection' object has no attribute 'execute'
+2025-08-25 02:13:34,103 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: employees, Error: column "id" does not exist
+LINE 1: ... (2, 'AK aka', '888488485', 'XXXXX', 'Manager') RETURNING id
+                                                                     ^
+, User: 2, Data: {'name': 'AK aka', 'mobile': '888488485', 'address': 'XXXXX', 'position': 'Manager'}...
+2025-08-25 02:13:34,142 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 7:              RETURNING id
+                               ^
+
