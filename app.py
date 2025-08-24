@@ -2385,7 +2385,8 @@ def handle_setup_wizard():
             shop_code = generate_shop_code()
             # Check uniqueness of shop_code
             placeholder = get_placeholder()
-            existing = execute_update(conn, f'SELECT 1 FROM users WHERE shop_code = {placeholder}', (shop_code,)).fetchone()
+            cursor = execute_query(conn, f'SELECT 1 FROM users WHERE shop_code = {placeholder}', (shop_code,))
+            existing = cursor.fetchone()
             if not existing:
                 break
             if attempts > 5:
@@ -2514,7 +2515,8 @@ def auth_login():
                 return jsonify({'success': False, 'message': 'Email and password required'})
             
             placeholder = get_placeholder()
-            user = execute_update(conn, f'SELECT * FROM users WHERE email = {placeholder} AND is_active = 1', (email,)).fetchone()
+            cursor = execute_query(conn, f'SELECT * FROM users WHERE email = {placeholder} AND is_active = 1', (email,))
+                        user = cursor.fetchone()
             
             if not user:
                 return jsonify({'success': False, 'message': 'Invalid email or password'})
@@ -2546,7 +2548,8 @@ def auth_login():
             execute_update(conn, f'UPDATE otp_codes SET is_used = 1 WHERE id = {placeholder}', (otp_record['id'],))
             
             placeholder = get_placeholder()
-            user = execute_update(conn, f'SELECT * FROM users WHERE mobile = {placeholder} AND is_active = 1', (mobile,)).fetchone()
+            cursor = execute_query(conn, f'SELECT * FROM users WHERE mobile = {placeholder} AND is_active = 1', (mobile,))
+                        user = cursor.fetchone()
             
             if not user:
                 return jsonify({'success': False, 'message': 'No account found with this mobile number'})
@@ -2559,7 +2562,8 @@ def auth_login():
                 return jsonify({'success': False, 'message': 'Shop code and password required'})
             
             placeholder = get_placeholder()
-            user = execute_update(conn, f'SELECT * FROM users WHERE shop_code = {placeholder} AND is_active = 1', (shop_code,)).fetchone()
+            cursor = execute_query(conn, f'SELECT * FROM users WHERE shop_code = {placeholder} AND is_active = 1', (shop_code,))
+                        user = cursor.fetchone()
             
             if not user:
                 return jsonify({'success': False, 'message': 'Invalid shop code or password'})
@@ -2620,7 +2624,8 @@ def change_password():
 
         conn = get_db_connection()
         placeholder = get_placeholder()
-        user = execute_update(conn, f'SELECT user_id, password_hash FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
+        cursor = execute_query(conn, f'SELECT user_id, password_hash FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,))
+                user = cursor.fetchone()
         if not user:
             conn.close()
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -3222,7 +3227,8 @@ def get_shop_settings():
         user_id = get_current_user_id()
         conn = get_db_connection()
         placeholder = get_placeholder()
-        settings = execute_update(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
+        cursor = execute_query(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
+                settings = cursor.fetchone()
         conn.close()
         
         if settings:
@@ -3249,7 +3255,8 @@ def get_payment_mode():
         user_id = get_current_user_id()
         conn = get_db_connection()
         placeholder = get_placeholder()
-        settings = execute_update(conn, f'SELECT payment_mode FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
+        cursor = execute_query(conn, f'SELECT payment_mode FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
+                settings = cursor.fetchone()
         conn.close()
         
         payment_mode = settings['payment_mode'] if settings else 'advance'
@@ -3355,7 +3362,8 @@ def update_shop_settings():
         
         # Check if shop settings exist for this user
         placeholder = get_placeholder()
-        existing_settings = execute_update(conn, f'SELECT setting_id FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
+        cursor = execute_query(conn, f'SELECT setting_id FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
+                existing_settings = cursor.fetchone()
         
         if existing_settings:
             # Update existing shop settings
@@ -4048,7 +4056,8 @@ def get_email_config():
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    shop_settings_row = execute_update(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,)).fetchone()
+    cursor = execute_query(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
+            shop_settings_row = cursor.fetchone()
     conn.close()
     
     # Convert Row object to dictionary if it exists
@@ -4802,7 +4811,8 @@ def admin_auth_login():
         
         # Check if user exists and is admin (user_id = 1 is the admin user)
         placeholder = get_placeholder()
-        user = execute_update(conn, f'SELECT * FROM users WHERE email = {placeholder} AND user_id = 1 AND is_active = 1', (email,)).fetchone()
+        cursor = execute_query(conn, f'SELECT * FROM users WHERE email = {placeholder} AND user_id = 1 AND is_active = 1', (email,))
+                user = cursor.fetchone()
         
         if not user:
             logger.warning(f"Admin user not found for email: {email}")
@@ -4879,7 +4889,8 @@ def admin_stats():
         conn = get_db_connection()
         
         # Total shops
-        total_shops = execute_update(conn, 'SELECT COUNT(*) FROM users WHERE is_active = 1').fetchone()[0]
+        cursor = execute_query(conn, 'SELECT COUNT(*) FROM users WHERE is_active = 1')
+                total_shops = cursor.fetchone()[0]
         
         # Active plans (not expired)
         active_plans = execute_update(conn, '''
@@ -5007,7 +5018,8 @@ def admin_upgrade_plan():
         
         # Check if user exists
         placeholder = get_placeholder()
-        user = execute_update(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
+        cursor = execute_query(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,))
+                user = cursor.fetchone()
         if not user:
             conn.close()
             return jsonify({'error': 'User not found'}), 404
@@ -5074,13 +5086,15 @@ def admin_expire_plan():
         
         # Check if user exists
         placeholder = get_placeholder()
-        user = execute_update(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
+        cursor = execute_query(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,))
+                user = cursor.fetchone()
         if not user:
             conn.close()
             return jsonify({'error': 'User not found'}), 404
         
         # Get current plan
-        current_plan = execute_update(conn, f'SELECT plan_type FROM user_plans WHERE user_id = {placeholder} AND is_active = 1', (user_id,)).fetchone()
+        cursor = execute_query(conn, f'SELECT plan_type FROM user_plans WHERE user_id = {placeholder} AND is_active = 1', (user_id,))
+                current_plan = cursor.fetchone()
         if not current_plan:
             conn.close()
             return jsonify({'error': 'No active plan found'}), 404
@@ -5480,15 +5494,17 @@ def update_expense(expense_id):
     try:
         # Verify expense and category belong to user
         placeholder = get_placeholder()
-        expense = execute_update(conn, f'''
+        cursor = execute_query(conn, f'''
             SELECT expense_id FROM expenses 
             WHERE expense_id = {placeholder} AND user_id = {placeholder}
-        ''', (expense_id, user_id)).fetchone()
+        ''', (expense_id, user_id))
+        expense = cursor.fetchone()
         
-        category = execute_update(conn, f'''
+        cursor = execute_query(conn, f'''
             SELECT category_id FROM expense_categories 
             WHERE category_id = {placeholder} AND user_id = {placeholder} AND is_active = 1
-        ''', (category_id, user_id)).fetchone()
+        ''', (category_id, user_id))
+        category = cursor.fetchone()
         
         if not expense:
             conn.close()
@@ -5523,10 +5539,11 @@ def delete_expense(expense_id):
     try:
         # Get expense details for logging
         placeholder = get_placeholder()
-        expense = execute_update(conn, f'''
+        cursor = execute_query(conn, f'''
             SELECT amount, category_id FROM expenses 
             WHERE expense_id = {placeholder} AND user_id = {placeholder}
-        ''', (expense_id, user_id)).fetchone()
+        ''', (expense_id, user_id))
+        expense = cursor.fetchone()
         
         if not expense:
             conn.close()
