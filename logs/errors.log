@@ -1480,3 +1480,19 @@
 2025-08-19 00:58:57,305 - root - ERROR - extract_text_from_image:5674 - Error extracting text from image: Could not read image file
 2025-08-19 01:03:05,762 - root - ERROR - extract_text_from_image:5674 - Error extracting text from image: Could not read image file
 2025-08-19 01:03:05,762 - root - ERROR - extract_text_from_image:5674 - Error extracting text from image: Could not read image file
+2025-08-24 10:33:30,594 - root - ERROR - log_dml_error:115 - DML Error - Operation: CREATE, Table: bills, Error: float() argument must be a string or a real number, not 'NoneType', User: 2, Data: {'customer_name': None, 'total_amount': None, 'item_count': 0}...
+2025-08-24 10:39:22,617 - root - ERROR - log_dml_error:115 - DML Error - Operation: CREATE, Table: bills, Error: NOT NULL constraint failed: bill_items.product_name, User: 2, Data: {'customer_name': None, 'total_amount': 488.25, 'item_count': 0}...
+2025-08-24 10:39:43,520 - root - ERROR - log_dml_error:136 - Failed to log to database: database is locked
+2025-08-24 10:40:03,997 - root - ERROR - log_dml_error:115 - DML Error - Operation: CREATE, Table: bills, Error: NOT NULL constraint failed: bill_items.product_name, User: 2, Data: {'customer_name': None, 'total_amount': 488.25, 'item_count': 0}...
+2025-08-24 10:40:24,937 - root - ERROR - log_dml_error:136 - Failed to log to database: database is locked
+2025-08-24 10:41:16,292 - root - ERROR - log_dml_error:115 - DML Error - Operation: CREATE, Table: bills, Error: NOT NULL constraint failed: bill_items.product_name, User: 2, Data: {'customer_name': None, 'total_amount': 441.0, 'item_count': 0}...
+2025-08-24 10:41:37,172 - root - ERROR - log_dml_error:136 - Failed to log to database: database is locked
+2025-08-25 01:37:42,828 - root - ERROR - log_dml_error:125 - DML Error - Operation: INIT, Table: database, Error: 'psycopg2.extensions.connection' object has no attribute 'execute'
+2025-08-25 01:37:42,864 - root - ERROR - log_dml_error:146 - Failed to log to database: 'psycopg2.extensions.connection' object has no attribute 'execute'
+2025-08-25 01:37:54,219 - root - ERROR - log_dml_error:125 - DML Error - Operation: INIT, Table: database, Error: 'psycopg2.extensions.connection' object has no attribute 'execute'
+2025-08-25 01:37:54,254 - root - ERROR - log_dml_error:146 - Failed to log to database: 'psycopg2.extensions.connection' object has no attribute 'execute'
+2025-08-25 01:38:16,049 - root - ERROR - log_dml_error:125 - DML Error - Operation: INIT, Table: database, Error: syntax error at or near "AUTOINCREMENT"
+LINE 6:     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                        ^
+
+2025-08-25 01:38:16,107 - root - ERROR - log_dml_error:146 - Failed to log to database: 'psycopg2.extensions.connection' object has no attribute 'execute'

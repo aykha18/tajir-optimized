@@ -1,0 +1,1256 @@
+/* Mobile Billing V3 - Fresh 4-Step Process */
+
+/* Override conflicting modal styles from V2 */
+#add-customer-modal {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
+}
+
+#add-customer-modal.hidden {
+  display: none !important;
+}
+
+/* Main Container */
+.mobile-billing-v3-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  display: none;
+}
+
+.mobile-billing-v3-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #111827;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Ensure enough space for navigation */
+  padding-bottom: 80px !important;
+}
+
+/* Header */
+.mobile-billing-v3-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.app-info h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.app-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #374151;
+  color: #f9fafb;
+}
+
+/* Step Progress */
+.step-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #374151;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.step-indicator.active .step-number {
+  background: #3b82f6;
+  color: white;
+}
+
+.step-label {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+  text-align: center;
+}
+
+.step-indicator.active .step-label {
+  color: #3b82f6;
+}
+
+.step-line {
+  width: 40px;
+  height: 2px;
+  background: #374151;
+  margin: 0 8px;
+}
+
+/* Step Content */
+.step-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.step-panel {
+  display: none !important;
+  /* Debug: Add red border to see step panels */
+  border: 2px solid blue !important;
+}
+
+.step-panel.active {
+  display: flex !important;
+  /* Debug: Add green border to see active step panel */
+  border: 2px solid green !important;
+}
+
+.step-header {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.step-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.step-header p {
+  margin: 0;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+/* Search Section */
+.search-section,
+.customer-search-section {
+  margin-bottom: 24px;
+}
+
+.search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input svg {
+  position: absolute;
+  left: 16px;
+  color: #9ca3af;
+  z-index: 1;
+}
+
+.search-input input {
+  width: 100%;
+  padding: 16px 16px 16px 48px;
+  background: #374151;
+  border: 2px solid #4b5563;
+  border-radius: 12px;
+  color: #f9fafb;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.search-input input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.customer-search-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.add-customer-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 24px 30px; /* Increased from 16px 20px to 24px 30px (50% increase) */
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+  /* Debug: Make button more visible */
+  border: 3px solid red !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.add-customer-btn:hover {
+  background: #2563eb;
+}
+
+/* Products Grid */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.product-card {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.product-card:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+}
+
+.product-info {
+  flex: 1;
+}
+
+.product-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f9fafb;
+  margin-bottom: 4px;
+}
+
+.product-type {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 8px;
+}
+
+.product-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.add-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  width: 40px;
+  height: 60px; /* Increased from 40px to 60px (50% increase) */
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.add-btn:hover {
+  background: #2563eb;
+}
+
+/* Customers List */
+.customers-list {
+  margin-bottom: 24px;
+}
+
+.customer-item {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.customer-item:hover {
+  border-color: #3b82f6;
+}
+
+.customer-info {
+  flex: 1;
+}
+
+.customer-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f9fafb;
+  margin-bottom: 4px;
+}
+
+.customer-phone {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.select-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 12px 24px; /* Increased from 8px 16px to 12px 24px (50% increase) */
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.select-btn:hover {
+  background: #059669;
+}
+
+/* Selected Items Summary */
+.selected-items-summary {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 24px;
+}
+
+.selected-items-summary h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.selected-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #374151;
+}
+
+.selected-item:last-child {
+  border-bottom: none;
+}
+
+.item-info {
+  flex: 1;
+}
+
+.item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f9fafb;
+  margin-bottom: 4px;
+}
+
+.item-details {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.item-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qty-btn {
+  background: #374151;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+  width: 42px; /* Increased from 28px to 42px (50% increase) */
+  height: 42px; /* Increased from 28px to 42px (50% increase) */
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.qty-btn:hover {
+  background: #4b5563;
+}
+
+.qty {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f9fafb;
+  min-width: 20px;
+  text-align: center;
+}
+
+.remove-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  width: 42px; /* Increased from 28px to 42px (50% increase) */
+  height: 42px; /* Increased from 28px to 42px (50% increase) */
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover {
+  background: #dc2626;
+}
+
+/* Selected Customer Display */
+.selected-customer-display {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 24px;
+}
+
+.selected-customer-display h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.customer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.customer-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f9fafb;
+  margin-bottom: 4px;
+}
+
+.customer-phone {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.change-customer-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 12px 24px; /* Increased from 8px 16px to 12px 24px (50% increase) */
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.change-customer-btn:hover {
+  background: #d97706;
+}
+
+/* Bill Summary */
+.bill-summary {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.bill-items {
+  margin-bottom: 20px;
+}
+
+.bill-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #374151;
+}
+
+.bill-item:last-child {
+  border-bottom: none;
+}
+
+.item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f9fafb;
+  margin-bottom: 4px;
+}
+
+.item-type {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.item-qty {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.item-total {
+  font-size: 14px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.bill-totals {
+  border-top: 1px solid #374151;
+  padding-top: 20px;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #f9fafb;
+}
+
+.total-row.total {
+  font-size: 18px;
+  font-weight: 700;
+  color: #10b981;
+  border-top: 1px solid #374151;
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.total-row.balance {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.discount-row,
+.advance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #f9fafb;
+}
+
+.discount-input,
+.advance-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.discount-input input,
+.advance-input input {
+  width: 80px;
+  padding: 8px 12px;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  color: #f9fafb;
+  font-size: 14px;
+  text-align: center;
+}
+
+.discount-input input:focus,
+.advance-input input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Final Bill Summary */
+.final-bill-summary {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.bill-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bill-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #f9fafb;
+}
+
+.bill-row:first-child {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 36px; /* Increased from 16px 24px to 24px 36px (50% increase) */
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn.primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background: #2563eb;
+}
+
+.action-btn.secondary {
+  background: #374151;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+}
+
+.action-btn.secondary:hover {
+  background: #4b5563;
+}
+
+/* Navigation */
+.step-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #1f2937;
+  border-top: 1px solid #374151;
+  gap: 16px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 36px; /* Increased from 12px 24px to 18px 36px (50% increase) */
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prev-btn {
+  background: #374151;
+  color: #9ca3af;
+}
+
+.prev-btn:hover:not(:disabled) {
+  background: #4b5563;
+  color: #f9fafb;
+}
+
+.prev-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.next-btn {
+  background: #3b82f6;
+  color: white;
+}
+
+.next-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.next-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.modal-content h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #f9fafb;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #f9fafb;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  color: #f9fafb;
+  font-size: 14px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 18px 24px; /* Increased from 12px 16px to 18px 24px (50% increase) */
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-secondary {
+  background: #374151;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+}
+
+/* Success Modal */
+.success-icon {
+  text-align: center;
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.bill-details p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #f9fafb;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Loading and Empty States */
+.loading,
+.no-products,
+.no-customers,
+.no-items {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .step-progress {
+    padding: 16px;
+  }
+  
+  .step-line {
+    width: 20px;
+  }
+  
+  .step-content {
+    padding: 16px;
+  }
+  
+  .customer-search-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .add-customer-btn {
+    justify-content: center;
+  }
+}
+
+/* Notification System */
+.mobile-billing-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10001;
+  max-width: 400px;
+  min-width: 300px;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-billing-notification-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.mobile-billing-notification-error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.mobile-billing-notification-info {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.notification-icon {
+  font-size: 20px;
+  font-weight: bold;
+  min-width: 24px;
+  text-align: center;
+}
+
+.notification-message {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  opacity: 0.8;
+}
+
+.notification-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  opacity: 1;
+}
+
+/* Mobile responsive adjustments for notifications */
+@media (max-width: 640px) {
+  .mobile-billing-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    min-width: auto;
+  }
+  
+  .notification-content {
+    padding: 14px 16px;
+  }
+  
+  .notification-message {
+    font-size: 13px;
+  }
+}
+
+/* Navigation buttons - FORCE horizontal alignment */
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 {
+  display: block !important;
+}
+
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  width: 100% !important;
+}
+
+#mobile-billing-v3-overlay #prev-step-btn,
+#mobile-billing-v3-overlay #next-step-btn {
+  display: inline-block !important;
+  margin: 0 !important;
+  float: none !important;
+  width: auto !important;
+  height: auto !important;
+  flex: 0 0 auto !important;
+  min-width: 120px !important;
+}
+
+/* Override any Tailwind classes that might be causing issues */
+.flex.flex-row {
+  flex-direction: row !important;
+}
+
+.flex.flex-col {
+  flex-direction: column !important;
+}
+
+/* Force horizontal layout for the navigation container */
+.navigation-container {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  /* Ensure navigation is above mobile nav bar */
+  position: relative !important;
+  z-index: 10001 !important;
+  background: #1f2937 !important;
+  padding: 16px !important;
+  border-top: 1px solid #374151 !important;
+}
+
+/* ULTRA SPECIFIC OVERRIDE - Target the exact navigation section */
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  flex-wrap: nowrap !important;
+}
+
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container > * {
+  flex: 0 0 auto !important;
+  display: inline-block !important;
+  float: none !important;
+  clear: none !important;
+}
+
+/* Override any mobile-specific styles that might be causing issues */
+@media (max-width: 768px) {
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container > * {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}
+
+/* NUCLEAR OPTION - Override everything including inline styles */
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[class*="navigation"] {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  flex-wrap: nowrap !important;
+}
+
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[class*="navigation"] > button {
+  flex: 0 0 auto !important;
+  display: inline-block !important;
+  float: none !important;
+  clear: none !important;
+  width: auto !important;
+  min-width: 120px !important;
+  margin: 0 !important;
+}
+
+/* Target by ID directly */
+#prev-step-btn,
+#next-step-btn {
+  display: inline-block !important;
+  float: none !important;
+  clear: none !important;
+  width: auto !important;
+  min-width: 120px !important;
+  margin: 0 !important;
+  flex: 0 0 auto !important;
+  /* Ensure buttons are visible */
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 10002 !important;
+  /* Force visibility */
+  background: #374151 !important;
+  color: white !important;
+  border: 2px solid #3b82f6 !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+/* Force the container to be horizontal */
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  flex-wrap: nowrap !important;
+  /* Ensure navigation section is visible */
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 10001 !important;
+}
+
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div > button {
+  flex: 0 0 auto !important;
+  display: inline-block !important;
+  float: none !important;
+  clear: none !important;
+  width: auto !important;
+  min-width: 120px !important;
+  margin: 0 !important;
+}
+
+/* ULTRA NUCLEAR OPTION - Override ALL CSS files including mobile-enhancements.css */
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div,
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container,
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[class*="flex"],
+/* Ensure the entire navigation section is visible */
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800,
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[class*="navigation"] {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  flex-wrap: nowrap !important;
+  flex-flow: row nowrap !important;
+}
+
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div > button,
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container > button,
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[class*="flex"] > button,
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[class*="navigation"] > button,
+#prev-step-btn,
+#next-step-btn {
+  flex: 0 0 auto !important;
+  display: inline-block !important;
+  float: none !important;
+  clear: none !important;
+  width: auto !important;
+  min-width: 120px !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  flex-basis: auto !important;
+}
+
+/* Override any mobile-enhancements.css rules */
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[style*="flex-direction: column"] {
+  flex-direction: row !important;
+}
+
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[class*="flex-col"] {
+  flex-direction: row !important;
+}
+
+/* Force horizontal layout on all screen sizes */
+@media (max-width: 768px), (max-width: 640px), (max-width: 480px) {
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div,
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    flex-flow: row nowrap !important;
+  }
+  
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div > button,
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container > button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}
+
+/* OVERRIDE MOBILE-ENHANCEMENTS.CSS SPECIFICALLY */
+/* This rule specifically overrides the mobile-enhancements.css flex-direction rule */
+
+/* CRITICAL: Ensure navigation section is always visible */
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 10001 !important;
+  background: #1f2937 !important;
+  border-top: 1px solid #374151 !important;
+  padding: 16px !important;
+  /* Ensure it's not covered by mobile nav */
+  margin-bottom: 80px !important;
+  min-height: 80px !important;
+}
+@media (max-width: 768px) {
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div.flex,
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container.flex,
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[class*="flex"] {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    flex-flow: row nowrap !important;
+  }
+  
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div.flex > button,
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 .navigation-container.flex > button,
+  #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div[class*="flex"] > button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}

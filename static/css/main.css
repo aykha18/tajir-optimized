@@ -123,8 +123,11 @@ label {
 
 /* Compact action buttons */
 .action-buttons {
+  display: flex;
+  flex-direction: row;
   gap: 8px;
   margin-top: 12px;
+  flex-wrap: wrap;
 }
 
 .action-buttons button {
@@ -766,9 +769,11 @@ textarea.compact-form:hover {
 /* Action Buttons */
 .action-buttons {
   display: flex;
+  flex-direction: row;
   gap: 8px;
   margin-top: 12px;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .action-buttons .modern-btn {

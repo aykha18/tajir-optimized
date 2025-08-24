@@ -1591,18 +1591,9 @@
   }
 }
 
-/* Mobile Billing Styles */
+/* Mobile Billing Styles - HIDDEN */
 #mobile-billing-container {
-  background: #111827;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2000;
-  overflow-y: auto;
-  padding: 16px;
-  padding-bottom: 100px; /* Add space for sticky button */
+  display: none !important;
 }
 
 #mobile-billing-container .card-mobile {

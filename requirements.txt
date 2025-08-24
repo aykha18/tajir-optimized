@@ -17,6 +17,10 @@ pytesseract==0.3.13
 Pillow==11.3.0
 # opencv-python==4.12.0.88  # Optional - will use PIL fallback if not available
 
+# PostgreSQL dependencies for Railway deployment
+psycopg2-binary==2.9.7
+psycopg2-pool==1.1
+
 # Security packages
 Flask-WTF==1.1.1
 Flask-Limiter==3.5.0

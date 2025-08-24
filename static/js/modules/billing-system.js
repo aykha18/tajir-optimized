@@ -18,17 +18,21 @@ let billingConfig = {
 // Load billing configuration from shop settings
 async function loadBillingConfiguration() {
     try {
+        console.log('🔄 Billing System: Loading billing configuration...');
         const response = await fetch('/api/shop-settings/billing-config');
         const data = await response.json();
         
         if (data.success) {
             billingConfig = data.config;
+            console.log('✅ Billing System: Loaded billing config successfully:', billingConfig);
+            console.log('📋 Billing System: Default employee ID from config:', billingConfig.default_employee_id);
             applyBillingConfiguration();
         } else {
+            console.log('⚠️ Billing System: No billing config found, using defaults');
             applyBillingConfiguration();
         }
     } catch (error) {
-        console.error('Error loading billing configuration:', error);
+        console.error('❌ Billing System: Error loading billing configuration:', error);
         // Use default configuration
         applyBillingConfiguration();
     }
@@ -150,6 +154,14 @@ function applyBillingConfiguration() {
     
     // Set basic default dates (bill date and bill number) after configuration is applied
     setBasicDefaultDates();
+    
+    // Re-apply default employee if employees are already loaded
+    if (window.allEmployees && window.allEmployees.length > 0) {
+        // Call the global setDefaultOwner function if it exists
+        if (typeof window.setDefaultOwner === 'function') {
+            window.setDefaultOwner();
+        }
+    }
 }
 
 // Get next bill number from API
@@ -2001,11 +2013,40 @@ function initializeBillingSystem() {
     }
     
     // Set default owner
-    function setDefaultOwner() {
+    window.setDefaultOwner = function() {
+      // First, check if there's a default employee configured in shop settings
+      if (billingConfig && billingConfig.default_employee_id) {
+        const defaultEmployee = employees.find(emp => 
+          (emp.employee_id || emp.id) == billingConfig.default_employee_id
+        );
+        if (defaultEmployee) {
+          // Set the default employee from shop settings
+          if (masterInput) {
+            masterInput.value = defaultEmployee.name;
+            masterInput.setAttribute('data-selected-master', JSON.stringify({
+              master_id: defaultEmployee.employee_id || defaultEmployee.id,
+              master_name: defaultEmployee.name
+            }));
+          }
+          
+          if (masterInputMobile) {
+            masterInputMobile.value = defaultEmployee.name;
+            masterInputMobile.setAttribute('data-selected-master', JSON.stringify({
+              master_id: defaultEmployee.employee_id || defaultEmployee.id,
+              master_name: defaultEmployee.name
+            }));
+          }
+          
+          // Set global selected master ID
+          window.selectedMasterId = defaultEmployee.employee_id || defaultEmployee.id;
+          console.log('Billing System: Set default employee from shop settings:', defaultEmployee.name);
+          return;
+        }
+      }
+      
+      // Fallback to owner or first employee if no shop settings default
       const owner = employees.find(emp => emp.position === 'Owner');
       if (owner) {
-
-        
         // Set the owner as default in both desktop and mobile inputs
         if (masterInput) {
           masterInput.value = owner.name;
@@ -2025,13 +2066,13 @@ function initializeBillingSystem() {
         
         // Set global selected master ID
         window.selectedMasterId = owner.employee_id;
+        console.log('Billing System: Set owner as default:', owner.name);
         
       } else {
         // If no owner found, set the first available employee as default
         if (employees.length > 0) {
           const firstEmployee = employees[0];
 
-          
           // Set the first employee as default in both desktop and mobile inputs
           if (masterInput) {
             masterInput.value = firstEmployee.name;
@@ -2051,6 +2092,7 @@ function initializeBillingSystem() {
           
           // Set global selected master ID
           window.selectedMasterId = firstEmployee.employee_id;
+          console.log('Billing System: Set first employee as default:', firstEmployee.name);
           
         }
       }
@@ -2246,12 +2288,17 @@ function initializeBillingSystem() {
       }
     });
 
-    // Load employees on initialization
+    // Load billing configuration first, then employees
+    async function initializeBillingSystem() {
+      // Load billing configuration first
+      await loadBillingConfiguration();
+      
+      // Then load employees (which will use the billing config)
+      await loadEmployees();
+    }
     
-    loadEmployees();
-    
-    // Load billing configuration on initialization
-    loadBillingConfiguration();
+    // Initialize the billing system
+    initializeBillingSystem();
   }
 
   // Make selected master ID available globally
@@ -2916,6 +2963,26 @@ function initializeBillingSystem() {
         } else {
           console.warn('Mobile billing not available');
           showModernAlert('Mobile billing is not available. Please refresh the page.', 'warning', 'Feature Unavailable');
+        }
+      });
+    }
+
+    // Setup Mobile Billing V3 Toggle
+    const mobileBillingToggleV3 = document.getElementById('mobileBillingToggleV3');
+    if (mobileBillingToggleV3) {
+      mobileBillingToggleV3.addEventListener('click', function() {
+        console.log('Mobile Billing V3 Toggle clicked');
+        // Show mobile billing V3 interface
+        if (window.mobileBillingV3) {
+          try {
+            window.mobileBillingV3.show();
+          } catch (error) {
+            console.error('Error showing mobile billing V3:', error);
+            showModernAlert('Mobile billing V3 encountered an error. Please try again.', 'error', 'Error');
+          }
+        } else {
+          console.warn('Mobile billing V3 not available');
+          showModernAlert('Mobile billing V3 is not available. Please refresh the page.', 'warning', 'Feature Unavailable');
         }
       });
     }
