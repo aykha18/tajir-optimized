@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple button styles */
+        .test-btn {
+            background-color: #6b7280 !important;
+            color: #ffffff !important;
+            padding: 12px 24px !important;
+            border-radius: 8px !important;
+            border: none !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            display: inline-block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .test-btn.blue {
+            background-color: #3b82f6 !important;
+        }
+        
+        .test-btn:hover {
+            opacity: 0.8 !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1 class="text-2xl mb-8">Button Visibility Test</h1>
+    
+    <div class="space-y-4">
+        <h2 class="text-xl">Test 1: Simple Buttons</h2>
+        <div class="flex gap-4">
+            <button class="test-btn">Previous</button>
+            <button class="test-btn blue">Next</button>
+        </div>
+        
+        <h2 class="text-xl mt-8">Test 2: Tailwind Classes Only</h2>
+        <div class="flex gap-4">
+            <button class="bg-neutral-700 text-white px-6 py-2 rounded-lg font-semibold">Previous</button>
+            <button class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold">Next</button>
+        </div>
+        
+        <h2 class="text-xl mt-8">Test 3: Exact Same HTML as Your App</h2>
+        <div class="p-4 border-t border-neutral-700 bg-neutral-800">
+            <div class="navigation-container flex flex-row justify-between items-center gap-4">
+                <button id="prev-step-btn" class="bg-neutral-700 hover:bg-neutral-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="display: inline-block !important; margin: 0 !important; float: none !important; width: auto !important; height: auto !important; flex: 0 0 auto !important; min-width: 120px !important; background-color: #6b7280 !important; color: #ffffff !important; visibility: visible !important; opacity: 1 !important;">
+                    Previous
+                </button>
+                <button id="next-step-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="display: inline-block !important; margin: 0 !important; float: none !important; width: auto !important; height: auto !important; flex: 0 0 auto !important; min-width: 120px !important; background-color: #3b82f6 !important; color: #ffffff !important; visibility: visible !important; opacity: 1 !important;">
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-8 p-4 bg-gray-800 rounded">
+        <h3 class="text-lg mb-2">Instructions:</h3>
+        <ol class="list-decimal list-inside space-y-1">
+            <li>Open this file in your browser</li>
+            <li>Tell me which buttons are visible and which are not</li>
+            <li>If any buttons are invisible, right-click and inspect them</li>
+            <li>Check what CSS is being applied in the developer tools</li>
+        </ol>
+    </div>
+</body>
+</html>

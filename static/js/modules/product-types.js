@@ -12,11 +12,13 @@ async function loadProductTypes() {
   if (list) list.classList.add('opacity-0', 'translate-y-4');
   if (form) form.classList.add('opacity-0', 'translate-y-4');
   
-  try {
-    const resp = await fetch('/api/product-types');
-    const types = await resp.json();
+      try {
+      const resp = await fetch('/api/product-types');
+      const types = await resp.json();
 
-    if (!list) return;
+      if (!list) {
+        return;
+      }
     
     // Simulate loading delay for better UX
     await new Promise(resolve => setTimeout(resolve, 800));
@@ -103,7 +105,16 @@ function setupProductTypeFormHandler() {
   if (productTypeForm) {
     // Remove existing event listener if any
     productTypeForm.removeEventListener('submit', handleProductTypeFormSubmit);
+    
+    // Add new event listener
     productTypeForm.addEventListener('submit', handleProductTypeFormSubmit);
+    
+    // Also add click listener to the submit button as backup
+    const submitButton = productTypeForm.querySelector('button[type="submit"], button:last-child');
+    if (submitButton) {
+      submitButton.removeEventListener('click', handleProductTypeFormSubmit);
+      submitButton.addEventListener('click', handleProductTypeFormSubmit);
+    }
   }
 }
 
@@ -154,15 +165,26 @@ async function handleProductTypeListClick(e) {
 
 // Handle product type form submission
 async function handleProductTypeFormSubmit(e) {
+  console.log('📝 handleProductTypeFormSubmit() called');
+  console.log('📋 Event type:', e.type);
+  console.log('📋 Event target:', e.target);
+  console.log('📋 Event currentTarget:', e.currentTarget);
+  
   e.preventDefault();
+  console.log('🛑 Prevented default form submission');
   
   const typeName = document.getElementById('productTypeName').value.trim();
   const description = document.getElementById('productTypeDescription').value.trim();
   
+  console.log('📝 Form data:', { typeName, description });
+  
   if (!typeName) {
+    console.warn('⚠️ Type name is empty');
     alert('Please enter a product type name');
     return;
   }
+  
+  console.log('🚀 Submitting product type to API...');
   
   try {
     const response = await fetch('/api/product-types', {
@@ -176,22 +198,44 @@ async function handleProductTypeFormSubmit(e) {
       })
     });
     
+    console.log('📡 API response status:', response.status);
+    
     if (response.ok) {
-      // Reset form
-      e.target.reset();
+      console.log('✅ Product type added successfully');
+      
+      // Reset form - always reference the form element
+      const form = document.getElementById('productTypeForm');
+      if (form) {
+        form.reset();
+        console.log('🔄 Form reset');
+      }
       
       // Reload product types
       await loadProductTypes();
+      console.log('🔄 Product types reloaded');
       
       // Show success message
       if (window.showToast) {
         window.showToast('Product type added successfully!', 'success');
       }
     } else {
-      throw new Error('Failed to add product type');
+      const errorText = await response.text();
+      console.error('❌ API error:', errorText);
+      
+      // Try to parse the error response for better user feedback
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error && errorData.error.includes('already exists')) {
+          throw new Error('A product type with this name already exists. Please use a different name.');
+        } else {
+          throw new Error('Failed to add product type: ' + errorData.error);
+        }
+      } catch (parseError) {
+        throw new Error('Failed to add product type: ' + errorText);
+      }
     }
   } catch (error) {
-    console.error('Error adding product type:', error);
+    console.error('❌ Error adding product type:', error);
     if (window.showToast) {
       window.showToast('Failed to add product type. Please try again.', 'error');
     }
@@ -201,4 +245,6 @@ async function handleProductTypeFormSubmit(e) {
 // Make functions globally available
 window.loadProductTypes = loadProductTypes;
 window.setupProductTypeFormHandler = setupProductTypeFormHandler;
-window.setupProductTypeListHandlers = setupProductTypeListHandlers; 
+window.setupProductTypeListHandlers = setupProductTypeListHandlers;
+
+console.log('📦 Product Types module loaded'); 

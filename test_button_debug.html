@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Debug Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Recreate the exact CSS from mobile-billing-v3.css */
+        #mobile-billing-v3-overlay #prev-step-btn, #mobile-billing-v3-overlay #next-step-btn {
+            display: inline-block !important;
+            margin: 0 !important;
+            float: none !important;
+            width: auto !important;
+            height: auto !important;
+            flex: 0 0 auto !important;
+            min-width: 120px !important;
+        }
+        
+        #mobile-billing-v3-overlay #prev-step-btn, #mobile-billing-v3-overlay #next-step-btn, .mobile-billing-v3-modal #prev-step-btn, .mobile-billing-v3-modal #next-step-btn {
+            display: inline-block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            min-width: 120px !important;
+            margin: 0 !important;
+            pointer-events: auto !important;
+            position: relative !important;
+            z-index: 10002 !important;
+            cursor: pointer !important;
+            opacity: 1 !important;
+        }
+        
+        #prev-step-btn {
+            background-color: #6b7280 !important;
+            background: #6b7280 !important;
+            color: #ffffff !important;
+            border: 1px solid #9ca3af !important;
+        }
+        
+        #prev-step-btn, #next-step-btn {
+            display: inline-block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            min-width: 120px !important;
+            margin: 0 !important;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            padding: 12px 24px !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            border: none !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        /* The conflicting CSS that might be causing issues */
+        button, input:where([type=button]), input:where([type=reset]), input:where([type=submit]) {
+            -webkit-appearance: button;
+            background-color: transparent;
+            background-image: none;
+        }
+    </style>
+</head>
+<body class="bg-neutral-900 text-white p-8">
+    <h1 class="text-2xl mb-8">Button Debug Test</h1>
+    
+    <div class="space-y-8">
+        <div>
+            <h2 class="text-xl mb-4">Test 1: Exact Same HTML Structure</h2>
+            <div id="mobile-billing-v3-overlay" class="fixed inset-0 bg-neutral-900 bg-opacity-90 z-50 overflow-y-auto">
+                <div class="p-4 border-t border-neutral-700 bg-neutral-800">
+                    <div class="navigation-container flex flex-row justify-between items-center gap-4" style="display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; gap: 1rem !important; width: 100% !important;">
+                        <button id="prev-step-btn" class="bg-gray-500 hover:bg-gray-400 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="display: inline-block !important; margin: 0 !important; float: none !important; width: auto !important; height: auto !important; flex: 0 0 auto !important; min-width: 120px !important; background-color: #6b7280 !important; background-image: none !important; -webkit-appearance: none !important; color: #ffffff !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 99999 !important; border: 2px solid red !important;">
+                            Previous
+                        </button>
+                        <button id="next-step-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="display: inline-block !important; margin: 0 !important; float: none !important; width: auto !important; height: auto !important; flex: 0 0 auto !important; min-width: 120px !important; background-color: #3b82f6 !important; background-image: none !important; -webkit-appearance: none !important; color: #ffffff !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 99999 !important; border: 2px solid red !important;">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h2 class="text-xl mb-4">Test 2: Simple Buttons (Control)</h2>
+            <div class="flex gap-4">
+                <button style="background-color: #6b7280; color: white; padding: 12px 24px; border-radius: 8px; border: 2px solid red;">Previous</button>
+                <button style="background-color: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; border: 2px solid red;">Next</button>
+            </div>
+        </div>
+        
+        <div>
+            <h2 class="text-xl mb-4">Test 3: Without Conflicting CSS</h2>
+            <div class="flex gap-4">
+                <button id="test3-prev" style="background-color: #6b7280 !important; color: white !important; padding: 12px 24px !important; border-radius: 8px !important; border: 2px solid red !important; display: inline-block !important;">Previous</button>
+                <button id="test3-next" style="background-color: #3b82f6 !important; color: white !important; padding: 12px 24px !important; border-radius: 8px !important; border: 2px solid red !important; display: inline-block !important;">Next</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-8 p-4 bg-gray-800 rounded">
+        <h3 class="text-lg mb-2">Instructions:</h3>
+        <ol class="list-decimal list-inside space-y-1">
+            <li>Open this file in your browser</li>
+            <li>Tell me which buttons are visible and which are not</li>
+            <li>If Test 1 buttons are invisible but Test 2/3 are visible, we know it's the CSS structure</li>
+            <li>If all buttons are visible, the issue is in your actual app environment</li>
+        </ol>
+    </div>
+</body>
+</html>

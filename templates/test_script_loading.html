@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script Loading Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111827;
+            color: white;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+        }
+        .success { background: #065f46; }
+        .error { background: #991b1b; }
+        .warning { background: #92400e; }
+    </style>
+</head>
+<body>
+    <h1>Script Loading Test</h1>
+    
+    <div id="results"></div>
+    
+    <script>
+        // Test before loading the script
+        console.log('Before loading mobile-navigation.js:');
+        console.log('window.MobileNavigation:', window.MobileNavigation);
+        
+        // Load the script
+        const script = document.createElement('script');
+        script.src = '/static/js/modules/mobile-navigation.js?v=1.0.2';
+        script.onload = function() {
+            console.log('Script loaded successfully');
+            console.log('After loading mobile-navigation.js:');
+            console.log('window.MobileNavigation:', window.MobileNavigation);
+            console.log('typeof window.MobileNavigation:', typeof window.MobileNavigation);
+            
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <div class="status ${window.MobileNavigation ? 'success' : 'error'}">
+                    MobileNavigation Class: ${window.MobileNavigation ? 'Loaded Successfully' : 'Failed to Load'}
+                </div>
+                <div class="status ${window.MobileNavigation && window.MobileNavigation.initializeMobileNavigation ? 'success' : 'error'}">
+                    initializeMobileNavigation Method: ${window.MobileNavigation && window.MobileNavigation.initializeMobileNavigation ? 'Available' : 'Not Available'}
+                </div>
+            `;
+        };
+        script.onerror = function() {
+            console.error('Failed to load mobile-navigation.js');
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <div class="status error">
+                    Failed to load mobile-navigation.js script
+                </div>
+            `;
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

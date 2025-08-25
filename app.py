@@ -154,7 +154,7 @@ def log_user_action(action, user_id=None, details=None):
     try:
         conn = get_db_connection()
         placeholder = get_placeholder()
-        execute_with_returning(conn, f'''
+        execute_update(conn, f'''
             INSERT INTO user_actions (timestamp, action, user_id, details)
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
         ''', (
@@ -238,7 +238,7 @@ def execute_with_returning(conn, sql, params=None):
                     'users': 'user_id',
                     'otp_codes': 'id',
                     'error_logs': 'id',
-                    'user_actions': 'id'
+                    'user_actions': 'action_id'
                 }
                 id_column = id_columns.get(table_name, 'id')
                 
@@ -249,18 +249,53 @@ def execute_with_returning(conn, sql, params=None):
                 cursor = conn.cursor()
                 cursor.execute(sql, params)
                 result = cursor.fetchone()
+                conn.commit()  # Commit the transaction
                 return result[id_column] if result else None
             else:
                 # Fallback to generic 'id' if table name can't be determined
+                # For PostgreSQL, we need to determine the correct ID column
                 if 'RETURNING' not in sql.upper():
-                    sql += ' RETURNING id'
+                    # Try to extract table name from INSERT statement
+                    if sql.strip().upper().startswith('INSERT INTO'):
+                        # Extract table name from INSERT INTO table_name
+                        parts = sql.split()
+                        if len(parts) >= 3:
+                            table_name = parts[2].strip()
+                            # Map common table names to their ID columns
+                            id_columns = {
+                                'employees': 'employee_id',
+                                'products': 'product_id', 
+                                'customers': 'customer_id',
+                                'bills': 'bill_id',
+                                'bill_items': 'item_id',
+                                'product_types': 'type_id',
+                                'vat_rates': 'vat_id',
+                                'expense_categories': 'category_id',
+                                'expenses': 'expense_id',
+                                'user_plans': 'plan_id',
+                                'shop_settings': 'setting_id',
+                                'users': 'user_id',
+                                'otp_codes': 'otp_id'
+                            }
+                            id_column = id_columns.get(table_name.lower(), 'id')
+                            sql += f' RETURNING {id_column}'
+                        else:
+                            sql += ' RETURNING id'
+                    else:
+                        sql += ' RETURNING id'
                 cursor = conn.cursor()
                 cursor.execute(sql, params)
                 result = cursor.fetchone()
-                return result['id'] if result else None
+                conn.commit()  # Commit the transaction
+                # Determine the correct key to use
+                if result:
+                    keys = list(result.keys())
+                    return result[keys[0]] if keys else None
+                return None
         else:
             cursor = conn.cursor()
             cursor.execute(sql, params)
+            conn.commit()  # Commit the transaction
             return None
     else:
         # For SQLite, use the original approach
@@ -294,7 +329,7 @@ def get_user_plan_info():
         user_id = get_current_user_id()
         conn = get_db_connection()
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT * FROM user_plans WHERE user_id = {placeholder} AND is_active = 1', (user_id,))
+        cursor = execute_query(conn, f'SELECT * FROM user_plans WHERE user_id = {placeholder} AND is_active = TRUE', (user_id,))
         user_plan = cursor.fetchone()
         cursor = execute_query(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
         shop_settings = cursor.fetchone()
@@ -349,7 +384,10 @@ def init_db():
             conn = get_db_connection()
             try:
                 cursor = execute_query(conn, "SELECT COUNT(*) FROM product_types")
-                if cursor.fetchone()[0] == 0:
+                result = cursor.fetchone()
+                # Handle both PostgreSQL (dict) and SQLite (tuple) results
+                count = result[0] if isinstance(result, tuple) else result['count']
+                if count == 0:
                     need_init = True
             except Exception:
                 # Table doesn't exist, need to initialize
@@ -514,6 +552,14 @@ def service_worker():
 def app_template():
     return send_from_directory('templates', 'app.html')
 
+@app.route('/debug')
+def debug():
+    return send_file('debug_css.html')
+
+@app.route('/test-customer-colors')
+def test_customer_colors():
+    return send_file('test_customer_colors.html')
+
 @app.route('/pwa-status')
 def pwa_status():
     user_plan_info = get_user_plan_info()
@@ -585,7 +631,9 @@ def delete_product_type(type_id):
     # Check if products exist for this type
     placeholder = get_placeholder()
     cursor = execute_query(conn, f'SELECT COUNT(*) FROM products WHERE type_id = {placeholder} AND user_id = {placeholder}', (type_id, user_id))
-    products = cursor.fetchone()[0]
+    result = cursor.fetchone()
+    # Handle both PostgreSQL (dict) and SQLite (tuple) results
+    products = result[0] if isinstance(result, tuple) else result['count']
     if products > 0:
         conn.close()
         return jsonify({'error': 'Cannot delete type with existing products'}), 400
@@ -608,7 +656,7 @@ def get_products():
             SELECT p.*, pt.type_name 
             FROM products p 
             JOIN product_types pt ON p.type_id = pt.type_id 
-            WHERE p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = 1 AND p.barcode = {placeholder}
+            WHERE p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = TRUE AND p.barcode = {placeholder}
             ORDER BY pt.type_name, p.product_name
         ''', (user_id, user_id, barcode))
         products = cursor.fetchall()
@@ -619,7 +667,7 @@ def get_products():
             SELECT p.*, pt.type_name 
             FROM products p 
             JOIN product_types pt ON p.type_id = pt.type_id 
-            WHERE p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = 1 AND (p.product_name LIKE {placeholder} OR pt.type_name LIKE {placeholder})
+            WHERE p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = TRUE AND (p.product_name LIKE {placeholder} OR pt.type_name LIKE {placeholder})
             ORDER BY pt.type_name, p.product_name
         ''', (user_id, user_id, like_search, like_search))
         products = cursor.fetchall()
@@ -629,7 +677,7 @@ def get_products():
             SELECT p.*, pt.type_name 
             FROM products p 
             JOIN product_types pt ON p.type_id = pt.type_id 
-            WHERE p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = 1 
+            WHERE p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = TRUE 
             ORDER BY pt.type_name, p.product_name
         ''', (user_id, user_id))
         products = cursor.fetchall()
@@ -687,7 +735,7 @@ def get_product(product_id):
         SELECT p.*, pt.type_name 
         FROM products p 
         JOIN product_types pt ON p.type_id = pt.type_id 
-        WHERE p.product_id = {placeholder} AND p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = 1
+        WHERE p.product_id = {placeholder} AND p.user_id = {placeholder} AND pt.user_id = {placeholder} AND p.is_active = TRUE
     ''', (product_id, user_id, user_id))
     product = cursor.fetchone()
     conn.close()
@@ -717,7 +765,7 @@ def update_product(product_id):
     except ValueError:
         return jsonify({'error': 'Invalid rate value'}), 400
     
-        conn = get_db_connection()
+    conn = get_db_connection()
     # Verify the product and type belong to current user
     placeholder = get_placeholder()
     cursor = execute_query(conn, f'SELECT product_id FROM products WHERE product_id = {placeholder} AND user_id = {placeholder}', (product_id, user_id))
@@ -746,7 +794,9 @@ def delete_product(product_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    execute_update(conn, f'UPDATE products SET is_active = 0 WHERE product_id = {placeholder} AND user_id = {placeholder}', (product_id, user_id))
+    # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
+    is_active_value = 'FALSE' if is_postgresql() else '0'
+    execute_update(conn, f'UPDATE products SET is_active = {is_active_value} WHERE product_id = {placeholder} AND user_id = {placeholder}', (product_id, user_id))
     conn.close()
     return jsonify({'message': 'Product deleted successfully'})
 
@@ -940,7 +990,7 @@ def get_recent_customers():
         placeholder = get_placeholder()
         query = f"""
             SELECT DISTINCT c.customer_id, c.name, c.phone, c.city, c.area, c.trn, 
-                   c.customer_type, c.business_name, c.business_address
+                   c.customer_type, c.business_name, c.business_address, b.bill_date, b.bill_id
             FROM customers c
             INNER JOIN bills b ON c.customer_id = b.customer_id
             WHERE c.user_id = {placeholder} AND b.user_id = {placeholder}
@@ -978,7 +1028,7 @@ def get_vat_rates():
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    cursor = execute_query(conn, f'SELECT * FROM vat_rates WHERE user_id = {placeholder} AND is_active = 1 ORDER BY effective_from DESC', (user_id,))
+    cursor = execute_query(conn, f'SELECT * FROM vat_rates WHERE user_id = {placeholder} AND is_active = TRUE ORDER BY effective_from DESC', (user_id,))
     rates = cursor.fetchall()
     conn.close()
     return jsonify([dict(rate) for rate in rates])
@@ -1005,7 +1055,7 @@ def add_vat_rate():
     # Check for duplicate effective_from and effective_to
     placeholder = get_placeholder()
     cursor = execute_query(conn,
-        f'SELECT 1 FROM vat_rates WHERE user_id = {placeholder} AND effective_from = {placeholder} AND effective_to = {placeholder} AND is_active = 1',
+        f'SELECT 1 FROM vat_rates WHERE user_id = {placeholder} AND effective_from = {placeholder} AND effective_to = {placeholder} AND is_active = TRUE',
         (user_id, effective_from, effective_to)
     )
     exists = cursor.fetchone()
@@ -1013,7 +1063,7 @@ def add_vat_rate():
         conn.close()
         return jsonify({'error': 'A VAT rate with the same effective dates already exists.'}), 400
     # Update previous active row's effective_to if needed
-    cursor = execute_query(conn, f'SELECT vat_id, effective_to FROM vat_rates WHERE user_id = {placeholder} AND is_active = 1 ORDER BY effective_from DESC LIMIT 1', (user_id,))
+    cursor = execute_query(conn, f'SELECT vat_id, effective_to FROM vat_rates WHERE user_id = {placeholder} AND is_active = TRUE ORDER BY effective_from DESC LIMIT 1', (user_id,))
     prev = cursor.fetchone()
     if prev and prev['effective_to'] == '2099-12-31':
         from datetime import datetime, timedelta
@@ -1034,7 +1084,9 @@ def delete_vat_rate(vat_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    execute_update(conn, f'UPDATE vat_rates SET is_active = 0 WHERE vat_id = {placeholder} AND user_id = {placeholder}', (vat_id, user_id))
+    # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
+    is_active_value = 'FALSE' if is_postgresql() else '0'
+    execute_update(conn, f'UPDATE vat_rates SET is_active = {is_active_value} WHERE vat_id = {placeholder} AND user_id = {placeholder}', (vat_id, user_id))
     conn.close()
     return jsonify({'message': 'VAT rate deleted successfully'})
 
@@ -1183,15 +1235,28 @@ def create_bill():
                             advance_paid, balance_amount, status, master_id, trial_date, notes
                         ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
                     '''
+                    # Handle date fields with validation and defaults
+                    bill_date = bill_data.get('bill_date', '').strip()
+                    delivery_date = bill_data.get('delivery_date', '').strip()
+                    trial_date = bill_data.get('trial_date', '').strip()
+                    
+                    # Set default dates if empty
+                    if not bill_date:
+                        bill_date = datetime.now().strftime('%Y-%m-%d')
+                    if not delivery_date:
+                        delivery_date = datetime.now().strftime('%Y-%m-%d')
+                    if not trial_date:
+                        trial_date = datetime.now().strftime('%Y-%m-%d')
+                    
                     bill_id = execute_with_returning(conn, sql, (
                         user_id, bill_number, customer_id, bill_data.get('customer_name'),
                         re.sub(r'\D', '', customer_phone), bill_data.get('customer_city'),
                         bill_data.get('customer_area'), bill_data.get('customer_trn', ''),
                         bill_data.get('customer_type', 'Individual'), bill_data.get('business_name', ''),
-                        bill_data.get('business_address', ''), bill_uuid, bill_data.get('bill_date'), 
-                        bill_data.get('delivery_date'), bill_data.get('payment_method', 'Cash'),
+                        bill_data.get('business_address', ''), bill_uuid, bill_date, 
+                        delivery_date, bill_data.get('payment_method', 'Cash'),
                         subtotal, vat_amount, total_amount, advance_paid, balance_amount,
-                        'Pending', master_id, bill_data.get('trial_date'), notes
+                        'Pending', master_id, trial_date, notes
                     ))
                     bill_created = True
                     break
@@ -1243,16 +1308,16 @@ def create_bill():
                 ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             '''
                 execute_with_returning(conn, sql, (
-                    user_id, bill_id,
-                    item.get('product_id'),
-                    item.get('product_name'),
-                    item.get('quantity', 1),
-                    item.get('rate', 0),
-                    item_discount_percent,  # Store discount percentage
-                    item_vat_amount,
-                    item.get('advance_paid', 0),
-                    item_total_amount
-                ))
+                user_id, bill_id,
+                item.get('product_id'),
+                item.get('product_name'),
+                item.get('quantity', 1),
+                item.get('rate', 0),
+                item_discount_percent,  # Store discount percentage
+                item_vat_amount,
+                item.get('advance_paid', 0),
+                item_total_amount
+            ))
             
             print(f"DEBUG: Bill creation completed successfully")
             return jsonify({'success': True, 'bill_id': bill_id})
@@ -1543,7 +1608,8 @@ def get_dashboard_data():
         FROM bills 
         WHERE DATE(bill_date) = DATE('now') AND user_id = {placeholder}
     ''', (user_id,))
-    total_revenue = cursor.fetchone()['total']
+    result = cursor.fetchone()
+    total_revenue = result[0] if isinstance(result, tuple) else result['total']
     
     # Get total bills today
     cursor = execute_query(conn, f'''
@@ -1551,7 +1617,8 @@ def get_dashboard_data():
         FROM bills 
         WHERE DATE(bill_date) = DATE('now') AND user_id = {placeholder}
     ''', (user_id,))
-    total_bills_today = cursor.fetchone()['count']
+    result = cursor.fetchone()
+    total_bills_today = result[0] if isinstance(result, tuple) else result['count']
     
     # Get pending bills
     cursor = execute_query(conn, f'''
@@ -1559,12 +1626,14 @@ def get_dashboard_data():
         FROM bills 
         WHERE status = 'Pending' AND user_id = {placeholder}
     ''', (user_id,))
-    pending_bills = cursor.fetchone()['count']
+    result = cursor.fetchone()
+    pending_bills = result[0] if isinstance(result, tuple) else result['count']
     
     # Get total customers
     placeholder = get_placeholder()
     cursor = execute_query(conn, f'SELECT COUNT(*) as count FROM customers WHERE user_id = {placeholder}', (user_id,))
-    total_customers = cursor.fetchone()['count']
+    result = cursor.fetchone()
+    total_customers = result[0] if isinstance(result, tuple) else result['count']
     
     # Get total expenses today
     cursor = execute_query(conn, f'''
@@ -1572,36 +1641,65 @@ def get_dashboard_data():
         FROM expenses 
         WHERE DATE(expense_date) = DATE('now') AND user_id = {placeholder}
     ''', (user_id,))
-    total_expenses_today = cursor.fetchone()['total']
+    result = cursor.fetchone()
+    total_expenses_today = result[0] if isinstance(result, tuple) else result['total']
     
     # Get total expenses this month
-    cursor = execute_query(conn, f'''
+    if is_postgresql():
+        cursor = execute_query(conn, f'''
         SELECT COALESCE(SUM(amount), 0) as total 
         FROM expenses 
-        WHERE strftime('%Y-%m', expense_date) = strftime('%Y-%m', 'now') AND user_id = {placeholder}
-    ''', (user_id,))
-    total_expenses_month = cursor.fetchone()['total']
+            WHERE TO_CHAR(expense_date, 'YYYY-MM') = TO_CHAR(CURRENT_DATE, 'YYYY-MM') AND user_id = {placeholder}
+        ''', (user_id,))
+    else:
+        cursor = execute_query(conn, f'''
+            SELECT COALESCE(SUM(amount), 0) as total 
+            FROM expenses 
+            WHERE strftime('%Y-%m', expense_date) = strftime('%Y-%m', 'now') AND user_id = {placeholder}
+        ''', (user_id,))
+    result = cursor.fetchone()
+    total_expenses_month = result[0] if isinstance(result, tuple) else result['total']
     
     # Get monthly revenue data
-    cursor = execute_query(conn, f'''
+    if is_postgresql():
+        cursor = execute_query(conn, f'''
+            SELECT TO_CHAR(bill_date, 'YYYY-MM') as month, 
+                   SUM(total_amount) as revenue
+            FROM bills 
+            WHERE bill_date >= CURRENT_DATE - INTERVAL '6 months' AND user_id = {placeholder}
+            GROUP BY TO_CHAR(bill_date, 'YYYY-MM')
+            ORDER BY month
+        ''', (user_id,))
+    else:
+        cursor = execute_query(conn, f'''
         SELECT strftime('%Y-%m', bill_date) as month, 
                SUM(total_amount) as revenue
         FROM bills 
-        WHERE bill_date >= date('now', '-6 months') AND user_id = {placeholder}
+            WHERE bill_date >= date('now', '-6 months') AND user_id = {placeholder}
         GROUP BY strftime('%Y-%m', bill_date)
         ORDER BY month
-    ''', (user_id,))
+        ''', (user_id,))
     monthly_revenue = cursor.fetchall()
     
     # Get monthly expenses data
-    cursor = execute_query(conn, f'''
+    if is_postgresql():
+        cursor = execute_query(conn, f'''
+            SELECT TO_CHAR(expense_date, 'YYYY-MM') as month, 
+                   SUM(amount) as expenses
+            FROM expenses 
+            WHERE expense_date >= CURRENT_DATE - INTERVAL '6 months' AND user_id = {placeholder}
+            GROUP BY TO_CHAR(expense_date, 'YYYY-MM')
+            ORDER BY month
+        ''', (user_id,))
+    else:
+        cursor = execute_query(conn, f'''
         SELECT strftime('%Y-%m', expense_date) as month, 
                SUM(amount) as expenses
         FROM expenses 
-        WHERE expense_date >= date('now', '-6 months') AND user_id = {placeholder}
+            WHERE expense_date >= date('now', '-6 months') AND user_id = {placeholder}
         GROUP BY strftime('%Y-%m', expense_date)
         ORDER BY month
-    ''', (user_id,))
+        ''', (user_id,))
     monthly_expenses = cursor.fetchall()
 
     # Top 10 regions by sales (for pie chart)
@@ -1748,7 +1846,10 @@ def print_bill(bill_id):
         qr_code_base64 = None
     
     # Get summary data
-    summary_data = get_invoice_summary_data(user_id, datetime.strptime(bill.get('bill_date', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date())
+    bill_date = bill.get('bill_date', datetime.now().date())
+    if isinstance(bill_date, str):
+        bill_date = datetime.strptime(bill_date, '%Y-%m-%d').date()
+    summary_data = get_invoice_summary_data(user_id, bill_date)
     
     return render_template('print_bill.html', 
                          bill=bill, 
@@ -1791,10 +1892,13 @@ def customer_invoice_heatmap():
     for cid in customer_ids:
         row = []
         for m in months:
-            count = execute_update(conn, f"""
+            cursor = execute_query(conn, f"""
                 SELECT COUNT(*) FROM bills
                 WHERE customer_id = {placeholder} AND strftime('%Y-%m', bill_date) = {placeholder} AND user_id = {placeholder}
-            """, (cid, m, user_id)).fetchone()[0]
+            """, (cid, m, user_id))
+            result = cursor.fetchone()
+            # Handle both PostgreSQL (dict) and SQLite (tuple) results
+            count = result[0] if isinstance(result, tuple) else result['count']
             row.append(count)
         matrix.append(row)
     conn.close()
@@ -1812,17 +1916,17 @@ def get_areas():
     if city:
         # Get areas for specific city
         placeholder = get_placeholder()
-        areas = execute_update(conn, f'''
+        cursor = execute_query(conn, f'''
             SELECT ca.area_name 
             FROM city_area ca 
             JOIN cities c ON ca.city_id = c.city_id 
             WHERE c.city_name = {placeholder} 
             ORDER BY ca.area_name
-        ''', (city,)).fetchall()
+        ''', (city,))
+        areas = cursor.fetchall()
     else:
         # Get all areas
         cursor = execute_query(conn, 'SELECT area_name FROM city_area ORDER BY area_name')
-
         areas = cursor.fetchall()
     
     conn.close()
@@ -1836,17 +1940,17 @@ def get_cities():
     if area:
         # Get cities for specific area
         placeholder = get_placeholder()
-        cities = execute_update(conn, f'''
+        cursor = execute_query(conn, f'''
             SELECT DISTINCT c.city_name 
             FROM cities c 
             JOIN city_area ca ON c.city_id = ca.city_id 
             WHERE ca.area_name = {placeholder} 
             ORDER BY c.city_name
-        ''', (area,)).fetchall()
+        ''', (area,))
+        cities = cursor.fetchall()
     else:
         # Get all cities
         cursor = execute_query(conn, 'SELECT city_name FROM cities ORDER BY city_name')
-
         cities = cursor.fetchall()
     
     conn.close()
@@ -2107,7 +2211,7 @@ def get_plan_status():
         placeholder = get_placeholder()
         cursor = execute_query(conn, f'''
             SELECT * FROM user_plans 
-            WHERE user_id = 1 AND is_active = 1 
+            WHERE user_id = 1 AND is_active = TRUE 
             ORDER BY created_at DESC 
             LIMIT 1
         ''')
@@ -2129,9 +2233,14 @@ def get_plan_status():
         else:
             user_plan = dict(user_plan)
         
+        # Convert plan_start_date to string if it's a datetime.date object
+        plan_start_date = user_plan['plan_start_date']
+        if hasattr(plan_start_date, 'strftime'):
+            plan_start_date = plan_start_date.strftime('%Y-%m-%d')
+        
         plan_status = plan_manager.get_user_plan_status(
             user_plan['plan_type'], 
-            user_plan['plan_start_date']
+            plan_start_date
         )
         
         # Add upgrade options
@@ -2141,7 +2250,7 @@ def get_plan_status():
         # Add expiry warnings
         warnings = plan_manager.get_expiry_warnings(
             user_plan['plan_type'], 
-            user_plan['plan_start_date']
+            plan_start_date
         )
         plan_status['warnings'] = warnings
         
@@ -2167,7 +2276,7 @@ def upgrade_plan():
         placeholder = get_placeholder()
         sql = f'''
             UPDATE user_plans
-            SET plan_type = {placeholder}, plan_start_date = {placeholder}, is_active = 1, updated_at = CURRENT_TIMESTAMP
+            SET plan_type = {placeholder}, plan_start_date = {placeholder}, is_active = TRUE, updated_at = CURRENT_TIMESTAMP
             WHERE user_id = 1
         '''
         execute_update(conn, sql, (new_plan, datetime.now().strftime('%Y-%m-%d')))
@@ -2191,7 +2300,7 @@ def get_enabled_features():
         placeholder = get_placeholder()
         cursor = execute_query(conn, f'''
             SELECT * FROM user_plans 
-            WHERE user_id = 1 AND is_active = 1 
+            WHERE user_id = 1 AND is_active = TRUE 
             ORDER BY created_at DESC 
             LIMIT 1
         ''')
@@ -2202,9 +2311,15 @@ def get_enabled_features():
             return jsonify({'enabled_features': [], 'locked_features': []})
         
         user_plan = dict(user_plan)
+        
+        # Convert plan_start_date to string if it's a datetime.date object
+        plan_start_date = user_plan['plan_start_date']
+        if hasattr(plan_start_date, 'strftime'):
+            plan_start_date = plan_start_date.strftime('%Y-%m-%d')
+        
         plan_status = plan_manager.get_user_plan_status(
             user_plan['plan_type'], 
-            user_plan['plan_start_date']
+            plan_start_date
         )
         
         return jsonify({
@@ -2223,7 +2338,7 @@ def check_feature_access(feature):
     """Check if a specific feature is enabled for current user."""
     try:
         conn = get_db_connection()
-        cursor = execute_query(conn, 'SELECT * FROM user_plans WHERE user_id = 1 AND is_active = 1')
+        cursor = execute_query(conn, 'SELECT * FROM user_plans WHERE user_id = 1 AND is_active = TRUE')
 
         user_plan = cursor.fetchone()
         conn.close()
@@ -2232,9 +2347,15 @@ def check_feature_access(feature):
             return jsonify({'enabled': False, 'reason': 'No active plan'})
         
         user_plan = dict(user_plan)
+        
+        # Convert plan_start_date to string if it's a datetime.date object
+        plan_start_date = user_plan['plan_start_date']
+        if hasattr(plan_start_date, 'strftime'):
+            plan_start_date = plan_start_date.strftime('%Y-%m-%d')
+        
         is_enabled = plan_manager.is_feature_enabled(
             user_plan['plan_type'], 
-            user_plan['plan_start_date'], 
+            plan_start_date, 
             feature
         )
         
@@ -2272,7 +2393,7 @@ def expire_trial():
         execute_update(conn, '''
             UPDATE user_plans 
             SET plan_start_date = date('now', '-{} days')
-            WHERE user_id = 1 AND plan_type = 'trial' AND is_active = 1
+            WHERE user_id = 1 AND plan_type = 'trial' AND is_active = TRUE
         '''.format(days_ago))
         conn.close()
         
@@ -2292,7 +2413,7 @@ def reset_trial():
         execute_update(conn, '''
             UPDATE user_plans 
             SET plan_start_date = date('now')
-            WHERE user_id = 1 AND plan_type = 'trial' AND is_active = 1
+            WHERE user_id = 1 AND plan_type = 'trial' AND is_active = TRUE
         ''')
         conn.close()
         
@@ -2515,8 +2636,8 @@ def auth_login():
                 return jsonify({'success': False, 'message': 'Email and password required'})
             
             placeholder = get_placeholder()
-            cursor = execute_query(conn, f'SELECT * FROM users WHERE email = {placeholder} AND is_active = 1', (email,))
-                        user = cursor.fetchone()
+            cursor = execute_query(conn, f'SELECT * FROM users WHERE email = {placeholder} AND is_active = TRUE', (email,))
+            user = cursor.fetchone()
             
             if not user:
                 return jsonify({'success': False, 'message': 'Invalid email or password'})
@@ -2548,8 +2669,8 @@ def auth_login():
             execute_update(conn, f'UPDATE otp_codes SET is_used = 1 WHERE id = {placeholder}', (otp_record['id'],))
             
             placeholder = get_placeholder()
-            cursor = execute_query(conn, f'SELECT * FROM users WHERE mobile = {placeholder} AND is_active = 1', (mobile,))
-                        user = cursor.fetchone()
+            cursor = execute_query(conn, f'SELECT * FROM users WHERE mobile = {placeholder} AND is_active = TRUE', (mobile,))
+            user = cursor.fetchone()
             
             if not user:
                 return jsonify({'success': False, 'message': 'No account found with this mobile number'})
@@ -2562,8 +2683,8 @@ def auth_login():
                 return jsonify({'success': False, 'message': 'Shop code and password required'})
             
             placeholder = get_placeholder()
-            cursor = execute_query(conn, f'SELECT * FROM users WHERE shop_code = {placeholder} AND is_active = 1', (shop_code,))
-                        user = cursor.fetchone()
+            cursor = execute_query(conn, f'SELECT * FROM users WHERE shop_code = {placeholder} AND is_active = TRUE', (shop_code,))
+            user = cursor.fetchone()
             
             if not user:
                 return jsonify({'success': False, 'message': 'Invalid shop code or password'})
@@ -2624,8 +2745,8 @@ def change_password():
 
         conn = get_db_connection()
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT user_id, password_hash FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,))
-                user = cursor.fetchone()
+        cursor = execute_query(conn, f'SELECT user_id, password_hash FROM users WHERE user_id = {placeholder} AND is_active = TRUE', (user_id,))
+        user = cursor.fetchone()
         if not user:
             conn.close()
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -2738,109 +2859,145 @@ def report_invoices():
         client_id = request.args.get('client_id', '')
         
         # Build SQL query with filters
-        base_query = """
-            SELECT 
-                b.bill_number,
-                b.bill_date,
-                b.customer_name,
-                b.customer_phone,
-                b.customer_city,
-                b.customer_area,
-                b.delivery_date,
-                round(b.subtotal,0) as subtotal,
-                round(b.vat_amount, 2) as vat_amount,
-                round(b.total_amount, 2) as total_amount,
-                b.status,
-                b.master_id,
-                e.name as employee_name,
-                GROUP_CONCAT(bi.product_name) as products,
-                GROUP_CONCAT(bi.quantity) as quantities,
-                GROUP_CONCAT(bi.rate) as prices,
-                GROUP_CONCAT(bi.discount) as discount_percentages,
-                GROUP_CONCAT(round((bi.rate * bi.quantity * bi.discount / 100), 2)) as discount_amounts
-            FROM bills b
-            LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
-            LEFT JOIN employees e ON b.master_id = e.employee_id
-        """
+        if is_postgresql():
+            base_query = """
+                SELECT 
+                    b.bill_number,
+                    b.bill_date,
+                    b.customer_name,
+                    b.customer_phone,
+                    b.customer_city,
+                    b.customer_area,
+                    b.delivery_date,
+                    round(b.subtotal,0) as subtotal,
+                    round(b.vat_amount, 2) as vat_amount,
+                    round(b.total_amount, 2) as total_amount,
+                    b.status,
+                    b.master_id,
+                    e.name as employee_name,
+                    STRING_AGG(bi.product_name, ',') as products,
+                    STRING_AGG(bi.quantity::text, ',') as quantities,
+                    STRING_AGG(bi.rate::text, ',') as prices,
+                    STRING_AGG(bi.discount::text, ',') as discount_percentages,
+                    STRING_AGG(round((bi.rate * bi.quantity * bi.discount / 100), 2)::text, ',') as discount_amounts
+                FROM bills b
+                LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
+                LEFT JOIN employees e ON b.master_id = e.employee_id
+            """
+        else:
+            base_query = """
+                SELECT 
+                    b.bill_number,
+                    b.bill_date,
+                    b.customer_name,
+                    b.customer_phone,
+                    b.customer_city,
+                    b.customer_area,
+                    b.delivery_date,
+                    round(b.subtotal,0) as subtotal,
+                    round(b.vat_amount, 2) as vat_amount,
+                    round(b.total_amount, 2) as total_amount,
+                    b.status,
+                    b.master_id,
+                    e.name as employee_name,
+                    GROUP_CONCAT(bi.product_name) as products,
+                    GROUP_CONCAT(bi.quantity) as quantities,
+                    GROUP_CONCAT(bi.rate) as prices,
+                    GROUP_CONCAT(bi.discount) as discount_percentages,
+                    GROUP_CONCAT(round((bi.rate * bi.quantity * bi.discount / 100), 2)) as discount_amounts
+                FROM bills b
+                LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
+                LEFT JOIN employees e ON b.master_id = e.employee_id
+            """
         
         conditions = []
         params = []
         
+        # Get placeholder for database type
+        placeholder = get_placeholder()
+        
         # Client ID filter (most important)
         if client_id:
-            conditions.append("b.user_id = ?")
+            conditions.append(f"b.user_id = {placeholder}")
             params.append(client_id)
         
         # Date range filter
         if from_date:
-            conditions.append("b.bill_date >= ?")
+            conditions.append(f"b.bill_date >= {placeholder}")
             params.append(from_date)
         if to_date:
-            conditions.append("b.bill_date <= ?")
+            conditions.append(f"b.bill_date <= {placeholder}")
             params.append(to_date)
         
         # Products filter
         if products and "All" not in products:
-            placeholders = ','.join(['?' for _ in products])
+            placeholders = ','.join([placeholder for _ in products])
             conditions.append(f"bi.product_name IN ({placeholders})")
             params.extend(products)
         
         # Employees filter
         if employees and "All" not in employees:
-            placeholders = ','.join(['?' for _ in employees])
+            placeholders = ','.join([placeholder for _ in employees])
             conditions.append(f"e.name IN ({placeholders})")
             params.extend(employees)
         
         # City filter
         if city and city != "All":
-            conditions.append("b.customer_city = ?")
+            conditions.append(f"b.customer_city = {placeholder}")
             params.append(city)
         
         # Area filter
         if area and area != "All":
-            conditions.append("b.customer_area = ?")
+            conditions.append(f"b.customer_area = {placeholder}")
             params.append(area)
         
         # Status filter
         if status and status != "All":
-            conditions.append("b.status = ?")
+            conditions.append(f"b.status = {placeholder}")
             params.append(status)
             
         # Build final query
         if conditions:
             base_query += " WHERE " + " AND ".join(conditions)
             
-        base_query += " GROUP BY b.bill_id ORDER BY b.bill_date DESC LIMIT 50"
+        if is_postgresql():
+            base_query += " GROUP BY b.bill_id, b.bill_number, b.bill_date, b.customer_name, b.customer_phone, b.customer_city, b.customer_area, b.delivery_date, b.subtotal, b.vat_amount, b.total_amount, b.status, b.master_id, e.name ORDER BY b.bill_date DESC LIMIT 50"
+        else:
+            base_query += " GROUP BY b.bill_id ORDER BY b.bill_date DESC LIMIT 50"
         
         # Execute query and fetch results
-        cursor = get_db_connection().cursor()
-        cursor.execute(base_query, params)
+        conn = get_db_connection()
+        cursor = execute_query(conn, base_query, params)
         rows = cursor.fetchall()
         
         # Format results for JSON response
         invoices_data = []
+        
+        # Format results for JSON response
         for row in rows:
             invoice = {
-                'bill_number': row[0],
-                'bill_date': row[1],
-                'customer_name': row[2],
-                'customer_phone': row[3],
-                'customer_city': row[4],
-                'customer_area': row[5],
-                'delivery_date': row[6],
-                'subtotal': round(float(row[7]), 2) if row[7] is not None else 0.0,
-                'vat_amount': round(float(row[8]), 2) if row[8] is not None else 0.0,
-                'total_amount': round(float(row[9]), 2) if row[9] is not None else 0.0,
-                'status': row[10],
-                'master_id': row[11],
-                'employee_name': row[12],
-                'products': row[13].split(',') if row[13] else [],
-                'quantities': [int(q) for q in row[14].split(',')] if row[14] else [],
-                'prices': [float(p) for p in row[15].split(',')] if row[15] else [],
-                'discount_percentages': [float(d) for d in row[16].split(',')] if row[16] else [],
-                'discount_amounts': [float(d) for d in row[17].split(',')] if row[17] else []
+                'bill_number': row['bill_number'],
+                'bill_date': row['bill_date'],
+                'customer_name': row['customer_name'],
+                'customer_phone': row['customer_phone'],
+                'customer_city': row['customer_city'],
+                'customer_area': row['customer_area'],
+                'delivery_date': row['delivery_date'],
+                'subtotal': round(float(row['subtotal']), 2) if row['subtotal'] is not None else 0.0,
+                'vat_amount': round(float(row['vat_amount']), 2) if row['vat_amount'] is not None else 0.0,
+                'total_amount': round(float(row['total_amount']), 2) if row['total_amount'] is not None else 0.0,
+                'status': row['status'],
+                'master_id': row['master_id'],
+                'employee_name': row['employee_name'],
+                'products': row['products'].split(',') if row['products'] else [],
+                'quantities': [int(q) for q in row['quantities'].split(',')] if row['quantities'] else [],
+                'prices': [float(p) for p in row['prices'].split(',')] if row['prices'] else [],
+                'discount_percentages': [float(d) for d in row['discount_percentages'].split(',')] if row['discount_percentages'] else [],
+                'discount_amounts': [float(d) for d in row['discount_amounts'].split(',')] if row['discount_amounts'] else []
             }
             invoices_data.append(invoice)
+        
+
         
         # Calculate summary statistics
         total_invoices = len(invoices_data)
@@ -3062,13 +3219,22 @@ def report_employees():
         status = request.args.get('status', '')
         client_id = request.args.get('client_id', '')
 
-        base_query = """
+        conn = get_db_connection()
+        placeholder = get_placeholder()
+        
+        # Use conditional SQL for GROUP_CONCAT vs STRING_AGG
+        if is_postgresql():
+            group_concat_sql = "STRING_AGG(DISTINCT bi.product_name, ',')"
+        else:
+            group_concat_sql = "GROUP_CONCAT(DISTINCT bi.product_name)"
+        
+        base_query = f"""
             SELECT 
                 e.employee_id,
                 e.name as employee_name,
                 COUNT(DISTINCT b.bill_id) as bills_handled,
                 SUM(b.total_amount) as total_billed,
-                GROUP_CONCAT(DISTINCT bi.product_name) as products
+                {group_concat_sql} as products
             FROM employees e
             LEFT JOIN bills b ON e.employee_id = b.master_id
             LEFT JOIN bill_items bi ON b.bill_id = bi.bill_id
@@ -3079,46 +3245,54 @@ def report_employees():
 
         # Client ID filter (most important)
         if client_id:
-            conditions.append("e.user_id = ?")
+            conditions.append(f"e.user_id = {placeholder}")
             params.append(client_id)
 
         if from_date:
-            conditions.append("b.bill_date >= ?")
+            conditions.append(f"b.bill_date >= {placeholder}")
             params.append(from_date)
         if to_date:
-            conditions.append("b.bill_date <= ?")
+            conditions.append(f"b.bill_date <= {placeholder}")
             params.append(to_date)
         if products and "All" not in products:
-            placeholders = ','.join(['?' for _ in products])
+            placeholders = ','.join([placeholder for _ in products])
             conditions.append(f"bi.product_name IN ({placeholders})")
             params.extend(products)
         if city and city != "All":
-            conditions.append("b.customer_city = ?")
+            conditions.append(f"b.customer_city = {placeholder}")
             params.append(city)
         if area and area != "All":
-            conditions.append("b.customer_area = ?")
+            conditions.append(f"b.customer_area = {placeholder}")
             params.append(area)
         if status and status != "All":
-            conditions.append("b.status = ?")
+            conditions.append(f"b.status = {placeholder}")
             params.append(status)
 
         if conditions:
             base_query += " WHERE " + " AND ".join(conditions)
         base_query += " GROUP BY e.employee_id, e.name ORDER BY total_billed DESC"
 
-        cursor = get_db_connection().cursor()
-        cursor.execute(base_query, params)
+        cursor = execute_query(conn, base_query, params)
         rows = cursor.fetchall()
 
         employees_data = []
         for row in rows:
-            employees_data.append({
-                'employee_id': row[0],
-                'name': row[1],  # Changed to match frontend expectation
-                'bills_handled': row[2] or 0,
-                'total_billed': round(float(row[3]), 2) if row[3] is not None else 0.0,
-                'products_handled': row[4].split(',') if row[4] else []  # Changed to match frontend
-            })
+            try:
+                products_str = row[4] if row[4] else ''
+                products_list = products_str.split(',') if products_str else []
+                # Filter out empty strings
+                products_list = [p.strip() for p in products_list if p.strip()]
+                
+                employees_data.append({
+                    'employee_id': row[0],
+                    'name': row[1],  # Changed to match frontend expectation
+                    'bills_handled': row[2] or 0,
+                    'total_billed': round(float(row[3]), 2) if row[3] is not None else 0.0,
+                    'products_handled': products_list  # Changed to match frontend
+                })
+            except Exception as e:
+                print(f"Error processing employee row {row}: {e}")
+                continue
 
         return jsonify({
             'success': True,
@@ -3148,8 +3322,11 @@ def report_products():
         status = request.args.get('status')
         client_id = request.args.get('client_id', '')
         
+        conn = get_db_connection()
+        placeholder = get_placeholder()
+        
         # Build base query
-        base_query = """
+        base_query = f"""
             SELECT 
                 p.product_name,
                 pt.type_name as product_type,
@@ -3166,48 +3343,51 @@ def report_products():
         
         # Client ID filter (most important)
         if client_id:
-            base_query += " AND b.user_id = ?"
+            base_query += f" AND b.user_id = {placeholder}"
             params.append(client_id)
         
         # Add filters
         if from_date:
-            base_query += " AND b.bill_date >= ?"
+            base_query += f" AND b.bill_date >= {placeholder}"
             params.append(from_date)
         
         if to_date:
-            base_query += " AND b.bill_date <= ?"
+            base_query += f" AND b.bill_date <= {placeholder}"
             params.append(to_date)
         
         if product_type and product_type != "All":
-            base_query += " AND pt.type_name = ?"
+            base_query += f" AND pt.type_name = {placeholder}"
             params.append(product_type)
         
         if city and city != "All":
-            base_query += " AND b.customer_city = ?"
+            base_query += f" AND b.customer_city = {placeholder}"
             params.append(city)
         
         if area and area != "All":
-            base_query += " AND b.customer_area = ?"
+            base_query += f" AND b.customer_area = {placeholder}"
             params.append(area)
         
         if status and status != "All":
-            base_query += " AND b.status = ?"
+            base_query += f" AND b.status = {placeholder}"
             params.append(status)
         
         base_query += " GROUP BY p.product_id, p.product_name, pt.type_name ORDER BY total_revenue DESC"
         
-        cursor = get_db_connection().cursor()
-        cursor.execute(base_query, params)
+        cursor = execute_query(conn, base_query, params)
         rows = cursor.fetchall()
         
         products = []
         for row in rows:
-            products.append({
-                'product_name': row[0],
-                'type_name': row[1],  # Changed to match frontend expectation
-                'total_quantity': row[2],
-                'total_revenue': round(float(row[3]), 2)
-            })
+            try:
+                products.append({
+                    'product_name': row[0],
+                    'type_name': row[1],  # Changed to match frontend expectation
+                    'total_quantity': row[2] or 0,
+                    'total_revenue': round(float(row[3]), 2) if row[3] is not None else 0.0
+                })
+            except Exception as e:
+                print(f"Error processing product row {row}: {e}")
+                continue
         
         return jsonify({
             'success': True,
@@ -3228,7 +3408,7 @@ def get_shop_settings():
         conn = get_db_connection()
         placeholder = get_placeholder()
         cursor = execute_query(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
-                settings = cursor.fetchone()
+        settings = cursor.fetchone()
         conn.close()
         
         if settings:
@@ -3256,7 +3436,7 @@ def get_payment_mode():
         conn = get_db_connection()
         placeholder = get_placeholder()
         cursor = execute_query(conn, f'SELECT payment_mode FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
-                settings = cursor.fetchone()
+        settings = cursor.fetchone()
         conn.close()
         
         payment_mode = settings['payment_mode'] if settings else 'advance'
@@ -3278,11 +3458,12 @@ def get_billing_config():
         user_id = get_current_user_id()
         conn = get_db_connection()
         placeholder = get_placeholder()
-        settings = execute_update(conn, f'''
+        cursor = execute_query(conn, f'''
             SELECT enable_trial_date, enable_delivery_date, enable_advance_payment, 
                    enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id
             FROM shop_settings WHERE user_id = {placeholder}
-        ''', (user_id,)).fetchone()
+        ''', (user_id,))
+        settings = cursor.fetchone()
         conn.close()
         
         if settings:
@@ -3363,7 +3544,7 @@ def update_shop_settings():
         # Check if shop settings exist for this user
         placeholder = get_placeholder()
         cursor = execute_query(conn, f'SELECT setting_id FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
-                existing_settings = cursor.fetchone()
+        existing_settings = cursor.fetchone()
         
         if existing_settings:
             # Update existing shop settings
@@ -4057,7 +4238,7 @@ def get_email_config():
     conn = get_db_connection()
     placeholder = get_placeholder()
     cursor = execute_query(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
-            shop_settings_row = cursor.fetchone()
+    shop_settings_row = cursor.fetchone()
     conn.close()
     
     # Convert Row object to dictionary if it exists
@@ -4630,7 +4811,7 @@ def send_bill_whatsapp(bill_id):
             print(f"DEBUG: Querying bill with ID: {bill_id} for user: {get_current_user_id()}")
             
             placeholder = get_placeholder()
-            bill_row = execute_update(conn, f'''
+            bill_row = execute_query(conn, f'''
                 SELECT b.*, c.name as customer_name, c.phone as customer_phone, 
                        c.city as customer_city, c.area as customer_area,
                        s.shop_name, s.address, s.shop_mobile as phone, '' as email
@@ -4658,7 +4839,7 @@ def send_bill_whatsapp(bill_id):
             return jsonify({'success': False, 'error': f'Database error: {str(e)}'}), 500
         
         # Get bill items
-        items = execute_update(conn, f'''
+        items = execute_query(conn, f'''
             SELECT bi.*, p.product_name
             FROM bill_items bi
             JOIN products p ON bi.product_id = p.product_id
@@ -4811,8 +4992,8 @@ def admin_auth_login():
         
         # Check if user exists and is admin (user_id = 1 is the admin user)
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT * FROM users WHERE email = {placeholder} AND user_id = 1 AND is_active = 1', (email,))
-                user = cursor.fetchone()
+        cursor = execute_query(conn, f'SELECT * FROM users WHERE email = {placeholder} AND user_id = 1 AND is_active = TRUE', (email,))
+        user = cursor.fetchone()
         
         if not user:
             logger.warning(f"Admin user not found for email: {email}")
@@ -4889,34 +5070,41 @@ def admin_stats():
         conn = get_db_connection()
         
         # Total shops
-        cursor = execute_query(conn, 'SELECT COUNT(*) FROM users WHERE is_active = 1')
-                total_shops = cursor.fetchone()[0]
+        cursor = execute_query(conn, 'SELECT COUNT(*) FROM users WHERE is_active = TRUE')
+        result = cursor.fetchone()
+        total_shops = result[0] if isinstance(result, tuple) else result['count']
         
         # Active plans (not expired)
-        active_plans = execute_update(conn, '''
+        cursor = execute_query(conn, '''
             SELECT COUNT(*) FROM user_plans up
             JOIN users u ON up.user_id = u.user_id
-            WHERE up.is_active = 1 AND u.is_active = 1
+            WHERE up.is_active = TRUE AND u.is_active = TRUE
             AND (up.plan_type = 'pro' OR up.plan_end_date > DATE('now'))
-        ''').fetchone()[0]
+        ''')
+        result = cursor.fetchone()
+        active_plans = result[0] if isinstance(result, tuple) else result['count']
         
         # Expiring soon (within 7 days)
-        expiring_soon = execute_update(conn, '''
+        cursor = execute_query(conn, '''
             SELECT COUNT(*) FROM user_plans up
             JOIN users u ON up.user_id = u.user_id
-            WHERE up.is_active = 1 AND u.is_active = 1
+            WHERE up.is_active = TRUE AND u.is_active = TRUE
             AND up.plan_type != 'pro'
             AND up.plan_end_date BETWEEN DATE('now') AND DATE('now', '+7 days')
-        ''').fetchone()[0]
+        ''')
+        result = cursor.fetchone()
+        expiring_soon = result[0] if isinstance(result, tuple) else result['count']
         
         # Expired plans
-        expired_plans = execute_update(conn, '''
+        cursor = execute_query(conn, '''
             SELECT COUNT(*) FROM user_plans up
             JOIN users u ON up.user_id = u.user_id
-            WHERE up.is_active = 1 AND u.is_active = 1
+            WHERE up.is_active = TRUE AND u.is_active = TRUE
             AND up.plan_type != 'pro'
             AND up.plan_end_date < DATE('now')
-        ''').fetchone()[0]
+        ''')
+        result = cursor.fetchone()
+        expired_plans = result[0] if isinstance(result, tuple) else result['count']
         
         conn.close()
         
@@ -4937,7 +5125,7 @@ def admin_shops():
     try:
         conn = get_db_connection()
         
-        shops = execute_update(conn, '''
+        cursor = execute_query(conn, '''
             SELECT u.user_id, u.shop_name, u.email, u.mobile, u.created_at,
                    up.plan_type, up.plan_start_date, up.plan_end_date,
                    CASE 
@@ -4951,10 +5139,11 @@ def admin_shops():
                        ELSE CASE WHEN up.plan_end_date < DATE('now') THEN 1 ELSE 0 END
                    END as expired
             FROM users u
-            LEFT JOIN user_plans up ON u.user_id = up.user_id AND up.is_active = 1
-            WHERE u.is_active = 1
+            LEFT JOIN user_plans up ON u.user_id = up.user_id AND up.is_active = TRUE
+            WHERE u.is_active = TRUE
             ORDER BY u.created_at DESC
-        ''').fetchall()
+        ''')
+        shops = cursor.fetchall()
         
         conn.close()
         
@@ -4971,7 +5160,7 @@ def admin_shop_plan(user_id):
         conn = get_db_connection()
         
         placeholder = get_placeholder()
-        plan = execute_update(conn, f'''
+        cursor = execute_query(conn, f'''
             SELECT up.plan_type as plan, up.plan_start_date as start_date, 
                    up.plan_end_date as expiry_date,
                    CASE 
@@ -4985,8 +5174,9 @@ def admin_shop_plan(user_id):
                        ELSE CASE WHEN up.plan_end_date < DATE('now') THEN 1 ELSE 0 END
                    END as expired
             FROM user_plans up
-            WHERE up.user_id = {placeholder} AND up.is_active = 1
-        ''', (user_id,)).fetchone()
+            WHERE up.user_id = {placeholder} AND up.is_active = TRUE
+        ''', (user_id,))
+        plan = cursor.fetchone()
         
         conn.close()
         
@@ -5018,15 +5208,17 @@ def admin_upgrade_plan():
         
         # Check if user exists
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,))
-                user = cursor.fetchone()
+        cursor = execute_query(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = TRUE', (user_id,))
+        user = cursor.fetchone()
         if not user:
             conn.close()
             return jsonify({'error': 'User not found'}), 404
         
         # Deactivate current plan
         placeholder = get_placeholder()
-        execute_update(conn, f'UPDATE user_plans SET is_active = 0 WHERE user_id = {placeholder}', (user_id,))
+        # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
+        is_active_value = 'FALSE' if is_postgresql() else '0'
+        execute_update(conn, f'UPDATE user_plans SET is_active = {is_active_value} WHERE user_id = {placeholder}', (user_id,))
         
         # Calculate new plan dates
         start_date = datetime.now().date()
@@ -5047,9 +5239,11 @@ def admin_upgrade_plan():
         
         # Insert new plan
         placeholder = get_placeholder()
+        # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
+        is_active_value = 'TRUE' if is_postgresql() else '1'
         sql = f'''
             INSERT INTO user_plans (user_id, plan_type, plan_start_date, plan_end_date, is_active)
-            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, 1)
+            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {is_active_value})
         '''
         execute_with_returning(conn, sql, (user_id, plan_type, start_date, end_date))
         
@@ -5086,15 +5280,15 @@ def admin_expire_plan():
         
         # Check if user exists
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = 1', (user_id,))
-                user = cursor.fetchone()
+        cursor = execute_query(conn, f'SELECT user_id, shop_name FROM users WHERE user_id = {placeholder} AND is_active = TRUE', (user_id,))
+        user = cursor.fetchone()
         if not user:
             conn.close()
             return jsonify({'error': 'User not found'}), 404
         
         # Get current plan
-        cursor = execute_query(conn, f'SELECT plan_type FROM user_plans WHERE user_id = {placeholder} AND is_active = 1', (user_id,))
-                current_plan = cursor.fetchone()
+        cursor = execute_query(conn, f'SELECT plan_type FROM user_plans WHERE user_id = {placeholder} AND is_active = TRUE', (user_id,))
+        current_plan = cursor.fetchone()
         if not current_plan:
             conn.close()
             return jsonify({'error': 'No active plan found'}), 404
@@ -5105,7 +5299,7 @@ def admin_expire_plan():
         sql = f'''
             UPDATE user_plans 
             SET plan_end_date = {placeholder}, updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = {placeholder} AND is_active = 1
+            WHERE user_id = {placeholder} AND is_active = TRUE
         '''
         execute_update(conn, sql, (expire_date, user_id))
         
@@ -5214,11 +5408,12 @@ def get_expense_categories():
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    categories = execute_update(conn, f'''
+    cursor = execute_query(conn, f'''
         SELECT * FROM expense_categories 
-        WHERE user_id = {placeholder} AND is_active = 1 
+        WHERE user_id = {placeholder} AND is_active = TRUE 
         ORDER BY category_name
-    ''', (user_id,)).fetchall()
+    ''', (user_id,))
+    categories = cursor.fetchall()
     conn.close()
     return jsonify([dict(category) for category in categories])
 
@@ -5268,10 +5463,11 @@ def update_expense_category(category_id):
     try:
         # Check if category exists and belongs to user
         placeholder = get_placeholder()
-        category = execute_update(conn, f'''
+        cursor = execute_query(conn, f'''
             SELECT category_id FROM expense_categories 
             WHERE category_id = {placeholder} AND user_id = {placeholder}
-        ''', (category_id, user_id)).fetchone()
+        ''', (category_id, user_id))
+        category = cursor.fetchone()
         
         if not category:
             conn.close()
@@ -5305,10 +5501,13 @@ def delete_expense_category(category_id):
     try:
         # Check if category has expenses
         placeholder = get_placeholder()
-        expense_count = execute_update(conn, f'''
+        cursor = execute_query(conn, f'''
             SELECT COUNT(*) FROM expenses 
             WHERE category_id = {placeholder} AND user_id = {placeholder}
-        ''', (category_id, user_id)).fetchone()[0]
+        ''', (category_id, user_id))
+        result = cursor.fetchone()
+        # Handle both PostgreSQL (dict) and SQLite (tuple) results
+        expense_count = result[0] if isinstance(result, tuple) else result['count']
         
         if expense_count > 0:
             conn.close()
@@ -5316,9 +5515,11 @@ def delete_expense_category(category_id):
         
         # Soft delete by setting is_active = 0
         placeholder = get_placeholder()
+        # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
+        is_active_value = 'FALSE' if is_postgresql() else '0'
         sql = f'''
             UPDATE expense_categories 
-            SET is_active = 0 
+            SET is_active = {is_active_value} 
             WHERE category_id = {placeholder} AND user_id = {placeholder}
         '''
         execute_update(conn, sql, (category_id, user_id))
@@ -5411,7 +5612,7 @@ def add_expense():
         placeholder = get_placeholder()
         category = execute_update(conn, f'''
             SELECT category_id FROM expense_categories 
-            WHERE category_id = {placeholder} AND user_id = {placeholder} AND is_active = 1
+            WHERE category_id = {placeholder} AND user_id = {placeholder} AND is_active = TRUE
         ''', (category_id, user_id)).fetchone()
         
         if not category:
@@ -5446,6 +5647,7 @@ def get_invoice_summary():
         summary_data = get_filtered_invoice_summary(user_id, filters)
         return jsonify(summary_data)
     except Exception as e:
+        print(f"Error in get_invoice_summary: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/expenses/<int:expense_id>', methods=['GET'])
@@ -5502,7 +5704,7 @@ def update_expense(expense_id):
         
         cursor = execute_query(conn, f'''
             SELECT category_id FROM expense_categories 
-            WHERE category_id = {placeholder} AND user_id = {placeholder} AND is_active = 1
+            WHERE category_id = {placeholder} AND user_id = {placeholder} AND is_active = TRUE
         ''', (category_id, user_id))
         category = cursor.fetchone()
         
@@ -6445,7 +6647,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     
     # Current month summary
     placeholder = get_placeholder()
-    month_data = execute_update(conn, f'''
+    month_data = execute_query(conn, f'''
         SELECT 
             COUNT(*) as total_invoices,
             SUM(total_amount) as total_revenue,
@@ -6460,7 +6662,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     ''', (user_id, current_month_start, current_month_end)).fetchone()
     
     # Current year summary
-    year_data = execute_update(conn, f'''
+    year_data = execute_query(conn, f'''
         SELECT 
             COUNT(*) as total_invoices,
             SUM(total_amount) as total_revenue,
@@ -6475,7 +6677,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     ''', (user_id, current_year_start, current_year_end)).fetchone()
     
     # All time summary
-    all_time_data = execute_update(conn, f'''
+    all_time_data = execute_query(conn, f'''
         SELECT 
             COUNT(*) as total_invoices,
             SUM(total_amount) as total_revenue,
@@ -6489,7 +6691,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     ''', (user_id,)).fetchone()
     
     # Get top selling products (current month)
-    top_products = execute_update(conn, f'''
+    top_products = execute_query(conn, f'''
         SELECT 
             bi.product_name,
             SUM(bi.quantity) as total_quantity,
@@ -6504,7 +6706,7 @@ def get_invoice_summary_data(user_id, current_date=None):
     ''', (user_id, current_month_start, current_month_end)).fetchall()
     
     # Get top customers (current month)
-    top_customers = execute_update(conn, f'''
+    top_customers = execute_query(conn, f'''
         SELECT 
             c.name as customer_name,
             COUNT(b.bill_id) as invoice_count,
@@ -6535,6 +6737,7 @@ def get_filtered_invoice_summary(user_id, filters=None):
         filters = {}
     
     conn = get_db_connection()
+    placeholder = get_placeholder()
     
     # Build WHERE clause based on filters
     where_conditions = [f'b.user_id = {placeholder}']
@@ -6550,7 +6753,7 @@ def get_filtered_invoice_summary(user_id, filters=None):
     
     if filters.get('products') and filters['products'] != ['All Products']:
         product_list = filters['products']
-        placeholders = ','.join(['?' for _ in product_list])
+        placeholders = ','.join([placeholder for _ in product_list])
         where_conditions.append(f'''EXISTS (
             SELECT 1 FROM bill_items bi2 
             WHERE bi2.bill_id = b.bill_id 
@@ -6560,20 +6763,20 @@ def get_filtered_invoice_summary(user_id, filters=None):
     
     if filters.get('employees') and filters['employees'] != ['All Employees']:
         employee_list = filters['employees']
-        placeholders = ','.join(['?' for _ in employee_list])
+        placeholders = ','.join([placeholder for _ in employee_list])
         where_conditions.append(f'b.employee_id IN (SELECT employee_id FROM employees WHERE name IN ({placeholders}))')
         params.extend(employee_list)
     
     if filters.get('city') and filters['city'] != 'All Cities':
-        where_conditions.append('c.city = ?')
+        where_conditions.append(f'c.city = {placeholder}')
         params.append(filters['city'])
     
     if filters.get('area') and filters['area'] != 'All Areas':
-        where_conditions.append('c.area = ?')
+        where_conditions.append(f'c.area = {placeholder}')
         params.append(filters['area'])
     
     if filters.get('status') and filters['status'] != 'All':
-        where_conditions.append('b.status = ?')
+        where_conditions.append(f'b.status = {placeholder}')
         params.append(filters['status'])
     
     where_clause = ' AND '.join(where_conditions)
@@ -6650,9 +6853,9 @@ def get_filtered_invoice_summary(user_id, filters=None):
     conn.close()
     
     return {
-        'summary': dict(summary_data),
-        'top_products': [dict(product) for product in top_products],
-        'top_customers': [dict(customer) for customer in top_customers],
+        'summary': dict(summary_data) if summary_data else {},
+        'top_products': [dict(product) for product in top_products] if top_products else [],
+        'top_customers': [dict(customer) for customer in top_customers] if top_customers else [],
         'filters_applied': filters
     }
 
@@ -6670,7 +6873,7 @@ def get_financial_overview():
     try:
         # Revenue calculations
         placeholder = get_placeholder()
-        revenue_data = execute_update(conn, f'''
+        revenue_data = execute_query(conn, f'''
             SELECT 
                 COUNT(*) as total_invoices,
                 SUM(total_amount) as total_revenue,
@@ -6684,7 +6887,7 @@ def get_financial_overview():
         ''', (user_id, from_date, to_date)).fetchone()
         
         # Expense calculations
-        expense_data = execute_update(conn, f'''
+        expense_data = execute_query(conn, f'''
             SELECT 
                 COUNT(*) as total_expenses,
                 SUM(amount) as total_expenses_amount,
@@ -6705,7 +6908,7 @@ def get_financial_overview():
         net_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0
         
         # Get top revenue sources
-        top_products = execute_update(conn, f'''
+        top_products = execute_query(conn, f'''
             SELECT 
                 bi.product_name,
                 SUM(bi.total_amount) as revenue,
@@ -6720,7 +6923,7 @@ def get_financial_overview():
         ''', (user_id, from_date, to_date)).fetchall()
         
         # Get top expense categories
-        top_expense_categories = execute_update(conn, f'''
+        top_expense_categories = execute_query(conn, f'''
             SELECT 
                 ec.category_name,
                 SUM(e.amount) as total_amount,
@@ -6781,7 +6984,21 @@ def get_revenue_trends():
     try:
         if period == 'daily':
             # Daily trends for last 30 days
-            trends = execute_update(conn, '''
+            if is_postgresql():
+                trends = execute_query(conn, '''
+                    SELECT 
+                        DATE(bill_date) as date,
+                        SUM(total_amount) as revenue,
+                        COUNT(*) as invoices,
+                        COUNT(DISTINCT customer_id) as customers
+                    FROM bills 
+                    WHERE user_id = %s 
+                    AND bill_date >= CURRENT_DATE - INTERVAL '30 days'
+                    GROUP BY DATE(bill_date)
+                    ORDER BY date
+                ''', (user_id,)).fetchall()
+            else:
+                trends = execute_query(conn, '''
                 SELECT 
                     DATE(bill_date) as date,
                     SUM(total_amount) as revenue,
@@ -6795,7 +7012,21 @@ def get_revenue_trends():
             ''', (user_id,)).fetchall()
         elif period == 'weekly':
             # Weekly trends for last 12 weeks
-            trends = execute_update(conn, '''
+            if is_postgresql():
+                trends = execute_query(conn, '''
+                    SELECT 
+                        TO_CHAR(bill_date, 'IYYY-IW') as week,
+                        SUM(total_amount) as revenue,
+                        COUNT(*) as invoices,
+                        COUNT(DISTINCT customer_id) as customers
+                    FROM bills 
+                    WHERE user_id = %s 
+                    AND bill_date >= CURRENT_DATE - INTERVAL '84 days'
+                    GROUP BY TO_CHAR(bill_date, 'IYYY-IW')
+                    ORDER BY week
+                ''', (user_id,)).fetchall()
+            else:
+                trends = execute_query(conn, '''
                 SELECT 
                     strftime('%Y-W%W', bill_date) as week,
                     SUM(total_amount) as revenue,
@@ -6809,7 +7040,21 @@ def get_revenue_trends():
             ''', (user_id,)).fetchall()
         else:  # monthly
             # Monthly trends for specified months
-            trends = execute_update(conn, '''
+            if is_postgresql():
+                trends = execute_query(conn, '''
+                    SELECT 
+                        TO_CHAR(bill_date, 'YYYY-MM') as month,
+                        SUM(total_amount) as revenue,
+                        COUNT(*) as invoices,
+                        COUNT(DISTINCT customer_id) as customers
+                    FROM bills 
+                    WHERE user_id = %s 
+                    AND bill_date >= CURRENT_DATE - INTERVAL '%s months'
+                    GROUP BY TO_CHAR(bill_date, 'YYYY-MM')
+                    ORDER BY month
+                ''', (user_id, months)).fetchall()
+            else:
+                trends = execute_query(conn, '''
                 SELECT 
                     strftime('%Y-%m', bill_date) as month,
                     SUM(total_amount) as revenue,
@@ -6846,7 +7091,20 @@ def get_expense_trends():
     try:
         if period == 'daily':
             # Daily trends for last 30 days
-            trends = execute_update(conn, '''
+            if is_postgresql():
+                trends = execute_query(conn, '''
+                    SELECT 
+                        DATE(expense_date) as date,
+                        SUM(amount) as expenses,
+                        COUNT(*) as expense_count
+                    FROM expenses 
+                    WHERE user_id = %s 
+                    AND expense_date >= CURRENT_DATE - INTERVAL '30 days'
+                    GROUP BY DATE(expense_date)
+                    ORDER BY date
+                ''', (user_id,)).fetchall()
+            else:
+                trends = execute_query(conn, '''
                 SELECT 
                     DATE(expense_date) as date,
                     SUM(amount) as expenses,
@@ -6859,7 +7117,20 @@ def get_expense_trends():
             ''', (user_id,)).fetchall()
         elif period == 'weekly':
             # Weekly trends for last 12 weeks
-            trends = execute_update(conn, '''
+            if is_postgresql():
+                trends = execute_query(conn, '''
+                    SELECT 
+                        TO_CHAR(expense_date, 'IYYY-IW') as week,
+                        SUM(amount) as expenses,
+                        COUNT(*) as expense_count
+                    FROM expenses 
+                    WHERE user_id = %s 
+                    AND expense_date >= CURRENT_DATE - INTERVAL '84 days'
+                    GROUP BY TO_CHAR(expense_date, 'IYYY-IW')
+                    ORDER BY week
+                ''', (user_id,)).fetchall()
+            else:
+                trends = execute_query(conn, '''
                 SELECT 
                     strftime('%Y-W%W', expense_date) as week,
                     SUM(amount) as expenses,
@@ -6872,7 +7143,20 @@ def get_expense_trends():
             ''', (user_id,)).fetchall()
         else:  # monthly
             # Monthly trends for specified months
-            trends = execute_update(conn, '''
+            if is_postgresql():
+                trends = execute_query(conn, '''
+                    SELECT 
+                        TO_CHAR(expense_date, 'YYYY-MM') as month,
+                        SUM(amount) as expenses,
+                        COUNT(*) as expense_count
+                    FROM expenses 
+                    WHERE user_id = %s 
+                    AND expense_date >= CURRENT_DATE - INTERVAL '%s months'
+                    GROUP BY TO_CHAR(expense_date, 'YYYY-MM')
+                    ORDER BY month
+                ''', (user_id, months)).fetchall()
+            else:
+                trends = execute_query(conn, '''
                 SELECT 
                     strftime('%Y-%m', expense_date) as month,
                     SUM(amount) as expenses,
@@ -6906,35 +7190,36 @@ def get_cash_flow():
     
     try:
         # Cash inflows (revenue)
-        cash_inflows = execute_update(conn, '''
+        placeholder = get_placeholder()
+        cash_inflows = execute_query(conn, f'''
             SELECT 
                 SUM(total_amount) as total_inflow,
                 SUM(advance_paid) as advance_payments,
                 SUM(balance_amount) as pending_payments
             FROM bills 
-            WHERE user_id = ? 
-            AND DATE(bill_date) BETWEEN ? AND ?
+            WHERE user_id = {placeholder} 
+            AND DATE(bill_date) BETWEEN {placeholder} AND {placeholder}
         ''', (user_id, from_date, to_date)).fetchone()
         
         # Cash outflows (expenses)
-        cash_outflows = execute_update(conn, '''
+        cash_outflows = execute_query(conn, f'''
             SELECT 
                 SUM(amount) as total_outflow,
                 COUNT(*) as expense_count
             FROM expenses 
-            WHERE user_id = ? 
-            AND DATE(expense_date) BETWEEN ? AND ?
+            WHERE user_id = {placeholder} 
+            AND DATE(expense_date) BETWEEN {placeholder} AND {placeholder}
         ''', (user_id, from_date, to_date)).fetchone()
         
         # Payment method analysis
-        payment_methods = execute_update(conn, '''
+        payment_methods = execute_query(conn, f'''
             SELECT 
                 payment_method,
                 COUNT(*) as count,
                 SUM(total_amount) as amount
             FROM bills 
-            WHERE user_id = ? 
-            AND DATE(bill_date) BETWEEN ? AND ?
+            WHERE user_id = {placeholder} 
+            AND DATE(bill_date) BETWEEN {placeholder} AND {placeholder}
             GROUP BY payment_method
             ORDER BY amount DESC
         ''', (user_id, from_date, to_date)).fetchall()
@@ -6974,8 +7259,23 @@ def get_business_metrics():
     to_date = request.args.get('to_date', datetime.now().strftime('%Y-%m-%d'))
     
     try:
+        placeholder = get_placeholder()
+        
         # Customer metrics
-        customer_metrics = execute_update(conn, '''
+        if is_postgresql():
+            customer_metrics = execute_query(conn, f'''
+                SELECT 
+                    COUNT(DISTINCT customer_id) as total_customers,
+                    COUNT(DISTINCT CASE WHEN bill_date >= CURRENT_DATE - INTERVAL '7 days' THEN customer_id END) as new_customers_7d,
+                    COUNT(DISTINCT CASE WHEN bill_date >= CURRENT_DATE - INTERVAL '30 days' THEN customer_id END) as new_customers_30d,
+                    AVG(total_amount) as avg_order_value,
+                    SUM(total_amount) / COUNT(DISTINCT customer_id) as revenue_per_customer
+                FROM bills 
+                WHERE user_id = {placeholder} 
+                AND DATE(bill_date) BETWEEN {placeholder} AND {placeholder}
+            ''', (user_id, from_date, to_date)).fetchone()
+        else:
+            customer_metrics = execute_query(conn, f'''
             SELECT 
                 COUNT(DISTINCT customer_id) as total_customers,
                 COUNT(DISTINCT CASE WHEN bill_date >= date('now', '-7 days') THEN customer_id END) as new_customers_7d,
@@ -6983,12 +7283,12 @@ def get_business_metrics():
                 AVG(total_amount) as avg_order_value,
                 SUM(total_amount) / COUNT(DISTINCT customer_id) as revenue_per_customer
             FROM bills 
-            WHERE user_id = ? 
-            AND DATE(bill_date) BETWEEN ? AND ?
+                WHERE user_id = {placeholder} 
+                AND DATE(bill_date) BETWEEN {placeholder} AND {placeholder}
         ''', (user_id, from_date, to_date)).fetchone()
         
         # Employee performance
-        employee_performance = execute_update(conn, '''
+        employee_performance = execute_query(conn, f'''
             SELECT 
                 e.name as employee_name,
                 COUNT(b.bill_id) as bills_handled,
@@ -6996,14 +7296,14 @@ def get_business_metrics():
                 AVG(b.total_amount) as avg_bill_value
             FROM employees e
             LEFT JOIN bills b ON e.employee_id = b.master_id AND b.user_id = e.user_id
-            WHERE e.user_id = ? 
-            AND (b.bill_date IS NULL OR DATE(b.bill_date) BETWEEN ? AND ?)
+            WHERE e.user_id = {placeholder} 
+            AND (b.bill_date IS NULL OR DATE(b.bill_date) BETWEEN {placeholder} AND {placeholder})
             GROUP BY e.employee_id, e.name
             ORDER BY total_revenue DESC
         ''', (user_id, from_date, to_date)).fetchall()
         
         # Product performance
-        product_performance = execute_update(conn, '''
+        product_performance = execute_query(conn, f'''
             SELECT 
                 bi.product_name,
                 SUM(bi.quantity) as total_quantity,
@@ -7012,8 +7312,8 @@ def get_business_metrics():
                 COUNT(DISTINCT b.bill_id) as invoices_count
             FROM bill_items bi
             JOIN bills b ON bi.bill_id = b.bill_id
-            WHERE b.user_id = ? 
-            AND DATE(b.bill_date) BETWEEN ? AND ?
+            WHERE b.user_id = {placeholder} 
+            AND DATE(b.bill_date) BETWEEN {placeholder} AND {placeholder}
             GROUP BY bi.product_name
             ORDER BY total_revenue DESC
             LIMIT 10
@@ -7051,8 +7351,10 @@ def get_expense_breakdown():
     to_date = request.args.get('to_date', datetime.now().strftime('%Y-%m-%d'))
     
     try:
+        placeholder = get_placeholder()
+        
         # Expense breakdown by category
-        category_breakdown = execute_update(conn, '''
+        category_breakdown = execute_query(conn, f'''
             SELECT 
                 ec.category_name,
                 ec.description,
@@ -7063,21 +7365,35 @@ def get_expense_breakdown():
                 MAX(e.amount) as max_amount
             FROM expenses e
             JOIN expense_categories ec ON e.category_id = ec.category_id
-            WHERE e.user_id = ? 
-            AND DATE(e.expense_date) BETWEEN ? AND ?
+            WHERE e.user_id = {placeholder} 
+            AND DATE(e.expense_date) BETWEEN {placeholder} AND {placeholder}
             GROUP BY ec.category_id, ec.category_name, ec.description
             ORDER BY total_amount DESC
         ''', (user_id, from_date, to_date)).fetchall()
         
         # Monthly expense trends by category
-        monthly_trends = execute_update(conn, '''
+        if is_postgresql():
+            monthly_trends = execute_query(conn, f'''
+                SELECT 
+                    ec.category_name,
+                    TO_CHAR(e.expense_date, 'YYYY-MM') as month,
+                    SUM(e.amount) as amount
+                FROM expenses e
+                JOIN expense_categories ec ON e.category_id = ec.category_id
+                WHERE e.user_id = {placeholder} 
+                AND e.expense_date >= CURRENT_DATE - INTERVAL '6 months'
+                GROUP BY ec.category_id, ec.category_name, TO_CHAR(e.expense_date, 'YYYY-MM')
+                ORDER BY month, amount DESC
+            ''', (user_id,)).fetchall()
+        else:
+            monthly_trends = execute_query(conn, f'''
             SELECT 
                 ec.category_name,
                 strftime('%Y-%m', e.expense_date) as month,
                 SUM(e.amount) as amount
             FROM expenses e
             JOIN expense_categories ec ON e.category_id = ec.category_id
-            WHERE e.user_id = ? 
+                WHERE e.user_id = {placeholder} 
             AND e.expense_date >= date('now', '-6 months')
             GROUP BY ec.category_id, ec.category_name, strftime('%Y-%m', e.expense_date)
             ORDER BY month, amount DESC
@@ -7108,8 +7424,10 @@ def get_top_products():
     to_date = request.args.get('to_date', datetime.now().strftime('%Y-%m-%d'))
     
     try:
+        placeholder = get_placeholder()
+        
         # Top products by revenue
-        top_products = execute_update(conn, '''
+        top_products = execute_query(conn, f'''
             SELECT 
                 bi.product_name,
                 SUM(bi.quantity) as quantity_sold,
@@ -7118,8 +7436,8 @@ def get_top_products():
                 AVG(bi.rate) as avg_unit_price
             FROM bill_items bi
             JOIN bills b ON bi.bill_id = b.bill_id
-            WHERE b.user_id = ? 
-            AND DATE(b.bill_date) BETWEEN ? AND ?
+            WHERE b.user_id = {placeholder} 
+            AND DATE(b.bill_date) BETWEEN {placeholder} AND {placeholder}
             GROUP BY bi.product_name
             ORDER BY total_revenue DESC
             LIMIT 10
@@ -7145,6 +7463,38 @@ def get_top_products():
 def financial_insights():
     """Serve the financial insights page"""
     return render_template('financial_insights.html')
+
+@app.route('/debug_mobile_nav')
+def debug_mobile_nav():
+    return render_template('debug_mobile_nav.html')
+
+@app.route('/test_mobile_nav')
+def test_mobile_nav():
+    return render_template('test_mobile_navigation.html')
+
+@app.route('/test_horizontal_nav')
+def test_horizontal_nav():
+    return render_template('test_horizontal_nav.html')
+
+@app.route('/test_nav_debug')
+def test_nav_debug():
+    return render_template('test_nav_debug.html')
+
+@app.route('/force_mobile_nav')
+def force_mobile_nav():
+    return render_template('force_mobile_nav.html')
+
+@app.route('/debug_step_by_step')
+def debug_step_by_step():
+    return render_template('debug_step_by_step.html')
+
+@app.route('/test_script_loading')
+def test_script_loading():
+    return render_template('test_script_loading.html')
+
+@app.route('/test_current_nav')
+def test_current_nav():
+    return render_template('test_current_nav.html')
 
 if __name__ == '__main__':
     setup_ocr()  # Initialize OCR

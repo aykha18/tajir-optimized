@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSS Debug Test</title>
+    <style>
+        /* Test if CSS is loading at all */
+        .test-customer-name {
+            color: #ff0000 !important;
+            background-color: #ffff00 !important;
+            border: 3px solid #00ff00 !important;
+            padding: 10px !important;
+            font-size: 24px !important;
+            font-weight: bold !important;
+        }
+        
+        .test-customer-phone {
+            color: #00ff00 !important;
+            background-color: #0000ff !important;
+            border: 3px solid #ff00ff !important;
+            padding: 10px !important;
+            font-size: 20px !important;
+            font-weight: bold !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSS Debug Test</h1>
+    
+    <div class="test-customer-name">
+        This should be RED with YELLOW background and GREEN border
+    </div>
+    
+    <div class="test-customer-phone">
+        This should be GREEN with BLUE background and MAGENTA border
+    </div>
+    
+    <div class="customer-name">
+        This is a customer name - should be RED if CSS is working
+    </div>
+    
+    <div class="customer-phone">
+        This is a customer phone - should be GREEN if CSS is working
+    </div>
+    
+    <hr style="margin: 30px 0; border: 2px solid #333;">
+    
+    <h2>Mobile Billing Debug</h2>
+    <button onclick="triggerMobileBilling()" style="padding: 15px 30px; font-size: 18px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">
+        Open Mobile Billing V3
+    </button>
+    
+    <div id="debug-output" style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px; font-family: monospace; white-space: pre-wrap;"></div>
+    
+    <script>
+        // Check if CSS is loaded
+        console.log('Debug page loaded');
+        
+        // Check if our CSS file is accessible
+        fetch('/static/css/mobile-billing-v3.css?v=1.0.9')
+            .then(response => {
+                console.log('CSS file status:', response.status);
+                if (response.ok) {
+                    return response.text();
+                }
+                throw new Error('CSS file not found');
+            })
+            .then(css => {
+                console.log('CSS file loaded, length:', css.length);
+                console.log('CSS contains customer-name:', css.includes('customer-name'));
+                console.log('CSS contains #ff0000:', css.includes('#ff0000'));
+            })
+            .catch(error => {
+                console.error('Error loading CSS:', error);
+            });
+            
+        // Function to inspect mobile billing HTML structure
+        function inspectMobileBilling() {
+            console.log('=== MOBILE BILLING HTML INSPECTION ===');
+            
+            // Check if mobile billing overlay exists
+            const overlay = document.getElementById('mobile-billing-v3-overlay');
+            if (overlay) {
+                console.log('✅ Mobile billing overlay found');
+                console.log('Overlay classes:', overlay.className);
+                
+                // Look for customer elements
+                const customerNames = overlay.querySelectorAll('.customer-name');
+                console.log('Customer name elements found:', customerNames.length);
+                customerNames.forEach((el, i) => {
+                    console.log(`Customer name ${i + 1}:`, el.textContent, 'Classes:', el.className);
+                });
+                
+                const customerPhones = overlay.querySelectorAll('.customer-phone');
+                console.log('Customer phone elements found:', customerPhones.length);
+                customerPhones.forEach((el, i) => {
+                    console.log(`Customer phone ${i + 1}:`, el.textContent, 'Classes:', el.className);
+                });
+                
+                // Look for any elements with "customer" in the class name
+                const allCustomerElements = overlay.querySelectorAll('[class*="customer"]');
+                console.log('All elements with "customer" in class:', allCustomerElements.length);
+                allCustomerElements.forEach((el, i) => {
+                    console.log(`Customer element ${i + 1}:`, el.tagName, 'Classes:', el.className, 'Text:', el.textContent.substring(0, 50));
+                });
+                
+            } else {
+                console.log('❌ Mobile billing overlay NOT found');
+                
+                // Check if mobile billing modal exists
+                const modal = document.getElementById('mobile-billing-v3-modal');
+                if (modal) {
+                    console.log('✅ Mobile billing modal found');
+                } else {
+                    console.log('❌ Mobile billing modal NOT found');
+                }
+                
+                // Look for any elements with mobile-billing in the ID
+                const mobileElements = document.querySelectorAll('[id*="mobile-billing"]');
+                console.log('Elements with mobile-billing in ID:', mobileElements.length);
+                mobileElements.forEach((el, i) => {
+                    console.log(`Mobile element ${i + 1}:`, el.id, 'Classes:', el.className);
+                });
+            }
+        }
+        
+        // Function to trigger mobile billing and inspect
+        function triggerMobileBilling() {
+            const debugOutput = document.getElementById('debug-output');
+            debugOutput.textContent = 'Opening mobile billing...\n';
+            
+            // Try to trigger mobile billing
+            if (window.mobileBillingV3) {
+                console.log('Mobile billing V3 found, showing...');
+                window.mobileBillingV3.show();
+                
+                // Wait a bit then inspect
+                setTimeout(() => {
+                    inspectMobileBilling();
+                    debugOutput.textContent += 'Mobile billing opened. Check console for inspection results.\n';
+                }, 1000);
+            } else {
+                console.log('Mobile billing V3 not found');
+                debugOutput.textContent += 'Mobile billing V3 not found. Trying to navigate to app page...\n';
+                
+                // Try to navigate to the app page
+                window.location.href = '/app';
+            }
+        }
+        
+        // Run inspection after a delay to allow page to load
+        setTimeout(inspectMobileBilling, 2000);
+        
+        // Also run when window loads
+        window.addEventListener('load', inspectMobileBilling);
+    </script>
+</body>
+</html>

@@ -2991,9 +2991,9 @@ function initializeBillingSystem() {
     const mobileBillingBannerBtn = document.getElementById('mobileBillingBannerBtn');
     if (mobileBillingBannerBtn) {
       mobileBillingBannerBtn.addEventListener('click', function() {
-        if (window.TajirPWA && window.TajirPWA.mobileBilling) {
+        if (window.mobileBillingV3) {
           try {
-            window.TajirPWA.mobileBilling.showMobileBilling();
+            window.mobileBillingV3.show();
             // Hide the banner after clicking
             const banner = document.getElementById('mobileBillingBanner');
             if (banner) {
@@ -3004,11 +3004,11 @@ function initializeBillingSystem() {
               }, 300);
             }
           } catch (error) {
-            console.error('Error showing mobile billing from banner:', error);
+            console.error('Error showing mobile billing V3 from banner:', error);
             showModernAlert('Mobile billing encountered an error. Please try again.', 'error', 'Error');
           }
         } else {
-          console.warn('Mobile billing not available');
+          console.warn('Mobile billing V3 not available');
           showModernAlert('Mobile billing is not available. Please refresh the page.', 'warning', 'Feature Unavailable');
         }
       });

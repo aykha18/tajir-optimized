@@ -16,12 +16,35 @@ class MobileNavigation {
     this.isInitialized = false;
   }
 
+  handleResize() {
+    // Handle resize events for mobile navigation
+    const height = window.innerHeight;
+    const width = window.innerWidth;
+    
+    if (height < width * 0.8) {
+      // Keyboard is likely open
+      document.body.classList.add('keyboard-open');
+    } else {
+      document.body.classList.remove('keyboard-open');
+    }
+    
+    // Update active section on resize
+    this.updateActiveSection();
+  }
+
   async init() {
     try {
       // Check if we're on a mobile device
       if (!this.isMobile()) {
         console.log('Mobile Navigation: Not on mobile device, skipping initialization');
         return;
+      }
+
+      // Wait for DOM to be ready
+      if (document.readyState === 'loading') {
+        await new Promise(resolve => {
+          document.addEventListener('DOMContentLoaded', resolve);
+        });
       }
 
       this.createBottomNavigation();
@@ -44,15 +67,31 @@ class MobileNavigation {
 
   createBottomNavigation() {
     // Remove existing mobile nav if present
-    const existingNav = document.querySelector('.mobile-nav');
+    const existingNav = document.querySelector('.mobile-nav, #mobile-navigation-bar');
     if (existingNav) {
       existingNav.remove();
     }
 
     const nav = document.createElement('nav');
     nav.className = 'mobile-nav';
+    nav.id = 'mobile-navigation-bar';
+    nav.style.cssText = `
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid #374151;
+      padding: 8px 0;
+      z-index: 1000;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    `;
+    
     nav.innerHTML = `
-      <div class="flex justify-around items-center w-full">
         <a href="#dashboard" class="mobile-nav-item" data-section="dashboard">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
@@ -84,7 +123,6 @@ class MobileNavigation {
           </svg>
           <span>More</span>
         </a>
-      </div>
     `;
 
     // Add click handlers
@@ -602,7 +640,20 @@ class MobileNavigation {
 
   // Check if running on mobile
   isMobile() {
-    return window.innerWidth <= 768;
+    // More comprehensive mobile detection
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobileWidth = window.innerWidth <= 768;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    console.log('Mobile detection:', {
+      userAgent: navigator.userAgent,
+      isMobileDevice,
+      isMobileWidth,
+      isTouchDevice,
+      windowWidth: window.innerWidth
+    });
+    
+    return isMobileDevice || isMobileWidth || isTouchDevice;
   }
 
   // Check if running on tablet
@@ -618,6 +669,30 @@ class MobileNavigation {
   // Get device orientation
   getOrientation() {
     return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+  }
+
+  // Hide mobile navigation (for mobile billing V3)
+  hideNavigation() {
+    const mobileNav = document.getElementById('mobile-navigation-bar');
+    if (mobileNav) {
+      mobileNav.style.display = 'none';
+      mobileNav.style.visibility = 'hidden';
+      mobileNav.style.opacity = '0';
+      mobileNav.style.zIndex = '-1';
+      mobileNav.style.pointerEvents = 'none';
+    }
+  }
+
+  // Show mobile navigation (for mobile billing V3)
+  showNavigation() {
+    const mobileNav = document.getElementById('mobile-navigation-bar');
+    if (mobileNav) {
+      mobileNav.style.display = '';
+      mobileNav.style.visibility = '';
+      mobileNav.style.opacity = '';
+      mobileNav.style.zIndex = '';
+      mobileNav.style.pointerEvents = '';
+    }
   }
 
   // Manual initialization method

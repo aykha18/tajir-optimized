@@ -1,6 +1,13 @@
 // Main Application JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 DOM Content Loaded');
+  console.log('📦 Available modules:', {
+    loadProductTypes: typeof window.loadProductTypes,
+    setupProductTypeFormHandler: typeof window.setupProductTypeFormHandler,
+    setupProductTypeListHandlers: typeof window.setupProductTypeListHandlers
+  });
+  
   // Reset cache clearing flag on page load
   window.isClearingCache = false;
   
@@ -138,7 +145,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn.dataset.go === 'customerSec') {
           loadCustomers();
         } else if (btn.dataset.go === 'productTypeSec') {
-          loadProductTypes();
+          console.log('🔄 Loading product types section...');
+          if (window.loadProductTypes) {
+            loadProductTypes();
+          } else {
+            console.error('❌ loadProductTypes function not found!');
+          }
         } else if (btn.dataset.go === 'productSec') {
           loadProducts();
         } else if (btn.dataset.go === 'employeeSec') {
