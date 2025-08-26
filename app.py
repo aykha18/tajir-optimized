@@ -439,8 +439,8 @@ def init_db():
     need_init = False
     if is_postgresql():
         # For PostgreSQL, check if tables exist
-        conn = get_db_connection()
         try:
+            conn = get_db_connection()
             cursor = execute_query(conn, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'product_types'")
             result = cursor.fetchone()
             # Handle both PostgreSQL (dict) and SQLite (tuple) results
@@ -450,12 +450,11 @@ def init_db():
                 print("PostgreSQL detected - tables don't exist, initializing database...")
             else:
                 print("PostgreSQL detected - tables already exist, skipping initialization")
+            conn.close()
         except Exception as e:
             # Table doesn't exist, need to initialize
             need_init = True
             print(f"PostgreSQL detected - error checking tables: {e}, initializing database...")
-        finally:
-            conn.close()
     else:
         # For SQLite, check if database file exists
         if not os.path.exists(app.config['DATABASE']):
@@ -477,10 +476,17 @@ def init_db():
     
     if need_init:
         # Choose the appropriate schema file based on database type
+        print(f"Database type check: is_postgresql() = {is_postgresql()}")
+        print(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'Not set')}")
+        print(f"PGHOST: {os.getenv('PGHOST', 'Not set')}")
+        print(f"POSTGRESQL_AVAILABLE: {POSTGRESQL_AVAILABLE}")
+        
         if is_postgresql():
             schema_file = 'database_schema_postgresql.sql'
+            print(f"Using PostgreSQL schema: {schema_file}")
         else:
             schema_file = 'database_schema.sql'
+            print(f"Using SQLite schema: {schema_file}")
         
         try:
             with open(schema_file, 'r') as f:
