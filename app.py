@@ -1262,17 +1262,29 @@ def create_bill():
                     break
                     
                 except get_db_integrity_error() as e:
+                    # Always rollback on integrity error to reset transaction state
+                    conn.rollback()
+                    
                     if "UNIQUE constraint failed: bills.user_id, bills.bill_number" in str(e):
                         if attempt == max_retries - 1:
                             # Last attempt failed
-                            conn.rollback()
                             conn.close()
                             return jsonify({'error': 'Failed to create bill due to duplicate bill number. Please try again.'}), 500
                         # Continue to next attempt
                         continue
+                    elif "bills_pkey" in str(e) or "duplicate key value violates unique constraint \"bills_pkey\"" in str(e):
+                        # Sequence mismatch: auto-heal by syncing sequence to MAX(bill_id)+1 and retry
+                        try:
+                            # Fix sequence outside of transaction
+                            execute_query(conn, "SELECT setval(pg_get_serial_sequence('bills','bill_id'), COALESCE((SELECT MAX(bill_id) FROM bills),0)+1, false)")
+                            execute_query(conn, "SELECT setval(pg_get_serial_sequence('bill_items','id'), COALESCE((SELECT MAX(id) FROM bill_items),0)+1, false)")
+                            print(f"DEBUG: Fixed sequence, retrying attempt {attempt + 1}")
+                        except Exception as seq_err:
+                            print(f"DEBUG: Failed to auto-fix sequence: {seq_err}")
+                        # retry next loop attempt
+                        continue
                     else:
                         # Other integrity error
-                        conn.rollback()
                         conn.close()
                         return jsonify({'error': f'Database error: {str(e)}'}), 500
                 except Exception as e:
@@ -1437,17 +1449,29 @@ def create_bill():
                     break
                     
                 except get_db_integrity_error() as e:
+                    # Always rollback on integrity error to reset transaction state
+                    conn.rollback()
+                    
                     if "UNIQUE constraint failed: bills.user_id, bills.bill_number" in str(e):
                         if attempt == max_retries - 1:
                             # Last attempt failed
-                            conn.rollback()
                             conn.close()
                             return jsonify({'error': 'Failed to create bill due to duplicate bill number. Please try again.'}), 500
                         # Continue to next attempt
                         continue
+                    elif "bills_pkey" in str(e) or "duplicate key value violates unique constraint \"bills_pkey\"" in str(e):
+                        # Sequence mismatch: auto-heal by syncing sequence to MAX(bill_id)+1 and retry
+                        try:
+                            # Fix sequence outside of transaction
+                            execute_query(conn, "SELECT setval(pg_get_serial_sequence('bills','bill_id'), COALESCE((SELECT MAX(bill_id) FROM bills),0)+1, false)")
+                            execute_query(conn, "SELECT setval(pg_get_serial_sequence('bill_items','id'), COALESCE((SELECT MAX(id) FROM bill_items),0)+1, false)")
+                            print(f"DEBUG: Fixed sequence, retrying attempt {attempt + 1}")
+                        except Exception as seq_err:
+                            print(f"DEBUG: Failed to auto-fix sequence: {seq_err}")
+                        # retry next loop attempt
+                        continue
                     else:
                         # Other integrity error
-                        conn.rollback()
                         conn.close()
                         return jsonify({'error': f'Database error: {str(e)}'}), 500
                 except Exception as e:
@@ -7495,6 +7519,10 @@ def test_script_loading():
 @app.route('/test_current_nav')
 def test_current_nav():
     return render_template('test_current_nav.html')
+
+
+
+
 
 if __name__ == '__main__':
     setup_ocr()  # Initialize OCR

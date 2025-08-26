@@ -41,6 +41,81 @@
   margin-bottom: 4px !important;
 }
 
+/* STEP 2 CUSTOMER SEARCH AND ADD BUTTON RESIZING */
+/* Resize customer search input in Step 2 */
+.mobile-billing-v3-overlay #step-2 #customer-search,
+.mobile-billing-v3-modal #step-2 #customer-search {
+  height: 45px !important;
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+}
+
+/* Resize Add New Customer button in Step 2 */
+.mobile-billing-v3-overlay #step-2 #add-customer-btn,
+.mobile-billing-v3-modal #step-2 #add-customer-btn {
+  height: 45px !important;
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 10003 !important;
+  pointer-events: auto !important;
+}
+
+.mobile-billing-v3-overlay #step-2 #add-customer-btn .flex,
+.mobile-billing-v3-modal #step-2 #add-customer-btn .flex {
+  gap: 6px !important;
+}
+
+.mobile-billing-v3-overlay #step-2 #add-customer-btn svg,
+.mobile-billing-v3-modal #step-2 #add-customer-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+
+
+/* ENSURE ADD NEW BUTTON IS VISIBLE AND STYLED CORRECTLY */
+.mobile-billing-v3-overlay #step-2 #add-customer-btn,
+.mobile-billing-v3-modal #step-2 #add-customer-btn {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: linear-gradient(to right, #3b82f6, #8b5cf6) !important;
+  color: white !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+/* ENSURE CUSTOMER MODAL IS VISIBLE */
+#add-customer-modal {
+  z-index: 99999 !important;
+}
+
+#add-customer-modal:not(.hidden) {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* CUSTOMER DETAILS SECTION POSITIONING */
+#customer-details-section {
+  margin-top: -8px !important;
+  padding-top: 12px !important;
+}
+
+.mobile-billing-v3-overlay #step-2 #add-customer-btn:hover,
+.mobile-billing-v3-modal #step-2 #add-customer-btn:hover {
+  background: linear-gradient(to right, #2563eb, #7c3aed) !important;
+  transform: scale(1.02) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
 /* SIMPLE NAVIGATION BUTTON FIX */
 /* Force the navigation buttons to be visible with proper colors */
 #prev-step-btn,
@@ -1440,7 +1515,8 @@ body #mobile-billing-v3-overlay #next-step-btn {
   z-index: 10001 !important;
 }
 
-#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div > button {
+/* Only target navigation buttons, not the Add New button */
+#mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 > div > button:not(#add-customer-btn) {
   flex: 0 0 auto !important;
   display: inline-block !important;
   float: none !important;

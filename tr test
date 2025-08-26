@@ -1,5 +1,0 @@
-[33me1a3699[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add comprehensive PostgreSQL migration preparation
-[33m4f4f205[m Add comprehensive documentation and test suite for PostgreSQL migration preparation
-[33m545f604[m Remove financial analytics page and related code - Clean up old financial analytics implementation - Remove /financial-analytics route and function - Remove navigation buttons from desktop and mobile - Delete financial analytics template files - Keep only the new Financial Insights page
-[33m075355f[m Add comprehensive financial analytics system
-[33me17b1c8[m Add discount amount display in print bill template

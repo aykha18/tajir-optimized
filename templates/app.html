@@ -1992,14 +1992,24 @@
           <!-- Step 2: Customer -->
           <div id="step-2" class="step-panel h-full flex flex-col">
             <div class="p-4 border-b border-neutral-700">
-              <input type="text" id="customer-search" placeholder="Search customers..." class="w-full px-4 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:border-blue-500">
+              <div class="flex gap-3">
+                <input type="text" id="customer-search" placeholder="Search customers..." class="flex-1 px-4 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:border-blue-500">
+                <button id="add-customer-btn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 px-4 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 whitespace-nowrap">
+                  <div class="flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add New
+                  </div>
+                </button>
+              </div>
             </div>
             <div id="customers-list" class="flex-1 overflow-y-auto p-4">
               <!-- Customers will be loaded here -->
             </div>
             
             <!-- Customer Details Section (shown when customer is selected) -->
-            <div id="customer-details-section" class="p-4 border-t border-neutral-700 hidden">
+            <div id="customer-details-section" class="p-4 border-t border-neutral-700 hidden" style="margin-top: -16px;">
               <h3 class="text-lg font-semibold text-white mb-3">Customer Details</h3>
               
               <!-- Trial and Delivery Dates in same row -->
@@ -2021,16 +2031,7 @@
               </div>
             </div>
             
-            <div class="p-4 border-t border-neutral-700">
-              <button id="add-customer-btn" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-                <div class="flex items-center justify-center gap-2">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                  </svg>
-                  Add New Customer
-                </div>
-              </button>
-            </div>
+
           </div>
 
           <!-- Step 3: Summary -->
@@ -2183,7 +2184,7 @@
     </div>
 
     <!-- Add Customer Modal -->
-    <div id="add-customer-modal" class="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm hidden">
+    <div id="add-customer-modal" class="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm hidden">
       <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-neutral-900 rounded-lg shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between mb-4">
@@ -2219,13 +2220,15 @@
                 <label class="block text-sm text-neutral-400 mb-1">Master</label>
                 <input type="text" id="new-customer-master" placeholder="Select master" autocomplete="off" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white focus:outline-none focus:border-blue-500">
               </div>
-              <div>
-                <label class="block text-sm text-neutral-400 mb-1">Trial Date</label>
-                <input type="date" id="new-customer-trial-date" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white focus:outline-none focus:border-blue-500">
-              </div>
-              <div>
-                <label class="block text-sm text-neutral-400 mb-1">Delivery Date</label>
-                <input type="date" id="new-customer-delivery-date" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white focus:outline-none focus:border-blue-500">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm text-neutral-400 mb-1">Trial Date</label>
+                  <input type="date" id="new-customer-trial-date" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm text-neutral-400 mb-1">Delivery Date</label>
+                  <input type="date" id="new-customer-delivery-date" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white focus:outline-none focus:border-blue-500">
+                </div>
               </div>
             </div>
             
@@ -2370,4 +2373,44 @@
     }
 
     // Initialize Mobile Billing V3
+    
+    // Debug script for modal testing
+    <script>
+        console.log('Debug script loaded');
+        
+        // Check if button exists
+        const addCustomerBtn = document.getElementById('add-customer-btn');
+        console.log('Add customer button found:', !!addCustomerBtn);
+        
+        // Check if modal exists
+        const modal = document.getElementById('add-customer-modal');
+        console.log('Modal found:', !!modal);
+        
+        // Add click listener to button
+        if (addCustomerBtn) {
+            addCustomerBtn.addEventListener('click', function() {
+                console.log('Add New button clicked!');
+                
+                if (modal) {
+                    console.log('Removing hidden class from modal');
+                    modal.classList.remove('hidden');
+                    console.log('Modal classes after removal:', modal.className);
+                } else {
+                    console.error('Modal not found!');
+                }
+            });
+        }
+        
+        // Test modal visibility
+        function testModal() {
+            if (modal) {
+                console.log('Current modal classes:', modal.className);
+                console.log('Modal is hidden:', modal.classList.contains('hidden'));
+                console.log('Modal display style:', window.getComputedStyle(modal).display);
+            }
+        }
+        
+        // Run test after a delay
+        setTimeout(testModal, 1000);
+    </script>
 {% endblock %} 
