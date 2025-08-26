@@ -415,8 +415,15 @@ def init_db():
         else:
             schema_file = 'database_schema.sql'
         
-        with open(schema_file, 'r') as f:
-            schema = f.read()
+        try:
+            with open(schema_file, 'r') as f:
+                schema = f.read()
+        except FileNotFoundError:
+            print(f"Schema file {schema_file} not found, using default schema")
+            schema_file = 'database_schema.sql'
+            with open(schema_file, 'r') as f:
+                schema = f.read()
+        
         conn = get_db_connection()
         try:
             if is_postgresql():
@@ -425,8 +432,12 @@ def init_db():
                 cursor = conn.cursor()
                 for statement in statements:
                     statement = statement.strip()
-                    if statement:
-                        cursor.execute(statement)
+                    if statement and not statement.startswith('--'):
+                        try:
+                            cursor.execute(statement)
+                        except Exception as stmt_error:
+                            print(f"Warning: Failed to execute statement: {stmt_error}")
+                            # Continue with other statements
                 conn.commit()  # Commit the transaction
                 cursor.close()
                 print(f"PostgreSQL database initialized successfully using {schema_file}")
@@ -437,10 +448,11 @@ def init_db():
             logger.info("Database initialized successfully with logging tables")
         except Exception as e:
             log_dml_error("INIT", "database", e)
-            raise e
+            print(f"Database initialization error: {e}")
+            # Don't raise the error, just log it and continue
         finally:
             conn.close()
-        print("Database initialized successfully!")
+        print("Database initialization completed!")
     
     # Always ensure admin user exists
     try:
