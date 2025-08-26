@@ -7000,3 +7000,21 @@ DETAIL:  Key (action_id)=(133) already exists.
 2025-08-26 21:06:48,588 - root - INFO - Admin user setup completed
 2025-08-26 21:06:48,593 - werkzeug - WARNING -  * Debugger is active!
 2025-08-26 21:06:48,595 - werkzeug - INFO -  * Debugger PIN: 107-126-000
+2025-08-26 21:13:34,986 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\test_railway_pg.py', reloading
+2025-08-26 21:13:35,089 - werkzeug - INFO -  * Restarting with stat
+2025-08-26 21:13:35,675 - root - INFO - Tesseract found at: C:\Program Files\Tesseract-OCR\tesseract.exe
+2025-08-26 21:13:35,942 - root - INFO - Admin user setup completed
+2025-08-26 21:13:35,947 - werkzeug - WARNING -  * Debugger is active!
+2025-08-26 21:13:35,950 - werkzeug - INFO -  * Debugger PIN: 107-126-000
+2025-08-26 21:15:02,842 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\debug_connection.py', reloading
+2025-08-26 21:15:02,932 - werkzeug - INFO -  * Restarting with stat
+2025-08-26 21:15:03,491 - root - INFO - Tesseract found at: C:\Program Files\Tesseract-OCR\tesseract.exe
+2025-08-26 21:15:03,773 - root - INFO - Admin user setup completed
+2025-08-26 21:15:03,778 - werkzeug - WARNING -  * Debugger is active!
+2025-08-26 21:15:03,780 - werkzeug - INFO -  * Debugger PIN: 107-126-000
+2025-08-26 21:15:15,892 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Khana\\tailor_pos\\app.py', reloading
+2025-08-26 21:15:16,002 - werkzeug - INFO -  * Restarting with stat
+2025-08-26 21:15:16,679 - root - INFO - Tesseract found at: C:\Program Files\Tesseract-OCR\tesseract.exe
+2025-08-26 21:15:16,932 - root - INFO - Admin user setup completed
+2025-08-26 21:15:16,937 - werkzeug - WARNING -  * Debugger is active!
+2025-08-26 21:15:16,940 - werkzeug - INFO -  * Debugger PIN: 107-126-000
