@@ -206,7 +206,56 @@ def get_db_connection():
             return conn
         except Exception as e:
             print(f"PostgreSQL connection failed: {e}")
-            print("Falling back to SQLite...")
+            # Try to create the database if it doesn't exist
+            if "database" in str(e).lower() and "does not exist" in str(e).lower():
+                print("Database doesn't exist, attempting to create it...")
+                try:
+                    # Connect to default 'postgres' database to create our database
+                    if database_url:
+                        # Parse DATABASE_URL to get connection details
+                        from urllib.parse import urlparse
+                        parsed = urlparse(database_url)
+                        create_db_config = {
+                            'host': parsed.hostname,
+                            'port': parsed.port,
+                            'database': 'postgres',  # Connect to default database
+                            'user': parsed.username,
+                            'password': parsed.password
+                        }
+                    else:
+                        create_db_config = {
+                            'host': pg_host,
+                            'port': pg_port,
+                            'database': 'postgres',  # Connect to default database
+                            'user': pg_user,
+                            'password': pg_password
+                        }
+                    
+                    # Connect to default database and create our database
+                    temp_conn = psycopg2.connect(**create_db_config)
+                    temp_conn.autocommit = True
+                    cursor = temp_conn.cursor()
+                    
+                    # Get database name
+                    db_name = parsed.path[1:] if database_url else pg_database
+                    cursor.execute(f"CREATE DATABASE {db_name}")
+                    cursor.close()
+                    temp_conn.close()
+                    
+                    print(f"Database '{db_name}' created successfully!")
+                    
+                    # Now try to connect to the newly created database
+                    if database_url:
+                        conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+                    else:
+                        conn = psycopg2.connect(**pg_config)
+                    return conn
+                    
+                except Exception as create_error:
+                    print(f"Failed to create database: {create_error}")
+                    print("Falling back to SQLite...")
+            else:
+                print("Falling back to SQLite...")
     
     # Fallback to SQLite (development)
     conn = sqlite3.connect(app.config['DATABASE'], timeout=20.0)
