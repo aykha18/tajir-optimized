@@ -539,11 +539,13 @@ def init_db():
             logger.error(f"Failed to setup admin user: {e}")
     
     # If no initialization was needed, still ensure admin user exists
-    if not need_init:
+    # But only if this is the first time init_db() is called
+    if not need_init and not hasattr(init_db, '_admin_setup_done'):
         try:
             from setup_production_admin import setup_production_admin
             setup_production_admin()
             logger.info("Admin user setup completed")
+            init_db._admin_setup_done = True
         except Exception as e:
             logger.error(f"Failed to setup admin user: {e}")
 
@@ -7680,5 +7682,5 @@ if __name__ == '__main__':
         print(f"Debug script failed: {e}")
     
     setup_ocr()  # Initialize OCR
-    init_db()
+    # init_db() is already called during module import
     app.run(debug=True, host='0.0.0.0', port=5000) 
