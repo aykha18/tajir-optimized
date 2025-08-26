@@ -529,14 +529,23 @@ def init_db():
         finally:
             conn.close()
         print("Database initialization completed!")
+        
+        # Setup admin user after tables are created
+        try:
+            from setup_production_admin import setup_production_admin
+            setup_production_admin()
+            logger.info("Admin user setup completed")
+        except Exception as e:
+            logger.error(f"Failed to setup admin user: {e}")
     
-    # Always ensure admin user exists
-    try:
-        from setup_production_admin import setup_production_admin
-        setup_production_admin()
-        logger.info("Admin user setup completed")
-    except Exception as e:
-        logger.error(f"Failed to setup admin user: {e}")
+    # If no initialization was needed, still ensure admin user exists
+    if not need_init:
+        try:
+            from setup_production_admin import setup_production_admin
+            setup_production_admin()
+            logger.info("Admin user setup completed")
+        except Exception as e:
+            logger.error(f"Failed to setup admin user: {e}")
 
 
 @app.after_request
