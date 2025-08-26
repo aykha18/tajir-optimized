@@ -3330,3 +3330,54 @@ DETAIL:  Key (action_id)=(75) already exists.
 2025-08-26 18:55:13,244 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:13] "GET /api/employees HTTP/1.1" 200 -
 2025-08-26 18:55:13,282 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:13] "GET /static/icons/icon-144.png HTTP/1.1" 200 -
 2025-08-26 18:55:13,395 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:13] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-08-26 18:55:17,260 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:17] "GET /api/cities HTTP/1.1" 200 -
+2025-08-26 18:55:17,509 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:17] "GET /api/employees HTTP/1.1" 200 -
+2025-08-26 18:55:27,024 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:27] "GET /api/next-bill-number HTTP/1.1" 200 -
+2025-08-26 18:55:30,059 - root - ERROR - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(76) already exists.
+
+2025-08-26 18:55:30,125 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:30] "POST /api/bills HTTP/1.1" 200 -
+2025-08-26 18:55:30,490 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:30] "GET /api/bills/1385/print HTTP/1.1" 200 -
+2025-08-26 18:55:33,085 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:33] "GET /api/next-bill-number HTTP/1.1" 200 -
+2025-08-26 18:55:56,751 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:56] "GET /api/cities HTTP/1.1" 200 -
+2025-08-26 18:55:57,003 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:55:57] "GET /api/employees HTTP/1.1" 200 -
+2025-08-26 18:56:10,022 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:10] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:56:10,329 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:10] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:56:14,646 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:14] "POST /api/customers HTTP/1.1" 200 -
+2025-08-26 18:56:25,234 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:25] "GET /api/next-bill-number HTTP/1.1" 200 -
+2025-08-26 18:56:35,257 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:35] "GET /api/cities HTTP/1.1" 200 -
+2025-08-26 18:56:35,520 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:35] "GET /api/employees HTTP/1.1" 200 -
+2025-08-26 18:56:42,155 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:42] "GET /api/cities HTTP/1.1" 200 -
+2025-08-26 18:56:42,531 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:42] "GET /api/employees HTTP/1.1" 200 -
+2025-08-26 18:56:57,906 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:57] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:56:58,214 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:58] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:56:58,250 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:58] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:56:58,286 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:56:58] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:14,978 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:14] "POST /api/customers HTTP/1.1" 200 -
+2025-08-26 18:57:17,687 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:17] "GET /api/next-bill-number HTTP/1.1" 200 -
+2025-08-26 18:57:19,799 - root - ERROR - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(77) already exists.
+
+2025-08-26 18:57:19,865 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:19] "POST /api/bills HTTP/1.1" 200 -
+2025-08-26 18:57:20,131 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:20] "GET /api/bills/1386/print HTTP/1.1" 200 -
+2025-08-26 18:57:22,085 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:22] "GET /api/next-bill-number HTTP/1.1" 200 -
+2025-08-26 18:57:32,377 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:32] "GET /api/cities HTTP/1.1" 200 -
+2025-08-26 18:57:32,623 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:32] "GET /api/employees HTTP/1.1" 200 -
+2025-08-26 18:57:44,025 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:44] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:44,335 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:44] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:44,371 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:44] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:44,408 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:44] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:44,550 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:44] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:56,483 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:56] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:56,520 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:56] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:56,560 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:56] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:56,595 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:56] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:57:56,635 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:57:56] "GET /api/areas HTTP/1.1" 200 -
+2025-08-26 18:58:06,798 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:58:06] "POST /api/customers HTTP/1.1" 200 -
+2025-08-26 18:58:08,755 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:58:08] "GET /api/next-bill-number HTTP/1.1" 200 -
+2025-08-26 18:58:11,025 - root - ERROR - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(78) already exists.
+
+2025-08-26 18:58:11,091 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:58:11] "POST /api/bills HTTP/1.1" 200 -
+2025-08-26 18:58:11,580 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:58:11] "GET /api/bills/1387/print HTTP/1.1" 200 -
+2025-08-26 18:58:14,091 - werkzeug - INFO - 127.0.0.1 - - [26/Aug/2025 18:58:14] "GET /api/next-bill-number HTTP/1.1" 200 -
