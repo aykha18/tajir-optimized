@@ -176,15 +176,22 @@ app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))  # Add secret ke
 def get_db_connection():
     """Get database connection - supports both SQLite (development) and PostgreSQL (production)"""
     # Check if we should use PostgreSQL (Railway deployment)
-    if POSTGRESQL_AVAILABLE and os.getenv('POSTGRES_HOST'):
+    # Prioritize Railway's PG_ variables, fallback to our custom POSTGRES_ variables
+    pg_host = os.getenv('PGHOST') or os.getenv('POSTGRES_HOST')
+    pg_port = os.getenv('PGPORT') or os.getenv('POSTGRES_PORT', '5432')
+    pg_database = os.getenv('PGDATABASE') or os.getenv('POSTGRES_DB', 'tajir_pos')
+    pg_user = os.getenv('PGUSER') or os.getenv('POSTGRES_USER', 'postgres')
+    pg_password = os.getenv('PGPASSWORD') or os.getenv('POSTGRES_PASSWORD', 'password')
+    
+    if POSTGRESQL_AVAILABLE and pg_host:
         try:
             # PostgreSQL configuration for Railway
             pg_config = {
-                'host': os.getenv('POSTGRES_HOST', 'localhost'),
-                'port': os.getenv('POSTGRES_PORT', '5432'),
-                'database': os.getenv('POSTGRES_DB', 'tajir_pos'),
-                'user': os.getenv('POSTGRES_USER', 'postgres'),
-                'password': os.getenv('POSTGRES_PASSWORD', 'password'),
+                'host': pg_host,
+                'port': pg_port,
+                'database': pg_database,
+                'user': pg_user,
+                'password': pg_password,
                 'cursor_factory': RealDictCursor
             }
             conn = psycopg2.connect(**pg_config)
@@ -207,7 +214,9 @@ def get_db_integrity_error():
 
 def is_postgresql():
     """Check if we're using PostgreSQL"""
-    return POSTGRESQL_AVAILABLE and os.getenv('POSTGRES_HOST')
+    # Check for Railway's PG_ variables or our custom POSTGRES_ variables
+    pg_host = os.getenv('PGHOST') or os.getenv('POSTGRES_HOST')
+    return POSTGRESQL_AVAILABLE and pg_host
 
 def get_placeholder():
     """Get the appropriate placeholder for the current database"""

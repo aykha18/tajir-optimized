@@ -11,12 +11,13 @@ def test_postgresql_connection():
     """Test PostgreSQL connection with current environment variables"""
     
     # Get PostgreSQL configuration from environment variables
+    # Prioritize Railway's PG_ variables, fallback to our custom POSTGRES_ variables
     pg_config = {
-        'host': os.getenv('POSTGRES_HOST', 'localhost'),
-        'port': os.getenv('POSTGRES_PORT', '5432'),
-        'database': os.getenv('POSTGRES_DB', 'tajir_pos'),
-        'user': os.getenv('POSTGRES_USER', 'postgres'),
-        'password': os.getenv('POSTGRES_PASSWORD', 'password')
+        'host': os.getenv('PGHOST') or os.getenv('POSTGRES_HOST', 'localhost'),
+        'port': os.getenv('PGPORT') or os.getenv('POSTGRES_PORT', '5432'),
+        'database': os.getenv('PGDATABASE') or os.getenv('POSTGRES_DB', 'tajir_pos'),
+        'user': os.getenv('PGUSER') or os.getenv('POSTGRES_USER', 'postgres'),
+        'password': os.getenv('PGPASSWORD') or os.getenv('POSTGRES_PASSWORD', 'password')
     }
     
     print("Testing PostgreSQL connection with:")
