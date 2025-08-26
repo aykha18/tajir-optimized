@@ -2353,43 +2353,5 @@
 
     // Initialize Mobile Billing V3
     
-    // Debug script for modal testing
-    <script>
-        console.log('Debug script loaded');
-        
-        // Check if button exists
-        const addCustomerBtn = document.getElementById('add-customer-btn');
-        console.log('Add customer button found:', !!addCustomerBtn);
-        
-        // Check if modal exists
-        const modal = document.getElementById('add-customer-modal');
-        console.log('Modal found:', !!modal);
-        
-        // Add click listener to button
-        if (addCustomerBtn) {
-            addCustomerBtn.addEventListener('click', function() {
-                console.log('Add New button clicked!');
-                
-                if (modal) {
-                    console.log('Removing hidden class from modal');
-                    modal.classList.remove('hidden');
-                    console.log('Modal classes after removal:', modal.className);
-                } else {
-                    console.error('Modal not found!');
-                }
-            });
-        }
-        
-        // Test modal visibility
-        function testModal() {
-            if (modal) {
-                console.log('Current modal classes:', modal.className);
-                console.log('Modal is hidden:', modal.classList.contains('hidden'));
-                console.log('Modal display style:', window.getComputedStyle(modal).display);
-            }
-        }
-        
-        // Run test after a delay
-        setTimeout(testModal, 1000);
-    </script>
+    
 {% endblock %} 
