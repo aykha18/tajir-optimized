@@ -371,10 +371,24 @@ def get_user_plan_info():
 def init_db():
     need_init = False
     if is_postgresql():
-        # For PostgreSQL, assume tables exist and skip initialization
-        # since the database is already set up with data
-        print("PostgreSQL detected - skipping database initialization (tables already exist)")
-        need_init = False
+        # For PostgreSQL, check if tables exist
+        conn = get_db_connection()
+        try:
+            cursor = execute_query(conn, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'product_types'")
+            result = cursor.fetchone()
+            # Handle both PostgreSQL (dict) and SQLite (tuple) results
+            count = result[0] if isinstance(result, tuple) else result['count']
+            if count == 0:
+                need_init = True
+                print("PostgreSQL detected - tables don't exist, initializing database...")
+            else:
+                print("PostgreSQL detected - tables already exist, skipping initialization")
+        except Exception as e:
+            # Table doesn't exist, need to initialize
+            need_init = True
+            print(f"PostgreSQL detected - error checking tables: {e}, initializing database...")
+        finally:
+            conn.close()
     else:
         # For SQLite, check if database file exists
         if not os.path.exists(app.config['DATABASE']):
@@ -395,7 +409,13 @@ def init_db():
             conn.close()
     
     if need_init:
-        with open('database_schema.sql', 'r') as f:
+        # Choose the appropriate schema file based on database type
+        if is_postgresql():
+            schema_file = 'database_schema_postgresql.sql'
+        else:
+            schema_file = 'database_schema.sql'
+        
+        with open(schema_file, 'r') as f:
             schema = f.read()
         conn = get_db_connection()
         try:
@@ -407,10 +427,13 @@ def init_db():
                     statement = statement.strip()
                     if statement:
                         cursor.execute(statement)
+                conn.commit()  # Commit the transaction
                 cursor.close()
+                print(f"PostgreSQL database initialized successfully using {schema_file}")
             else:
                 # For SQLite, use executescript
                 conn.executescript(schema)
+                print("SQLite database initialized successfully")
             logger.info("Database initialized successfully with logging tables")
         except Exception as e:
             log_dml_error("INIT", "database", e)

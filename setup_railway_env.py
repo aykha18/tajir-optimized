@@ -1,162 +1,122 @@
 #!/usr/bin/env python3
 """
 Railway Environment Variables Setup Script
-Helps set up environment variables for Tajir POS on Railway
+This script helps set up all required environment variables for Tajir POS deployment
 """
 
 import os
-import secrets
 import subprocess
-import sys
+import secrets
+import string
+
+def run_railway_command(command):
+    """Run a Railway CLI command and return the result"""
+    try:
+        result = subprocess.run(f"railway {command}", shell=True, capture_output=True, text=True)
+        return result.returncode == 0, result.stdout, result.stderr
+    except Exception as e:
+        return False, "", str(e)
 
 def generate_secret_key():
-    """Generate a secure 32-byte secret key."""
-    return secrets.token_hex(32)
+    """Generate a secure secret key"""
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(alphabet) for _ in range(50))
 
-def check_railway_cli():
-    """Check if Railway CLI is installed."""
-    try:
-        result = subprocess.run(['railway', '--version'], capture_output=True, text=True)
-        return result.returncode == 0
-    except FileNotFoundError:
+def setup_environment_variables():
+    """Set up all required environment variables"""
+    
+    print("🚀 Setting up Railway Environment Variables for Tajir POS")
+    print("=" * 60)
+    
+    # Check if we're in a Railway project
+    success, stdout, stderr = run_railway_command("status")
+    if not success:
+        print("❌ Not in a Railway project. Please run 'railway link' first.")
         return False
-
-def install_railway_cli():
-    """Install Railway CLI if not present."""
-    print("Installing Railway CLI...")
-    try:
-        subprocess.run(['npm', 'install', '-g', '@railway/cli'], check=True)
-        print("SUCCESS: Railway CLI installed")
-        return True
-    except subprocess.CalledProcessError:
-        print("ERROR: Failed to install Railway CLI")
-        print("Please install manually: npm install -g @railway/cli")
-        return False
-
-def login_railway():
-    """Login to Railway."""
-    print("Logging into Railway...")
-    try:
-        subprocess.run(['railway', 'login'], check=True)
-        print("SUCCESS: Logged into Railway")
-        return True
-    except subprocess.CalledProcessError:
-        print("ERROR: Failed to login to Railway")
-        return False
-
-def link_project():
-    """Link to Railway project."""
-    print("Linking to Railway project...")
-    try:
-        subprocess.run(['railway', 'link'], check=True)
-        print("SUCCESS: Linked to Railway project")
-        return True
-    except subprocess.CalledProcessError:
-        print("ERROR: Failed to link to Railway project")
-        return False
-
-def set_environment_variables():
-    """Set all environment variables."""
+    
+    print("✅ Connected to Railway project")
+    
+    # Generate secure secret key
     secret_key = generate_secret_key()
     
-    variables = {
-        'SECRET_KEY': secret_key,
-        'SESSION_TIMEOUT_HOURS': '8',
-        'MAX_LOGIN_ATTEMPTS': '5',
-        'RATE_LIMIT_PER_MINUTE': '50',
-        'DATABASE_PATH': 'pos_tailor.db',
-        'WHATSAPP_NUMBER_1': '+971503904508',
-        'WHATSAPP_NUMBER_2': '+971524566488'
+    # Define all environment variables
+    env_vars = {
+        # Application Settings
+        "SECRET_KEY": secret_key,
+        "FLASK_ENV": "production",
+        "DEBUG": "False",
+        
+        # Security Settings
+        "BCRYPT_LOG_ROUNDS": "12",
+        "SESSION_COOKIE_SECURE": "True",
+        "SESSION_COOKIE_HTTPONLY": "True",
+        "PERMANENT_SESSION_LIFETIME": "3600",
+        
+        # Rate Limiting
+        "RATELIMIT_STORAGE_URL": "memory://",
+        "RATELIMIT_DEFAULT": "200 per day;50 per hour",
+        
+        # Logging
+        "LOG_LEVEL": "INFO",
+        "LOG_FILE": "logs/tajir_pos.log"
     }
     
-    print("Setting environment variables...")
+    print("\n📝 Setting up environment variables...")
     
-    for key, value in variables.items():
-        try:
-            subprocess.run(['railway', 'variables', 'set', f'{key}={value}'], check=True)
-            print(f"SUCCESS: Set {key}")
-        except subprocess.CalledProcessError:
-            print(f"ERROR: Failed to set {key}")
-            return False
+    # Set each environment variable
+    for key, value in env_vars.items():
+        print(f"Setting {key}...")
+        success, stdout, stderr = run_railway_command(f"variables set {key}={value}")
+        
+        if success:
+            print(f"✅ {key} set successfully")
+        else:
+            print(f"❌ Failed to set {key}: {stderr}")
+    
+    print("\n🔍 Verifying environment variables...")
+    
+    # List all variables to verify
+    success, stdout, stderr = run_railway_command("variables")
+    if success:
+        print("Current environment variables:")
+        print(stdout)
+    else:
+        print(f"Failed to list variables: {stderr}")
+    
+    print("\n📋 PostgreSQL Variables Note:")
+    print("The following PostgreSQL variables will be automatically set by Railway:")
+    print("- POSTGRES_HOST")
+    print("- POSTGRES_PORT") 
+    print("- POSTGRES_DB")
+    print("- POSTGRES_USER")
+    print("- POSTGRES_PASSWORD")
+    print("\nMake sure you have added a PostgreSQL plugin to your Railway project!")
     
     return True
 
-def verify_variables():
-    """Verify that variables are set correctly."""
-    print("Verifying environment variables...")
-    try:
-        result = subprocess.run(['railway', 'variables'], capture_output=True, text=True, check=True)
-        print("Current Railway variables:")
-        print(result.stdout)
-        return True
-    except subprocess.CalledProcessError:
-        print("ERROR: Failed to verify variables")
-        return False
-
-def create_env_file():
-    """Create a local .env file for reference."""
-    secret_key = generate_secret_key()
-    
-    env_content = f"""# Tajir POS Environment Configuration
-# This file is for reference only - DO NOT commit to version control
-# Use Railway variables for production
-
-SECRET_KEY={secret_key}
-SESSION_TIMEOUT_HOURS=8
-MAX_LOGIN_ATTEMPTS=5
-RATE_LIMIT_PER_MINUTE=50
-DATABASE_PATH=pos_tailor.db
-WHATSAPP_NUMBER_1=+971503904508
-WHATSAPP_NUMBER_2=+971524566488
-"""
-    
-    with open('.env.example', 'w') as f:
-        f.write(env_content)
-    
-    print("SUCCESS: Created .env.example file for reference")
-
 def main():
-    """Main setup function."""
-    print("Railway Environment Variables Setup")
-    print("=" * 50)
+    """Main function"""
+    print("Railway Environment Setup for Tajir POS")
+    print("=" * 40)
     
-    # Check if Railway CLI is installed
-    if not check_railway_cli():
-        print("Railway CLI not found. Installing...")
-        if not install_railway_cli():
-            sys.exit(1)
+    # Check if Railway CLI is available
+    success, stdout, stderr = run_railway_command("--version")
+    if not success:
+        print("❌ Railway CLI not found. Please install it first:")
+        print("npm install -g @railway/cli")
+        return
     
-    # Login to Railway
-    if not login_railway():
-        sys.exit(1)
+    print("✅ Railway CLI is available")
     
-    # Link project
-    if not link_project():
-        sys.exit(1)
-    
-    # Set environment variables
-    if not set_environment_variables():
-        sys.exit(1)
-    
-    # Verify variables
-    verify_variables()
-    
-    # Create local .env.example file
-    create_env_file()
-    
-    print("\n" + "=" * 50)
-    print("SUCCESS: Railway environment variables setup completed!")
-    print("\nNEXT STEPS:")
-    print("1. Deploy your application: railway up")
-    print("2. Test the application in production")
-    print("3. Monitor logs: railway logs")
-    print("4. Check variables: railway variables")
-    
-    print("\nIMPORTANT:")
-    print("- Keep your SECRET_KEY secure and private")
-    print("- Never commit .env files to version control")
-    print("- Monitor your application logs for any issues")
-    print("- Test all functionality after deployment")
+    # Setup environment variables
+    if setup_environment_variables():
+        print("\n🎉 Environment setup completed!")
+        print("\nNext steps:")
+        print("1. Add PostgreSQL plugin to your Railway project")
+        print("2. Deploy your application: railway up")
+        print("3. Check logs: railway logs")
+    else:
+        print("\n❌ Environment setup failed!")
 
 if __name__ == "__main__":
     main()
