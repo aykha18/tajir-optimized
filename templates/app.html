@@ -1139,6 +1139,10 @@
             <input id="customerName" placeholder="e.g. John Doe" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
           </div>
           <div class="col-span-3 flex flex-col">
+            <label for="customerEmail" class="text-sm font-medium text-neutral-300 mb-1">Email</label>
+            <input id="customerEmail" type="email" placeholder="e.g. john@example.com" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
+          <div class="col-span-3 flex flex-col">
             <label for="customerMobile" class="text-sm font-medium text-neutral-300 mb-1">Mobile Number *</label>
             <input id="customerMobile" placeholder="e.g. 0501234567" required maxlength="10" inputmode="numeric" pattern="\d{9,10}" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
           </div>
@@ -1149,16 +1153,28 @@
               <option value="Business">Business</option>
             </select>
           </div>
-          <div class="col-span-2 flex flex-col">
+          <button type="submit" class="col-span-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all duration-200 rounded-lg text-sm font-medium py-2 mt-6 transform hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Add/Update
+          </button>
+          
+          <!-- Row 2: Location Info -->
+          <div class="col-span-3 flex flex-col">
             <label for="customerCity" class="text-sm font-medium text-neutral-300 mb-1">City</label>
             <input id="customerCity" placeholder="e.g. Dubai" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
           </div>
-          <div class="col-span-2 flex flex-col">
+          <div class="col-span-3 flex flex-col">
             <label for="customerArea" class="text-sm font-medium text-neutral-300 mb-1">Area</label>
             <input id="customerArea" placeholder="e.g. Deira" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
           </div>
+          <div class="col-span-6 flex flex-col">
+            <label for="customerAddress" class="text-sm font-medium text-neutral-300 mb-1">Address</label>
+            <input id="customerAddress" placeholder="Complete address" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+          </div>
           
-          <!-- Row 2: Business Fields (Hidden by default) -->
+          <!-- Row 3: Business Fields (Hidden by default) -->
           <div class="col-span-4 flex flex-col business-customer-field" style="display: none;">
             <label for="customerBusinessName" class="text-sm font-medium text-neutral-300 mb-1">Business Name *</label>
             <input id="customerBusinessName" placeholder="Legal business name" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
@@ -1171,22 +1187,6 @@
             <label for="customerBusinessAddress" class="text-sm font-medium text-neutral-300 mb-1">Business Address *</label>
             <input id="customerBusinessAddress" placeholder="Complete business address" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
           </div>
-          
-          <!-- Row 3: Additional Fields -->
-          <div class="col-span-4 flex flex-col">
-            <label for="customerEmail" class="text-sm font-medium text-neutral-300 mb-1">Email</label>
-            <input id="customerEmail" type="email" placeholder="e.g. john@example.com" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
-          </div>
-          <div class="col-span-6 flex flex-col">
-            <label for="customerAddress" class="text-sm font-medium text-neutral-300 mb-1">Address</label>
-            <input id="customerAddress" placeholder="Complete address" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
-          </div>
-          <button type="submit" class="col-span-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all duration-200 rounded-lg text-sm font-medium py-2 self-end transform hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            Add/Update
-          </button>
         </form>
 
         <!-- Skeleton Loading -->
@@ -1210,19 +1210,19 @@
         <ul id="customerList" class="text-sm divide-y divide-neutral-800 border border-neutral-700 rounded-lg overflow-hidden transform transition-all duration-300 opacity-0 translate-y-4" aria-live="polite"></ul>
         
         <table id="customerTable" class="min-w-full text-sm border border-neutral-700 rounded-lg overflow-hidden transform transition-all duration-300 opacity-0 translate-y-4" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
-          <thead class="bg-neutral-800/70">
-            <tr>
-              <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Type</th>
-              <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Name</th>
-              <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Business Name</th>
-              <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Phone</th>
-              <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">TRN</th>
-              <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">City</th>
-              <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Area</th>
-              <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-neutral-800" id="customerTableBody"></tbody>
+            <thead class="bg-neutral-800/70">
+              <tr>
+                <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Type</th>
+                <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Name</th>
+                <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Business</th>
+                <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Phone</th>
+                <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">TRN</th>
+                <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">City</th>
+                <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Area</th>
+                <th class="px-3 py-2 font-medium {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-800" id="customerTableBody"></tbody>
         </table>
       </section>
 
@@ -2008,7 +2008,28 @@
               <!-- Customers will be loaded here -->
             </div>
             
-
+            <!-- Customer Details Section (shown when customer is selected) -->
+            <div id="customer-details-section" class="p-4 border-t border-neutral-700 hidden">
+              <h3 class="text-lg font-semibold text-white mb-3">Customer Details</h3>
+              
+              <!-- Trial and Delivery Dates in same row -->
+              <div class="mb-3 grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm text-neutral-400 mb-1">Trial Date</label>
+                  <input type="date" id="customer-trial-date" class="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm text-neutral-400 mb-1">Delivery Date</label>
+                  <input type="date" id="customer-delivery-date" class="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white focus:outline-none focus:border-blue-500">
+                </div>
+              </div>
+              
+              <!-- Master/Employee Assignment -->
+              <div class="mb-3">
+                <label class="block text-sm text-neutral-400 mb-1">Master/Employee</label>
+                <input type="text" id="customer-master" placeholder="Search for master/employee..." class="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white focus:outline-none focus:border-blue-500">
+              </div>
+            </div>
             
 
           </div>
@@ -2323,35 +2344,7 @@
             }
           </style>
     
-    <!-- PWA and Service Worker -->
-    <!-- TEMPORARILY DISABLED
-    <script src="{{ url_for('static', filename='js/pwa-init.js') }}"></script>
-    -->
     <script>
         console.log('PWA and Service Worker temporarily disabled');
 </script>
-
-    // Test Mobile Billing Button
-    const testMobileBillingBtn = document.getElementById('test-mobile-billing');
-    if (testMobileBillingBtn) {
-      testMobileBillingBtn.addEventListener('click', function() {
-        console.log('Test Mobile Billing button clicked');
-        if (window.mobileBillingV3) {
-          try {
-            window.mobileBillingV3.show();
-            console.log('Mobile billing V3 shown successfully');
-          } catch (error) {
-            console.error('Error showing mobile billing V3:', error);
-            alert('Error showing mobile billing V3: ' + error.message);
-          }
-        } else {
-          console.warn('Mobile billing V3 not available');
-          alert('Mobile billing V3 is not available. Please refresh the page.');
-        }
-      });
-    }
-
-    // Initialize Mobile Billing V3
-    
-    
 {% endblock %} 

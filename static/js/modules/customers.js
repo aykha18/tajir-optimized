@@ -43,7 +43,7 @@ async function loadCustomers() {
     
     tbody.innerHTML = customers.length
         ? customers.map((c, index) => `
-          <tr class="customer-item group hover:bg-neutral-800/50 transition-all duration-200 transform hover:scale-[1.01] hover:shadow-sm" style="animation-delay: ${index * 0.1}s;">
+          <tr class="group hover:bg-neutral-800/50 transition-all duration-200 transform hover:scale-[1.01] hover:shadow-sm" style="animation-delay: ${index * 0.1}s;">
             <td class="px-3 py-3">
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${c.customer_type === 'Business' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}">
                 ${c.customer_type || 'Individual'}

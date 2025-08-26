@@ -1702,3 +1702,518 @@ DETAIL:  Key (action_id)=(77) already exists.
 2025-08-26 18:58:11,025 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
 DETAIL:  Key (action_id)=(78) already exists.
 
+2025-08-26 19:03:11,132 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(79) already exists.
+
+2025-08-26 19:03:11,307 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(66) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:03:11,371 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:03:19,373 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(80) already exists.
+
+2025-08-26 19:03:19,443 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(67) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:03:19,509 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:03:20,150 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(81) already exists.
+
+2025-08-26 19:03:20,580 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(82) already exists.
+
+2025-08-26 19:03:20,645 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(70) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:03:20,705 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:29,133 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(83) already exists.
+
+2025-08-26 19:07:29,301 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(71) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:29,364 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:47,679 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(84) already exists.
+
+2025-08-26 19:07:47,744 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(72) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:47,804 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:48,880 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(85) already exists.
+
+2025-08-26 19:07:48,948 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(73) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:49,011 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:49,656 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(86) already exists.
+
+2025-08-26 19:07:49,834 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(74) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:49,899 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:50,819 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(87) already exists.
+
+2025-08-26 19:07:50,885 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(75) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:50,947 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:51,573 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(88) already exists.
+
+2025-08-26 19:07:51,743 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(76) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:51,806 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:52,682 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(89) already exists.
+
+2025-08-26 19:07:52,747 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(77) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:52,810 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:53,339 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(90) already exists.
+
+2025-08-26 19:07:53,509 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(78) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:53,579 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:54,570 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(91) already exists.
+
+2025-08-26 19:07:54,736 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(79) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:54,802 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:54,844 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(92) already exists.
+
+2025-08-26 19:07:54,925 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(80) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:54,991 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:55,406 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(93) already exists.
+
+2025-08-26 19:07:55,473 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(81) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:55,534 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:56,039 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(94) already exists.
+
+2025-08-26 19:07:56,097 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(95) already exists.
+
+2025-08-26 19:07:56,138 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(82) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:56,174 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(83) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:56,209 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(96) already exists.
+
+2025-08-26 19:07:56,244 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:56,284 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:56,374 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(97) already exists.
+
+2025-08-26 19:07:56,433 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(84) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:56,437 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(98) already exists.
+
+2025-08-26 19:07:56,478 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(85) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:56,511 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:56,556 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(86) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:56,624 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(99) already exists.
+
+2025-08-26 19:07:56,662 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:56,702 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:56,742 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(100) already exists.
+
+2025-08-26 19:07:56,803 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(87) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:56,873 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:56,916 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(101) already exists.
+
+2025-08-26 19:07:56,920 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(88) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:56,987 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(89) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:57,016 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:57,055 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:57,087 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(102) already exists.
+
+2025-08-26 19:07:57,153 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(90) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:57,225 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:57,257 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(103) already exists.
+
+2025-08-26 19:07:57,328 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(91) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:57,389 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:58,995 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(104) already exists.
+
+2025-08-26 19:07:59,060 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(92) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:59,123 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:07:59,459 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(105) already exists.
+
+2025-08-26 19:07:59,529 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(93) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:07:59,592 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:00,073 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(106) already exists.
+
+2025-08-26 19:08:00,152 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(94) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:00,327 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(107) already exists.
+
+2025-08-26 19:08:00,328 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:00,395 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(95) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:00,462 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:00,500 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(108) already exists.
+
+2025-08-26 19:08:00,570 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(96) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:00,639 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:00,678 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(109) already exists.
+
+2025-08-26 19:08:00,749 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(97) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:00,810 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:00,846 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(110) already exists.
+
+2025-08-26 19:08:00,912 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(98) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:01,010 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(111) already exists.
+
+2025-08-26 19:08:01,078 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:01,080 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(99) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:01,176 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:01,247 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(112) already exists.
+
+2025-08-26 19:08:01,283 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(113) already exists.
+
+2025-08-26 19:08:01,322 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(100) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:01,395 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:01,437 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(114) already exists.
+
+2025-08-26 19:08:01,467 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(101) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:01,509 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(102) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:01,546 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:01,584 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:01,619 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(115) already exists.
+
+2025-08-26 19:08:01,685 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(103) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:01,736 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(116) already exists.
+
+2025-08-26 19:08:01,771 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:01,818 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(104) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:01,876 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(117) already exists.
+
+2025-08-26 19:08:01,912 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:01,957 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(105) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:02,020 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:02,056 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(118) already exists.
+
+2025-08-26 19:08:02,121 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(106) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:02,177 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(119) already exists.
+
+2025-08-26 19:08:02,316 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:02,326 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(120) already exists.
+
+2025-08-26 19:08:02,362 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(107) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:02,398 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(108) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:02,431 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:02,470 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:02,506 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(121) already exists.
+
+2025-08-26 19:08:02,572 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(109) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:02,634 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(122) already exists.
+
+2025-08-26 19:08:02,673 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:02,714 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(110) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:02,778 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(123) already exists.
+
+2025-08-26 19:08:02,815 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:02,863 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(111) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:02,937 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:02,976 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(124) already exists.
+
+2025-08-26 19:08:03,090 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(125) already exists.
+
+2025-08-26 19:08:03,158 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(112) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:03,160 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(113) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:03,214 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(126) already exists.
+
+2025-08-26 19:08:03,251 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:03,291 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:03,329 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(114) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:03,363 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(127) already exists.
+
+2025-08-26 19:08:03,399 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:03,440 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(115) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:03,505 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:03,540 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(128) already exists.
+
+2025-08-26 19:08:03,619 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(116) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:03,658 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(129) already exists.
+
+2025-08-26 19:08:03,695 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:08:03,737 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "bill_items_pkey"
+DETAIL:  Key (item_id)=(117) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 551.25, 'item_count': 0}...
+2025-08-26 19:08:03,898 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-26 19:09:39,916 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(130) already exists.
+
+2025-08-26 19:21:56,337 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(131) already exists.
+
+2025-08-26 19:21:56,375 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(132) already exists.
+
+2025-08-26 19:32:16,570 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(133) already exists.
+

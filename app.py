@@ -1277,7 +1277,8 @@ def create_bill():
                         try:
                             # Fix sequence outside of transaction
                             execute_query(conn, "SELECT setval(pg_get_serial_sequence('bills','bill_id'), COALESCE((SELECT MAX(bill_id) FROM bills),0)+1, false)")
-                            execute_query(conn, "SELECT setval(pg_get_serial_sequence('bill_items','id'), COALESCE((SELECT MAX(id) FROM bill_items),0)+1, false)")
+                            # bill_items primary key is item_id in Postgres
+                            execute_query(conn, "SELECT setval(pg_get_serial_sequence('bill_items','item_id'), COALESCE((SELECT MAX(item_id) FROM bill_items),0)+1, false)")
                             print(f"DEBUG: Fixed sequence, retrying attempt {attempt + 1}")
                         except Exception as seq_err:
                             print(f"DEBUG: Failed to auto-fix sequence: {seq_err}")
@@ -1300,6 +1301,12 @@ def create_bill():
             # print(f"DEBUG: Created bill_id: {bill_id}")
             # print(f"DEBUG: Notes saved to database: '{notes}'")
             
+            # Best-effort: sync bill_items sequence before inserting items (Postgres only)
+            try:
+                execute_query(conn, "SELECT setval(pg_get_serial_sequence('bill_items','item_id'), COALESCE((SELECT MAX(item_id) FROM bill_items),0)+1, false)")
+            except Exception:
+                pass
+
             # Insert bill items
             for item in items_data:
                 # Calculate VAT for each item
@@ -1319,7 +1326,8 @@ def create_bill():
                     rate, discount, vat_amount, advance_paid, total_amount
                 ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             '''
-                execute_with_returning(conn, sql, (
+                try:
+                    execute_with_returning(conn, sql, (
                 user_id, bill_id,
                 item.get('product_id'),
                 item.get('product_name'),
@@ -1330,6 +1338,24 @@ def create_bill():
                 item.get('advance_paid', 0),
                 item_total_amount
             ))
+                except get_db_integrity_error() as e:
+                    # Heal bill_items sequence and retry once if PK collision
+                    conn.rollback()
+                    try:
+                        execute_query(conn, "SELECT setval(pg_get_serial_sequence('bill_items','item_id'), COALESCE((SELECT MAX(item_id) FROM bill_items),0)+1, false)")
+                    except Exception:
+                        pass
+                    execute_with_returning(conn, sql, (
+                        user_id, bill_id,
+                        item.get('product_id'),
+                        item.get('product_name'),
+                        item.get('quantity', 1),
+                        item.get('rate', 0),
+                        item_discount_percent,
+                        item_vat_amount,
+                        item.get('advance_paid', 0),
+                        item_total_amount
+                    ))
             
             print(f"DEBUG: Bill creation completed successfully")
             return jsonify({'success': True, 'bill_id': bill_id})
