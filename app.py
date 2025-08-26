@@ -176,25 +176,33 @@ app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))  # Add secret ke
 def get_db_connection():
     """Get database connection - supports both SQLite (development) and PostgreSQL (production)"""
     # Check if we should use PostgreSQL (Railway deployment)
-    # Prioritize Railway's PG_ variables, fallback to our custom POSTGRES_ variables
+    # Prioritize DATABASE_URL (Railway standard), then PG_ variables, then custom POSTGRES_ variables
+    database_url = os.getenv('DATABASE_URL')
     pg_host = os.getenv('PGHOST') or os.getenv('POSTGRES_HOST')
-    pg_port = os.getenv('PGPORT') or os.getenv('POSTGRES_PORT', '5432')
-    pg_database = os.getenv('PGDATABASE') or os.getenv('POSTGRES_DB', 'tajir_pos')
-    pg_user = os.getenv('PGUSER') or os.getenv('POSTGRES_USER', 'postgres')
-    pg_password = os.getenv('PGPASSWORD') or os.getenv('POSTGRES_PASSWORD', 'password')
     
-    if POSTGRESQL_AVAILABLE and pg_host:
+    if POSTGRESQL_AVAILABLE and (database_url or pg_host):
         try:
-            # PostgreSQL configuration for Railway
-            pg_config = {
-                'host': pg_host,
-                'port': pg_port,
-                'database': pg_database,
-                'user': pg_user,
-                'password': pg_password,
-                'cursor_factory': RealDictCursor
-            }
-            conn = psycopg2.connect(**pg_config)
+            if database_url:
+                # Use DATABASE_URL (Railway standard approach)
+                print(f"Connecting using DATABASE_URL")
+                conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+            else:
+                # Fallback to individual variables
+                pg_port = os.getenv('PGPORT') or os.getenv('POSTGRES_PORT', '5432')
+                pg_database = os.getenv('PGDATABASE') or os.getenv('POSTGRES_DB', 'tajir_pos')
+                pg_user = os.getenv('PGUSER') or os.getenv('POSTGRES_USER', 'postgres')
+                pg_password = os.getenv('PGPASSWORD') or os.getenv('POSTGRES_PASSWORD', 'password')
+                
+                pg_config = {
+                    'host': pg_host,
+                    'port': pg_port,
+                    'database': pg_database,
+                    'user': pg_user,
+                    'password': pg_password,
+                    'cursor_factory': RealDictCursor
+                }
+                print(f"Connecting using individual variables")
+                conn = psycopg2.connect(**pg_config)
             return conn
         except Exception as e:
             print(f"PostgreSQL connection failed: {e}")
@@ -214,9 +222,10 @@ def get_db_integrity_error():
 
 def is_postgresql():
     """Check if we're using PostgreSQL"""
-    # Check for Railway's PG_ variables or our custom POSTGRES_ variables
+    # Check for DATABASE_URL (Railway standard) or Railway's PG_ variables or our custom POSTGRES_ variables
+    database_url = os.getenv('DATABASE_URL')
     pg_host = os.getenv('PGHOST') or os.getenv('POSTGRES_HOST')
-    return POSTGRESQL_AVAILABLE and pg_host
+    return POSTGRESQL_AVAILABLE and (database_url or pg_host)
 
 def get_placeholder():
     """Get the appropriate placeholder for the current database"""

@@ -35,6 +35,11 @@ def debug_connection():
     # Test different connection configurations
     configs = [
         {
+            'name': 'DATABASE_URL (Railway standard)',
+            'config': None,  # Special case for DATABASE_URL
+            'database_url': os.getenv('DATABASE_URL')
+        },
+        {
             'name': 'Railway PG_ variables',
             'config': {
                 'host': os.getenv('PGHOST'),
@@ -68,33 +73,56 @@ def debug_connection():
     
     for config_info in configs:
         print(f"\n--- Testing {config_info['name']} ---")
-        config = config_info['config']
         
-        # Check if all required values are present
-        missing = [k for k, v in config.items() if not v]
-        if missing:
-            print(f"❌ Missing values: {missing}")
-            continue
-        
-        print(f"Host: {config['host']}")
-        print(f"Port: {config['port']}")
-        print(f"Database: {config['database']}")
-        print(f"User: {config['user']}")
-        print(f"Password: {'*' * len(config['password'])}")
-        
-        # Try connection
-        try:
-            conn = psycopg2.connect(**config)
-            cursor = conn.cursor()
-            cursor.execute("SELECT version();")
-            version = cursor.fetchone()
-            print(f"✅ Connection successful!")
-            print(f"PostgreSQL version: {version[0]}")
-            cursor.close()
-            conn.close()
-            return True
-        except Exception as e:
-            print(f"❌ Connection failed: {e}")
+        if config_info['name'] == 'DATABASE_URL (Railway standard)':
+            database_url = config_info['database_url']
+            if not database_url:
+                print("❌ DATABASE_URL not found")
+                continue
+            
+            print(f"DATABASE_URL: {database_url}")
+            
+            # Try connection using DATABASE_URL
+            try:
+                conn = psycopg2.connect(database_url)
+                cursor = conn.cursor()
+                cursor.execute("SELECT version();")
+                version = cursor.fetchone()
+                print(f"✅ Connection successful!")
+                print(f"PostgreSQL version: {version[0]}")
+                cursor.close()
+                conn.close()
+                return True
+            except Exception as e:
+                print(f"❌ Connection failed: {e}")
+        else:
+            config = config_info['config']
+            
+            # Check if all required values are present
+            missing = [k for k, v in config.items() if not v]
+            if missing:
+                print(f"❌ Missing values: {missing}")
+                continue
+            
+            print(f"Host: {config['host']}")
+            print(f"Port: {config['port']}")
+            print(f"Database: {config['database']}")
+            print(f"User: {config['user']}")
+            print(f"Password: {'*' * len(config['password'])}")
+            
+            # Try connection
+            try:
+                conn = psycopg2.connect(**config)
+                cursor = conn.cursor()
+                cursor.execute("SELECT version();")
+                version = cursor.fetchone()
+                print(f"✅ Connection successful!")
+                print(f"PostgreSQL version: {version[0]}")
+                cursor.close()
+                conn.close()
+                return True
+            except Exception as e:
+                print(f"❌ Connection failed: {e}")
     
     print("\n=== Summary ===")
     print("All connection attempts failed. Please check:")
