@@ -274,7 +274,7 @@ def is_postgresql():
     # Check for DATABASE_URL (Railway standard) or Railway's PG_ variables or our custom POSTGRES_ variables
     database_url = os.getenv('DATABASE_URL')
     pg_host = os.getenv('PGHOST') or os.getenv('POSTGRES_HOST')
-    is_pg = POSTGRESQL_AVAILABLE and (database_url or pg_host)
+    is_pg = POSTGRESQL_AVAILABLE and bool(database_url or pg_host)
     print(f"is_postgresql() check: POSTGRESQL_AVAILABLE={POSTGRESQL_AVAILABLE}, database_url={'set' if database_url else 'not set'}, pg_host={'set' if pg_host else 'not set'}, result={is_pg}")
     return is_pg
 
