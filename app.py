@@ -7899,9 +7899,39 @@ def check_schema():
         }
         return jsonify(error_details), 500
 
-
-
-
+@app.route('/db-check')
+def db_check():
+    """Check database contents"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check users table
+        cursor.execute("SELECT COUNT(*) FROM users")
+        user_count = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT user_id, email, is_active FROM users ORDER BY user_id")
+        users = cursor.fetchall()
+        
+        # Check user_plans table
+        cursor.execute("SELECT COUNT(*) FROM user_plans")
+        plan_count = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT user_id, plan_type, is_active FROM user_plans ORDER BY user_id")
+        plans = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'users_count': user_count,
+            'users': [{'id': u[0], 'email': u[1], 'active': u[2]} for u in users],
+            'plans_count': plan_count,
+            'plans': [{'user_id': p[0], 'type': p[1], 'active': p[2]} for p in plans]
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Debug PostgreSQL connection first
