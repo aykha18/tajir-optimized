@@ -511,18 +511,27 @@ def init_db():
                 for i, statement in enumerate(statements):
                     statement = statement.strip()
                     print(f"Statement {i+1} (length: {len(statement)}): {statement[:50]}...")
-                    if statement and not statement.startswith('--'):
-                        try:
-                            print(f"Executing statement {i+1}: {statement[:100]}...")
-                            cursor.execute(statement)
-                            executed_count += 1
-                            print(f"✅ Statement {i+1} executed successfully")
-                        except Exception as stmt_error:
-                            print(f"❌ Warning: Failed to execute statement {i+1}: {stmt_error}")
-                            print(f"Statement: {statement}")
-                            # Continue with other statements
-                    else:
-                        print(f"Skipping statement {i+1} (empty or comment)")
+                    
+                    # Skip empty statements
+                    if not statement:
+                        print(f"Skipping statement {i+1} (empty)")
+                        continue
+                    
+                    # Skip pure comment statements (lines that are only comments)
+                    if statement.startswith('--') and not any(keyword in statement.upper() for keyword in ['CREATE', 'INSERT', 'ALTER', 'DROP', 'SELECT', 'UPDATE', 'DELETE']):
+                        print(f"Skipping statement {i+1} (pure comment)")
+                        continue
+                    
+                    # Execute the statement
+                    try:
+                        print(f"Executing statement {i+1}: {statement[:100]}...")
+                        cursor.execute(statement)
+                        executed_count += 1
+                        print(f"✅ Statement {i+1} executed successfully")
+                    except Exception as stmt_error:
+                        print(f"❌ Warning: Failed to execute statement {i+1}: {stmt_error}")
+                        print(f"Statement: {statement}")
+                        # Continue with other statements
                 
                 print(f"Successfully executed {executed_count} statements")
                 conn.commit()  # Commit the transaction
