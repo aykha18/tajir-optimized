@@ -7682,5 +7682,5 @@ if __name__ == '__main__':
         print(f"Debug script failed: {e}")
     
     setup_ocr()  # Initialize OCR
-    # init_db() is already called during module import
+    init_db()  # Initialize database and create tables
     app.run(debug=True, host='0.0.0.0', port=5000) 
