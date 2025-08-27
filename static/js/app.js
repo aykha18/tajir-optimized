@@ -1,4 +1,22 @@
 // Main Application JavaScript
+// Global log silencer for production
+(() => {
+  try {
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    const isProd = /railway|tajirtech|tajir\.up\.railway\.app|up\.railway\.app/i.test(hostname);
+    if (isProd && typeof console !== 'undefined') {
+      const originalError = console.error ? console.error.bind(console) : () => {};
+      // Silence noisy logs in production, keep errors
+      console.log = () => {};
+      console.info = () => {};
+      console.debug = () => {};
+      console.warn = () => {};
+      console.error = originalError;
+    }
+  } catch (_) {
+    // fail safe: do nothing
+  }
+})();
 
 document.addEventListener('DOMContentLoaded', function() {
   console.log('🚀 DOM Content Loaded');
