@@ -5193,9 +5193,9 @@ def admin_auth_login():
         
         conn = get_db_connection()
         
-        # Check if user exists and is admin (user_id = 1 is the admin user)
+        # Check if user exists and is admin (look for admin user by email)
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT * FROM users WHERE email = {placeholder} AND user_id = 1 AND is_active = TRUE', (email,))
+        cursor = execute_query(conn, f'SELECT * FROM users WHERE email = {placeholder} AND is_active = TRUE', (email,))
         user = cursor.fetchone()
         
         if not user:
