@@ -95,18 +95,12 @@ def setup_production_admin():
                 execute_query(conn, '''
                     INSERT INTO user_plans (user_id, plan_type, plan_start_date, is_active)
                     VALUES (1, 'trial', CURRENT_DATE, TRUE)
-                    ON CONFLICT (user_id) DO UPDATE SET
-                    plan_type = EXCLUDED.plan_type,
-                    plan_start_date = EXCLUDED.plan_start_date,
-                    is_active = TRUE
                 ''')
                 
                 # Ensure admin shop settings exist
                 execute_query(conn, '''
                     INSERT INTO shop_settings (setting_id, user_id, shop_name, address, trn, logo_url, shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template)
                     VALUES (1, 1, 'Tajir', '', '', '', '', '', '', FALSE)
-                    ON CONFLICT (setting_id) DO UPDATE SET
-                    shop_name = EXCLUDED.shop_name
                 ''')
             else:
                 # SQLite syntax
