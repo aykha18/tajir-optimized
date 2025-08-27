@@ -1314,7 +1314,7 @@ def create_bill():
                 try:
                     conn = get_db_connection()
                     placeholder = get_placeholder()
-                    cursor = execute_query(conn, f'SELECT employee_id FROM employees WHERE user_id = {placeholder} ORDER BY name LIMIT 1', (user_id,))
+                    cursor = execute_query(conn, f'SELECT employee_id FROM employees WHERE user_id = {placeholder} AND is_active = TRUE ORDER BY name LIMIT 1', (user_id,))
                     default_employee = cursor.fetchone()
                     conn.close()
                     
@@ -2172,10 +2172,10 @@ def get_employees():
     placeholder = get_placeholder()
     if search:
         like_search = f"%{search}%"
-        cursor = execute_query(conn, f'SELECT * FROM employees WHERE user_id = {placeholder} AND (name LIKE {placeholder} OR phone LIKE {placeholder} OR address LIKE {placeholder}) ORDER BY name', (user_id, like_search, like_search, like_search))
+        cursor = execute_query(conn, f'SELECT * FROM employees WHERE user_id = {placeholder} AND (name LIKE {placeholder} OR phone LIKE {placeholder} OR address LIKE {placeholder}) AND is_active = TRUE ORDER BY name', (user_id, like_search, like_search, like_search))
         employees = cursor.fetchall()
     else:
-        cursor = execute_query(conn, f'SELECT * FROM employees WHERE user_id = {placeholder} ORDER BY name', (user_id,))
+        cursor = execute_query(conn, f'SELECT * FROM employees WHERE user_id = {placeholder} AND is_active = TRUE ORDER BY name', (user_id,))
         employees = cursor.fetchall()
     
     conn.close()
@@ -2186,7 +2186,7 @@ def get_employee(employee_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    cursor = execute_query(conn, f'SELECT * FROM employees WHERE employee_id = {placeholder} AND user_id = {placeholder}', (employee_id, user_id))
+    cursor = execute_query(conn, f'SELECT * FROM employees WHERE employee_id = {placeholder} AND user_id = {placeholder} AND is_active = TRUE', (employee_id, user_id))
     employee = cursor.fetchone()
     conn.close()
     
@@ -2213,7 +2213,7 @@ def add_employee():
     # Check for duplicate mobile number
     if mobile:
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT name FROM employees WHERE phone = {placeholder} AND user_id = {placeholder}', (mobile, user_id))
+        cursor = execute_query(conn, f'SELECT name FROM employees WHERE phone = {placeholder} AND user_id = {placeholder} AND is_active = TRUE', (mobile, user_id))
         existing_employee = cursor.fetchone()
         if existing_employee:
             conn.close()
@@ -2254,7 +2254,7 @@ def update_employee(employee_id):
     # Check for duplicate mobile number (excluding current employee)
     if mobile:
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT name FROM employees WHERE phone = {placeholder} AND user_id = {placeholder} AND employee_id != {placeholder}', (mobile, user_id, employee_id))
+        cursor = execute_query(conn, f'SELECT name FROM employees WHERE phone = {placeholder} AND user_id = {placeholder} AND employee_id != {placeholder} AND is_active = TRUE', (mobile, user_id, employee_id))
         existing_employee = cursor.fetchone()
         if existing_employee:
             conn.close()
@@ -2284,7 +2284,9 @@ def delete_employee(employee_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    execute_update(conn, f'DELETE FROM employees WHERE employee_id = {placeholder} AND user_id = {placeholder}', (employee_id, user_id))
+    # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
+    is_active_value = 'FALSE' if is_postgresql() else '0'
+    execute_update(conn, f'UPDATE employees SET is_active = {is_active_value} WHERE employee_id = {placeholder} AND user_id = {placeholder}', (employee_id, user_id))
     conn.close()
     return jsonify({'message': 'Employee deleted successfully'})
 
@@ -2359,7 +2361,7 @@ def employee_analytics():
         SELECT e.name, COALESCE(SUM(b.total_amount), 0) as total_revenue
         FROM employees e
         LEFT JOIN bills b ON e.employee_id = b.master_id AND b.user_id = e.user_id
-        WHERE e.user_id = {placeholder}
+        WHERE e.user_id = {placeholder} AND e.is_active = TRUE
         GROUP BY e.employee_id
         ORDER BY total_revenue DESC
         LIMIT 5
@@ -2370,7 +2372,7 @@ def employee_analytics():
         SELECT e.name, COALESCE(SUM(b.total_amount), 0) as total_revenue
         FROM employees e
         LEFT JOIN bills b ON e.employee_id = b.master_id AND b.user_id = e.user_id
-        WHERE e.user_id = {placeholder}
+        WHERE e.user_id = {placeholder} AND e.is_active = TRUE
         GROUP BY e.employee_id
         ORDER BY total_revenue DESC
     ''', (user_id,))
@@ -6970,7 +6972,7 @@ def get_filtered_invoice_summary(user_id, filters=None):
     if filters.get('employees') and filters['employees'] != ['All Employees']:
         employee_list = filters['employees']
         placeholders = ','.join([placeholder for _ in employee_list])
-        where_conditions.append(f'b.employee_id IN (SELECT employee_id FROM employees WHERE name IN ({placeholders}))')
+        where_conditions.append(f'b.employee_id IN (SELECT employee_id FROM employees WHERE name IN ({placeholders}) AND is_active = TRUE)')
         params.extend(employee_list)
     
     if filters.get('city') and filters['city'] != 'All Cities':
