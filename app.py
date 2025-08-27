@@ -7699,6 +7699,169 @@ def test_script_loading():
 def test_current_nav():
     return render_template('test_current_nav.html')
 
+@app.route('/check-schema')
+def check_schema():
+    """Check PostgreSQL database schema and return detailed information."""
+    if not is_postgresql():
+        return jsonify({'error': 'This endpoint is for PostgreSQL databases only'}), 400
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        schema_info = {
+            'tables': [],
+            'primary_keys': [],
+            'foreign_keys': [],
+            'unique_constraints': [],
+            'check_constraints': [],
+            'indexes': [],
+            'sequences': [],
+            'row_counts': {},
+            'important_data': {}
+        }
+        
+        # 1. Check all tables
+        cursor.execute("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            ORDER BY table_name
+        """)
+        tables = cursor.fetchall()
+        schema_info['tables'] = [table[0] for table in tables]
+        
+        # 2. Check primary keys
+        cursor.execute("""
+            SELECT 
+                tc.table_name,
+                kcu.column_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu 
+                ON tc.constraint_name = kcu.constraint_name
+            WHERE tc.constraint_type = 'PRIMARY KEY'
+                AND tc.table_schema = 'public'
+            ORDER BY tc.table_name, kcu.ordinal_position
+        """)
+        primary_keys = cursor.fetchall()
+        schema_info['primary_keys'] = [f"{pk[0]}.{pk[1]}" for pk in primary_keys]
+        
+        # 3. Check foreign keys
+        cursor.execute("""
+            SELECT 
+                tc.table_name,
+                kcu.column_name,
+                ccu.table_name AS foreign_table_name,
+                ccu.column_name AS foreign_column_name,
+                rc.delete_rule,
+                rc.update_rule
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu 
+                ON tc.constraint_name = kcu.constraint_name
+            JOIN information_schema.constraint_column_usage ccu 
+                ON ccu.constraint_name = tc.constraint_name
+            JOIN information_schema.referential_constraints rc 
+                ON tc.constraint_name = rc.constraint_name
+            WHERE tc.constraint_type = 'FOREIGN KEY'
+                AND tc.table_schema = 'public'
+            ORDER BY tc.table_name, kcu.column_name
+        """)
+        foreign_keys = cursor.fetchall()
+        schema_info['foreign_keys'] = [f"{fk[0]}.{fk[1]} → {fk[2]}.{fk[3]} ({fk[4]}/{fk[5]})" for fk in foreign_keys]
+        
+        # 4. Check unique constraints
+        cursor.execute("""
+            SELECT 
+                tc.table_name,
+                kcu.column_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu 
+                ON tc.constraint_name = kcu.constraint_name
+            WHERE tc.constraint_type = 'UNIQUE'
+                AND tc.table_schema = 'public'
+            ORDER BY tc.table_name, kcu.column_name
+        """)
+        unique_constraints = cursor.fetchall()
+        schema_info['unique_constraints'] = [f"{uc[0]}.{uc[1]}" for uc in unique_constraints]
+        
+        # 5. Check check constraints
+        cursor.execute("""
+            SELECT 
+                tc.table_name,
+                tc.constraint_name,
+                cc.check_clause
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.check_constraints cc 
+                ON tc.constraint_name = cc.constraint_name
+            WHERE tc.constraint_type = 'CHECK'
+                AND tc.table_schema = 'public'
+            ORDER BY tc.table_name, tc.constraint_name
+        """)
+        check_constraints = cursor.fetchall()
+        schema_info['check_constraints'] = [f"{cc[0]}.{cc[1]}: {cc[2]}" for cc in check_constraints]
+        
+        # 6. Check indexes
+        cursor.execute("""
+            SELECT 
+                tablename,
+                indexname,
+                indexdef
+            FROM pg_indexes 
+            WHERE schemaname = 'public'
+            ORDER BY tablename, indexname
+        """)
+        indexes = cursor.fetchall()
+        schema_info['indexes'] = [f"{idx[0]}.{idx[1]}: {idx[2]}" for idx in indexes]
+        
+        # 7. Check sequences
+        cursor.execute("""
+            SELECT sequence_name 
+            FROM information_schema.sequences 
+            WHERE sequence_schema = 'public'
+            ORDER BY sequence_name
+        """)
+        sequences = cursor.fetchall()
+        schema_info['sequences'] = [seq[0] for seq in sequences]
+        
+        # 8. Check table row counts
+        for table in tables:
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM {table[0]}")
+                count = cursor.fetchone()[0]
+                schema_info['row_counts'][table[0]] = count
+            except Exception as e:
+                schema_info['row_counts'][table[0]] = f"Error: {e}"
+        
+        # 9. Check specific important data
+        try:
+            cursor.execute("SELECT COUNT(*) FROM users WHERE user_id = 1")
+            admin_count = cursor.fetchone()[0]
+            schema_info['important_data']['admin_user'] = 'Exists' if admin_count > 0 else 'Missing'
+        except Exception as e:
+            schema_info['important_data']['admin_user'] = f"Error: {e}"
+        
+        try:
+            cursor.execute("SELECT COUNT(*) FROM cities")
+            cities_count = cursor.fetchone()[0]
+            schema_info['important_data']['cities'] = cities_count
+        except Exception as e:
+            schema_info['important_data']['cities'] = f"Error: {e}"
+        
+        try:
+            cursor.execute("SELECT COUNT(*) FROM vat_rates")
+            vat_count = cursor.fetchone()[0]
+            schema_info['important_data']['vat_rates'] = vat_count
+        except Exception as e:
+            schema_info['important_data']['vat_rates'] = f"Error: {e}"
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify(schema_info)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 
 
