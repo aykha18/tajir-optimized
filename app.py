@@ -507,19 +507,34 @@ def init_db():
                 statements = schema.split(';')
                 cursor = conn.cursor()
                 print(f"Executing {len(statements)} statements from schema file...")
+                executed_count = 0
                 for i, statement in enumerate(statements):
                     statement = statement.strip()
                     if statement and not statement.startswith('--'):
                         try:
-                            print(f"Executing statement {i+1}: {statement[:50]}...")
+                            print(f"Executing statement {i+1}: {statement[:100]}...")
                             cursor.execute(statement)
+                            executed_count += 1
                             print(f"✅ Statement {i+1} executed successfully")
                         except Exception as stmt_error:
                             print(f"❌ Warning: Failed to execute statement {i+1}: {stmt_error}")
                             print(f"Statement: {statement}")
                             # Continue with other statements
+                
+                print(f"Successfully executed {executed_count} statements")
                 conn.commit()  # Commit the transaction
                 cursor.close()
+                
+                # Verify tables were created
+                try:
+                    verify_cursor = conn.cursor()
+                    verify_cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+                    tables = verify_cursor.fetchall()
+                    print(f"Tables created: {[table[0] for table in tables]}")
+                    verify_cursor.close()
+                except Exception as verify_error:
+                    print(f"Error verifying tables: {verify_error}")
+                
                 print(f"PostgreSQL database initialized successfully using {schema_file}")
             else:
                 # For SQLite, use executescript
