@@ -264,8 +264,4 @@ INSERT INTO cities (city_name) VALUES
 ('Ras Al Khaimah'), ('Fujairah'), ('Al Ain') 
 ON CONFLICT (city_name) DO NOTHING;
 
--- Insert default VAT rates
-INSERT INTO vat_rates (user_id, rate_name, rate_percentage) VALUES 
-(1, 'Standard VAT', 5.00),
-(1, 'Zero VAT', 0.00)
-ON CONFLICT DO NOTHING;
+-- Default VAT rates will be created by admin setup
