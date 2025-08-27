@@ -7702,10 +7702,12 @@ def test_current_nav():
 @app.route('/check-schema')
 def check_schema():
     """Check PostgreSQL database schema and return detailed information."""
-    if not is_postgresql():
-        return jsonify({'error': 'This endpoint is for PostgreSQL databases only'}), 400
-    
     try:
+        # Check if we're using PostgreSQL
+        if not is_postgresql():
+            return jsonify({'error': 'This endpoint is for PostgreSQL databases only'}), 400
+        
+        # Get database connection
         conn = get_db_connection()
         cursor = conn.cursor()
         
@@ -7860,7 +7862,13 @@ def check_schema():
         return jsonify(schema_info)
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        error_details = {
+            'error': str(e),
+            'traceback': traceback.format_exc(),
+            'postgresql_detected': is_postgresql()
+        }
+        return jsonify(error_details), 500
 
 
 
