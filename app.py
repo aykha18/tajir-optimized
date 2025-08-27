@@ -1286,6 +1286,20 @@ def create_bill():
         print(f"Failed to log user action: {log_error}")
     
     conn = None
+    
+    # Pre-fix sequences to prevent 500 errors
+    if is_postgresql():
+        try:
+            temp_conn = get_db_connection()
+            # Fix bills sequence
+            execute_query(temp_conn, "SELECT setval(pg_get_serial_sequence('bills','bill_id'), COALESCE((SELECT MAX(bill_id) FROM bills),0)+1, false)")
+            # Fix bill_items sequence
+            execute_query(temp_conn, "SELECT setval(pg_get_serial_sequence('bill_items','item_id'), COALESCE((SELECT MAX(item_id) FROM bill_items),0)+1, false)")
+            temp_conn.close()
+            print("DEBUG: Pre-fixed sequences for bills and bill_items")
+        except Exception as seq_error:
+            print(f"DEBUG: Failed to pre-fix sequences: {seq_error}")
+    
     try:
         # Handle both JSON and form data
         if request.is_json:
@@ -1447,7 +1461,18 @@ def create_bill():
                 except Exception as e:
                     conn.rollback()
                     conn.close()
-                    return jsonify({'error': f'Error creating bill: {str(e)}'}), 500
+                    # Log detailed error for production debugging
+                    error_msg = f'Error creating bill: {str(e)}'
+                    print(f"DEBUG: {error_msg}")
+                    try:
+                        log_user_action("CREATE_BILL_ERROR", user_id, {
+                            'error': str(e),
+                            'timestamp': datetime.now().isoformat(),
+                            'bill_data': str(bill_data)[:500]  # Truncate for logging
+                        })
+                    except Exception as log_error:
+                        print(f"DEBUG: Failed to log error: {log_error}")
+                    return jsonify({'error': error_msg}), 500
             
             if not bill_created:
                 conn.rollback()
