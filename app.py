@@ -7731,7 +7731,8 @@ def check_schema():
             ORDER BY table_name
         """)
         tables = cursor.fetchall()
-        schema_info['tables'] = [table[0] for table in tables]
+        # Handle both tuple and dict cursor results
+        schema_info['tables'] = [table[0] if isinstance(table, tuple) else table['table_name'] for table in tables]
         
         # 2. Check primary keys
         cursor.execute("""
@@ -7746,7 +7747,11 @@ def check_schema():
             ORDER BY tc.table_name, kcu.ordinal_position
         """)
         primary_keys = cursor.fetchall()
-        schema_info['primary_keys'] = [f"{pk[0]}.{pk[1]}" for pk in primary_keys]
+        # Handle both tuple and dict cursor results
+        schema_info['primary_keys'] = [
+            f"{pk[0]}.{pk[1]}" if isinstance(pk, tuple) else f"{pk['table_name']}.{pk['column_name']}" 
+            for pk in primary_keys
+        ]
         
         # 3. Check foreign keys
         cursor.execute("""
@@ -7769,7 +7774,12 @@ def check_schema():
             ORDER BY tc.table_name, kcu.column_name
         """)
         foreign_keys = cursor.fetchall()
-        schema_info['foreign_keys'] = [f"{fk[0]}.{fk[1]} → {fk[2]}.{fk[3]} ({fk[4]}/{fk[5]})" for fk in foreign_keys]
+        # Handle both tuple and dict cursor results
+        schema_info['foreign_keys'] = [
+            f"{fk[0]}.{fk[1]} → {fk[2]}.{fk[3]} ({fk[4]}/{fk[5]})" if isinstance(fk, tuple) 
+            else f"{fk['table_name']}.{fk['column_name']} → {fk['foreign_table_name']}.{fk['foreign_column_name']} ({fk['delete_rule']}/{fk['update_rule']})" 
+            for fk in foreign_keys
+        ]
         
         # 4. Check unique constraints
         cursor.execute("""
@@ -7784,7 +7794,11 @@ def check_schema():
             ORDER BY tc.table_name, kcu.column_name
         """)
         unique_constraints = cursor.fetchall()
-        schema_info['unique_constraints'] = [f"{uc[0]}.{uc[1]}" for uc in unique_constraints]
+        # Handle both tuple and dict cursor results
+        schema_info['unique_constraints'] = [
+            f"{uc[0]}.{uc[1]}" if isinstance(uc, tuple) else f"{uc['table_name']}.{uc['column_name']}" 
+            for uc in unique_constraints
+        ]
         
         # 5. Check check constraints
         cursor.execute("""
@@ -7800,7 +7814,11 @@ def check_schema():
             ORDER BY tc.table_name, tc.constraint_name
         """)
         check_constraints = cursor.fetchall()
-        schema_info['check_constraints'] = [f"{cc[0]}.{cc[1]}: {cc[2]}" for cc in check_constraints]
+        # Handle both tuple and dict cursor results
+        schema_info['check_constraints'] = [
+            f"{cc[0]}.{cc[1]}: {cc[2]}" if isinstance(cc, tuple) else f"{cc['table_name']}.{cc['constraint_name']}: {cc['check_clause']}" 
+            for cc in check_constraints
+        ]
         
         # 6. Check indexes
         cursor.execute("""
@@ -7813,7 +7831,11 @@ def check_schema():
             ORDER BY tablename, indexname
         """)
         indexes = cursor.fetchall()
-        schema_info['indexes'] = [f"{idx[0]}.{idx[1]}: {idx[2]}" for idx in indexes]
+        # Handle both tuple and dict cursor results
+        schema_info['indexes'] = [
+            f"{idx[0]}.{idx[1]}: {idx[2]}" if isinstance(idx, tuple) else f"{idx['tablename']}.{idx['indexname']}: {idx['indexdef']}" 
+            for idx in indexes
+        ]
         
         # 7. Check sequences
         cursor.execute("""
@@ -7823,35 +7845,42 @@ def check_schema():
             ORDER BY sequence_name
         """)
         sequences = cursor.fetchall()
-        schema_info['sequences'] = [seq[0] for seq in sequences]
+        # Handle both tuple and dict cursor results
+        schema_info['sequences'] = [seq[0] if isinstance(seq, tuple) else seq['sequence_name'] for seq in sequences]
         
         # 8. Check table row counts
         for table in tables:
             try:
-                cursor.execute(f"SELECT COUNT(*) FROM {table[0]}")
-                count = cursor.fetchone()[0]
-                schema_info['row_counts'][table[0]] = count
+                table_name = table[0] if isinstance(table, tuple) else table['table_name']
+                cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                result = cursor.fetchone()
+                count = result[0] if isinstance(result, tuple) else result['count']
+                schema_info['row_counts'][table_name] = count
             except Exception as e:
-                schema_info['row_counts'][table[0]] = f"Error: {e}"
+                table_name = table[0] if isinstance(table, tuple) else table['table_name']
+                schema_info['row_counts'][table_name] = f"Error: {e}"
         
         # 9. Check specific important data
         try:
             cursor.execute("SELECT COUNT(*) FROM users WHERE user_id = 1")
-            admin_count = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            admin_count = result[0] if isinstance(result, tuple) else result['count']
             schema_info['important_data']['admin_user'] = 'Exists' if admin_count > 0 else 'Missing'
         except Exception as e:
             schema_info['important_data']['admin_user'] = f"Error: {e}"
         
         try:
             cursor.execute("SELECT COUNT(*) FROM cities")
-            cities_count = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            cities_count = result[0] if isinstance(result, tuple) else result['count']
             schema_info['important_data']['cities'] = cities_count
         except Exception as e:
             schema_info['important_data']['cities'] = f"Error: {e}"
         
         try:
             cursor.execute("SELECT COUNT(*) FROM vat_rates")
-            vat_count = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            vat_count = result[0] if isinstance(result, tuple) else result['count']
             schema_info['important_data']['vat_rates'] = vat_count
         except Exception as e:
             schema_info['important_data']['vat_rates'] = f"Error: {e}"
