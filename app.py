@@ -968,7 +968,8 @@ def get_customers():
         cursor = execute_query(conn, f"""
             SELECT * FROM customers 
             WHERE user_id = {placeholder} AND 
-                  REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = {placeholder}
+                  REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = {placeholder} AND
+                  is_active = TRUE
             """,
             (user_id, phone_digits)
         )
@@ -976,11 +977,11 @@ def get_customers():
     elif search:
         like_search = f"%{search}%"
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (name LIKE {placeholder} OR phone LIKE {placeholder} OR business_name LIKE {placeholder}) ORDER BY name', (user_id, like_search, like_search, like_search))
+        cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (name LIKE {placeholder} OR phone LIKE {placeholder} OR business_name LIKE {placeholder}) AND is_active = TRUE ORDER BY name', (user_id, like_search, like_search, like_search))
         customers = cursor.fetchall()
     else:
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} ORDER BY name', (user_id,))
+        cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND is_active = TRUE ORDER BY name', (user_id,))
         customers = cursor.fetchall()
     conn.close()
     return jsonify([dict(customer) for customer in customers])
@@ -1128,7 +1129,9 @@ def delete_customer(customer_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    execute_update(conn, f'DELETE FROM customers WHERE customer_id = {placeholder} AND user_id = {placeholder}', (customer_id, user_id))
+    # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
+    is_active_value = 'FALSE' if is_postgresql() else '0'
+    execute_update(conn, f'UPDATE customers SET is_active = {is_active_value} WHERE customer_id = {placeholder} AND user_id = {placeholder}', (customer_id, user_id))
     conn.close()
     return jsonify({'message': 'Customer deleted successfully'})
 
