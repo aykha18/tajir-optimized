@@ -506,13 +506,17 @@ def init_db():
                 # For PostgreSQL, execute statements one by one
                 statements = schema.split(';')
                 cursor = conn.cursor()
-                for statement in statements:
+                print(f"Executing {len(statements)} statements from schema file...")
+                for i, statement in enumerate(statements):
                     statement = statement.strip()
                     if statement and not statement.startswith('--'):
                         try:
+                            print(f"Executing statement {i+1}: {statement[:50]}...")
                             cursor.execute(statement)
+                            print(f"✅ Statement {i+1} executed successfully")
                         except Exception as stmt_error:
-                            print(f"Warning: Failed to execute statement: {stmt_error}")
+                            print(f"❌ Warning: Failed to execute statement {i+1}: {stmt_error}")
+                            print(f"Statement: {statement}")
                             # Continue with other statements
                 conn.commit()  # Commit the transaction
                 cursor.close()
