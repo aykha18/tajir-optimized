@@ -320,15 +320,8 @@ function setupEmployeeTableHandlers() {
     employeeTable.removeEventListener('touchend', employeeTableClickHandler);
     employeeTable.addEventListener('touchend', employeeTableClickHandler, { passive: true });
 
-    // Additionally, bind handlers directly to buttons (helps on some mobile browsers)
-    employeeTable.querySelectorAll('.edit-employee-btn').forEach(btn => {
-      btn.removeEventListener('click', directEditEmployeeClick);
-      btn.addEventListener('click', directEditEmployeeClick);
-    });
-    employeeTable.querySelectorAll('.delete-employee-btn').forEach(btn => {
-      btn.removeEventListener('click', directDeleteEmployeeClick);
-      btn.addEventListener('click', directDeleteEmployeeClick);
-    });
+    // Note: Removed direct event listeners to prevent double execution
+    // Event delegation through employeeTableClickHandler is sufficient
 
     // Ensure horizontal scroll container has momentum on iOS
     if (wrapper) {
@@ -355,7 +348,23 @@ async function directDeleteEmployeeClick(e) {
     confirmed = window.confirm('Delete this employee?');
   }
   if (confirmed) {
-    fetch(`/api/employees/${id}`, { method: 'DELETE' }).then(() => loadEmployees());
+    try {
+      const response = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      await loadEmployees();
+      if (window.showToast) {
+        window.showToast('Employee deleted successfully', 'success');
+      }
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      if (window.showToast) {
+        window.showToast(`Failed to delete employee: ${error.message}`, 'error');
+      } else {
+        alert(`Failed to delete employee: ${error.message}`);
+      }
+    }
   }
 }
 
@@ -595,14 +604,34 @@ async function employeeTableClickHandler(e) {
   }
   if (deleteBtn) {
     const id = deleteBtn.getAttribute('data-id');
-    const confirmed = await showConfirmDialog(
-      'Are you sure you want to delete this employee? This action cannot be undone.',
-      'Delete Employee',
-      'delete'
-    );
+    let confirmed = true;
+    if (typeof showConfirmDialog === 'function') {
+      confirmed = await showConfirmDialog(
+        'Are you sure you want to delete this employee? This action cannot be undone.',
+        'Delete Employee',
+        'delete'
+      );
+    } else {
+      confirmed = window.confirm('Delete this employee?');
+    }
     if (confirmed) {
-      fetch(`/api/employees/${id}`, { method: 'DELETE' })
-        .then(() => loadEmployees());
+      try {
+        const response = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        await loadEmployees();
+        if (window.showToast) {
+          window.showToast('Employee deleted successfully', 'success');
+        }
+      } catch (error) {
+        console.error('Error deleting employee:', error);
+        if (window.showToast) {
+          window.showToast(`Failed to delete employee: ${error.message}`, 'error');
+        } else {
+          alert(`Failed to delete employee: ${error.message}`);
+        }
+      }
     }
   }
 }
@@ -696,4 +725,5 @@ function resetEmployeeForm() {
 // Make functions globally available
 window.loadEmployees = loadEmployees;
 window.editEmployee = editEmployee;
-window.resetEmployeeForm = resetEmployeeForm; 
+window.resetEmployeeForm = resetEmployeeForm;
+window.deleteEmployee = directDeleteEmployeeClick; 
