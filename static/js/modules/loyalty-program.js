@@ -215,7 +215,7 @@ class LoyaltyProgram {
               </div>
               <div>
                 <p class="text-neutral-400">Join Date</p>
-                <p class="text-white font-medium">${customer.enrollment_date ? new Date(customer.enrollment_date).toLocaleDateString() : 'N/A'}</p>
+                <p class="text-white font-medium">${customer.join_date ? new Date(customer.join_date).toLocaleDateString() : 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -305,7 +305,7 @@ class LoyaltyProgram {
               </div>
               <div>
                 <p class="text-neutral-400">Join Date</p>
-                <p class="text-white font-medium">${customer.enrollment_date ? new Date(customer.enrollment_date).toLocaleDateString() : 'N/A'}</p>
+                <p class="text-white font-medium">${customer.join_date ? new Date(customer.join_date).toLocaleDateString() : 'N/A'}</p>
               </div>
             </div>
           </div>
