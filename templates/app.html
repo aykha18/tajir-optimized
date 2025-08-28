@@ -2347,4 +2347,175 @@
     <script>
         console.log('PWA and Service Worker temporarily disabled');
 </script>
+
+    <!-- Upcoming Features Section -->
+    <section id="upcomingFeaturesSec" class="min-h-screen bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 p-6">
+      <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-12">
+          <h2 class="text-4xl font-bold text-white mb-4">Upcoming Features</h2>
+          <p class="text-xl text-neutral-300 max-w-3xl mx-auto">
+            Discover the powerful features we're building to transform your business operations and drive growth
+          </p>
+        </div>
+
+        <!-- Feature Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          <!-- AI Inventory Management -->
+          <div class="bg-gradient-to-br from-purple-600/20 to-blue-600/20 backdrop-blur border border-purple-500/30 rounded-2xl p-6 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="window.UpcomingFeatures.showFeatureModal('ai-inventory')">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-white">AI-Powered Inventory</h3>
+            </div>
+            <p class="text-neutral-300 mb-4">Smart demand forecasting and automatic reorder suggestions to optimize your inventory management.</p>
+            <div class="flex items-center text-sm text-purple-400">
+              <span>Coming Soon</span>
+              <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Multi-Location Support -->
+          <div class="bg-gradient-to-br from-green-600/20 to-emerald-600/20 backdrop-blur border border-green-500/30 rounded-2xl p-6 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="window.UpcomingFeatures.showFeatureModal('multi-location')">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-white">Multi-Location</h3>
+            </div>
+            <p class="text-neutral-300 mb-4">Manage multiple store locations seamlessly from a single dashboard with unified inventory.</p>
+            <div class="flex items-center text-sm text-green-400">
+              <span>Coming Soon</span>
+              <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Advanced Analytics -->
+          <div class="bg-gradient-to-br from-blue-600/20 to-cyan-600/20 backdrop-blur border border-blue-500/30 rounded-2xl p-6 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="window.UpcomingFeatures.showFeatureModal('analytics')">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-white">Advanced Analytics</h3>
+            </div>
+            <p class="text-neutral-300 mb-4">Data-driven insights with predictive analytics and performance benchmarking.</p>
+            <div class="flex items-center text-sm text-blue-400">
+              <span>Coming Soon</span>
+              <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- E-commerce Integration -->
+          <div class="bg-gradient-to-br from-orange-600/20 to-red-600/20 backdrop-blur border border-orange-500/30 rounded-2xl p-6 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="window.UpcomingFeatures.showFeatureModal('ecommerce')">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-white">E-commerce</h3>
+            </div>
+            <p class="text-neutral-300 mb-4">Unified online and offline sales with integrated inventory management.</p>
+            <div class="flex items-center text-sm text-orange-400">
+              <span>Coming Soon</span>
+              <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Loyalty Program -->
+          <div class="bg-gradient-to-br from-pink-600/20 to-rose-600/20 backdrop-blur border border-pink-500/30 rounded-2xl p-6 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="window.UpcomingFeatures.showFeatureModal('loyalty')">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-white">Loyalty Program</h3>
+            </div>
+            <p class="text-neutral-300 mb-4">Build lasting customer relationships with points, tiers, and personalized rewards.</p>
+            <div class="flex items-center text-sm text-pink-400">
+              <span>Coming Soon</span>
+              <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Mobile Apps -->
+          <div class="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 backdrop-blur border border-indigo-500/30 rounded-2xl p-6 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="window.UpcomingFeatures.showFeatureModal('mobile-app')">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-white">Mobile Apps</h3>
+            </div>
+            <p class="text-neutral-300 mb-4">Native iOS and Android apps with offline capabilities and push notifications.</p>
+            <div class="flex items-center text-sm text-indigo-400">
+              <span>Coming Soon</span>
+              <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div class="text-center">
+          <div class="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 backdrop-blur border border-indigo-500/30 rounded-2xl p-8">
+            <h3 class="text-2xl font-bold text-white mb-4">Stay Updated</h3>
+            <p class="text-neutral-300 mb-6 max-w-2xl mx-auto">
+              Be the first to know when these features become available. Get early access and exclusive updates.
+            </p>
+            <button class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+              Get Early Access
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature Modal -->
+    <div id="featureModalContainer" class="fixed inset-0 bg-black/80 backdrop-blur z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-neutral-800 border border-neutral-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h3 id="featureModalTitle" class="text-2xl font-bold text-white"></h3>
+            <button onclick="window.UpcomingFeatures.hideFeatureModal()" class="text-neutral-400 hover:text-white transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div id="featureModalContent" class="text-neutral-300 mb-6"></div>
+          <div class="flex gap-3">
+            <button onclick="window.UpcomingFeatures.notifyWhenAvailable()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+              Notify When Available
+            </button>
+            <button onclick="window.UpcomingFeatures.hideFeatureModal()" class="bg-neutral-700 hover:bg-neutral-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Features JavaScript -->
+    <script src="{{ url_for('static', filename='js/modules/upcoming-features.js') }}"></script>
 {% endblock %} 

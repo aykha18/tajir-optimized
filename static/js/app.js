@@ -326,4 +326,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
   }
+
+  // Navigation function for Upcoming Features
+  window.navigateToUpcomingFeatures = function() {
+    // Navigate to upcoming features section
+    const upcomingFeaturesSec = document.getElementById('upcomingFeaturesSec');
+    if (upcomingFeaturesSec) {
+      upcomingFeaturesSec.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // If section doesn't exist, show a notification
+      if (window.showSimpleToast) {
+        window.showSimpleToast('Upcoming Features section not found', 'info');
+      }
+    }
+  };
 }); 
