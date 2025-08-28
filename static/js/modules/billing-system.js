@@ -169,7 +169,7 @@ async function getNextBillNumber() {
     try {
         const response = await fetch('/api/next-bill-number');
         const data = await response.json();
-        return data.bill_number;
+        return data.next_number;
     } catch (error) {
         console.error('Error getting next bill number:', error);
         return null;
@@ -733,7 +733,7 @@ function initializeBillingSystem() {
     }
   }
 
-  function populateCustomerFields(customer) {
+  async function populateCustomerFields(customer) {
     const billCustomerElement = document.getElementById('billCustomer');
     const billMobileElement = document.getElementById('billMobile');
     const billCityElement = document.getElementById('billCity');
@@ -767,6 +767,15 @@ function initializeBillingSystem() {
       if (billBusinessNameElement) billBusinessNameElement.required = false;
       if (billBusinessAddressElement) billBusinessAddressElement.required = false;
     }
+
+    // Loyalty: fetch and render loyalty status for this customer
+    try {
+      if (customer && customer.customer_id) {
+        await renderLoyaltySummary(customer.customer_id);
+      }
+    } catch (e) {
+      console.error('Failed to render loyalty summary', e);
+    }
   }
 
   function clearCustomerFields() {
@@ -795,6 +804,13 @@ function initializeBillingSystem() {
     if (trnField) trnField.style.display = 'none';
     if (billBusinessNameElement) billBusinessNameElement.required = false;
     if (billBusinessAddressElement) billBusinessAddressElement.required = false;
+    
+    // Clear loyalty summary panel
+    const loyaltySummaryElement = document.getElementById('loyaltySummary');
+    if (loyaltySummaryElement) {
+      loyaltySummaryElement.innerHTML = '';
+      loyaltySummaryElement.style.display = 'none';
+    }
   }
 
   // Setup mobile input event listener for customer fetching
@@ -855,9 +871,9 @@ function initializeBillingSystem() {
 
         // Add click handlers
         mobileDropdown.querySelectorAll('.mobile-suggestion-item').forEach(item => {
-          item.addEventListener('click', function() {
+          item.addEventListener('click', async function() {
             const customer = JSON.parse(this.dataset.customer);
-            populateCustomerFields(customer);
+            await populateCustomerFields(customer);
             billMobileElement.value = customer.phone;
             hideMobileDropdown();
           });
@@ -948,7 +964,7 @@ function initializeBillingSystem() {
         
         const customer = await fetchCustomerByMobile(phone);
         if (customer) {
-          populateCustomerFields(customer);
+          await populateCustomerFields(customer);
         }
       });
 
@@ -1025,7 +1041,7 @@ function initializeBillingSystem() {
         
         // Add event listeners to recent customer buttons
         container.querySelectorAll('.customer-pill').forEach(btn => {
-          btn.addEventListener('click', function() {
+          btn.addEventListener('click', async function() {
             const customerData = {
               customer_id: this.getAttribute('data-customer-id'),
               name: this.getAttribute('data-customer-name'),
@@ -1038,7 +1054,7 @@ function initializeBillingSystem() {
               business_address: this.getAttribute('data-business-address')
             };
             
-            populateCustomerFields(customerData);
+            await populateCustomerFields(customerData);
           });
 
           // Add hover event listeners for tooltip
@@ -1149,7 +1165,7 @@ function initializeBillingSystem() {
         
         // Add event listeners to mobile customer items
         container.querySelectorAll('.mobile-customer-item').forEach(btn => {
-          btn.addEventListener('click', function() {
+          btn.addEventListener('click', async function() {
             const customerData = {
               customer_id: this.getAttribute('data-customer-id'),
               name: this.getAttribute('data-customer-name'),
@@ -1163,7 +1179,7 @@ function initializeBillingSystem() {
             };
             
 
-            populateCustomerFields(customerData);
+            await populateCustomerFields(customerData);
             hideMobileRecentCustomersDropdown();
             
             // Show success notification
@@ -1347,7 +1363,7 @@ function initializeBillingSystem() {
       // Add click listeners directly to each option
       const options = dropdown.querySelectorAll('.customer-option');
       options.forEach(option => {
-        option.addEventListener('click', function(e) {
+        option.addEventListener('click', async function(e) {
           e.preventDefault();
           e.stopPropagation();
           
@@ -1368,7 +1384,7 @@ function initializeBillingSystem() {
           };
           
 
-          populateCustomerFields(customerData);
+          await populateCustomerFields(customerData);
           hideCustomerDropdown();
           customerInput.value = customerData.name;
         });
@@ -2596,7 +2612,7 @@ function initializeBillingSystem() {
   }
 
   // Helper function to reset the entire billing form after successful bill creation
-  function resetBillingForm() {
+  async function resetBillingForm() {
     // Clear the bill array
     bill.length = 0;
     
@@ -2642,6 +2658,7 @@ function initializeBillingSystem() {
     
     // Set default dates and bill number
     setDefaultBillingDates();
+    await setBasicDefaultDates();
     
     // Disable action buttons
     const whatsappBtn = document.getElementById('whatsappBtn');
@@ -3143,6 +3160,14 @@ function initializeBillingSystem() {
               // Store the current bill ID
               window.currentBillId = saveResult.bill_id;
               billId = saveResult.bill_id;
+              
+              // Update bill number field with the actual bill number from response
+              if (saveResult.bill_number) {
+                const billNumberElement = document.getElementById('billNumber');
+                if (billNumberElement) {
+                  billNumberElement.value = saveResult.bill_number;
+                }
+              }
             
             // Show success message
               showSimpleToast('Bill saved successfully!', 'success');
@@ -3166,8 +3191,8 @@ function initializeBillingSystem() {
           showSimpleToast('Print window opened', 'success');
           
           // Reset the billing form after printing
-          setTimeout(() => {
-            resetBillingForm();
+          setTimeout(async () => {
+            await resetBillingForm();
             // Clear the current bill ID
             window.currentBillId = null;
           }, 1000); // Small delay to ensure print window opens first
@@ -3390,6 +3415,7 @@ function initializeBillingSystem() {
     
     // Set fresh defaults
     await setDefaultBillingDates();
+    await setBasicDefaultDates();
   };
   
   window.editBillItem = function(index) {
@@ -3657,6 +3683,14 @@ function initializeBillingSystem() {
         // Store the current bill ID
         window.currentBillId = saveResult.bill_id;
         
+        // Update bill number field with the actual bill number from response
+        if (saveResult.bill_number) {
+          const billNumberElement = document.getElementById('billNumber');
+          if (billNumberElement) {
+            billNumberElement.value = saveResult.bill_number;
+          }
+        }
+        
         // Show success message
         if (window.showSimpleToast) {
           window.showSimpleToast('Bill saved successfully!', 'success');
@@ -3827,7 +3861,7 @@ function initializeBillingSystem() {
           }
           
           // Reset the billing form after successful WhatsApp send
-          resetBillingForm();
+          await resetBillingForm();
         } else {
           throw new Error('Failed to generate WhatsApp link');
         }
@@ -3904,7 +3938,7 @@ function initializeBillingSystem() {
         }
         
         // Reset the billing form after successful WhatsApp send (draft case)
-        resetBillingForm();
+        await resetBillingForm();
       }
       
     } catch (error) {
@@ -3974,6 +4008,54 @@ function initializeBillingSystem() {
   window.handleSaveBillClick = handleSaveBillClick;
   window.handleWhatsAppClick = handleWhatsAppClick;
   window.prepareBillData = prepareBillData;
+}
+
+// Loyalty helpers inside module scope
+async function renderLoyaltySummary(customerId) {
+  try {
+    const summary = document.getElementById('loyaltySummary');
+    const tierBadge = document.getElementById('loyaltyTierBadge');
+    const pointsText = document.getElementById('loyaltyPointsText');
+    const enrollBtn = document.getElementById('loyaltyEnrollBtn');
+    const note = document.getElementById('loyaltyNote');
+    if (!summary || !tierBadge || !pointsText || !enrollBtn || !note) return;
+
+    // Load current user id via existing session endpoints isn't trivial here; just call the loyalty profile API
+    const resp = await fetch(`/api/loyalty/customers/${customerId}`);
+    const data = await resp.json();
+
+    if (data && data.success) {
+      const lp = data.loyalty_profile || {};
+      summary.classList.remove('hidden');
+      tierBadge.textContent = lp.tier_level || 'Bronze';
+      pointsText.textContent = `Points: ${lp.available_points ?? 0}`;
+      enrollBtn.classList.add('hidden');
+      note.textContent = `Lifetime: ${lp.lifetime_points ?? 0} • Purchases: ${lp.total_purchases ?? 0}`;
+    } else {
+      // Not enrolled
+      summary.classList.remove('hidden');
+      tierBadge.textContent = 'Not enrolled';
+      pointsText.textContent = 'Points: 0';
+      enrollBtn.classList.remove('hidden');
+      note.textContent = 'Enroll this customer to start earning points.';
+      enrollBtn.onclick = async () => {
+        try {
+          const res = await fetch(`/api/loyalty/customers/${customerId}/enroll`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+          const j = await res.json();
+          if (j && j.success) {
+            if (window.showSimpleToast) window.showSimpleToast('Customer enrolled in loyalty', 'success');
+            await renderLoyaltySummary(customerId);
+          } else {
+            if (window.showModernAlert) window.showModernAlert(j.error || 'Failed to enroll', 'error');
+          }
+        } catch (e) {
+          console.error('Enroll failed', e);
+        }
+      };
+    }
+  } catch (e) {
+    console.error('Loyalty summary error', e);
+  }
 }
 
 // Initialize when DOM is ready
