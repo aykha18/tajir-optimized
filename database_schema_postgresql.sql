@@ -265,3 +265,129 @@ INSERT INTO cities (city_name) VALUES
 ON CONFLICT (city_name) DO NOTHING;
 
 -- Default VAT rates will be created by admin setup
+
+-- ========================================
+-- LOYALTY PROGRAM TABLES
+-- ========================================
+
+-- Add loyalty configuration to shop_settings
+ALTER TABLE shop_settings 
+ADD COLUMN IF NOT EXISTS enable_loyalty_program BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS points_per_currency DECIMAL(10,2) DEFAULT 1.0,
+ADD COLUMN IF NOT EXISTS min_purchase_amount DECIMAL(10,2) DEFAULT 0.0,
+ADD COLUMN IF NOT EXISTS points_expiry_days INTEGER DEFAULT 365,
+ADD COLUMN IF NOT EXISTS referral_bonus_points INTEGER DEFAULT 100;
+
+-- Loyalty Configuration Table
+CREATE TABLE IF NOT EXISTS loyalty_config (
+    config_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    points_per_currency DECIMAL(10,2) DEFAULT 1.0,
+    min_purchase_amount DECIMAL(10,2) DEFAULT 0.0,
+    points_expiry_days INTEGER DEFAULT 365,
+    referral_bonus_points INTEGER DEFAULT 100,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Customer Loyalty Profiles Table
+CREATE TABLE IF NOT EXISTS customer_loyalty (
+    loyalty_id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    current_points INTEGER DEFAULT 0,
+    total_points_earned INTEGER DEFAULT 0,
+    total_points_redeemed INTEGER DEFAULT 0,
+    tier_id INTEGER DEFAULT 1,
+    referral_code VARCHAR(20) UNIQUE,
+    referred_by INTEGER,
+    enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Loyalty Tiers Table
+CREATE TABLE IF NOT EXISTS loyalty_tiers (
+    tier_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    tier_name VARCHAR(50) NOT NULL,
+    min_points INTEGER DEFAULT 0,
+    point_multiplier DECIMAL(3,2) DEFAULT 1.0,
+    discount_percentage DECIMAL(5,2) DEFAULT 0.0,
+    benefits TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Loyalty Transactions Table
+CREATE TABLE IF NOT EXISTS loyalty_transactions (
+    transaction_id SERIAL PRIMARY KEY,
+    loyalty_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL,
+    points_change INTEGER NOT NULL,
+    bill_id INTEGER,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (loyalty_id) REFERENCES customer_loyalty(loyalty_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Loyalty Rewards Table
+CREATE TABLE IF NOT EXISTS loyalty_rewards (
+    reward_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    reward_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    points_required INTEGER NOT NULL,
+    discount_amount DECIMAL(10,2),
+    discount_percentage DECIMAL(5,2),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Reward Redemptions Table
+CREATE TABLE IF NOT EXISTS reward_redemptions (
+    redemption_id SERIAL PRIMARY KEY,
+    loyalty_id INTEGER NOT NULL,
+    reward_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    bill_id INTEGER,
+    points_used INTEGER NOT NULL,
+    discount_applied DECIMAL(10,2),
+    redeemed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (loyalty_id) REFERENCES customer_loyalty(loyalty_id) ON DELETE CASCADE,
+    FOREIGN KEY (reward_id) REFERENCES loyalty_rewards(reward_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Personalized Offers Table
+CREATE TABLE IF NOT EXISTS personalized_offers (
+    offer_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    customer_id INTEGER,
+    offer_type VARCHAR(50) NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    description TEXT,
+    discount_percentage DECIMAL(5,2),
+    discount_amount DECIMAL(10,2),
+    min_purchase_amount DECIMAL(10,2),
+    valid_from TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    valid_until TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Insert default loyalty tiers
+INSERT INTO loyalty_tiers (tier_id, user_id, tier_name, min_points, point_multiplier, discount_percentage, benefits) VALUES 
+(1, 1, 'Bronze', 0, 1.0, 0.0, 'Basic loyalty member'),
+(2, 1, 'Silver', 1000, 1.2, 5.0, 'Silver tier with 5% discount'),
+(3, 1, 'Gold', 5000, 1.5, 10.0, 'Gold tier with 10% discount'),
+(4, 1, 'Platinum', 10000, 2.0, 15.0, 'Platinum tier with 15% discount')
+ON CONFLICT (tier_id) DO NOTHING;
