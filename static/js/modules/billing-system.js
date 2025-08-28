@@ -4027,8 +4027,8 @@ async function renderLoyaltySummary(customerId) {
     if (data && data.success) {
       const lp = data.loyalty_profile || {};
       summary.classList.remove('hidden');
-      tierBadge.textContent = lp.tier_id || 'Bronze';
-      pointsText.textContent = `Points: ${lp.current_points ?? 0}`;
+      tierBadge.textContent = lp.tier_level || 'Bronze';
+      pointsText.textContent = `Points: ${lp.available_points ?? 0}`;
       enrollBtn.classList.add('hidden');
       note.textContent = `Lifetime: ${lp.total_points ?? 0} • Purchases: ${lp.total_purchases ?? 0}`;
     } else {

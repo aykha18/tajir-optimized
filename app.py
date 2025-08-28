@@ -8271,21 +8271,22 @@ def create_loyalty_tier():
         
         execute_update(conn, f'''
             INSERT INTO loyalty_tiers (
-                user_id, tier_name, tier_id, min_points, discount_percent,
-                bonus_points_multiplier, free_delivery, priority_service, exclusive_offers, color_code
+                user_id, tier_name, tier_level, points_threshold, discount_percent, 
+                bonus_points_multiplier, free_delivery, priority_service, exclusive_offers, color_code, is_active
             ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
-                     {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                     {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
         ''', (
             user_id,
             data['tier_name'],
-            data['tier_id'],
-            data['min_points'],
+            data.get('tier_level', data['tier_name']),
+            data.get('points_threshold', 0),
             data.get('discount_percent', 0.0),
             data.get('bonus_points_multiplier', 1.0),
             data.get('free_delivery', False),
             data.get('priority_service', False),
             data.get('exclusive_offers', False),
-            data.get('color_code', '#CD7F32')
+            data.get('color_code', '#CD7F32'),
+            True
         ))
         
         conn.close()
@@ -8317,15 +8318,15 @@ def get_loyalty_customers():
                 c.email,
                 cl.loyalty_id,
                 cl.total_points,
-                cl.current_points,
-                cl.tier_id,
-                cl.enrollment_date,
+                cl.available_points,
+                cl.tier_level,
+                cl.join_date,
                 cl.last_purchase_date,
                 cl.total_purchases,
                 cl.total_spent,
                 cl.referral_code,
-                c.birthday,
-                c.anniversary_date
+                cl.birthday,
+                cl.anniversary_date
             FROM customers c
             LEFT JOIN customer_loyalty cl ON c.customer_id = cl.customer_id AND cl.user_id = {placeholder}
             WHERE c.user_id = {placeholder} AND c.is_active = TRUE
@@ -8451,8 +8452,10 @@ def enroll_customer_loyalty(customer_id):
         # Enroll customer
         execute_update(conn, f'''
             INSERT INTO customer_loyalty (
-                user_id, customer_id, tier_id, birthday, anniversary_date, referral_code
-            ) VALUES ({placeholder}, {placeholder}, 1, {placeholder}, {placeholder}, {placeholder})
+                user_id, customer_id, tier_level, birthday, anniversary_date, referral_code, 
+                total_points, available_points, lifetime_points, join_date, is_active
+            ) VALUES ({placeholder}, {placeholder}, 'Bronze', {placeholder}, {placeholder}, {placeholder}, 
+                     0, 0, 0, CURRENT_DATE, true)
         ''', (
             user_id, 
             customer_id, 
@@ -8642,11 +8645,11 @@ def get_loyalty_analytics():
         
         # Tier distribution
         cursor = execute_query(conn, f'''
-            SELECT tier_id, COUNT(*) as count FROM customer_loyalty 
+            SELECT tier_level, COUNT(*) as count FROM customer_loyalty 
             WHERE user_id = {placeholder} AND is_active = TRUE
-            GROUP BY tier_id
+            GROUP BY tier_level
         ''', (user_id,))
-        tier_distribution = {row['tier_id']: row['count'] for row in cursor.fetchall()}
+        tier_distribution = {row['tier_level']: row['count'] for row in cursor.fetchall()}
         
         # Recent activity
         cursor = execute_query(conn, f'''
