@@ -1547,8 +1547,8 @@ def create_bill():
                 try:
                     # Check if customer is enrolled in loyalty program
                     cursor = execute_query(conn, f'''
-                        SELECT cl.loyalty_id, cl.tier_level, cl.available_points,
-                               lc.points_per_aed, lc.aed_per_point
+                        SELECT cl.loyalty_id, cl.tier_id, cl.current_points,
+                               lc.points_per_currency, lc.currency_per_point
                         FROM customer_loyalty cl
                         LEFT JOIN loyalty_config lc ON cl.user_id = lc.user_id
                         WHERE cl.user_id = {placeholder} AND cl.customer_id = {placeholder}
@@ -1558,14 +1558,14 @@ def create_bill():
                     
                     if loyalty_info and loyalty_info['loyalty_id']:
                         # Calculate points earned
-                        points_per_aed = float(loyalty_info['points_per_aed'] or 1.0)
-                        loyalty_points_earned = int(total_amount * points_per_aed)
+                        points_per_currency = float(loyalty_info['points_per_currency'] or 1.0)
+                        loyalty_points_earned = int(total_amount * points_per_currency)
                         
                         # Get tier multiplier
                         cursor = execute_query(conn, f'''
                             SELECT bonus_points_multiplier FROM loyalty_tiers 
-                            WHERE user_id = {placeholder} AND tier_level = {placeholder}
-                        ''', (user_id, loyalty_info['tier_level']))
+                            WHERE user_id = {placeholder} AND tier_id = {placeholder}
+                        ''', (user_id, loyalty_info['tier_id']))
                         
                         tier_info = cursor.fetchone()
                         if tier_info:
@@ -1575,32 +1575,29 @@ def create_bill():
                         # Add points transaction
                         execute_update(conn, f'''
                             INSERT INTO loyalty_transactions (
-                                user_id, loyalty_id, bill_id, transaction_type, 
-                                points_amount, aed_amount, description
-                            ) VALUES ({placeholder}, {placeholder}, {placeholder}, 'earned', {placeholder}, {placeholder}, {placeholder})
+                                user_id, customer_id, bill_id, points_earned, 
+                                transaction_type, description
+                            ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, 'earned', {placeholder})
                         ''', (
                             user_id, 
-                            loyalty_info['loyalty_id'], 
+                            customer_id, 
                             bill_id, 
-                            loyalty_points_earned, 
-                            total_amount,
+                            loyalty_points_earned,
                             f'Points earned from bill #{bill_number}'
                         ))
                         
                         # Update customer loyalty profile
-                        new_available_points = loyalty_info['available_points'] + loyalty_points_earned
+                        new_current_points = loyalty_info['current_points'] + loyalty_points_earned
                         execute_update(conn, f'''
                             UPDATE customer_loyalty SET 
-                                available_points = {placeholder},
+                                current_points = {placeholder},
                                 total_points = total_points + {placeholder},
-                                lifetime_points = lifetime_points + {placeholder},
                                 last_purchase_date = CURRENT_DATE,
                                 total_purchases = total_purchases + 1,
                                 total_spent = total_spent + {placeholder}
                             WHERE loyalty_id = {placeholder}
                         ''', (
-                            new_available_points,
-                            loyalty_points_earned,
+                            new_current_points,
                             loyalty_points_earned,
                             total_amount,
                             loyalty_info['loyalty_id']
@@ -1608,34 +1605,34 @@ def create_bill():
                         
                         # Check for tier upgrade
                         cursor = execute_query(conn, f'''
-                            SELECT tier_level, points_threshold FROM loyalty_tiers 
-                            WHERE user_id = {placeholder} AND points_threshold <= {placeholder}
-                            ORDER BY points_threshold DESC LIMIT 1
-                        ''', (user_id, new_available_points))
+                            SELECT tier_id, min_points FROM loyalty_tiers 
+                            WHERE user_id = {placeholder} AND min_points <= {placeholder}
+                            ORDER BY min_points DESC LIMIT 1
+                        ''', (user_id, new_current_points))
                         
                         new_tier = cursor.fetchone()
-                        if new_tier and new_tier['tier_level'] != loyalty_info['tier_level']:
+                        if new_tier and new_tier['tier_id'] != loyalty_info['tier_id']:
                             execute_update(conn, f'''
-                                UPDATE customer_loyalty SET tier_level = {placeholder} 
+                                UPDATE customer_loyalty SET tier_id = {placeholder} 
                                 WHERE loyalty_id = {placeholder}
-                            ''', (new_tier['tier_level'], loyalty_info['loyalty_id']))
+                            ''', (new_tier['tier_id'], loyalty_info['loyalty_id']))
                             
                             # Add tier upgrade bonus
                             execute_update(conn, f'''
                                 INSERT INTO loyalty_transactions (
-                                    user_id, loyalty_id, transaction_type, 
-                                    points_amount, description
+                                    user_id, customer_id, transaction_type, 
+                                    points_earned, description
                                 ) VALUES ({placeholder}, {placeholder}, 'bonus', 100, {placeholder})
                             ''', (
                                 user_id, 
-                                loyalty_info['loyalty_id'],
-                                f'Tier upgrade bonus to {new_tier["tier_level"]}'
+                                customer_id,
+                                f'Tier upgrade bonus to tier {new_tier["tier_id"]}'
                             ))
                             
-                            # Update available points with bonus
+                            # Update current points with bonus
                             execute_update(conn, f'''
                                 UPDATE customer_loyalty SET 
-                                    available_points = available_points + 100
+                                    current_points = current_points + 100
                                 WHERE loyalty_id = {placeholder}
                             ''', (loyalty_info['loyalty_id']))
                             
@@ -1829,109 +1826,7 @@ def create_bill():
                     item_discount_percent, item_vat_amount, item.get('advance_paid', 0), item_total_amount
                 ))
             
-            # Process loyalty points if customer is enrolled
-            loyalty_points_earned = 0
-            if customer_id:
-                try:
-                    # Check if customer is enrolled in loyalty program
-                    cursor = execute_query(conn, f'''
-                        SELECT cl.loyalty_id, cl.tier_level, cl.available_points,
-                               lc.points_per_aed, lc.aed_per_point
-                        FROM customer_loyalty cl
-                        LEFT JOIN loyalty_config lc ON cl.user_id = lc.user_id
-                        WHERE cl.user_id = {placeholder} AND cl.customer_id = {placeholder}
-                    ''', (user_id, customer_id))
-                    
-                    loyalty_info = cursor.fetchone()
-                    
-                    if loyalty_info and loyalty_info['loyalty_id']:
-                        # Calculate points earned
-                        points_per_aed = float(loyalty_info['points_per_aed'] or 1.0)
-                        loyalty_points_earned = int(total_amount * points_per_aed)
-                        
-                        # Get tier multiplier
-                        cursor = execute_query(conn, f'''
-                            SELECT bonus_points_multiplier FROM loyalty_tiers 
-                            WHERE user_id = {placeholder} AND tier_level = {placeholder}
-                        ''', (user_id, loyalty_info['tier_level']))
-                        
-                        tier_info = cursor.fetchone()
-                        if tier_info:
-                            multiplier = float(tier_info['bonus_points_multiplier'] or 1.0)
-                            loyalty_points_earned = int(loyalty_points_earned * multiplier)
-                        
-                        # Add points transaction
-                        execute_update(conn, f'''
-                            INSERT INTO loyalty_transactions (
-                                user_id, loyalty_id, bill_id, transaction_type, 
-                                points_amount, aed_amount, description
-                            ) VALUES ({placeholder}, {placeholder}, {placeholder}, 'earned', {placeholder}, {placeholder}, {placeholder})
-                        ''', (
-                            user_id, 
-                            loyalty_info['loyalty_id'], 
-                            bill_id, 
-                            loyalty_points_earned, 
-                            total_amount,
-                            f'Points earned from bill #{bill_number}'
-                        ))
-                        
-                        # Update customer loyalty profile
-                        new_available_points = loyalty_info['available_points'] + loyalty_points_earned
-                        execute_update(conn, f'''
-                            UPDATE customer_loyalty SET 
-                                available_points = {placeholder},
-                                total_points = total_points + {placeholder},
-                                lifetime_points = lifetime_points + {placeholder},
-                                last_purchase_date = CURRENT_DATE,
-                                total_purchases = total_purchases + 1,
-                                total_spent = total_spent + {placeholder}
-                            WHERE loyalty_id = {placeholder}
-                        ''', (
-                            new_available_points,
-                            loyalty_points_earned,
-                            loyalty_points_earned,
-                            total_amount,
-                            loyalty_info['loyalty_id']
-                        ))
-                        
-                        # Check for tier upgrade
-                        cursor = execute_query(conn, f'''
-                            SELECT tier_level, points_threshold FROM loyalty_tiers 
-                            WHERE user_id = {placeholder} AND points_threshold <= {placeholder}
-                            ORDER BY points_threshold DESC LIMIT 1
-                        ''', (user_id, new_available_points))
-                        
-                        new_tier = cursor.fetchone()
-                        if new_tier and new_tier['tier_level'] != loyalty_info['tier_level']:
-                            execute_update(conn, f'''
-                                UPDATE customer_loyalty SET tier_level = {placeholder} 
-                                WHERE loyalty_id = {placeholder}
-                            ''', (new_tier['tier_level'], loyalty_info['loyalty_id']))
-                            
-                            # Add tier upgrade bonus
-                            execute_update(conn, f'''
-                                INSERT INTO loyalty_transactions (
-                                    user_id, loyalty_id, transaction_type, 
-                                    points_amount, description
-                                ) VALUES ({placeholder}, {placeholder}, 'bonus', 100, {placeholder})
-                            ''', (
-                                user_id, 
-                                loyalty_info['loyalty_id'],
-                                f'Tier upgrade bonus to {new_tier["tier_level"]}'
-                            ))
-                            
-                            # Update available points with bonus
-                            execute_update(conn, f'''
-                                UPDATE customer_loyalty SET 
-                                    available_points = available_points + 100
-                                WHERE loyalty_id = {placeholder}
-                            ''', (loyalty_info['loyalty_id']))
-                            
-                            loyalty_points_earned += 100
-                            
-                except Exception as loyalty_error:
-                    print(f"Loyalty processing error: {loyalty_error}")
-                    # Continue with bill creation even if loyalty processing fails
+
             
             print(f"DEBUG: Bill creation completed successfully")
             return jsonify({
@@ -8376,15 +8271,15 @@ def create_loyalty_tier():
         
         execute_update(conn, f'''
             INSERT INTO loyalty_tiers (
-                user_id, tier_name, tier_level, points_threshold, discount_percent,
+                user_id, tier_name, tier_id, min_points, discount_percent,
                 bonus_points_multiplier, free_delivery, priority_service, exclusive_offers, color_code
             ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
                      {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
         ''', (
             user_id,
             data['tier_name'],
-            data['tier_level'],
-            data['points_threshold'],
+            data['tier_id'],
+            data['min_points'],
             data.get('discount_percent', 0.0),
             data.get('bonus_points_multiplier', 1.0),
             data.get('free_delivery', False),
@@ -8422,15 +8317,15 @@ def get_loyalty_customers():
                 c.email,
                 cl.loyalty_id,
                 cl.total_points,
-                cl.available_points,
-                cl.tier_level,
-                cl.join_date,
+                cl.current_points,
+                cl.tier_id,
+                cl.enrollment_date,
                 cl.last_purchase_date,
                 cl.total_purchases,
                 cl.total_spent,
                 cl.referral_code,
-                cl.birthday,
-                cl.anniversary_date
+                c.birthday,
+                c.anniversary_date
             FROM customers c
             LEFT JOIN customer_loyalty cl ON c.customer_id = cl.customer_id AND cl.user_id = {placeholder}
             WHERE c.user_id = {placeholder} AND c.is_active = TRUE
@@ -8556,8 +8451,8 @@ def enroll_customer_loyalty(customer_id):
         # Enroll customer
         execute_update(conn, f'''
             INSERT INTO customer_loyalty (
-                user_id, customer_id, tier_level, birthday, anniversary_date, referral_code
-            ) VALUES ({placeholder}, {placeholder}, 'Bronze', {placeholder}, {placeholder}, {placeholder})
+                user_id, customer_id, tier_id, birthday, anniversary_date, referral_code
+            ) VALUES ({placeholder}, {placeholder}, 1, {placeholder}, {placeholder}, {placeholder})
         ''', (
             user_id, 
             customer_id, 
@@ -8747,11 +8642,11 @@ def get_loyalty_analytics():
         
         # Tier distribution
         cursor = execute_query(conn, f'''
-            SELECT tier_level, COUNT(*) as count FROM customer_loyalty 
+            SELECT tier_id, COUNT(*) as count FROM customer_loyalty 
             WHERE user_id = {placeholder} AND is_active = TRUE
-            GROUP BY tier_level
+            GROUP BY tier_id
         ''', (user_id,))
-        tier_distribution = {row['tier_level']: row['count'] for row in cursor.fetchall()}
+        tier_distribution = {row['tier_id']: row['count'] for row in cursor.fetchall()}
         
         # Recent activity
         cursor = execute_query(conn, f'''

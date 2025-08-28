@@ -193,12 +193,12 @@ class LoyaltyProgram {
           </div>
           <div class="text-right">
             <div class="flex items-center gap-2">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: ${this.getTierColor(customer.tier_level)}; color: white;">
-                ${customer.tier_level || 'Not Enrolled'}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: ${this.getTierColor(customer.tier_id)}; color: white;">
+                ${customer.tier_id || 'Not Enrolled'}
               </span>
             </div>
             <p class="text-neutral-400 text-sm mt-1">
-              ${customer.available_points || 0} points
+              ${customer.current_points || 0} points
             </p>
           </div>
         </div>
@@ -215,7 +215,7 @@ class LoyaltyProgram {
               </div>
               <div>
                 <p class="text-neutral-400">Join Date</p>
-                <p class="text-white font-medium">${customer.join_date ? new Date(customer.join_date).toLocaleDateString() : 'N/A'}</p>
+                <p class="text-white font-medium">${customer.enrollment_date ? new Date(customer.enrollment_date).toLocaleDateString() : 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -283,12 +283,12 @@ class LoyaltyProgram {
           </div>
           <div class="text-right">
             <div class="flex items-center gap-2">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: ${this.getTierColor(customer.tier_level)}; color: white;">
-                ${customer.tier_level || 'Not Enrolled'}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: ${this.getTierColor(customer.tier_id)}; color: white;">
+                ${customer.tier_id || 'Not Enrolled'}
               </span>
             </div>
             <p class="text-neutral-400 text-sm mt-1">
-              ${customer.available_points || 0} points
+              ${customer.current_points || 0} points
             </p>
           </div>
         </div>
@@ -305,7 +305,7 @@ class LoyaltyProgram {
               </div>
               <div>
                 <p class="text-neutral-400">Join Date</p>
-                <p class="text-white font-medium">${customer.join_date ? new Date(customer.join_date).toLocaleDateString() : 'N/A'}</p>
+                <p class="text-white font-medium">${customer.enrollment_date ? new Date(customer.enrollment_date).toLocaleDateString() : 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -378,7 +378,7 @@ class LoyaltyProgram {
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background-color: ${tier.color_code}">
-              <span class="text-white font-semibold text-xs">${tier.tier_level.charAt(0)}</span>
+              <span class="text-white font-semibold text-xs">${tier.tier_id.charAt(0)}</span>
             </div>
             <div>
               <h4 class="text-white font-medium">${tier.tier_name}</h4>
@@ -563,7 +563,7 @@ class LoyaltyProgram {
       
       const formData = {
         tier_name: document.getElementById('tierName').value,
-        tier_level: document.getElementById('tierLevel').value,
+        tier_id: document.getElementById('tierLevel').value,
         points_threshold: parseInt(document.getElementById('pointsThreshold').value),
         discount_percent: parseFloat(document.getElementById('discountPercent').value) || 0,
         bonus_points_multiplier: parseFloat(document.getElementById('pointsMultiplier').value) || 1.0
