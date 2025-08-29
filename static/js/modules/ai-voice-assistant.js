@@ -7,53 +7,98 @@ class AIVoiceAssistant {
         this.isListening = false;
         this.recognition = null;
         this.synthesis = window.speechSynthesis;
-        this.currentContext = 'billing'; // billing, customer-search, product-search
         this.commandHistory = [];
         this.maxHistorySize = 10;
         
+        console.log('AI Voice Assistant: Initializing...');
         this.initializeSpeechRecognition();
         this.setupVoiceCommands();
+        console.log('AI Voice Assistant: Initialized successfully');
     }
 
     /**
      * Initialize speech recognition
      */
     initializeSpeechRecognition() {
+        // Check browser support
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            console.warn('Speech recognition not supported in this browser');
+            console.error('AI Voice Assistant: Speech recognition not supported in this browser');
+            this.showVoiceFeedback('Speech recognition not supported in this browser');
             return;
         }
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        this.recognition = new SpeechRecognition();
-        
-        this.recognition.continuous = false;
-        this.recognition.interimResults = false;
-        this.recognition.lang = 'en-US'; // Can be changed to 'ar-SA' for Arabic
-        
-        this.recognition.onstart = () => {
-            this.isListening = true;
-            this.updateUI('listening');
-            this.speak('Listening for your command');
-        };
+        try {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            
+            // Configure recognition settings
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            this.recognition.lang = 'en-US';
+            this.recognition.maxAlternatives = 1;
+            
+            console.log('AI Voice Assistant: Speech recognition configured');
+            
+            // Event handlers
+            this.recognition.onstart = () => {
+                console.log('AI Voice Assistant: Started listening');
+                this.isListening = true;
+                this.updateUI('listening');
+                this.showVoiceFeedback('Listening for your command...');
+            };
 
-        this.recognition.onresult = (event) => {
-            const command = event.results[0][0].transcript.toLowerCase();
-            console.log('Voice command received:', command);
-            this.processCommand(command);
-        };
+            this.recognition.onresult = (event) => {
+                const result = event.results[0];
+                const command = result[0].transcript.toLowerCase().trim();
+                const confidence = result[0].confidence;
+                
+                console.log('AI Voice Assistant: Command received:', command, 'Confidence:', confidence);
+                this.showVoiceFeedback(`Heard: "${command}"`);
+                
+                // Process command after a short delay to show what was heard
+                setTimeout(() => {
+                    this.processCommand(command);
+                }, 500);
+            };
 
-        this.recognition.onerror = (event) => {
-            console.error('Speech recognition error:', event.error);
-            this.isListening = false;
-            this.updateUI('error');
-            this.speak('Sorry, I did not understand that. Please try again.');
-        };
+            this.recognition.onerror = (event) => {
+                console.error('AI Voice Assistant: Speech recognition error:', event.error);
+                this.isListening = false;
+                this.updateUI('error');
+                
+                let errorMessage = 'Sorry, I did not understand that. Please try again.';
+                
+                switch (event.error) {
+                    case 'not-allowed':
+                        errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
+                        break;
+                    case 'no-speech':
+                        errorMessage = 'No speech detected. Please speak clearly and try again.';
+                        break;
+                    case 'audio-capture':
+                        errorMessage = 'Audio capture error. Please check your microphone.';
+                        break;
+                    case 'network':
+                        errorMessage = 'Network error. Please check your internet connection.';
+                        break;
+                }
+                
+                this.showVoiceFeedback(errorMessage);
+                this.speak(errorMessage);
+            };
 
-        this.recognition.onend = () => {
-            this.isListening = false;
-            this.updateUI('idle');
-        };
+            this.recognition.onend = () => {
+                console.log('AI Voice Assistant: Stopped listening');
+                this.isListening = false;
+                this.updateUI('idle');
+            };
+
+            console.log('AI Voice Assistant: Speech recognition initialized successfully');
+            
+        } catch (error) {
+            console.error('AI Voice Assistant: Error initializing speech recognition:', error);
+            this.showVoiceFeedback('Error initializing voice recognition');
+        }
     }
 
     /**
@@ -133,30 +178,36 @@ class AIVoiceAssistant {
                 handler: () => this.showHelp()
             }
         };
+        
+        console.log('AI Voice Assistant: Voice commands configured');
     }
 
     /**
      * Process voice command
      */
     processCommand(command) {
+        console.log('AI Voice Assistant: Processing command:', command);
         this.addToHistory(command);
         
         // Check each command pattern
         for (const [cmdName, cmd] of Object.entries(this.commands)) {
             const matches = command.match(cmd.pattern);
             if (matches) {
+                console.log('AI Voice Assistant: Matched command:', cmdName, 'with matches:', matches);
                 try {
                     cmd.handler(matches);
                     return;
                 } catch (error) {
-                    console.error('Error executing command:', error);
+                    console.error('AI Voice Assistant: Error executing command:', error);
                     this.speak('Sorry, there was an error executing that command');
                 }
             }
         }
         
         // No matching command found
+        console.log('AI Voice Assistant: No matching command found for:', command);
         this.speak('I did not understand that command. Say help for available commands.');
+        this.showVoiceFeedback('Command not recognized. Say "help" for available commands.');
     }
 
     /**
@@ -164,6 +215,7 @@ class AIVoiceAssistant {
      */
     async addProduct(quantity, productName) {
         try {
+            console.log('AI Voice Assistant: Adding product - Quantity:', quantity, 'Name:', productName);
             // Search for product
             const products = await this.searchProducts(productName);
             
@@ -184,7 +236,7 @@ class AIVoiceAssistant {
                 });
             }
         } catch (error) {
-            console.error('Error adding product:', error);
+            console.error('AI Voice Assistant: Error adding product:', error);
             this.speak('Sorry, there was an error adding the product');
         }
     }
@@ -198,7 +250,7 @@ class AIVoiceAssistant {
             const products = await response.json();
             return products.filter(p => p.is_active);
         } catch (error) {
-            console.error('Error searching products:', error);
+            console.error('AI Voice Assistant: Error searching products:', error);
             return [];
         }
     }
@@ -220,6 +272,7 @@ class AIVoiceAssistant {
      */
     async findCustomer(query) {
         try {
+            console.log('AI Voice Assistant: Finding customer - Query:', query);
             const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
             const customers = await response.json();
             
@@ -239,7 +292,7 @@ class AIVoiceAssistant {
                 });
             }
         } catch (error) {
-            console.error('Error finding customer:', error);
+            console.error('AI Voice Assistant: Error finding customer:', error);
             this.speak('Sorry, there was an error finding the customer');
         }
     }
@@ -260,6 +313,7 @@ class AIVoiceAssistant {
      */
     async getPrice(productName) {
         try {
+            console.log('AI Voice Assistant: Getting price - Name:', productName);
             const products = await this.searchProducts(productName);
             
             if (products.length === 0) {
@@ -277,7 +331,7 @@ class AIVoiceAssistant {
                 });
             }
         } catch (error) {
-            console.error('Error getting price:', error);
+            console.error('AI Voice Assistant: Error getting price:', error);
             this.speak('Sorry, there was an error getting the price');
         }
     }
@@ -286,6 +340,7 @@ class AIVoiceAssistant {
      * Create bill
      */
     createBill() {
+        console.log('AI Voice Assistant: Creating bill');
         if (window.BillingSystem) {
             window.BillingSystem.createBill();
             this.speak('Bill created successfully');
@@ -301,6 +356,7 @@ class AIVoiceAssistant {
      * Print bill
      */
     printBill() {
+        console.log('AI Voice Assistant: Printing bill');
         if (window.BillingSystem) {
             window.BillingSystem.printBill();
             this.speak('Printing bill');
@@ -316,6 +372,7 @@ class AIVoiceAssistant {
      * Clear bill
      */
     clearBill() {
+        console.log('AI Voice Assistant: Clearing bill');
         if (window.BillingSystem) {
             window.BillingSystem.clearBill();
             this.speak('Bill cleared');
@@ -338,6 +395,7 @@ class AIVoiceAssistant {
      * Show help
      */
     showHelp() {
+        console.log('AI Voice Assistant: Showing help');
         const helpText = `
             I can help you with billing. Here are some commands you can use:
             
@@ -372,7 +430,7 @@ class AIVoiceAssistant {
         try {
             this.recognition.start();
         } catch (error) {
-            console.error('Error starting speech recognition:', error);
+            console.error('AI Voice Assistant: Error starting speech recognition:', error);
             this.speak('Error starting voice recognition');
         }
     }
@@ -496,13 +554,53 @@ class AIVoiceAssistant {
      * Toggle voice assistant
      */
     toggle() {
+        console.log('AI Voice Assistant: Toggle called, isListening:', this.isListening);
         if (this.isListening) {
             this.stopListening();
         } else {
             this.startListening();
         }
     }
+
+    /**
+     * Test method to verify the voice assistant is working
+     */
+    test() {
+        console.log('AI Voice Assistant: Test method called');
+        this.speak('Voice assistant is working. You can now try voice commands.');
+        this.showVoiceFeedback('Voice assistant is working. Try saying "help" for available commands.');
+        
+        // Test command processing
+        setTimeout(() => {
+            this.processCommand('help');
+        }, 2000);
+    }
+
+    /**
+     * Manual command processing for testing
+     */
+    testCommand(command) {
+        console.log('AI Voice Assistant: Testing command:', command);
+        this.processCommand(command.toLowerCase());
+    }
 }
 
 // Initialize the AI Voice Assistant
 window.AIVoiceAssistant = new AIVoiceAssistant();
+
+// Add test methods to window for debugging
+window.testVoiceAssistant = () => {
+    if (window.AIVoiceAssistant) {
+        window.AIVoiceAssistant.test();
+    } else {
+        console.error('AI Voice Assistant not initialized');
+    }
+};
+
+window.testVoiceCommand = (command) => {
+    if (window.AIVoiceAssistant) {
+        window.AIVoiceAssistant.testCommand(command);
+    } else {
+        console.error('AI Voice Assistant not initialized');
+    }
+};

@@ -1,0 +1,92 @@
+[
+  {
+    "test": "Get Loyalty Config",
+    "success": true,
+    "details": "Program: N/A",
+    "timestamp": "2025-08-29T00:32:43.014345"
+  },
+  {
+    "test": "Update Loyalty Config",
+    "success": true,
+    "details": "Configuration updated",
+    "timestamp": "2025-08-29T00:32:45.143632"
+  },
+  {
+    "test": "Get Loyalty Tiers",
+    "success": true,
+    "details": "Found 2 tiers",
+    "timestamp": "2025-08-29T00:32:47.254382"
+  },
+  {
+    "test": "Create New Tier",
+    "success": true,
+    "details": "Platinum tier already exists",
+    "timestamp": "2025-08-29T00:32:47.254504"
+  },
+  {
+    "test": "Get Loyalty Customers",
+    "success": true,
+    "details": "Found 2 customers",
+    "timestamp": "2025-08-29T00:32:49.384524"
+  },
+  {
+    "test": "Create Test Customer",
+    "success": true,
+    "details": "Using existing customer ID: 28",
+    "timestamp": "2025-08-29T00:32:53.730686"
+  },
+  {
+    "test": "Enroll Customer",
+    "success": false,
+    "details": "Status: 400",
+    "timestamp": "2025-08-29T00:32:55.966711"
+  },
+  {
+    "test": "Get Customer Loyalty",
+    "success": true,
+    "details": "Points: 0, Tier: N/A",
+    "timestamp": "2025-08-29T00:32:58.085516"
+  },
+  {
+    "test": "Create Bill with Points",
+    "success": false,
+    "details": "Status: 400",
+    "timestamp": "2025-08-29T00:33:02.406493"
+  },
+  {
+    "test": "Get Loyalty Transactions",
+    "success": true,
+    "details": "Found 2 transactions",
+    "timestamp": "2025-08-29T00:33:04.513799"
+  },
+  {
+    "test": "Get Referral Code",
+    "success": false,
+    "details": "No referral code found",
+    "timestamp": "2025-08-29T00:33:06.647225"
+  },
+  {
+    "test": "Get Loyalty Rewards",
+    "success": true,
+    "details": "Found 2 rewards",
+    "timestamp": "2025-08-29T00:33:08.757302"
+  },
+  {
+    "test": "Create New Reward",
+    "success": true,
+    "details": "Test reward created",
+    "timestamp": "2025-08-29T00:33:10.894986"
+  },
+  {
+    "test": "Get Personalized Offers",
+    "success": true,
+    "details": "Found 2 offers",
+    "timestamp": "2025-08-29T00:33:13.014214"
+  },
+  {
+    "test": "Get Loyalty Analytics",
+    "success": true,
+    "details": "Total customers: 0, Total points: 0",
+    "timestamp": "2025-08-29T00:33:15.157695"
+  }
+]

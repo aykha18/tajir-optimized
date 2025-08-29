@@ -207,3 +207,4 @@ def extract_schema():
 
 if __name__ == "__main__":
     extract_schema()
+

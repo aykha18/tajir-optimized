@@ -284,3 +284,4 @@ def recreate_loyalty_tables():
 
 if __name__ == "__main__":
     recreate_loyalty_tables()
+

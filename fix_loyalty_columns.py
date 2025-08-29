@@ -49,3 +49,4 @@ def fix_js_files():
 
 if __name__ == "__main__":
     fix_js_files()
+

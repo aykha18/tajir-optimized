@@ -2753,3 +2753,51 @@ DETAIL:  Key (action_id)=(228) already exists.
 2025-08-28 23:32:08,650 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
 DETAIL:  Key (action_id)=(228) already exists.
 
+2025-08-29 00:32:40,449 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(229) already exists.
+
+2025-08-29 00:32:40,449 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(229) already exists.
+
+2025-08-29 00:32:40,782 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(230) already exists.
+
+2025-08-29 00:32:40,782 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(230) already exists.
+
+2025-08-29 00:33:02,324 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(231) already exists.
+
+2025-08-29 00:33:02,324 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(231) already exists.
+
+2025-08-29 02:17:09,482 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(232) already exists.
+
+2025-08-29 02:17:09,482 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(232) already exists.
+
+2025-08-29 02:19:04,222 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(233) already exists.
+
+2025-08-29 02:19:04,222 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(233) already exists.
+
+2025-08-29 02:19:54,326 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(234) already exists.
+
+2025-08-29 02:19:54,326 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(234) already exists.
+
+2025-08-29 10:53:47,117 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(235) already exists.
+
+2025-08-29 10:53:47,117 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(235) already exists.
+
+2025-08-29 11:33:12,166 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(236) already exists.
+
+2025-08-29 11:33:12,166 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(236) already exists.
+
