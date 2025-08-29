@@ -1822,20 +1822,52 @@ function initializeBillingSystem() {
 
   // FEATURE 4: City and Area Autocomplete
   function setupCityAreaAutocomplete() {
-  
-    
     const cityInput = document.getElementById('billCity');
     const areaInput = document.getElementById('billArea');
-    const cityDropdown = document.getElementById('billCityDropdown');
-    const areaDropdown = document.getElementById('billAreaDropdown');
     
-    if (!cityInput || !areaInput || !cityDropdown || !areaDropdown) {
+    if (!cityInput || !areaInput) {
       console.warn('City/Area autocomplete elements not found');
       return;
     }
     
     let cityDebounceTimer = null;
     let areaDebounceTimer = null;
+    let cityDropdown = null;
+    let areaDropdown = null;
+    
+    // Create city dropdown container
+    function createCityDropdown() {
+      if (cityDropdown) {
+        cityDropdown.remove();
+      }
+      cityDropdown = document.createElement('div');
+      cityDropdown.className = 'city-suggestion';
+      cityDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
+      cityDropdown.style.display = 'none';
+      document.body.appendChild(cityDropdown);
+      
+      // Prevent dropdown from hiding when clicking inside it
+      cityDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+    }
+    
+    // Create area dropdown container
+    function createAreaDropdown() {
+      if (areaDropdown) {
+        areaDropdown.remove();
+      }
+      areaDropdown = document.createElement('div');
+      areaDropdown.className = 'area-suggestion';
+      areaDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
+      areaDropdown.style.display = 'none';
+      document.body.appendChild(areaDropdown);
+      
+      // Prevent dropdown from hiding when clicking inside it
+      areaDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+    }
     
     // City autocomplete
     cityInput.addEventListener('input', function() {
@@ -1843,7 +1875,7 @@ function initializeBillingSystem() {
       const query = this.value.trim();
       
       if (query.length < 2) {
-        cityDropdown.classList.add('hidden');
+        hideCityDropdown();
         return;
       }
       
@@ -1856,14 +1888,9 @@ function initializeBillingSystem() {
           );
           
           if (filteredCities.length > 0) {
-            cityDropdown.innerHTML = filteredCities.map(city => `
-              <div class="city-option px-3 py-2 hover:bg-neutral-700 cursor-pointer text-sm border-b border-neutral-700 last:border-b-0" data-city="${city}">
-                ${city}
-              </div>
-            `).join('');
-            cityDropdown.classList.remove('hidden');
+            showCitySuggestions(filteredCities);
           } else {
-            cityDropdown.classList.add('hidden');
+            hideCityDropdown();
           }
         } catch (error) {
           console.error('Error loading cities:', error);
@@ -1871,13 +1898,70 @@ function initializeBillingSystem() {
       }, 300);
     });
     
+    // Show city suggestions
+    function showCitySuggestions(cities) {
+      if (!cityDropdown) createCityDropdown();
+      
+      // Calculate position relative to input
+      const inputRect = cityInput.getBoundingClientRect();
+      cityDropdown.style.left = inputRect.left + 'px';
+      cityDropdown.style.top = (inputRect.bottom + 4) + 'px';
+      cityDropdown.style.width = inputRect.width + 'px';
+      cityDropdown.style.minWidth = '200px'; // Ensure minimum width
+      
+      cityDropdown.innerHTML = cities.map(city => `
+        <div class="city-option px-4 py-2 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0" data-city="${city}">
+          ${city}
+        </div>
+      `).join('');
+      
+      // Add click listeners directly to each option
+      const options = cityDropdown.querySelectorAll('.city-option');
+      options.forEach(option => {
+        option.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const selectedCity = this.getAttribute('data-city');
+          cityInput.value = selectedCity;
+          hideCityDropdown();
+          
+          // Clear area when city changes
+          areaInput.value = '';
+          
+          // Update area dropdown to show areas for selected city
+          updateAreaDropdownForCity(selectedCity);
+        });
+      });
+      
+      cityDropdown.style.display = 'block';
+    }
+    
+    // Hide city dropdown
+    function hideCityDropdown() {
+      if (cityDropdown) {
+        cityDropdown.style.transition = 'all 0.2s ease';
+        cityDropdown.style.opacity = '0';
+        cityDropdown.style.transform = 'translateY(-10px)';
+        
+        setTimeout(() => {
+          cityDropdown.style.display = 'none';
+          // Remove from DOM to prevent memory leaks
+          if (cityDropdown.parentNode) {
+            cityDropdown.parentNode.removeChild(cityDropdown);
+          }
+          cityDropdown = null;
+        }, 200);
+      }
+    }
+    
     // Area autocomplete
     areaInput.addEventListener('input', function() {
       clearTimeout(areaDebounceTimer);
       const query = this.value.trim();
       
       if (query.length < 2) {
-        areaDropdown.classList.add('hidden');
+        hideAreaDropdown();
         return;
       }
       
@@ -1892,14 +1976,9 @@ function initializeBillingSystem() {
           );
           
           if (filteredAreas.length > 0) {
-            areaDropdown.innerHTML = filteredAreas.map(area => `
-              <div class="area-option px-3 py-2 hover:bg-neutral-700 cursor-pointer text-sm border-b border-neutral-700 last:border-b-0" data-area="${area}">
-                ${area}
-              </div>
-            `).join('');
-            areaDropdown.classList.remove('hidden');
+            showAreaSuggestions(filteredAreas);
           } else {
-            areaDropdown.classList.add('hidden');
+            hideAreaDropdown();
           }
         } catch (error) {
           console.error('Error loading areas:', error);
@@ -1907,42 +1986,80 @@ function initializeBillingSystem() {
       }, 300);
     });
     
-    // Handle city selection
-    cityDropdown.addEventListener('click', function(e) {
-      if (e.target.classList.contains('city-option')) {
-        const selectedCity = e.target.getAttribute('data-city');
-        cityInput.value = selectedCity;
-        cityDropdown.classList.add('hidden');
-        
-        // Clear area when city changes
-        areaInput.value = '';
-        
-        // Update area dropdown to show areas for selected city
-        updateAreaDropdownForCity(selectedCity);
-      }
-    });
+    // Show area suggestions
+    function showAreaSuggestions(areas) {
+      if (!areaDropdown) createAreaDropdown();
+      
+      // Calculate position relative to input
+      const inputRect = areaInput.getBoundingClientRect();
+      areaDropdown.style.left = inputRect.left + 'px';
+      areaDropdown.style.top = (inputRect.bottom + 4) + 'px';
+      areaDropdown.style.width = inputRect.width + 'px';
+      areaDropdown.style.minWidth = '200px'; // Ensure minimum width
+      
+      areaDropdown.innerHTML = areas.map(area => `
+        <div class="area-option px-4 py-2 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0" data-area="${area}">
+          ${area}
+        </div>
+      `).join('');
+      
+      // Add click listeners directly to each option
+      const options = areaDropdown.querySelectorAll('.area-option');
+      options.forEach(option => {
+        option.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const selectedArea = this.getAttribute('data-area');
+          areaInput.value = selectedArea;
+          hideAreaDropdown();
+          
+          // If no city is selected, try to find the city for this area
+          if (!cityInput.value.trim()) {
+            findCityForArea(selectedArea);
+          }
+        });
+      });
+      
+      areaDropdown.style.display = 'block';
+    }
     
-    // Handle area selection
-    areaDropdown.addEventListener('click', function(e) {
-      if (e.target.classList.contains('area-option')) {
-        const selectedArea = e.target.getAttribute('data-area');
-        areaInput.value = selectedArea;
-        areaDropdown.classList.add('hidden');
+    // Hide area dropdown
+    function hideAreaDropdown() {
+      if (areaDropdown) {
+        areaDropdown.style.transition = 'all 0.2s ease';
+        areaDropdown.style.opacity = '0';
+        areaDropdown.style.transform = 'translateY(-10px)';
         
-        // If no city is selected, try to find the city for this area
-        if (!cityInput.value.trim()) {
-          findCityForArea(selectedArea);
-        }
+        setTimeout(() => {
+          areaDropdown.style.display = 'none';
+          // Remove from DOM to prevent memory leaks
+          if (areaDropdown.parentNode) {
+            areaDropdown.parentNode.removeChild(areaDropdown);
+          }
+          areaDropdown = null;
+        }, 200);
       }
-    });
+    }
     
     // Hide dropdowns when clicking outside
     document.addEventListener('click', function(e) {
-      if (!cityInput.contains(e.target) && !cityDropdown.contains(e.target)) {
-        cityDropdown.classList.add('hidden');
+      // Don't hide if clicking on dropdown options
+      if (e.target.closest('.city-option') || e.target.closest('.area-option')) {
+        return;
       }
-      if (!areaInput.contains(e.target) && !areaDropdown.contains(e.target)) {
-        areaDropdown.classList.add('hidden');
+      
+      // Don't hide if clicking on the inputs themselves
+      if (cityInput.contains(e.target) || areaInput.contains(e.target)) {
+        return;
+      }
+      
+      // Hide only if clicking outside both inputs and dropdowns
+      if (!cityInput.contains(e.target) && (!cityDropdown || !cityDropdown.contains(e.target))) {
+        hideCityDropdown();
+      }
+      if (!areaInput.contains(e.target) && (!areaDropdown || !areaDropdown.contains(e.target))) {
+        hideAreaDropdown();
       }
     });
     
@@ -1953,13 +2070,24 @@ function initializeBillingSystem() {
         const areas = await response.json();
         
         if (areas.length > 0) {
-          areaDropdown.innerHTML = areas.map(area => `
-            <div class="area-option px-3 py-2 hover:bg-neutral-700 cursor-pointer text-sm border-b border-neutral-700 last:border-b-0" data-area="${area}">
-              ${area}
-            </div>
-          `).join('');
+          showAreaSuggestions(areas);
         } else {
-          areaDropdown.innerHTML = '<div class="px-3 py-2 text-neutral-400 text-sm">No areas found for this city</div>';
+          // Show message that no areas found
+          if (!areaDropdown) createAreaDropdown();
+          
+          const inputRect = areaInput.getBoundingClientRect();
+          areaDropdown.style.left = inputRect.left + 'px';
+          areaDropdown.style.top = (inputRect.bottom + 4) + 'px';
+          areaDropdown.style.width = inputRect.width + 'px';
+          areaDropdown.style.minWidth = '200px';
+          
+          areaDropdown.innerHTML = '<div class="px-4 py-2 text-neutral-400 text-sm">No areas found for this city</div>';
+          areaDropdown.style.display = 'block';
+          
+          // Hide after 2 seconds
+          setTimeout(() => {
+            hideAreaDropdown();
+          }, 2000);
         }
       } catch (error) {
         console.error('Error updating areas for city:', error);
