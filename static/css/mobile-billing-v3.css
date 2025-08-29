@@ -213,6 +213,17 @@ body.mobile-billing-active [class*="bottom-nav"] {
   pointer-events: none !important;
 }
 
+/* Ensure mobile navigation is visible when mobile billing is NOT active */
+.mobile-nav:not(.mobile-billing-v3-overlay.active ~ .mobile-nav),
+#mobile-navigation-bar:not(.mobile-billing-v3-overlay.active ~ #mobile-navigation-bar),
+nav.mobile-nav:not(.mobile-billing-v3-overlay.active ~ nav.mobile-nav) {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1000 !important;
+  pointer-events: auto !important;
+}
+
 /* ENSURE MOBILE BILLING NAVIGATION IS ALWAYS VISIBLE */
 .mobile-billing-v3-modal .p-4.border-t.border-neutral-700.bg-neutral-800,
 #mobile-billing-v3-overlay .p-4.border-t.border-neutral-700.bg-neutral-800 {

@@ -111,6 +111,18 @@
     opacity: 1 !important;
   }
   
+  /* Force mobile navigation to be visible on mobile devices */
+  @media (max-width: 768px) {
+    .mobile-nav,
+    #mobile-navigation-bar {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      z-index: 1000 !important;
+      pointer-events: auto !important;
+    }
+  }
+  
   /* Override any conflicting navigation styles */
   body .mobile-nav,
   html .mobile-nav,

@@ -745,6 +745,8 @@ def test_dropdown():
 def test_mobile_billing():
     return send_file('test_mobile_billing.html')
 
+
+
 # Product Types API
 @app.route('/api/product-types', methods=['GET'])
 def get_product_types():
@@ -7838,7 +7840,7 @@ def debug_mobile_nav():
 
 @app.route('/test_mobile_nav')
 def test_mobile_nav():
-    return render_template('test_mobile_navigation.html')
+    return send_file('templates/test_mobile_nav.html')
 
 @app.route('/test_horizontal_nav')
 def test_horizontal_nav():
