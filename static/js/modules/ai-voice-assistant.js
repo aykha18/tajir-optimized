@@ -604,3 +604,76 @@ window.testVoiceCommand = (command) => {
         console.error('AI Voice Assistant not initialized');
     }
 };
+
+// Add a simple test button to the page for debugging
+document.addEventListener('DOMContentLoaded', function() {
+    // Create a test button
+    const testButton = document.createElement('button');
+    testButton.textContent = '🔧 Test Voice Assistant';
+    testButton.style.cssText = `
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 10000;
+        font-size: 12px;
+    `;
+    testButton.onclick = () => {
+        console.log('=== VOICE ASSISTANT DEBUG ===');
+        console.log('1. Testing basic functionality...');
+        
+        if (window.AIVoiceAssistant) {
+            console.log('✅ Voice Assistant is initialized');
+            console.log('2. Testing speech synthesis...');
+            window.AIVoiceAssistant.speak('Testing voice assistant. Can you hear this?');
+            
+            console.log('3. Testing command processing...');
+            window.AIVoiceAssistant.testCommand('help');
+            
+            console.log('4. Testing speech recognition...');
+            if (window.AIVoiceAssistant.recognition) {
+                console.log('✅ Speech recognition is available');
+                console.log('5. Starting listening test...');
+                window.AIVoiceAssistant.startListening();
+            } else {
+                console.log('❌ Speech recognition not available');
+                alert('Speech recognition not supported in this browser. Try Chrome or Edge.');
+            }
+        } else {
+            console.log('❌ Voice Assistant not initialized');
+            alert('Voice Assistant failed to initialize. Check console for errors.');
+        }
+    };
+    
+    document.body.appendChild(testButton);
+    
+    // Also add a manual command input
+    const commandInput = document.createElement('input');
+    commandInput.placeholder = 'Type a command to test (e.g., help)';
+    commandInput.style.cssText = `
+        position: fixed;
+        top: 50px;
+        left: 10px;
+        width: 200px;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        z-index: 10000;
+        font-size: 12px;
+    `;
+    commandInput.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            const command = commandInput.value;
+            console.log('Testing command:', command);
+            window.testVoiceCommand(command);
+            commandInput.value = '';
+        }
+    };
+    
+    document.body.appendChild(commandInput);
+});
