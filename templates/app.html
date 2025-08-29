@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/billing-ui-enhanced.css') }}">
   <!-- Mobile enhancements and navigation -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-enhancements.css', v='1.0.1') }}">
+  <!-- AI Voice Assistant styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ai-voice-assistant.css', v='1.0.1') }}">
   
   <!-- Custom JavaScript Files -->
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
@@ -24,7 +26,8 @@
   <script src="{{ url_for('static', filename='js/modules/shop-settings.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/dashboard.js') }}"></script>
       <script src="{{ url_for('static', filename='js/modules/billing-system.js', v='1.0.3') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/mobile-enhancements.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modules/ai-voice-assistant.js', v='1.0.1') }}"></script>
+<script src="{{ url_for('static', filename='js/modules/mobile-enhancements.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/mobile-screens.js') }}"></script>
           <script src="{{ url_for('static', filename='js/modules/mobile-navigation.js', v='1.0.2') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/mobile-billing.js') }}"></script>
@@ -212,6 +215,13 @@
         <div class="flex justify-between items-center">
           <h3 class="text-2xl font-semibold tracking-tight">Billing</h3>
           <div class="flex gap-2">
+            <!-- AI Voice Assistant Button -->
+            <button id="voice-assistant-btn" onclick="window.AIVoiceAssistant.toggle()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+              </svg>
+              <span>Voice Assistant</span>
+            </button>
             <button id="searchInvoiceBtn" class="modern-btn modern-btn-secondary mobile-btn">
               <svg data-lucide="search" class="w-4 h-4"></svg>
               Search & Reprint
