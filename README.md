@@ -37,6 +37,9 @@ Plan status, expiry, and feature access are managed via `config.json` and enforc
 | **Enterprise** | Custom | Custom | Everything in PRO + custom features |
 
 ### Upcoming Features (Available in PRO & Enterprise)
+- **AI Voice Assistant for Billing** - Hands-free billing with voice commands for product selection, customer search, and bill generation
+- **AI Business Intelligence & Insights** - Data-driven insights with revenue optimization, market analysis, and growth opportunities
+- **AI-Powered Smart Pricing & Demand Forecasting** - Dynamic pricing with demand forecasting and competitive analysis for maximum profitability
 - Advanced reporting and analytics
 - Mobile App integration
 - Payment gateway integration

@@ -2,6 +2,54 @@
 class UpcomingFeatures {
   constructor() {
     this.features = {
+      'ai-voice-assistant': {
+        title: 'AI Voice Assistant for Billing',
+        content: `
+          <h4 class="text-xl font-semibold text-white mb-4">Revolutionize Your Billing Process</h4>
+          <p class="mb-4">Experience hands-free, lightning-fast billing with our AI-powered voice assistant:</p>
+          <ul class="list-disc list-inside space-y-2 mb-4">
+            <li><strong>Voice Product Selection:</strong> Simply say "Add 2 shirts, 1 trouser" to add items instantly</li>
+            <li><strong>Voice Customer Search:</strong> Find customers by saying "Find customer Ahmed" or "Search for phone 0501234567"</li>
+            <li><strong>Voice Price Queries:</strong> Ask "What's the price for kurti?" and get instant pricing information</li>
+            <li><strong>Voice Bill Generation:</strong> Create bills with voice commands like "Create bill for customer 123"</li>
+            <li><strong>Multilingual Support:</strong> Full Arabic and English voice recognition for local market needs</li>
+            <li><strong>Smart Context Understanding:</strong> AI understands context and handles complex billing scenarios</li>
+          </ul>
+          <p class="text-indigo-300"><strong>Business Impact:</strong> Speed up billing by 70%, reduce errors by 90%, and create a wow factor that impresses customers and sets you apart from competitors.</p>
+        `
+      },
+      'ai-business-intelligence': {
+        title: 'AI Business Intelligence & Insights',
+        content: `
+          <h4 class="text-xl font-semibold text-white mb-4">Data-Driven Business Growth</h4>
+          <p class="mb-4">Transform your business data into actionable intelligence with advanced AI analytics:</p>
+          <ul class="list-disc list-inside space-y-2 mb-4">
+            <li><strong>Revenue Optimization:</strong> AI suggests optimal pricing strategies and product mix based on market analysis</li>
+            <li><strong>Employee Performance Analysis:</strong> Identify top performers, training needs, and productivity optimization opportunities</li>
+            <li><strong>Market Trend Analysis:</strong> Predict industry trends and adapt your business strategy proactively</li>
+            <li><strong>Cash Flow Prediction:</strong> Forecast cash flow patterns and suggest optimal financial strategies</li>
+            <li><strong>Growth Opportunities:</strong> Identify untapped markets, customer segments, and expansion possibilities</li>
+            <li><strong>Competitive Intelligence:</strong> Monitor market changes and competitor activities to stay ahead</li>
+          </ul>
+          <p class="text-indigo-300"><strong>Business Impact:</strong> Increase revenue by 30%, optimize operations by 40%, and make strategic decisions that drive sustainable business growth.</p>
+        `
+      },
+      'ai-smart-pricing': {
+        title: 'AI-Powered Smart Pricing & Demand Forecasting',
+        content: `
+          <h4 class="text-xl font-semibold text-white mb-4">Intelligent Pricing & Inventory Management</h4>
+          <p class="mb-4">Stay ahead of the market with AI-driven pricing and demand prediction:</p>
+          <ul class="list-disc list-inside space-y-2 mb-4">
+            <li><strong>Dynamic Pricing:</strong> AI analyzes market trends, competitor prices, and demand elasticity to suggest optimal pricing</li>
+            <li><strong>Demand Forecasting:</strong> Predict which products will be in high demand based on seasonal patterns, events, and customer behavior</li>
+            <li><strong>Price Optimization:</strong> Automatically adjust prices based on inventory levels, customer segments, and target profit margins</li>
+            <li><strong>Competitive Analysis:</strong> Monitor competitor pricing in real-time and suggest competitive strategies</li>
+            <li><strong>Seasonal Planning:</strong> Prepare for peak seasons with predictive analytics and optimal stock planning</li>
+            <li><strong>Profit Maximization:</strong> Balance volume and margin to maximize overall profitability</li>
+          </ul>
+          <p class="text-indigo-300"><strong>Business Impact:</strong> Increase profit margins by 25%, reduce inventory costs by 35%, and eliminate stockouts while maximizing revenue opportunities.</p>
+        `
+      },
       'ai-inventory': {
         title: 'AI-Powered Inventory Management',
         content: `
