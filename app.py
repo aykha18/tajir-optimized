@@ -979,7 +979,13 @@ def get_customers():
     elif search:
         like_search = f"%{search}%"
         placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (name LIKE {placeholder} OR phone LIKE {placeholder} OR business_name LIKE {placeholder}) AND is_active = TRUE ORDER BY name', (user_id, like_search, like_search, like_search))
+        # Use ILIKE for case-insensitive search in PostgreSQL, fallback to LOWER() for SQLite
+        if POSTGRESQL_AVAILABLE and (os.getenv('DATABASE_URL') or os.getenv('POSTGRES_HOST')):
+            # PostgreSQL - use ILIKE for case-insensitive search
+            cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (name ILIKE {placeholder} OR phone ILIKE {placeholder} OR business_name ILIKE {placeholder}) AND is_active = TRUE ORDER BY name', (user_id, like_search, like_search, like_search))
+        else:
+            # SQLite - use LOWER() for case-insensitive search
+            cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (LOWER(name) LIKE LOWER({placeholder}) OR LOWER(phone) LIKE LOWER({placeholder}) OR LOWER(business_name) LIKE LOWER({placeholder})) AND is_active = TRUE ORDER BY name', (user_id, like_search, like_search, like_search))
         customers = cursor.fetchall()
     else:
         placeholder = get_placeholder()
