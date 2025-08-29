@@ -9,6 +9,7 @@ class AIVoiceAssistant {
         this.synthesis = window.speechSynthesis;
         this.commandHistory = [];
         this.maxHistorySize = 10;
+        this.isWaitingForSelection = false; // New flag for product selection mode
         
         console.log('AI Voice Assistant: Initializing...');
         this.initializeSpeechRecognition();
@@ -31,11 +32,12 @@ class AIVoiceAssistant {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             this.recognition = new SpeechRecognition();
             
-            // Configure recognition settings
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-            this.recognition.lang = 'en-US';
-            this.recognition.maxAlternatives = 1;
+                         // Configure recognition settings
+             this.recognition.continuous = false;
+             this.recognition.interimResults = false;
+             this.recognition.lang = 'en-US';
+             this.recognition.maxAlternatives = 3;
+             this.recognition.serviceURI = '';
             
             console.log('AI Voice Assistant: Speech recognition configured');
             
@@ -61,37 +63,61 @@ class AIVoiceAssistant {
                 }, 500);
             };
 
-            this.recognition.onerror = (event) => {
-                console.error('AI Voice Assistant: Speech recognition error:', event.error);
-                this.isListening = false;
-                this.updateUI('error');
-                
-                let errorMessage = 'Sorry, I did not understand that. Please try again.';
-                
-                switch (event.error) {
-                    case 'not-allowed':
-                        errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
-                        break;
-                    case 'no-speech':
-                        errorMessage = 'No speech detected. Please speak clearly and try again.';
-                        break;
-                    case 'audio-capture':
-                        errorMessage = 'Audio capture error. Please check your microphone.';
-                        break;
-                    case 'network':
-                        errorMessage = 'Network error. Please check your internet connection.';
-                        break;
-                }
-                
-                this.showVoiceFeedback(errorMessage);
-                this.speak(errorMessage);
-            };
+                         this.recognition.onerror = (event) => {
+                 console.error('AI Voice Assistant: Speech recognition error:', event.error);
+                 console.error('AI Voice Assistant: Error details:', event);
+                 this.isListening = false;
+                 
+                 let errorMessage = 'Sorry, I did not understand that. Please try again.';
+                 
+                 switch (event.error) {
+                     case 'not-allowed':
+                         errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
+                         break;
+                     case 'no-speech':
+                         errorMessage = 'No speech detected. Please speak clearly and try again.';
+                         break;
+                     case 'audio-capture':
+                         errorMessage = 'Audio capture error. Please check your microphone.';
+                         break;
+                     case 'network':
+                         errorMessage = 'Network error. Please check your internet connection.';
+                         break;
+                     case 'aborted':
+                         console.log('AI Voice Assistant: Recognition aborted - this is normal when stopping');
+                         return; // Don't show error for normal aborts
+                     default:
+                         errorMessage = `Speech recognition error: ${event.error}`;
+                 }
+                 
+                 this.showVoiceFeedback(errorMessage);
+                 this.speak(errorMessage);
+                 
+                 // If we're waiting for selection, try to restart after error
+                 if (this.isWaitingForSelection && this.pendingProductSelection) {
+                     setTimeout(() => {
+                         console.log('AI Voice Assistant: Restarting listening after error...');
+                         this.startListening();
+                     }, 1000);
+                 } else {
+                     this.updateUI('error');
+                 }
+             };
 
-            this.recognition.onend = () => {
-                console.log('AI Voice Assistant: Stopped listening');
-                this.isListening = false;
-                this.updateUI('idle');
-            };
+                         this.recognition.onend = () => {
+                 console.log('AI Voice Assistant: Stopped listening');
+                 this.isListening = false;
+                 
+                 // If we're waiting for product selection, continue listening
+                 if (this.isWaitingForSelection && this.pendingProductSelection) {
+                     console.log('AI Voice Assistant: Continuing to listen for product selection...');
+                     setTimeout(() => {
+                         this.startListening();
+                     }, 500); // Increased delay to prevent rapid restarts
+                 } else {
+                     this.updateUI('idle');
+                 }
+             };
 
             console.log('AI Voice Assistant: Speech recognition initialized successfully');
             
@@ -107,13 +133,55 @@ class AIVoiceAssistant {
     setupVoiceCommands() {
         this.commands = {
             // Product commands
-            'add': {
+            'add with quantity': {
                 pattern: /add\s+(\d+)\s+(.+)/i,
                 handler: (matches) => this.addProduct(matches[1], matches[2])
+            },
+            'add without quantity': {
+                pattern: /add\s+(.+)/i,
+                handler: (matches) => this.addProduct(1, matches[1]) // Default to quantity 1
             },
             'add product': {
                 pattern: /add\s+product\s+(\d+)\s+(.+)/i,
                 handler: (matches) => this.addProduct(matches[1], matches[2])
+            },
+            'add product without quantity': {
+                pattern: /add\s+product\s+(.+)/i,
+                handler: (matches) => this.addProduct(1, matches[1]) // Default to quantity 1
+            },
+            
+            // Product selection commands (for when multiple products found)
+            'select product number': {
+                pattern: /(?:select|choose|pick)\s+(?:product\s+)?(\d+)/i,
+                handler: (matches) => this.selectProductByNumber(parseInt(matches[1]))
+            },
+            'select first': {
+                pattern: /(?:select|choose|pick)\s+first/i,
+                handler: () => this.selectProductByNumber(1)
+            },
+            'select second': {
+                pattern: /(?:select|choose|pick)\s+second/i,
+                handler: () => this.selectProductByNumber(2)
+            },
+            'select third': {
+                pattern: /(?:select|choose|pick)\s+third/i,
+                handler: () => this.selectProductByNumber(3)
+            },
+            'select fourth': {
+                pattern: /(?:select|choose|pick)\s+fourth/i,
+                handler: () => this.selectProductByNumber(4)
+            },
+            'select fifth': {
+                pattern: /(?:select|choose|pick)\s+fifth/i,
+                handler: () => this.selectProductByNumber(5)
+            },
+            'select number': {
+                pattern: /(\d+)/i,
+                handler: (matches) => this.selectProductByNumber(parseInt(matches[1]))
+            },
+            'cancel selection': {
+                pattern: /cancel/i,
+                handler: () => this.cancelProductSelection()
             },
             
             // Customer commands
@@ -206,6 +274,19 @@ class AIVoiceAssistant {
         
         // No matching command found
         console.log('AI Voice Assistant: No matching command found for:', command);
+        
+        // Special handling for pending product selection
+        if (this.pendingProductSelection) {
+            console.log('AI Voice Assistant: Checking if command is a number for product selection...');
+            const numberMatch = command.match(/^(\d+)$/);
+            if (numberMatch) {
+                const number = parseInt(numberMatch[1]);
+                console.log('AI Voice Assistant: Found number for product selection:', number);
+                this.selectProductByNumber(number);
+                return;
+            }
+        }
+        
         this.speak('I did not understand that command. Say help for available commands.');
         this.showVoiceFeedback('Command not recognized. Say "help" for available commands.');
     }
@@ -216,28 +297,130 @@ class AIVoiceAssistant {
     async addProduct(quantity, productName) {
         try {
             console.log('AI Voice Assistant: Adding product - Quantity:', quantity, 'Name:', productName);
-            // Search for product
-            const products = await this.searchProducts(productName);
+            console.log('AI Voice Assistant: Starting product search...');
             
-            if (products.length === 0) {
-                this.speak(`No product found matching ${productName}`);
+            // Get the billing system's product input and trigger search
+            const productInput = document.getElementById('productInput') || document.querySelector('input[placeholder*="product" i]');
+            console.log('AI Voice Assistant: Looking for product input field:', productInput);
+            if (!productInput) {
+                console.log('AI Voice Assistant: Product input field not found. Available inputs:');
+                const allInputs = document.querySelectorAll('input');
+                allInputs.forEach((input, index) => {
+                    console.log(`${index}: ${input.id} - ${input.placeholder} - ${input.value}`);
+                });
+                this.speak('Product input field not found. Please make sure you are on the billing page.');
                 return;
             }
             
-            if (products.length === 1) {
-                const product = products[0];
-                this.addProductToBill(product, parseInt(quantity));
-                this.speak(`Added ${quantity} ${product.product_name} at ${product.rate} AED`);
+            // Set the product name in the input to trigger the dropdown
+            productInput.value = productName;
+            productInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Wait a moment for the dropdown to populate
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            // Look for the product dropdown and select the first matching product
+            const productDropdown = document.querySelector('.product-suggestion-mobile') || 
+                                  document.querySelector('.product-dropdown') || 
+                                  document.querySelector('[class*="product-dropdown"]') ||
+                                  document.querySelector('[class*="dropdown"]');
+            
+            console.log('AI Voice Assistant: Looking for product dropdown:', productDropdown);
+            if (productDropdown) {
+                // Find all product options that match our search
+                const productOptions = productDropdown.querySelectorAll('.product-option-mobile');
+                console.log('AI Voice Assistant: Found product options:', productOptions.length);
+                const matchingProducts = [];
+                
+                for (const option of productOptions) {
+                    const optionName = option.getAttribute('data-product-name');
+                    if (optionName && optionName.toLowerCase().includes(productName.toLowerCase())) {
+                        matchingProducts.push({
+                            element: option,
+                            name: option.getAttribute('data-product-name'),
+                            price: option.getAttribute('data-product-price')
+                        });
+                    }
+                }
+                
+                if (matchingProducts.length === 0) {
+                    this.speak(`Product "${productName}" not found. Please check the spelling or try a different product name.`);
+                } else if (matchingProducts.length === 1) {
+                    // Only one product found - automatically select it
+                    const selectedProduct = matchingProducts[0];
+                    console.log('AI Voice Assistant: Auto-selecting single product:', selectedProduct.name);
+                    
+                    // Click the product option to select it
+                    selectedProduct.element.click();
+                    
+                    // Wait for the product to be selected
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Set the quantity
+                    const quantityInput = document.getElementById('quantity');
+                    if (quantityInput) {
+                        quantityInput.value = quantity;
+                        quantityInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    
+                    // Add to bill
+                    const addButton = document.getElementById('addItemBtn');
+                    console.log('AI Voice Assistant: Looking for addItemBtn button:', addButton);
+                    if (addButton) {
+                        console.log('AI Voice Assistant: Found addItemBtn, clicking it...');
+                        addButton.click();
+                        console.log('AI Voice Assistant: Button clicked successfully');
+                        this.speak(`Added ${quantity} ${selectedProduct.name} to the bill`);
+                    } else {
+                        console.log('AI Voice Assistant: addItemBtn not found. Available buttons:');
+                        const allButtons = document.querySelectorAll('button');
+                        allButtons.forEach((btn, index) => {
+                            console.log(`${index}: ${btn.id} - ${btn.textContent}`);
+                        });
+                        this.speak(`Selected ${selectedProduct.name} but could not add to bill. Please click the add button manually.`);
+                    }
+                } else {
+                    // Multiple products found - ask user to choose
+                    this.speak(`Found ${matchingProducts.length} products. Please say which one you want.`);
+                    
+                    // List the options
+                    matchingProducts.forEach((product, index) => {
+                        console.log(`${index + 1}. ${product.name} - ${product.price} AED`);
+                    });
+                    
+                                         // Store the matching products for selection
+                     this.pendingProductSelection = {
+                         products: matchingProducts,
+                         quantity: quantity,
+                         originalCommand: productName
+                     };
+                     
+                     // Set waiting flag for continuous listening
+                     this.isWaitingForSelection = true;
+                     
+                     // Give user options to choose from
+                     const ordinals = ['first', 'second', 'third', 'fourth', 'fifth'];
+                     const optionsText = matchingProducts.map((product, index) => {
+                         const ordinal = ordinals[index] || `${index + 1}`;
+                         return `${ordinal} for ${product.name}`;
+                     }).join(', ');
+                     
+                     this.speak(`Say ${optionsText}, or say cancel to cancel.`);
+                     
+                     // Continue listening for the user's selection
+                     setTimeout(() => {
+                         console.log('AI Voice Assistant: Starting continuous listening for product selection...');
+                         this.startListening();
+                     }, 2000);
+                }
             } else {
-                // Multiple products found, ask user to choose
-                this.speak(`Found ${products.length} products. Please be more specific or say the exact product name.`);
-                products.forEach(product => {
-                    console.log(`- ${product.product_name} (${product.rate} AED)`);
-                });
+                this.speak('Product dropdown not found. Please make sure you are on the billing page.');
             }
+            
         } catch (error) {
             console.error('AI Voice Assistant: Error adding product:', error);
-            this.speak('Sorry, there was an error adding the product');
+            console.error('AI Voice Assistant: Error stack:', error.stack);
+            this.speak('Sorry, there was an error adding the product. Please try again.');
         }
     }
 
@@ -399,7 +582,11 @@ class AIVoiceAssistant {
         const helpText = `
             I can help you with billing. Here are some commands you can use:
             
-            Add products: "Add 2 shirts" or "Add product 1 trouser"
+            Add products: 
+            - "Add 2 shirts" (with quantity)
+            - "Add product blouse padded" (quantity defaults to 1)
+            - "Add trouser" (quantity defaults to 1)
+            
             Find customers: "Find customer Ahmed" or "Search customer 0501234567"
             Check prices: "Price kurti" or "How much shirt"
             Create bill: "Create bill" or "Generate bill"
@@ -576,12 +763,102 @@ class AIVoiceAssistant {
         }, 2000);
     }
 
+         /**
+      * Manual command processing for testing
+      */
+     testCommand(command) {
+         console.log('AI Voice Assistant: Testing command:', command);
+         this.processCommand(command.toLowerCase());
+     }
+     
+     /**
+      * Test speech recognition specifically
+      */
+     testSpeechRecognition() {
+         console.log('AI Voice Assistant: Testing speech recognition...');
+         console.log('AI Voice Assistant: Recognition object:', this.recognition);
+         console.log('AI Voice Assistant: Is listening:', this.isListening);
+         console.log('AI Voice Assistant: Is waiting for selection:', this.isWaitingForSelection);
+         
+         if (this.recognition) {
+             console.log('AI Voice Assistant: Starting test recognition...');
+             this.startListening();
+         } else {
+             console.error('AI Voice Assistant: No recognition object available');
+         }
+     }
+
     /**
-     * Manual command processing for testing
+     * Select product by number when multiple products are found
      */
-    testCommand(command) {
-        console.log('AI Voice Assistant: Testing command:', command);
-        this.processCommand(command.toLowerCase());
+    async selectProductByNumber(number) {
+        if (!this.pendingProductSelection) {
+            this.speak('No product selection pending. Please search for a product first.');
+            return;
+        }
+        
+        const { products, quantity, originalCommand } = this.pendingProductSelection;
+        
+        if (number < 1 || number > products.length) {
+            this.speak(`Please select a number between 1 and ${products.length}`);
+            return;
+        }
+        
+        const selectedProduct = products[number - 1];
+        console.log('AI Voice Assistant: User selected product:', selectedProduct.name);
+        
+        try {
+            // Click the product option to select it
+            selectedProduct.element.click();
+            
+            // Wait for the product to be selected
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Set the quantity
+            const quantityInput = document.getElementById('quantity');
+            if (quantityInput) {
+                quantityInput.value = quantity;
+                quantityInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            
+            // Add to bill
+            const addButton = document.getElementById('addItemBtn');
+            console.log('AI Voice Assistant: Looking for addItemBtn button:', addButton);
+            if (addButton) {
+                console.log('AI Voice Assistant: Found addItemBtn, clicking it...');
+                addButton.click();
+                console.log('AI Voice Assistant: Button clicked successfully');
+                this.speak(`Added ${quantity} ${selectedProduct.name} to the bill`);
+            } else {
+                console.log('AI Voice Assistant: addItemBtn not found. Available buttons:');
+                const allButtons = document.querySelectorAll('button');
+                allButtons.forEach((btn, index) => {
+                    console.log(`${index}: ${btn.id} - ${btn.textContent}`);
+                });
+                this.speak(`Selected ${selectedProduct.name} but could not add to bill. Please click the add button manually.`);
+            }
+            
+                         // Clear pending selection and waiting flag
+             this.pendingProductSelection = null;
+             this.isWaitingForSelection = false;
+            
+        } catch (error) {
+            console.error('AI Voice Assistant: Error selecting product:', error);
+            this.speak('Sorry, there was an error selecting the product. Please try again.');
+        }
+    }
+    
+    /**
+     * Cancel pending product selection
+     */
+    cancelProductSelection() {
+        if (this.pendingProductSelection) {
+            this.speak('Product selection cancelled.');
+            this.pendingProductSelection = null;
+            this.isWaitingForSelection = false;
+        } else {
+            this.speak('No product selection to cancel.');
+        }
     }
 }
 
