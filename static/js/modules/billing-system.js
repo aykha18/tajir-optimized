@@ -4150,17 +4150,31 @@ async function renderLoyaltySummary(customerId) {
 
     // Load current user id via existing session endpoints isn't trivial here; just call the loyalty profile API
     const resp = await fetch(`/api/loyalty/customers/${customerId}`);
-    const data = await resp.json();
-
-    if (data && data.success) {
-      const lp = data.loyalty_profile || {};
-      summary.classList.remove('hidden');
-      tierBadge.textContent = lp.tier_level || 'Bronze';
-      pointsText.textContent = `Points: ${lp.available_points ?? 0}`;
-      enrollBtn.classList.add('hidden');
-      note.textContent = `Lifetime: ${lp.total_points ?? 0} • Purchases: ${lp.total_purchases ?? 0}`;
+    
+    // Check if response is successful (200) or not found (404)
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && data.success) {
+        const lp = data.loyalty_profile || {};
+        summary.classList.remove('hidden');
+        tierBadge.textContent = lp.tier_level || 'Bronze';
+        pointsText.textContent = `Points: ${lp.available_points ?? 0}`;
+        enrollBtn.classList.add('hidden');
+        note.textContent = `Lifetime: ${lp.total_points ?? 0} • Purchases: ${lp.total_purchases ?? 0}`;
+      } else {
+        // API returned success: false
+        showNotEnrolledState();
+      }
+    } else if (resp.status === 404) {
+      // Customer not enrolled - this is expected for new customers
+      showNotEnrolledState();
     } else {
-      // Not enrolled
+      // Other error
+      console.error('Loyalty API error:', resp.status, resp.statusText);
+      showNotEnrolledState();
+    }
+    
+    function showNotEnrolledState() {
       summary.classList.remove('hidden');
       tierBadge.textContent = 'Not enrolled';
       pointsText.textContent = 'Points: 0';
@@ -4183,6 +4197,20 @@ async function renderLoyaltySummary(customerId) {
     }
   } catch (e) {
     console.error('Loyalty summary error', e);
+    // Show not enrolled state on any error
+    const summary = document.getElementById('loyaltySummary');
+    const tierBadge = document.getElementById('loyaltyTierBadge');
+    const pointsText = document.getElementById('loyaltyPointsText');
+    const enrollBtn = document.getElementById('loyaltyEnrollBtn');
+    const note = document.getElementById('loyaltyNote');
+    
+    if (summary && tierBadge && pointsText && enrollBtn && note) {
+      summary.classList.remove('hidden');
+      tierBadge.textContent = 'Not enrolled';
+      pointsText.textContent = 'Points: 0';
+      enrollBtn.classList.remove('hidden');
+      note.textContent = 'Enroll this customer to start earning points.';
+    }
   }
 }
 
