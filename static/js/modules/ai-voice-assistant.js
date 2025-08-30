@@ -185,6 +185,36 @@ class AIVoiceAssistant {
                 handler: (matches) => this.findCustomer(matches[1])
             },
             
+            // Customer selection commands (for when multiple customers found)
+            'select customer number': {
+                pattern: /(?:select|choose|pick)\s+(?:customer\s+)?(\d+)/i,
+                handler: (matches) => this.selectCustomerByNumber(parseInt(matches[1]))
+            },
+            'select first customer': {
+                pattern: /(?:select|choose|pick)\s+first\s+customer/i,
+                handler: () => this.selectCustomerByNumber(1)
+            },
+            'select second customer': {
+                pattern: /(?:select|choose|pick)\s+second\s+customer/i,
+                handler: () => this.selectCustomerByNumber(2)
+            },
+            'select third customer': {
+                pattern: /(?:select|choose|pick)\s+third\s+customer/i,
+                handler: () => this.selectCustomerByNumber(3)
+            },
+            'select fourth customer': {
+                pattern: /(?:select|choose|pick)\s+fourth\s+customer/i,
+                handler: () => this.selectCustomerByNumber(4)
+            },
+            'select fifth customer': {
+                pattern: /(?:select|choose|pick)\s+fifth\s+customer/i,
+                handler: () => this.selectCustomerByNumber(5)
+            },
+            'cancel customer selection': {
+                pattern: /cancel\s+customer/i,
+                handler: () => this.cancelCustomerSelection()
+            },
+            
             // Price queries
             'price': {
                 pattern: /price\s+(.+)/i,
@@ -261,6 +291,16 @@ class AIVoiceAssistant {
             if (numberMatch) {
                 const number = parseInt(numberMatch[1]);
                 this.selectProductByNumber(number);
+                return;
+            }
+        }
+        
+        // Special handling for pending customer selection
+        if (this.pendingCustomerSelection) {
+            const numberMatch = command.match(/^(\d+)$/);
+            if (numberMatch) {
+                const number = parseInt(numberMatch[1]);
+                this.selectCustomerByNumber(number);
                 return;
             }
         }
@@ -406,21 +446,107 @@ class AIVoiceAssistant {
      */
     async findCustomer(query) {
         try {
-            const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
-            const customers = await response.json();
-            
-            if (customers.length === 0) {
-                this.speak(`No customer found matching ${query}`);
+            // Get the customer input field and trigger search
+            const customerInput = document.getElementById('billCustomer');
+            if (!customerInput) {
+                this.speak('Customer input field not found. Please make sure you are on the billing page.');
                 return;
             }
             
-            if (customers.length === 1) {
-                const customer = customers[0];
-                this.selectCustomer(customer);
-                this.speak(`Selected customer ${customer.name} from ${customer.city}`);
+            // Set the search query in the input to trigger the dropdown
+            customerInput.value = query;
+            customerInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Wait a moment for the dropdown to populate
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            // Look for the customer dropdown
+            const customerDropdown = document.querySelector('.customer-suggestion') || 
+                                   document.querySelector('.customer-dropdown') || 
+                                   document.querySelector('[class*="customer-dropdown"]');
+            
+            if (customerDropdown) {
+                // Find all customer options that match our search
+                const customerOptions = customerDropdown.querySelectorAll('.customer-option');
+                const matchingCustomers = [];
+                
+                for (const option of customerOptions) {
+                    const customerName = option.getAttribute('data-customer-name');
+                    const customerPhone = option.getAttribute('data-customer-phone');
+                    if (customerName && (customerName.toLowerCase().includes(query.toLowerCase()) || 
+                                        (customerPhone && customerPhone.includes(query)))) {
+                        matchingCustomers.push({
+                            element: option,
+                            name: customerName,
+                            phone: customerPhone,
+                            city: option.getAttribute('data-customer-city') || '',
+                            area: option.getAttribute('data-customer-area') || '',
+                            email: option.getAttribute('data-customer-email') || '',
+                            address: option.getAttribute('data-customer-address') || '',
+                            trn: option.getAttribute('data-customer-trn') || '',
+                            customer_type: option.getAttribute('data-customer-type') || 'Individual',
+                            business_name: option.getAttribute('data-business-name') || '',
+                            business_address: option.getAttribute('data-business-address') || ''
+                        });
+                    }
+                }
+                
+                if (matchingCustomers.length === 0) {
+                    this.speak(`No customer found matching ${query}. Please try a different search term.`);
+                } else if (matchingCustomers.length === 1) {
+                    // Only one customer found - automatically select it
+                    const selectedCustomer = matchingCustomers[0];
+                    
+                    // Click the customer option to select it
+                    selectedCustomer.element.click();
+                    
+                    this.speak(`Selected customer ${selectedCustomer.name} from ${selectedCustomer.city}`);
+                } else {
+                    // Multiple customers found - ask user to choose
+                    this.speak(`Found ${matchingCustomers.length} customers. Please say which one you want.`);
+                    
+                    // Store the matching customers for selection
+                    this.pendingCustomerSelection = {
+                        customers: matchingCustomers,
+                        originalCommand: query
+                    };
+                    
+                    // Set waiting flag for continuous listening
+                    this.isWaitingForSelection = true;
+                    
+                    // Give user options to choose from
+                    const ordinals = ['first', 'second', 'third', 'fourth', 'fifth'];
+                    const optionsText = matchingCustomers.map((customer, index) => {
+                        const ordinal = ordinals[index] || `${index + 1}`;
+                        return `${ordinal} for ${customer.name} from ${customer.city}`;
+                    }).join(', ');
+                    
+                    this.speak(`Say ${optionsText}, or say cancel to cancel.`);
+                    
+                    // Continue listening for the user's selection
+                    setTimeout(() => {
+                        this.startListening();
+                    }, 2000);
+                }
             } else {
-                this.speak(`Found ${customers.length} customers. Please be more specific.`);
+                // Fallback to API search if dropdown not found
+                const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
+                const customers = await response.json();
+                
+                if (customers.length === 0) {
+                    this.speak(`No customer found matching ${query}`);
+                    return;
+                }
+                
+                if (customers.length === 1) {
+                    const customer = customers[0];
+                    this.selectCustomer(customer);
+                    this.speak(`Selected customer ${customer.name} from ${customer.city}`);
+                } else {
+                    this.speak(`Found ${customers.length} customers. Please be more specific.`);
+                }
             }
+            
         } catch (error) {
             console.error('AI Voice Assistant: Error finding customer:', error);
             this.speak('Sorry, there was an error finding the customer');
@@ -435,6 +561,53 @@ class AIVoiceAssistant {
             window.BillingSystem.selectCustomer(customer);
         } else if (window.MobileBillingV3) {
             window.MobileBillingV3.selectCustomer(customer);
+        }
+    }
+
+    /**
+     * Select customer by number when multiple customers are found
+     */
+    async selectCustomerByNumber(number) {
+        if (!this.pendingCustomerSelection) {
+            this.speak('No customer selection pending. Please search for a customer first.');
+            return;
+        }
+        
+        const { customers, originalCommand } = this.pendingCustomerSelection;
+        
+        if (number < 1 || number > customers.length) {
+            this.speak(`Please select a number between 1 and ${customers.length}`);
+            return;
+        }
+        
+        const selectedCustomer = customers[number - 1];
+        
+        try {
+            // Click the customer option to select it
+            selectedCustomer.element.click();
+            
+            this.speak(`Selected customer ${selectedCustomer.name} from ${selectedCustomer.city}`);
+            
+            // Clear pending selection and waiting flag
+            this.pendingCustomerSelection = null;
+            this.isWaitingForSelection = false;
+            
+        } catch (error) {
+            console.error('AI Voice Assistant: Error selecting customer:', error);
+            this.speak('Sorry, there was an error selecting the customer. Please try again.');
+        }
+    }
+    
+    /**
+     * Cancel pending customer selection
+     */
+    cancelCustomerSelection() {
+        if (this.pendingCustomerSelection) {
+            this.speak('Customer selection cancelled.');
+            this.pendingCustomerSelection = null;
+            this.isWaitingForSelection = false;
+        } else {
+            this.speak('No customer selection to cancel.');
         }
     }
 
@@ -529,7 +702,11 @@ class AIVoiceAssistant {
             - "Add product blouse padded" (quantity defaults to 1)
             - "Add trouser" (quantity defaults to 1)
             
-            Find customers: "Find customer Ahmed" or "Search customer 0501234567"
+            Find customers: 
+            - "Find customer Ahmed" or "Search customer 0501234567"
+            - "Customer Fahad" or "Customer Al Balushi"
+            - When multiple customers found, say "first", "second", etc.
+            
             Check prices: "Price kurti" or "How much shirt"
             Create bill: "Create bill" or "Generate bill"
             Print bill: "Print bill"
