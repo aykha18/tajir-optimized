@@ -106,9 +106,9 @@
 
   /* Ensure mobile nav is visible on mobile devices */
   .mobile-nav {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
   
   /* Force mobile navigation to be visible on mobile devices */
@@ -120,6 +120,17 @@
       opacity: 1 !important;
       z-index: 1000 !important;
       pointer-events: auto !important;
+    }
+  }
+  
+  /* Hide mobile navigation on desktop/larger screens */
+  @media (min-width: 769px) {
+    .mobile-nav,
+    #mobile-navigation-bar {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
     }
   }
   

@@ -20,6 +20,26 @@ input#expenseSearch::placeholder {
     color: #94a3b8 !important;
     -webkit-text-fill-color: #94a3b8 !important;
 }
+
+/* Hide mobile navigation on desktop screens */
+@media (min-width: 769px) {
+    .mobile-nav {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+}
+
+/* Show mobile navigation only on mobile screens */
+@media (max-width: 768px) {
+    .mobile-nav {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+}
 </style>
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
     <!-- Enhanced Header with Statistics -->
@@ -236,9 +256,9 @@ input#expenseSearch::placeholder {
         <svg data-lucide="home" class="w-5 h-5"></svg>
         <span>Home</span>
     </a>
-    <a href="/expenses" class="mobile-nav-item active">
-        <svg data-lucide="currency" class="w-5 h-5"></svg>
-        <span>Expenses</span>
+    <a href="/app" class="mobile-nav-item">
+        <svg data-lucide="home" class="w-5 h-5"></svg>
+        <span>Dashboard</span>
     </a>
     <button onclick="document.getElementById('addExpenseBtn').click()" class="mobile-nav-item">
         <svg data-lucide="plus" class="w-5 h-5"></svg>

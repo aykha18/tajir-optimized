@@ -163,10 +163,10 @@ class ExpenseManager {
         document.getElementById('addExpenseBtn')?.addEventListener('click', () => this.showExpenseModal());
         document.getElementById('saveExpenseBtn')?.addEventListener('click', (e) => this.handleExpenseSubmit(e));
         
-        // Recurring expense management
-        document.getElementById('addRecurringBtn')?.addEventListener('click', () => this.showRecurringExpenseModal());
-        document.getElementById('saveRecurringBtn')?.addEventListener('click', (e) => this.handleRecurringExpenseSubmit(e));
-        document.getElementById('generateRecurringBtn')?.addEventListener('click', () => this.generateRecurringExpenses());
+                 // Recurring expense management
+         document.getElementById('addRecurringBtn')?.addEventListener('click', () => this.showRecurringExpenseModal());
+         document.getElementById('saveRecurringBtn')?.addEventListener('click', (e) => this.handleRecurringExpenseSubmit(e));
+         document.getElementById('generateRecurringBtn')?.addEventListener('click', () => this.generateRecurringExpenses());
         
         // Ensure all input fields in recurring expense modal are enabled
         document.getElementById('recurringExpenseModal')?.addEventListener('shown', () => {
@@ -1211,3 +1211,9 @@ document.addEventListener('DOMContentLoaded', function() {
 if (document.readyState !== 'loading' && !window.expenseManager) {
     window.expenseManager = new ExpenseManager();
 }
+
+
+
+
+
+
