@@ -31,6 +31,93 @@ if (typeof window.showToast === 'undefined') {
     };
 }
 
+// Modern confirmation dialog
+window.showConfirmDialog = function(title, message, confirmText = 'Delete', cancelText = 'Cancel', type = 'danger') {
+    return new Promise((resolve) => {
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+        
+        // Create dialog
+        const dialog = document.createElement('div');
+        dialog.className = 'bg-slate-800 rounded-2xl shadow-2xl border border-slate-600/30 max-w-md w-full transform scale-95 transition-transform duration-200';
+        
+        const iconColor = type === 'danger' ? 'text-red-500' : 'text-yellow-500';
+        const icon = type === 'danger' ? '🗑️' : '⚠️';
+        const confirmButtonColor = type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700';
+        
+        dialog.innerHTML = `
+            <div class="p-6">
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="text-3xl">${icon}</div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-white">${title}</h3>
+                        <p class="text-slate-400 text-sm">${message}</p>
+                    </div>
+                </div>
+                <div class="flex space-x-3 justify-end">
+                    <button class="cancel-btn px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-all duration-200">
+                        ${cancelText}
+                    </button>
+                    <button class="confirm-btn px-4 py-2 text-white ${confirmButtonColor} rounded-lg transition-all duration-200">
+                        ${confirmText}
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+        
+        // Animate in
+        setTimeout(() => {
+            dialog.classList.remove('scale-95');
+            dialog.classList.add('scale-100');
+        }, 10);
+        
+        // Event listeners
+        const cancelBtn = dialog.querySelector('.cancel-btn');
+        const confirmBtn = dialog.querySelector('.confirm-btn');
+        
+        const cleanup = () => {
+            dialog.classList.remove('scale-100');
+            dialog.classList.add('scale-95');
+            setTimeout(() => {
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                }
+            }, 200);
+        };
+        
+        cancelBtn.addEventListener('click', () => {
+            cleanup();
+            resolve(false);
+        });
+        
+        confirmBtn.addEventListener('click', () => {
+            cleanup();
+            resolve(true);
+        });
+        
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                cleanup();
+                resolve(false);
+            }
+        });
+        
+        // ESC key
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                cleanup();
+                resolve(false);
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
+    });
+};
+
 class ExpenseManager {
     constructor() {
         this.categories = [];
@@ -76,10 +163,10 @@ class ExpenseManager {
         document.getElementById('addExpenseBtn')?.addEventListener('click', () => this.showExpenseModal());
         document.getElementById('saveExpenseBtn')?.addEventListener('click', (e) => this.handleExpenseSubmit(e));
         
-                 // Recurring expense management
-         document.getElementById('addRecurringBtn')?.addEventListener('click', () => this.showRecurringExpenseModal());
-         document.getElementById('saveRecurringBtn')?.addEventListener('click', (e) => this.handleRecurringExpenseSubmit(e));
-         document.getElementById('generateRecurringBtn')?.addEventListener('click', () => this.generateRecurringExpenses());
+        // Recurring expense management
+        document.getElementById('addRecurringBtn')?.addEventListener('click', () => this.showRecurringExpenseModal());
+        document.getElementById('saveRecurringBtn')?.addEventListener('click', (e) => this.handleRecurringExpenseSubmit(e));
+        document.getElementById('generateRecurringBtn')?.addEventListener('click', () => this.generateRecurringExpenses());
         
         // Ensure all input fields in recurring expense modal are enabled
         document.getElementById('recurringExpenseModal')?.addEventListener('shown', () => {
@@ -338,7 +425,9 @@ class ExpenseManager {
 
     renderExpenses() {
         const container = document.getElementById('expensesContainer');
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         if (this.expenses.length === 0) {
             container.innerHTML = `
@@ -357,7 +446,7 @@ class ExpenseManager {
             return;
         }
 
-        container.innerHTML = this.expenses.map(expense => {
+        const expensesHTML = this.expenses.map(expense => {
             const date = new Date(expense.expense_date);
             const formattedDate = date.toLocaleDateString('en-US', { 
                 year: 'numeric', 
@@ -365,6 +454,8 @@ class ExpenseManager {
                 day: 'numeric' 
             });
             const timeAgo = this.getTimeAgo(date);
+
+
 
             return `
                 <div class="bg-gradient-to-br from-slate-800/80 to-slate-700/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-600/30 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
@@ -400,20 +491,24 @@ class ExpenseManager {
                                 ` : ''}
                             </div>
                         </div>
-                        <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div class="flex space-x-2">
                             <button onclick="expenseManager.editExpense(${expense.expense_id})" 
-                                    class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 rounded-lg transition-all duration-200">
-                                <svg data-lucide="edit" class="w-4 h-4"></svg>
+                                    class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 rounded-lg transition-all duration-200 bg-slate-700/50 border border-indigo-500/30 hover:scale-105"
+                                    title="Edit Expense">
+                                <span class="text-lg">✏️</span>
                             </button>
                             <button onclick="expenseManager.deleteExpense(${expense.expense_id})" 
-                                    class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200">
-                                <svg data-lucide="trash-2" class="w-4 h-4"></svg>
+                                    class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200 bg-slate-700/50 border border-red-500/30 hover:scale-105"
+                                    title="Delete Expense">
+                                <span class="text-lg">🗑️</span>
                             </button>
                         </div>
                     </div>
                 </div>
             `;
         }).join('');
+        
+        container.innerHTML = expensesHTML;
     }
 
     renderRecurringExpenses() {
@@ -489,14 +584,16 @@ class ExpenseManager {
                                   `<span class="text-green-400">Due in ${daysUntilDue} days</span>`}
                             </div>
                         </div>
-                        <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div class="flex space-x-2">
                             <button onclick="expenseManager.editRecurringExpense(${recurring.recurring_id})" 
-                                    class="p-2 text-green-400 hover:text-green-300 hover:bg-green-500/20 rounded-lg transition-all duration-200">
-                                <svg data-lucide="edit" class="w-4 h-4"></svg>
+                                    class="p-2 text-green-400 hover:text-green-300 hover:bg-green-500/20 rounded-lg transition-all duration-200 bg-slate-700/50 border border-green-500/30 hover:scale-105"
+                                    title="Edit Recurring Bill">
+                                <span class="text-lg">✏️</span>
                             </button>
                             <button onclick="expenseManager.deleteRecurringExpense(${recurring.recurring_id})" 
-                                    class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200">
-                                <svg data-lucide="trash-2" class="w-4 h-4"></svg>
+                                    class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200 bg-slate-700/50 border border-red-500/30 hover:scale-105"
+                                    title="Delete Recurring Bill">
+                                <span class="text-lg">🗑️</span>
                             </button>
                         </div>
                     </div>
@@ -557,7 +654,15 @@ class ExpenseManager {
         submitBtn.textContent = this.isEditing ? 'Update Expense' : 'Save Expense';
         
         // Set values exactly like the working recurring modal
-        dateInput.value = expense?.expense_date || new Date().toISOString().split('T')[0];
+        if (expense && expense.expense_date) {
+            // Format date properly for input field (YYYY-MM-DD)
+            const date = new Date(expense.expense_date);
+            const formattedDate = date.toISOString().split('T')[0];
+            dateInput.value = formattedDate;
+        } else {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+        }
         amountInput.value = expense?.amount || '';
         descInput.value = expense?.description || '';
         categorySelect.value = expense?.category_id || '';
@@ -568,54 +673,47 @@ class ExpenseManager {
         categorySelect.focus();
     }
 
-                   showRecurringExpenseModal(recurring = null) {
-          this.currentRecurringExpense = recurring;
-          this.isEditing = !!recurring;
-          
-          const modal = document.getElementById('recurringExpenseModal');
-          const title = modal.querySelector('.modal-title');
-          const titleInput = document.getElementById('recurringTitle');
-          const amountInput = document.getElementById('recurringAmount');
-          const descInput = document.getElementById('recurringDescription');
-          const categorySelect = document.getElementById('recurringCategory');
-          const frequencySelect = document.getElementById('recurringFrequency');
-          const paymentSelect = document.getElementById('recurringPaymentMethod');
-          const startDateInput = document.getElementById('recurringStartDate');
-          const submitBtn = document.getElementById('saveRecurringBtn');
-          
-                     // Ensure categories are populated
-           this.populateCategoryDropdowns();
-           
-           // Debug: Check if categories are loaded
-           console.log('Categories available:', this.categories.length);
-           console.log('Category dropdown options:', categorySelect.options.length);
-           
-           title.textContent = this.isEditing ? 'Edit Recurring Bill' : 'Add Recurring Bill';
-           submitBtn.textContent = this.isEditing ? 'Update Recurring Bill' : 'Save Recurring Bill';
-          titleInput.value = recurring?.title || '';
-          amountInput.value = recurring?.amount || '';
-          descInput.value = recurring?.description || '';
-          categorySelect.value = recurring?.category_id || '';
-          frequencySelect.value = recurring?.frequency || '';
-          paymentSelect.value = recurring?.payment_method || 'Cash';
-          startDateInput.value = recurring?.start_date || new Date().toISOString().split('T')[0];
-          
-          // NEW APPROACH - Force enable and set styles
-          amountInput.disabled = false;
-          amountInput.readOnly = false;
-          amountInput.removeAttribute('readonly');
-          amountInput.removeAttribute('disabled');
-          amountInput.style.color = 'white';
-          amountInput.style.backgroundColor = '#475569';
-          amountInput.style.webkitTextFillColor = 'white';
-          amountInput.style.webkitTextStroke = '0';
-          
-          console.log('NEW FORM: Amount field enabled with inline styles');
-          console.log('Categories loaded:', this.categories.length);
-          
-          modal.classList.remove('hidden');
-          titleInput.focus();
-      }
+    async showRecurringExpenseModal(recurring = null) {
+        this.currentRecurringExpense = recurring;
+        this.isEditing = !!recurring;
+        
+        const modal = document.getElementById('recurringExpenseModal');
+        const title = modal.querySelector('.modal-title');
+        const titleInput = document.getElementById('recurringTitle');
+        const amountInput = document.getElementById('recurringAmount');
+        const descInput = document.getElementById('recurringDescription');
+        const categorySelect = document.getElementById('recurringCategory');
+        const frequencySelect = document.getElementById('recurringFrequency');
+        const paymentSelect = document.getElementById('recurringPaymentMethod');
+        const startDateInput = document.getElementById('recurringStartDate');
+        const submitBtn = document.getElementById('saveRecurringBtn');
+        
+        // Ensure categories are populated
+        this.populateCategoryDropdowns();
+        
+        title.textContent = this.isEditing ? 'Edit Recurring Bill' : 'Add Recurring Bill';
+        submitBtn.textContent = this.isEditing ? 'Update Recurring Bill' : 'Save Recurring Bill';
+        titleInput.value = recurring?.title || '';
+        amountInput.value = recurring?.amount || '';
+        descInput.value = recurring?.description || '';
+        categorySelect.value = recurring?.category_id || '';
+        frequencySelect.value = recurring?.frequency || '';
+        paymentSelect.value = recurring?.payment_method || 'Cash';
+        startDateInput.value = recurring?.start_date || new Date().toISOString().split('T')[0];
+        
+        // Force enable and set styles
+        amountInput.disabled = false;
+        amountInput.readOnly = false;
+        amountInput.removeAttribute('readonly');
+        amountInput.removeAttribute('disabled');
+        amountInput.style.color = 'white';
+        amountInput.style.backgroundColor = '#475569';
+        amountInput.style.webkitTextFillColor = 'white';
+        amountInput.style.webkitTextStroke = '0';
+        
+        modal.classList.remove('hidden');
+        titleInput.focus();
+    }
 
     async handleCategorySubmit(e) {
         e.preventDefault();
@@ -691,13 +789,7 @@ class ExpenseManager {
                 payment_method: document.getElementById('expensePaymentMethod')?.value,
                 receipt_url: (document.getElementById('expenseReceiptUrl')?.value || '').trim()
             };
-            // Debug logging similar to recurring
-            console.log('=== EXPENSE SUBMIT DEBUG ===');
-            console.log('Form data:', data);
-            console.log('Category ID:', data.category_id, 'Type:', typeof data.category_id);
-            console.log('Date:', data.expense_date, 'Type:', typeof data.expense_date);
-            console.log('Amount:', data.amount, 'Type:', typeof data.amount);
-            console.log('Payment:', data.payment_method);
+
             
             if (!data.category_id || !data.expense_date || !data.amount) {
                 showToast('Category, date, and amount are required', 'error');
@@ -743,52 +835,30 @@ class ExpenseManager {
         }
     }
 
-         async handleRecurringExpenseSubmit(e) {
-         e.preventDefault();
-         
-         if (this.isSubmittingRecurring) return;
-         
-         this.isSubmittingRecurring = true;
-         const submitButton = document.getElementById('saveRecurringBtn');
-         const originalText = submitButton.textContent;
-         submitButton.textContent = 'Saving...';
-         submitButton.disabled = true;
-         
-         try {
-                      // Get form data manually since we're not using a form element
-         const data = {
-             category_id: document.getElementById('recurringCategory').value,
-             title: document.getElementById('recurringTitle').value.trim(),
-             amount: document.getElementById('recurringAmount').value,
-             description: document.getElementById('recurringDescription').value.trim(),
-             payment_method: document.getElementById('recurringPaymentMethod').value,
-             frequency: document.getElementById('recurringFrequency').value,
-             start_date: document.getElementById('recurringStartDate').value
-         };
-         
-         // Debug logging
-         console.log('=== RECURRING EXPENSE SUBMIT DEBUG ===');
-         console.log('Form data:', data);
-         console.log('Category dropdown options:', document.getElementById('recurringCategory').options.length);
-         console.log('Selected category:', document.getElementById('recurringCategory').value);
-         console.log('Amount field value:', document.getElementById('recurringAmount').value);
-         console.log('Amount field type:', typeof document.getElementById('recurringAmount').value);
-             
-             // Debug: Log all values
-             console.log('Form data:', data);
-             console.log('Category ID:', data.category_id, 'Type:', typeof data.category_id);
-             console.log('Title:', data.title, 'Type:', typeof data.title);
-             console.log('Amount:', data.amount, 'Type:', typeof data.amount);
-             console.log('Frequency:', data.frequency, 'Type:', typeof data.frequency);
-             console.log('Start Date:', data.start_date, 'Type:', typeof data.start_date);
+    async handleRecurringExpenseSubmit(e) {
+        e.preventDefault();
+        
+        if (this.isSubmittingRecurring) return;
+        
+        this.isSubmittingRecurring = true;
+        const submitButton = document.getElementById('saveRecurringBtn');
+        const originalText = submitButton.textContent;
+        submitButton.textContent = 'Saving...';
+        submitButton.disabled = true;
+        
+        try {
+            // Get form data manually since we're not using a form element
+            const data = {
+                category_id: document.getElementById('recurringCategory').value,
+                title: document.getElementById('recurringTitle').value.trim(),
+                amount: document.getElementById('recurringAmount').value,
+                description: document.getElementById('recurringDescription').value.trim(),
+                payment_method: document.getElementById('recurringPaymentMethod').value,
+                frequency: document.getElementById('recurringFrequency').value,
+                start_date: document.getElementById('recurringStartDate').value
+            };
             
             if (!data.category_id || !data.title || !data.amount || !data.frequency || !data.start_date) {
-                console.log('Validation failed:');
-                console.log('- category_id:', !data.category_id);
-                console.log('- title:', !data.title);
-                console.log('- amount:', !data.amount);
-                console.log('- frequency:', !data.frequency);
-                console.log('- start_date:', !data.start_date);
                 showToast('Category, title, amount, frequency, and start date are required', 'error');
                 return;
             }
@@ -819,7 +889,7 @@ class ExpenseManager {
                 showToast(error.error || 'Failed to save recurring bill', 'error');
             }
         } catch (error) {
-            console.error('Error saving recurring bill:', error);
+            console.error('Error saving recurring bill', error);
             showToast('Error saving recurring bill', 'error');
         } finally {
             this.isSubmittingRecurring = false;
@@ -836,7 +906,15 @@ class ExpenseManager {
     }
 
     async deleteCategory(categoryId) {
-        if (!confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
+        const confirmed = await showConfirmDialog(
+            'Delete Category',
+            'Are you sure you want to delete this category? This action cannot be undone.',
+            'Delete',
+            'Cancel',
+            'danger'
+        );
+        
+        if (!confirmed) {
             return;
         }
         
@@ -864,11 +942,21 @@ class ExpenseManager {
         const expense = this.expenses.find(e => e.expense_id === expenseId);
         if (expense) {
             this.showExpenseModal(expense);
+        } else {
+            showToast('Expense not found', 'error');
         }
     }
 
     async deleteExpense(expenseId) {
-        if (!confirm('Are you sure you want to delete this expense? This action cannot be undone.')) {
+        const confirmed = await showConfirmDialog(
+            'Delete Expense',
+            'Are you sure you want to delete this expense? This action cannot be undone.',
+            'Delete',
+            'Cancel',
+            'danger'
+        );
+        
+        if (!confirmed) {
             return;
         }
         
@@ -900,7 +988,15 @@ class ExpenseManager {
     }
 
     async deleteRecurringExpense(recurringId) {
-        if (!confirm('Are you sure you want to delete this recurring bill? This action cannot be undone.')) {
+        const confirmed = await showConfirmDialog(
+            'Delete Recurring Bill',
+            'Are you sure you want to delete this recurring bill? This action cannot be undone.',
+            'Delete',
+            'Cancel',
+            'danger'
+        );
+        
+        if (!confirmed) {
             return;
         }
         
@@ -923,7 +1019,15 @@ class ExpenseManager {
     }
 
     async generateRecurringExpenses() {
-        if (!confirm('Generate expenses for all due recurring bills? This will create expense entries for bills that are due.')) {
+        const confirmed = await showConfirmDialog(
+            'Generate Recurring Expenses',
+            'Generate expenses for all due recurring bills? This will create expense entries for bills that are due.',
+            'Generate',
+            'Cancel',
+            'warning'
+        );
+        
+        if (!confirmed) {
             return;
         }
         
@@ -1094,58 +1198,16 @@ class ExpenseManager {
     }
 }
 
-// COMMENTED OUT - This was causing duplicate instances
-// let expenseManagerInitialized = false;
 
-// function initializeExpenseManager() {
-//     // Only initialize once
-//     if (expenseManagerInitialized) {
-//         console.log('ExpenseManager already initialized, skipping...');
-//         return;
-//     }
-    
-//     const container = document.getElementById('expensesContainer');
-//     if (container && !window.expenseManager) {
-//         console.log('Creating ExpenseManager instance...');
-//         window.expenseManager = new ExpenseManager();
-//         expenseManagerInitialized = true;
-//         console.log('ExpenseManager initialized successfully');
-//     }
-// }
 
-// // Initialize when DOM is ready
-// if (document.readyState === 'loading') {
-//     document.addEventListener('DOMContentLoaded', initializeExpenseManager);
-// } else {
-//     initializeExpenseManager();
-// }
-
-// // Global function for manual refresh (for debugging)
-// window.refreshExpenses = function() {
-//     if (window.expenseManager) {
-//         window.expenseManager.refreshExpenses();
-//     } else {
-//         console.log('ExpenseManager not found, reinitializing...');
-//         expenseManagerInitialized = false;
-//         initializeExpenseManager();
-//     }
-// };
-
-// SIMPLE SINGLE INSTANCE INITIALIZATION
+// Initialize ExpenseManager when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     if (!window.expenseManager) {
-        console.log('Creating ExpenseManager instance...');
         window.expenseManager = new ExpenseManager();
-        console.log('ExpenseManager initialized successfully');
     }
 });
 
-// Global function for manual refresh (for debugging)
-window.refreshExpenses = function() {
-    if (window.expenseManager) {
-        window.expenseManager.refreshExpenses();
-    } else {
-        console.log('ExpenseManager not found, creating new instance...');
-        window.expenseManager = new ExpenseManager();
-    }
-};
+// Also initialize immediately if DOM is already loaded
+if (document.readyState !== 'loading' && !window.expenseManager) {
+    window.expenseManager = new ExpenseManager();
+}

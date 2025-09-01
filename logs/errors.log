@@ -2807,3 +2807,802 @@ DETAIL:  Key (action_id)=(237) already exists.
 2025-08-30 05:12:47,001 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
 DETAIL:  Key (action_id)=(237) already exists.
 
+2025-08-30 05:37:59,195 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(238) already exists.
+
+2025-08-30 05:37:59,195 - root - ERROR - log_user_action:168 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(238) already exists.
+
+2025-08-30 15:47:57,292 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 15:47:57,292 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 15:48:05,657 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 15:48:05,657 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 15:48:13,418 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 15:48:13,418 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 15:48:28,354 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 15:48:28,354 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 15:48:44,288 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 15:48:44,288 - app - ERROR - speech_to_text:8833 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 16:34:06,176 - app - ERROR - speech_to_text:8860 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 16:34:06,176 - app - ERROR - speech_to_text:8860 - Speech-to-text error: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-08-30 17:50:48,823 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(239) already exists.
+
+2025-08-30 17:50:48,823 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(239) already exists.
+
+2025-08-30 18:55:32,175 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(240) already exists.
+
+2025-08-30 18:55:32,175 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(240) already exists.
+
+2025-08-30 18:55:32,543 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(241) already exists.
+
+2025-08-30 18:55:32,543 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(241) already exists.
+
+2025-08-30 18:55:39,232 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(242) already exists.
+
+2025-08-30 18:55:39,232 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(242) already exists.
+
+2025-08-30 18:55:39,691 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(243) already exists.
+
+2025-08-30 18:55:39,691 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(243) already exists.
+
+2025-08-30 18:55:46,560 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(244) already exists.
+
+2025-08-30 18:55:46,560 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(244) already exists.
+
+2025-08-30 18:55:46,966 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(245) already exists.
+
+2025-08-30 18:55:46,966 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(245) already exists.
+
+2025-08-30 18:55:53,570 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(246) already exists.
+
+2025-08-30 18:55:53,570 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(246) already exists.
+
+2025-08-30 18:57:48,120 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(247) already exists.
+
+2025-08-30 18:57:48,120 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(247) already exists.
+
+2025-08-30 18:57:48,458 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(248) already exists.
+
+2025-08-30 18:57:48,458 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(248) already exists.
+
+2025-08-30 18:57:55,370 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(249) already exists.
+
+2025-08-30 18:57:55,370 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(249) already exists.
+
+2025-08-30 18:57:55,715 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(250) already exists.
+
+2025-08-30 18:57:55,715 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(250) already exists.
+
+2025-08-30 18:58:02,932 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(251) already exists.
+
+2025-08-30 18:58:02,932 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(251) already exists.
+
+2025-08-30 18:58:03,276 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(252) already exists.
+
+2025-08-30 18:58:03,276 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(252) already exists.
+
+2025-08-30 18:58:09,960 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(253) already exists.
+
+2025-08-30 18:58:09,960 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(253) already exists.
+
+2025-08-30 18:58:44,321 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(254) already exists.
+
+2025-08-30 18:58:44,321 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(254) already exists.
+
+2025-08-30 18:58:44,813 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(255) already exists.
+
+2025-08-30 18:58:44,813 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(255) already exists.
+
+2025-08-30 19:01:37,866 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(256) already exists.
+
+2025-08-30 19:01:37,866 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(256) already exists.
+
+2025-08-30 19:01:38,225 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(257) already exists.
+
+2025-08-30 19:01:38,225 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(257) already exists.
+
+2025-08-30 19:03:11,745 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(258) already exists.
+
+2025-08-30 19:03:11,745 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(258) already exists.
+
+2025-08-30 19:03:12,227 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(259) already exists.
+
+2025-08-30 19:03:12,227 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(259) already exists.
+
+2025-08-30 19:03:54,077 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(260) already exists.
+
+2025-08-30 19:03:54,077 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(260) already exists.
+
+2025-08-30 19:03:54,441 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(261) already exists.
+
+2025-08-30 19:03:54,441 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(261) already exists.
+
+2025-08-30 19:04:15,819 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(262) already exists.
+
+2025-08-30 19:04:15,819 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(262) already exists.
+
+2025-08-30 19:04:16,216 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(263) already exists.
+
+2025-08-30 19:04:16,216 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(263) already exists.
+
+2025-08-30 19:04:58,111 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(264) already exists.
+
+2025-08-30 19:04:58,111 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(264) already exists.
+
+2025-08-30 19:04:58,477 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(265) already exists.
+
+2025-08-30 19:04:58,477 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(265) already exists.
+
+2025-08-30 19:05:05,415 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(266) already exists.
+
+2025-08-30 19:05:05,415 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(266) already exists.
+
+2025-08-30 19:05:05,822 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(267) already exists.
+
+2025-08-30 19:05:05,822 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(267) already exists.
+
+2025-08-30 19:05:13,141 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(268) already exists.
+
+2025-08-30 19:05:13,141 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(268) already exists.
+
+2025-08-30 19:05:13,533 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(269) already exists.
+
+2025-08-30 19:05:13,533 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(269) already exists.
+
+2025-08-30 19:05:20,248 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(270) already exists.
+
+2025-08-30 19:05:20,248 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(270) already exists.
+
+2025-08-30 19:06:50,523 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(271) already exists.
+
+2025-08-30 19:06:50,523 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(271) already exists.
+
+2025-08-30 19:06:50,850 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(272) already exists.
+
+2025-08-30 19:06:50,850 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(272) already exists.
+
+2025-08-30 19:06:58,097 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(273) already exists.
+
+2025-08-30 19:06:58,097 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(273) already exists.
+
+2025-08-30 19:06:58,430 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(274) already exists.
+
+2025-08-30 19:06:58,430 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(274) already exists.
+
+2025-08-30 19:07:05,324 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(275) already exists.
+
+2025-08-30 19:07:05,324 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(275) already exists.
+
+2025-08-30 19:07:05,658 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(276) already exists.
+
+2025-08-30 19:07:05,658 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(276) already exists.
+
+2025-08-30 19:07:12,559 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(277) already exists.
+
+2025-08-30 19:07:12,559 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(277) already exists.
+
+2025-08-30 19:07:46,676 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(278) already exists.
+
+2025-08-30 19:07:46,676 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(278) already exists.
+
+2025-08-30 19:07:47,010 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(279) already exists.
+
+2025-08-30 19:07:47,010 - root - ERROR - log_user_action:171 - Failed to log user action: duplicate key value violates unique constraint "user_actions_pkey"
+DETAIL:  Key (action_id)=(279) already exists.
+
+2025-08-31 06:40:12,762 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(31) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 06:40:12,762 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(31) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 06:40:12,853 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 06:40:12,853 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 06:40:13,142 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(32) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 06:40:13,142 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(32) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 06:40:13,251 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 06:40:13,251 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 06:40:16,182 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(33) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 06:40:16,182 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(33) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 06:40:16,229 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(34) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 06:40:16,229 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(34) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 06:40:16,275 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 06:40:16,275 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 06:40:16,333 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 06:40:16,333 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:08:10,212 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '87', 'expense_date': '2025-08-31', 'amount': '12', 'description': 'Shop Rent', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 07:08:10,212 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '87', 'expense_date': '2025-08-31', 'amount': '12', 'description': 'Shop Rent', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 07:08:10,295 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 07:08:10,295 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 07:08:45,421 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '87', 'expense_date': '2025-08-31', 'amount': '565656', 'description': '123', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 07:08:45,421 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '87', 'expense_date': '2025-08-31', 'amount': '565656', 'description': '123', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 07:08:45,513 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 07:08:45,513 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 07:09:20,541 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: null value in column "product_name" of relation "bill_items" violates not-null constraint
+DETAIL:  Failing row contains (2446, 2, 1476, null, null, 1, 100.00, 0.00, 0.00, 105.00, 2025-08-31 05:39:20.528838, 5.00).
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:09:20,541 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: null value in column "product_name" of relation "bill_items" violates not-null constraint
+DETAIL:  Failing row contains (2446, 2, 1476, null, null, 1, 100.00, 0.00, 0.00, 105.00, 2025-08-31 05:39:20.528838, 5.00).
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:09:20,588 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: null value in column "product_name" of relation "bill_items" violates not-null constraint
+DETAIL:  Failing row contains (2446, 2, 1477, null, null, 1, 100.00, 0.00, 0.00, 105.00, 2025-08-31 05:39:20.582757, 5.00).
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:09:20,588 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: null value in column "product_name" of relation "bill_items" violates not-null constraint
+DETAIL:  Failing row contains (2446, 2, 1477, null, null, 1, 100.00, 0.00, 0.00, 105.00, 2025-08-31 05:39:20.582757, 5.00).
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:09:20,636 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:09:20,636 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:09:20,701 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:09:20,701 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:09:23,262 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: null value in column "product_name" of relation "bill_items" violates not-null constraint
+DETAIL:  Failing row contains (2446, 2, 1478, null, null, 1, 100.00, 0.00, 0.00, 105.00, 2025-08-31 05:39:23.256104, 5.00).
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:09:23,262 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: null value in column "product_name" of relation "bill_items" violates not-null constraint
+DETAIL:  Failing row contains (2446, 2, 1478, null, null, 1, 100.00, 0.00, 0.00, 105.00, 2025-08-31 05:39:23.256104, 5.00).
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:09:23,395 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:09:23,395 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:09:23,577 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: null value in column "product_name" of relation "bill_items" violates not-null constraint
+DETAIL:  Failing row contains (2446, 2, 1479, null, null, 1, 100.00, 0.00, 0.00, 105.00, 2025-08-31 05:39:23.571284, 5.00).
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:09:23,577 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: null value in column "product_name" of relation "bill_items" violates not-null constraint
+DETAIL:  Failing row contains (2446, 2, 1479, null, null, 1, 100.00, 0.00, 0.00, 105.00, 2025-08-31 05:39:23.571284, 5.00).
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:09:23,694 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:09:23,694 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:10:50,715 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(35) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:10:50,715 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(35) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:10:50,796 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:10:50,796 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:10:51,153 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(36) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:10:51,153 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(36) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:10:51,250 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:10:51,250 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:10:54,099 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(37) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:10:54,099 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(37) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:10:54,213 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:10:54,213 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:10:54,279 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(38) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:10:54,279 - root - ERROR - log_dml_error:128 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(38) already exists.
+, User: 2, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-08-31 07:10:54,358 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:10:54,358 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 07:32:13,069 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '12', 'expense_date': '2025-08-31', 'amount': '150.00', 'description': '', 'payment_method': 'Cash', 'receipt_url': 'https://example.com/test-receipt'}...
+2025-08-31 07:32:13,069 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '12', 'expense_date': '2025-08-31', 'amount': '150.00', 'description': '', 'payment_method': 'Cash', 'receipt_url': 'https://example.com/test-receipt'}...
+2025-08-31 07:32:13,158 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 07:32:13,158 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 07:37:15,374 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '12', 'expense_date': '2025-08-31', 'amount': '150.00', 'description': '', 'payment_method': 'Cash', 'receipt_url': 'https://example.com/test-receipt'}...
+2025-08-31 07:37:15,374 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '12', 'expense_date': '2025-08-31', 'amount': '150.00', 'description': '', 'payment_method': 'Cash', 'receipt_url': 'https://example.com/test-receipt'}...
+2025-08-31 07:37:15,484 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 07:37:15,484 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 14:17:29,604 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '90', 'expense_date': '2025-08-31', 'amount': '66788888', 'description': '7676', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 14:17:29,604 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '90', 'expense_date': '2025-08-31', 'amount': '66788888', 'description': '7676', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 14:17:29,699 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 14:17:29,699 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-08-31 14:25:17,677 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(1) already exists.
+, User: 2, Data: {'category_id': '12', 'expense_date': '2025-08-31', 'amount': '150.00', 'description': '', 'payment_method': 'Cash', 'receipt_url': 'https://example.com/test-receipt'}...
+2025-08-31 14:25:17,677 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(1) already exists.
+, User: 2, Data: {'category_id': '12', 'expense_date': '2025-08-31', 'amount': '150.00', 'description': '', 'payment_method': 'Cash', 'receipt_url': 'https://example.com/test-receipt'}...
+2025-08-31 14:25:17,846 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 14:25:17,846 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 15:19:18,175 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(2) already exists.
+, User: 2, Data: {'category_id': '90', 'expense_date': '2025-08-31', 'amount': '4443', 'description': 'erwt', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 15:19:18,175 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(2) already exists.
+, User: 2, Data: {'category_id': '90', 'expense_date': '2025-08-31', 'amount': '4443', 'description': 'erwt', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 15:19:18,249 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 15:19:18,249 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 15:19:43,520 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(3) already exists.
+, User: 2, Data: {'category_id': '90', 'expense_date': '2025-08-31', 'amount': '445', 'description': 'rrrr', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 15:19:43,520 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(3) already exists.
+, User: 2, Data: {'category_id': '90', 'expense_date': '2025-08-31', 'amount': '445', 'description': 'rrrr', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 15:19:43,596 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 15:19:43,596 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 15:26:52,495 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(5) already exists.
+, User: 2, Data: {'category_id': '91', 'expense_date': '2025-08-31', 'amount': '33', 'description': '233', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 15:26:52,495 - root - ERROR - log_dml_error:128 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(5) already exists.
+, User: 2, Data: {'category_id': '91', 'expense_date': '2025-08-31', 'amount': '33', 'description': '233', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-08-31 15:26:52,600 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-08-31 15:26:52,600 - root - ERROR - log_dml_error:149 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 12:52:57,813 - root - ERROR - add_recurring_expense:8782 - Error adding recurring expense: 'int' object has no attribute 'fetchone'
+2025-09-01 12:52:57,813 - root - ERROR - add_recurring_expense:8782 - Error adding recurring expense: 'int' object has no attribute 'fetchone'
+2025-09-01 13:05:22,616 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '10', 'expense_date': '2025-09-01', 'amount': '443443453466456563454', 'description': 'vdfv', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 13:05:22,616 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '10', 'expense_date': '2025-09-01', 'amount': '443443453466456563454', 'description': 'vdfv', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 13:05:22,719 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 13:05:22,719 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 13:15:02,580 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: numeric field overflow
+DETAIL:  A field with precision 10, scale 2 must round to an absolute value less than 10^8.
+, User: 2, Data: {'category_id': '10', 'expense_date': '2025-09-01', 'amount': '5465656745454544577888', 'description': 'fsd', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 13:15:02,580 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: numeric field overflow
+DETAIL:  A field with precision 10, scale 2 must round to an absolute value less than 10^8.
+, User: 2, Data: {'category_id': '10', 'expense_date': '2025-09-01', 'amount': '5465656745454544577888', 'description': 'fsd', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 13:15:02,669 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 13:15:02,669 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 13:24:25,573 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: numeric field overflow
+DETAIL:  A field with precision 10, scale 2 must round to an absolute value less than 10^8.
+, User: 2, Data: {'category_id': '87', 'expense_date': '2025-09-01', 'amount': '45454546564456466', 'description': 'sfsf', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 13:24:25,573 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: numeric field overflow
+DETAIL:  A field with precision 10, scale 2 must round to an absolute value less than 10^8.
+, User: 2, Data: {'category_id': '87', 'expense_date': '2025-09-01', 'amount': '45454546564456466', 'description': 'sfsf', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 13:24:25,693 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 13:24:25,693 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 15:15:43,827 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(15) already exists.
+, User: 2, Data: {'category_id': 12, 'amount': 100.5, 'description': 'Test expense for regression testing', 'expense_date': '2025-09-01', 'payment_method': 'Cash'}...
+2025-09-01 15:15:43,882 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 15:59:09,029 - root - ERROR - add_recurring_expense:8797 - Error adding recurring expense: new row for relation "recurring_expenses" violates check constraint "recurring_expenses_frequency_check"
+DETAIL:  Failing row contains (9, 2, 12, Test Invalid Frequency, 100.00, , Cash, invalid_frequency, 2025-09-01, null, t, null, 2025-09-01, 2025-09-01 14:29:09.028336).
+
+2025-09-01 15:59:09,697 - root - ERROR - generate_recurring_expenses:8925 - Error generating recurring expenses: strptime() argument 1 must be str, not datetime.date
+2025-09-01 16:06:46,185 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '12', 'expense_date': '2025-09-01', 'amount': '43', 'description': '', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 16:06:46,185 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '12', 'expense_date': '2025-09-01', 'amount': '43', 'description': '', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 16:06:46,196 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '12', 'expense_date': '2025-09-01', 'amount': '43', 'description': '', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 16:06:46,196 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': '12', 'expense_date': '2025-09-01', 'amount': '43', 'description': '', 'payment_method': 'Cash', 'receipt_url': ''}...
+2025-09-01 16:06:46,233 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:06:46,233 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:06:46,244 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:06:46,244 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:09:56,223 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: employees, Error: duplicate key value violates unique constraint "employees_pkey"
+DETAIL:  Key (employee_id)=(21) already exists.
+, User: 2, Data: {'name': 'Test Update Employee', 'phone': '9876543217', 'email': 'update@employee.com', 'role': 'Tailor'}...
+2025-09-01 16:09:56,283 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 16:09:56,343 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: employees, Error: duplicate key value violates unique constraint "employees_pkey"
+DETAIL:  Key (employee_id)=(22) already exists.
+, User: 2, Data: {'name': 'Test Delete Employee', 'phone': '9876543218', 'email': 'delete@employee.com', 'role': 'Tailor'}...
+2025-09-01 16:09:56,401 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 16:09:58,811 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': 12, 'amount': 100.5, 'description': 'Test expense for regression testing', 'expense_date': '2025-09-01', 'payment_method': 'Cash'}...
+2025-09-01 16:09:58,849 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:09:59,193 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': 12, 'amount': 75.25, 'description': 'Test single expense', 'expense_date': '2025-09-01', 'payment_method': 'Card'}...
+2025-09-01 16:09:59,250 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:09:59,602 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': 12, 'amount': 120.0, 'description': 'Test update expense', 'expense_date': '2025-09-01', 'payment_method': 'Cash'}...
+2025-09-01 16:09:59,661 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:09:59,810 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': 12, 'amount': 200.0, 'description': 'Test delete expense', 'expense_date': '2025-09-01', 'payment_method': 'Cash'}...
+2025-09-01 16:09:59,851 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:10:00,342 - root - ERROR - add_recurring_expense:8782 - Error adding recurring expense: 'int' object has no attribute 'fetchone'
+2025-09-01 16:10:00,498 - root - ERROR - add_recurring_expense:8782 - Error adding recurring expense: new row for relation "recurring_expenses" violates check constraint "recurring_expenses_frequency_check"
+DETAIL:  Failing row contains (15, 2, 12, Test Invalid Frequency, 100.00, , Cash, invalid_frequency, 2025-09-01, null, t, null, 2025-09-01, 2025-09-01 14:40:00.496879).
+
+2025-09-01 16:10:00,650 - root - ERROR - add_recurring_expense:8782 - Error adding recurring expense: 'int' object has no attribute 'fetchone'
+2025-09-01 16:10:00,961 - root - ERROR - add_recurring_expense:8782 - Error adding recurring expense: 'int' object has no attribute 'fetchone'
+2025-09-01 16:10:01,332 - root - ERROR - add_recurring_expense:8782 - Error adding recurring expense: 'int' object has no attribute 'fetchone'
+2025-09-01 16:10:01,376 - root - ERROR - generate_recurring_expenses:8910 - Error generating recurring expenses: strptime() argument 1 must be str, not datetime.date
+2025-09-01 16:17:07,813 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: employees, Error: duplicate key value violates unique constraint "employees_pkey"
+DETAIL:  Key (employee_id)=(23) already exists.
+, User: 2, Data: {'name': 'Test Employee', 'phone': '9876543215', 'email': 'test@employee.com', 'role': 'Tailor'}...
+2025-09-01 16:17:07,856 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 16:17:07,930 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: employees, Error: duplicate key value violates unique constraint "employees_pkey"
+DETAIL:  Key (employee_id)=(24) already exists.
+, User: 2, Data: {'name': 'Test Single Employee', 'phone': '9876543216', 'email': 'single@employee.com', 'role': 'Tailor'}...
+2025-09-01 16:17:07,971 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 16:17:08,031 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: employees, Error: duplicate key value violates unique constraint "employees_pkey"
+DETAIL:  Key (employee_id)=(25) already exists.
+, User: 2, Data: {'name': 'Test Update Employee', 'phone': '9876543217', 'email': 'update@employee.com', 'role': 'Tailor'}...
+2025-09-01 16:17:08,100 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 16:17:08,165 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: employees, Error: duplicate key value violates unique constraint "employees_pkey"
+DETAIL:  Key (employee_id)=(26) already exists.
+, User: 2, Data: {'name': 'Test Delete Employee', 'phone': '9876543218', 'email': 'delete@employee.com', 'role': 'Tailor'}...
+2025-09-01 16:17:08,327 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 16:26:56,753 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:26:56,753 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:26:57,528 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:26:57,528 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:28:09,682 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:28:09,682 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:28:10,404 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:28:10,404 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:30:15,067 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:30:15,067 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:30:15,759 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:30:15,759 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:33:35,990 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': 12, 'expense_date': '2025-09-01', 'amount': 100.5, 'description': 'Test expense', 'payment_method': 'Cash'}...
+2025-09-01 16:33:35,990 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: 'int' object has no attribute 'fetchone', User: 2, Data: {'category_id': 12, 'expense_date': '2025-09-01', 'amount': 100.5, 'description': 'Test expense', 'payment_method': 'Cash'}...
+2025-09-01 16:33:36,057 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:33:36,057 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-01 16:34:15,129 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(20) already exists.
+, User: 2, Data: {'category_id': 12, 'expense_date': '2025-09-01', 'amount': 100.5, 'description': 'Test expense', 'payment_method': 'Cash'}...
+2025-09-01 16:34:15,129 - root - ERROR - log_dml_error:125 - DML Error - Operation: INSERT, Table: expenses, Error: duplicate key value violates unique constraint "expenses_pkey"
+DETAIL:  Key (expense_id)=(20) already exists.
+, User: 2, Data: {'category_id': 12, 'expense_date': '2025-09-01', 'amount': 100.5, 'description': 'Test expense', 'payment_method': 'Cash'}...
+2025-09-01 16:34:15,179 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 16:34:15,179 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-01 16:37:11,788 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:37:11,788 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:37:12,569 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:37:12,569 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:37:52,548 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:37:52,548 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:37:53,270 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:37:53,270 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:43:01,627 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:43:01,627 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:43:02,345 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:43:02,345 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:46:35,400 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:46:35,400 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:46:36,132 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:46:36,132 - root - ERROR - init_db:581 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:52:56,986 - root - ERROR - init_db:595 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:52:56,986 - root - ERROR - init_db:595 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:52:57,713 - root - ERROR - init_db:595 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:52:57,713 - root - ERROR - init_db:595 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:57:36,914 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:57:36,914 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:57:37,721 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 16:57:37,721 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:01:33,761 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:01:33,761 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:01:34,527 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:01:34,527 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:04:12,041 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:04:12,041 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:04:12,791 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:04:12,791 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:11:55,951 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:11:55,951 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:11:56,771 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:11:56,771 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:17:59,256 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:17:59,256 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:18:00,183 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:18:00,183 - root - ERROR - init_db:600 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:28:15,587 - root - ERROR - init_db:602 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:28:15,587 - root - ERROR - init_db:602 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:28:16,420 - root - ERROR - init_db:602 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:28:16,420 - root - ERROR - init_db:602 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:35:56,183 - root - ERROR - init_db:602 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 17:35:56,183 - root - ERROR - init_db:602 - Failed to setup admin user: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+2025-09-01 18:58:50,004 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 18:58:50,004 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 18:58:55,069 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 18:58:55,069 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:05:58,879 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:05:58,879 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:02,934 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:02,934 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:07,131 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:07,131 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:10,721 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:10,721 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:13,993 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:13,993 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:19,293 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:19,293 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:24,045 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:24,045 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:37,146 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:37,146 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:56,570 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:06:56,570 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:00,952 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:00,952 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:05,091 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:05,091 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:08,733 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:08,733 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:41,911 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:41,911 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:57,258 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:07:57,258 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:08:17,416 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:08:17,416 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:08:23,153 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:08:23,153 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:08:30,188 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-01 19:08:30,188 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable

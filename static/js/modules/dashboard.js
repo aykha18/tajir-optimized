@@ -486,61 +486,11 @@ function showToast(msg, type = 'info', duration = 3000) {
   }, duration);
 }
 
-function showConfirmDialog(message, title = 'Confirm Action', type = 'delete') {
-  return new Promise((resolve) => {
-    const modalOverlay = document.createElement('div');
-    modalOverlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
-    
-    const colors = {
-      delete: 'bg-red-600 hover:bg-red-700',
-      warning: 'bg-yellow-600 hover:bg-yellow-700',
-      info: 'bg-blue-600 hover:bg-blue-700'
-    };
-    
-    modalOverlay.innerHTML = `
-      <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold mb-2">${title}</h3>
-        <p class="text-neutral-300 mb-6">${message}</p>
-        <div class="flex gap-3 justify-end">
-          <button class="px-4 py-2 rounded-lg border border-neutral-600 hover:bg-neutral-800 transition-colors cancel-btn">
-            Cancel
-          </button>
-          <button class="px-4 py-2 rounded-lg text-white transition-colors confirm-btn ${colors[type] || colors.delete}">
-            Confirm
-          </button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modalOverlay);
-    
-    function cleanup(result) {
-      document.body.removeChild(modalOverlay);
-      resolve(result);
-    }
-    
-    function onConfirm() {
-      cleanup(true);
-    }
-    
-    function onCancel() {
-      cleanup(false);
-    }
-    
-    modalOverlay.querySelector('.confirm-btn').addEventListener('click', onConfirm);
-    modalOverlay.querySelector('.cancel-btn').addEventListener('click', onCancel);
-    
-    modalOverlay.addEventListener('click', function(e) {
-      if (e.target === modalOverlay) {
-        onCancel();
-      }
-    });
-  });
-}
+// showConfirmDialog function removed to avoid conflicts with expenses.js
 
 // Make functions globally available
 window.showToast = showToast;
-window.showConfirmDialog = showConfirmDialog;
+// window.showConfirmDialog = showConfirmDialog; // Removed to avoid conflicts with expenses.js
 window.createRevenueChart = createRevenueChart;
 window.createRegionsChart = createRegionsChart;
 window.createTrendingProductsChart = createTrendingProductsChart;

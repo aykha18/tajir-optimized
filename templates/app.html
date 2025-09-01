@@ -11,8 +11,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/billing-ui-enhanced.css') }}">
   <!-- Mobile enhancements and navigation -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-enhancements.css', v='1.0.1') }}">
-  <!-- AI Voice Assistant styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/ai-voice-assistant.css', v='1.0.1') }}">
   
   <!-- Custom JavaScript Files -->
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
@@ -26,7 +24,6 @@
   <script src="{{ url_for('static', filename='js/modules/shop-settings.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/dashboard.js') }}"></script>
       <script src="{{ url_for('static', filename='js/modules/billing-system.js', v='1.0.3') }}"></script>
-        <script src="{{ url_for('static', filename='js/modules/ai-voice-assistant.js', v='1.0.19') }}"></script>
 <script src="{{ url_for('static', filename='js/modules/mobile-enhancements.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/mobile-screens.js') }}"></script>
           <script src="{{ url_for('static', filename='js/modules/mobile-navigation.js', v='1.0.2') }}"></script>
@@ -215,13 +212,6 @@
         <div class="flex justify-between items-center">
           <h3 class="text-2xl font-semibold tracking-tight">Billing</h3>
           <div class="flex gap-2">
-            <!-- AI Voice Assistant Button -->
-            <button id="voice-assistant-btn" onclick="window.AIVoiceAssistant.toggle()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-              </svg>
-              <span>Voice Assistant</span>
-            </button>
             <button id="searchInvoiceBtn" class="modern-btn modern-btn-secondary mobile-btn">
               <svg data-lucide="search" class="w-4 h-4"></svg>
               Search & Reprint
@@ -2775,25 +2765,6 @@
 
         <!-- Feature Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          <!-- AI Voice Assistant -->
-          <div class="bg-gradient-to-br from-emerald-600/20 to-teal-600/20 backdrop-blur border border-emerald-500/30 rounded-2xl p-6 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="window.UpcomingFeatures.showFeatureModal('ai-voice-assistant')">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-                </svg>
-              </div>
-              <h3 class="text-xl font-semibold text-white">AI Voice Assistant</h3>
-            </div>
-            <p class="text-neutral-300 mb-4">Hands-free billing with voice commands for product selection, customer search, and bill generation.</p>
-            <div class="flex items-center text-sm text-emerald-400">
-              <span>Coming Soon</span>
-              <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </div>
-          </div>
-
           <!-- AI Business Intelligence -->
           <div class="bg-gradient-to-br from-amber-600/20 to-yellow-600/20 backdrop-blur border border-amber-500/30 rounded-2xl p-6 hover:scale-105 transition-all duration-300 cursor-pointer" onclick="window.UpcomingFeatures.showFeatureModal('ai-business-intelligence')">
             <div class="flex items-center gap-4 mb-4">

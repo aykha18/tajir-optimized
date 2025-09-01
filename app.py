@@ -767,9 +767,7 @@ def app_template():
 def debug():
     return send_file('debug_css.html')
 
-@app.route('/test-customer-colors')
-def test_customer_colors():
-    return send_file('test_customer_colors.html')
+
 
 @app.route('/pwa-status')
 def pwa_status():
@@ -795,13 +793,7 @@ def sw_debug():
 def cache_clear_test():
     return send_file('cache-clear-test.html')
 
-@app.route('/test-dropdown')
-def test_dropdown():
-    return send_file('test_employee_dropdown.html')
 
-@app.route('/test-mobile-billing')
-def test_mobile_billing():
-    return send_file('test_mobile_billing.html')
 
 
 
@@ -8015,29 +8007,7 @@ def debug_mobile_nav():
 def test_mobile_nav():
     return send_file('templates/test_mobile_nav.html')
 
-@app.route('/test_horizontal_nav')
-def test_horizontal_nav():
-    return render_template('test_horizontal_nav.html')
 
-@app.route('/test_nav_debug')
-def test_nav_debug():
-    return render_template('test_nav_debug.html')
-
-@app.route('/force_mobile_nav')
-def force_mobile_nav():
-    return render_template('force_mobile_nav.html')
-
-@app.route('/debug_step_by_step')
-def debug_step_by_step():
-    return render_template('debug_step_by_step.html')
-
-@app.route('/test_script_loading')
-def test_script_loading():
-    return render_template('test_script_loading.html')
-
-@app.route('/test_current_nav')
-def test_current_nav():
-    return render_template('test_current_nav.html')
 
 @app.route('/check-schema')
 def check_schema():

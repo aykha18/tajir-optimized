@@ -2,22 +2,6 @@
 class UpcomingFeatures {
   constructor() {
     this.features = {
-      'ai-voice-assistant': {
-        title: 'AI Voice Assistant for Billing',
-        content: `
-          <h4 class="text-xl font-semibold text-white mb-4">Revolutionize Your Billing Process</h4>
-          <p class="mb-4">Experience hands-free, lightning-fast billing with our AI-powered voice assistant:</p>
-          <ul class="list-disc list-inside space-y-2 mb-4">
-            <li><strong>Voice Product Selection:</strong> Simply say "Add 2 shirts, 1 trouser" to add items instantly</li>
-            <li><strong>Voice Customer Search:</strong> Find customers by saying "Find customer Ahmed" or "Search for phone 0501234567"</li>
-            <li><strong>Voice Price Queries:</strong> Ask "What's the price for kurti?" and get instant pricing information</li>
-            <li><strong>Voice Bill Generation:</strong> Create bills with voice commands like "Create bill for customer 123"</li>
-            <li><strong>Multilingual Support:</strong> Full Arabic and English voice recognition for local market needs</li>
-            <li><strong>Smart Context Understanding:</strong> AI understands context and handles complex billing scenarios</li>
-          </ul>
-          <p class="text-indigo-300"><strong>Business Impact:</strong> Speed up billing by 70%, reduce errors by 90%, and create a wow factor that impresses customers and sets you apart from competitors.</p>
-        `
-      },
       'ai-business-intelligence': {
         title: 'AI Business Intelligence & Insights',
         content: `
