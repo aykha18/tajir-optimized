@@ -35,11 +35,14 @@ class ExpenseManager {
     constructor() {
         this.categories = [];
         this.expenses = [];
+        this.recurringExpenses = [];
         this.currentExpense = null;
         this.currentCategory = null;
+        this.currentRecurringExpense = null;
         this.isEditing = false;
         this.isSubmitting = false;
         this.isSubmittingCategory = false;
+        this.isSubmittingRecurring = false;
         this.statistics = {
             totalExpenses: 0,
             monthExpenses: 0,
@@ -55,9 +58,11 @@ class ExpenseManager {
     async init() {
         await this.loadCategories();
         await this.loadExpenses();
+        await this.loadRecurringExpenses();
         this.setupEventListeners();
         this.renderCategories();
         this.renderExpenses();
+        this.renderRecurringExpenses();
         this.updateStatistics();
         this.updateDashboard();
     }
@@ -69,7 +74,25 @@ class ExpenseManager {
         
         // Expense management
         document.getElementById('addExpenseBtn')?.addEventListener('click', () => this.showExpenseModal());
-        document.getElementById('expenseForm')?.addEventListener('submit', (e) => this.handleExpenseSubmit(e));
+        document.getElementById('saveExpenseBtn')?.addEventListener('click', (e) => this.handleExpenseSubmit(e));
+        
+                 // Recurring expense management
+         document.getElementById('addRecurringBtn')?.addEventListener('click', () => this.showRecurringExpenseModal());
+         document.getElementById('saveRecurringBtn')?.addEventListener('click', (e) => this.handleRecurringExpenseSubmit(e));
+         document.getElementById('generateRecurringBtn')?.addEventListener('click', () => this.generateRecurringExpenses());
+        
+        // Ensure all input fields in recurring expense modal are enabled
+        document.getElementById('recurringExpenseModal')?.addEventListener('shown', () => {
+            const inputs = document.querySelectorAll('#recurringExpenseModal input, #recurringExpenseModal select, #recurringExpenseModal textarea');
+            inputs.forEach(input => {
+                input.disabled = false;
+                input.readOnly = false;
+                input.style.pointerEvents = 'auto';
+                input.style.userSelect = 'text';
+                input.removeAttribute('readonly');
+                input.removeAttribute('disabled');
+            });
+        });
         
         // Filters
         document.getElementById('expenseSearch')?.addEventListener('input', (e) => this.filterExpenses(e.target.value));
@@ -100,6 +123,9 @@ class ExpenseManager {
                 this.closeModals();
             }
         });
+
+        // Add input validation for amount fields
+        this.setupAmountValidation();
     }
 
     async loadCategories() {
@@ -143,12 +169,28 @@ class ExpenseManager {
         }
     }
 
+    async loadRecurringExpenses() {
+        try {
+            const response = await fetch('/api/recurring-expenses');
+            if (response.ok) {
+                this.recurringExpenses = await response.json();
+                this.renderRecurringExpenses();
+            } else {
+                console.error('ExpenseManager: Failed to load recurring expenses, status:', response.status);
+            }
+        } catch (error) {
+            console.error('Error loading recurring expenses:', error);
+            showToast('Error loading recurring expenses', 'error');
+        }
+    }
+
     // Public method to refresh expenses (can be called from console for debugging)
     async refreshExpenses() {
         await this.loadExpenses();
     }
 
     populateCategoryDropdowns() {
+        // Populate all category selects with the expense-category-select class
         const categorySelects = document.querySelectorAll('.expense-category-select');
         categorySelects.forEach(select => {
             select.innerHTML = '<option value="">Select Category</option>';
@@ -159,6 +201,18 @@ class ExpenseManager {
                 select.appendChild(option);
             });
         });
+
+        // Also populate the recurring expense category dropdown
+        const recurringCategorySelect = document.getElementById('recurringCategory');
+        if (recurringCategorySelect) {
+            recurringCategorySelect.innerHTML = '<option value="">Select Category</option>';
+            this.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.category_id;
+                option.textContent = category.category_name;
+                recurringCategorySelect.appendChild(option);
+            });
+        }
 
         // Also populate the filter dropdown
         const filterSelect = document.getElementById('expenseCategoryFilter');
@@ -362,6 +416,95 @@ class ExpenseManager {
         }).join('');
     }
 
+    renderRecurringExpenses() {
+        const container = document.getElementById('recurringContainer');
+        if (!container) return;
+
+        if (this.recurringExpenses.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="p-8 bg-gradient-to-br from-slate-800/60 to-slate-700/60 backdrop-blur-xl rounded-2xl border border-slate-600/30">
+                        <svg data-lucide="repeat" class="w-16 h-16 text-slate-400 mx-auto mb-4"></svg>
+                        <h3 class="text-lg font-semibold text-white mb-2">No Recurring Bills</h3>
+                        <p class="text-slate-400 mb-4">Set up recurring bills like rent, utilities, and subscriptions</p>
+                        <button onclick="expenseManager.showRecurringExpenseModal()" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200">
+                            <svg data-lucide="plus" class="w-4 h-4 mr-2"></svg>
+                            Add First Recurring Bill
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.recurringExpenses.map(recurring => {
+            const nextDueDate = new Date(recurring.next_due_date);
+            const today = new Date();
+            const daysUntilDue = Math.ceil((nextDueDate - today) / (1000 * 60 * 60 * 24));
+            const isOverdue = daysUntilDue < 0;
+            const isDueSoon = daysUntilDue <= 7 && daysUntilDue >= 0;
+
+            let statusBadge = '';
+            if (isOverdue) {
+                statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border border-red-500/30">Overdue</span>';
+            } else if (isDueSoon) {
+                statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border border-yellow-500/30">Due Soon</span>';
+            } else {
+                statusBadge = '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border border-green-500/30">Active</span>';
+            }
+
+            return `
+                <div class="bg-gradient-to-br from-slate-800/80 to-slate-700/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-600/30 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border border-green-500/30">
+                                    ${recurring.category_name}
+                                </span>
+                                ${statusBadge}
+                                <span class="text-sm text-slate-400">
+                                    ${recurring.frequency}
+                                </span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2 group-hover:text-green-300 transition-colors">
+                                ${recurring.title}
+                            </h3>
+                            <p class="text-lg font-semibold text-green-400 mb-3">
+                                AED ${parseFloat(recurring.amount).toFixed(2)}
+                            </p>
+                            <p class="text-sm text-slate-300 mb-3">
+                                ${recurring.description || 'No description'}
+                            </p>
+                            <div class="flex items-center space-x-4 text-xs text-slate-500">
+                                <span class="flex items-center">
+                                    <svg data-lucide="calendar" class="w-3 h-3 mr-1"></svg>
+                                    Next due: ${nextDueDate.toLocaleDateString()}
+                                </span>
+                                <span class="flex items-center">
+                                    <svg data-lucide="credit-card" class="w-3 h-3 mr-1"></svg>
+                                    ${recurring.payment_method}
+                                </span>
+                                ${isOverdue ? `<span class="text-red-400">${Math.abs(daysUntilDue)} days overdue</span>` : 
+                                  isDueSoon ? `<span class="text-yellow-400">Due in ${daysUntilDue} days</span>` : 
+                                  `<span class="text-green-400">Due in ${daysUntilDue} days</span>`}
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button onclick="expenseManager.editRecurringExpense(${recurring.recurring_id})" 
+                                    class="p-2 text-green-400 hover:text-green-300 hover:bg-green-500/20 rounded-lg transition-all duration-200">
+                                <svg data-lucide="edit" class="w-4 h-4"></svg>
+                            </button>
+                            <button onclick="expenseManager.deleteRecurringExpense(${recurring.recurring_id})" 
+                                    class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200">
+                                <svg data-lucide="trash-2" class="w-4 h-4"></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
     getTimeAgo(date) {
         const now = new Date();
         const diffInSeconds = Math.floor((now - date) / 1000);
@@ -399,17 +542,21 @@ class ExpenseManager {
         
         const modal = document.getElementById('expenseModal');
         const title = modal.querySelector('.modal-title');
-        const form = document.getElementById('expenseForm');
         const dateInput = document.getElementById('expenseDate');
         const amountInput = document.getElementById('expenseAmount');
         const descInput = document.getElementById('expenseDescription');
         const categorySelect = document.getElementById('expenseCategory');
         const paymentSelect = document.getElementById('expensePaymentMethod');
         const receiptInput = document.getElementById('expenseReceiptUrl');
-        const submitBtn = form.querySelector('button[type="submit"]');
+        const submitBtn = document.getElementById('saveExpenseBtn');
+        
+        // Ensure categories are populated
+        this.populateCategoryDropdowns();
         
         title.textContent = this.isEditing ? 'Edit Expense' : 'Add Expense';
         submitBtn.textContent = this.isEditing ? 'Update Expense' : 'Save Expense';
+        
+        // Set values exactly like the working recurring modal
         dateInput.value = expense?.expense_date || new Date().toISOString().split('T')[0];
         amountInput.value = expense?.amount || '';
         descInput.value = expense?.description || '';
@@ -420,6 +567,55 @@ class ExpenseManager {
         modal.classList.remove('hidden');
         categorySelect.focus();
     }
+
+                   showRecurringExpenseModal(recurring = null) {
+          this.currentRecurringExpense = recurring;
+          this.isEditing = !!recurring;
+          
+          const modal = document.getElementById('recurringExpenseModal');
+          const title = modal.querySelector('.modal-title');
+          const titleInput = document.getElementById('recurringTitle');
+          const amountInput = document.getElementById('recurringAmount');
+          const descInput = document.getElementById('recurringDescription');
+          const categorySelect = document.getElementById('recurringCategory');
+          const frequencySelect = document.getElementById('recurringFrequency');
+          const paymentSelect = document.getElementById('recurringPaymentMethod');
+          const startDateInput = document.getElementById('recurringStartDate');
+          const submitBtn = document.getElementById('saveRecurringBtn');
+          
+                     // Ensure categories are populated
+           this.populateCategoryDropdowns();
+           
+           // Debug: Check if categories are loaded
+           console.log('Categories available:', this.categories.length);
+           console.log('Category dropdown options:', categorySelect.options.length);
+           
+           title.textContent = this.isEditing ? 'Edit Recurring Bill' : 'Add Recurring Bill';
+           submitBtn.textContent = this.isEditing ? 'Update Recurring Bill' : 'Save Recurring Bill';
+          titleInput.value = recurring?.title || '';
+          amountInput.value = recurring?.amount || '';
+          descInput.value = recurring?.description || '';
+          categorySelect.value = recurring?.category_id || '';
+          frequencySelect.value = recurring?.frequency || '';
+          paymentSelect.value = recurring?.payment_method || 'Cash';
+          startDateInput.value = recurring?.start_date || new Date().toISOString().split('T')[0];
+          
+          // NEW APPROACH - Force enable and set styles
+          amountInput.disabled = false;
+          amountInput.readOnly = false;
+          amountInput.removeAttribute('readonly');
+          amountInput.removeAttribute('disabled');
+          amountInput.style.color = 'white';
+          amountInput.style.backgroundColor = '#475569';
+          amountInput.style.webkitTextFillColor = 'white';
+          amountInput.style.webkitTextStroke = '0';
+          
+          console.log('NEW FORM: Amount field enabled with inline styles');
+          console.log('Categories loaded:', this.categories.length);
+          
+          modal.classList.remove('hidden');
+          titleInput.focus();
+      }
 
     async handleCategorySubmit(e) {
         e.preventDefault();
@@ -474,31 +670,47 @@ class ExpenseManager {
     }
 
     async handleExpenseSubmit(e) {
-        e.preventDefault();
+        e.preventDefault?.();
         
         if (this.isSubmitting) return;
         
         this.isSubmitting = true;
-        const submitButton = e.target.querySelector('button[type="submit"]');
-        const originalText = submitButton.textContent;
+        const submitButton = document.getElementById('saveExpenseBtn');
+        const originalText = submitButton ? submitButton.textContent : 'Save Expense';
+        if (submitButton) {
         submitButton.textContent = 'Saving...';
         submitButton.disabled = true;
+        }
         
         try {
-            const formData = new FormData(e.target);
             const data = {
-                category_id: formData.get('category_id'),
-                expense_date: formData.get('expense_date'),
-                amount: formData.get('amount'),
-                description: formData.get('description').trim(),
-                payment_method: formData.get('payment_method'),
-                receipt_url: formData.get('receipt_url').trim()
+                category_id: document.getElementById('expenseCategory')?.value,
+                expense_date: document.getElementById('expenseDate')?.value,
+                amount: document.getElementById('expenseAmount')?.value,
+                description: (document.getElementById('expenseDescription')?.value || '').trim(),
+                payment_method: document.getElementById('expensePaymentMethod')?.value,
+                receipt_url: (document.getElementById('expenseReceiptUrl')?.value || '').trim()
             };
+            // Debug logging similar to recurring
+            console.log('=== EXPENSE SUBMIT DEBUG ===');
+            console.log('Form data:', data);
+            console.log('Category ID:', data.category_id, 'Type:', typeof data.category_id);
+            console.log('Date:', data.expense_date, 'Type:', typeof data.expense_date);
+            console.log('Amount:', data.amount, 'Type:', typeof data.amount);
+            console.log('Payment:', data.payment_method);
             
             if (!data.category_id || !data.expense_date || !data.amount) {
                 showToast('Category, date, and amount are required', 'error');
                 return;
             }
+
+            // Validate amount is a valid positive number
+            const amount = parseFloat(data.amount);
+            if (isNaN(amount) || amount <= 0) {
+                showToast('Please enter a valid positive amount', 'error');
+                return;
+            }
+            data.amount = amount; // Convert to number for backend
             
             const url = this.isEditing ? `/api/expenses/${this.currentExpense.expense_id}` : '/api/expenses';
             const method = this.isEditing ? 'PUT' : 'POST';
@@ -524,6 +736,93 @@ class ExpenseManager {
             showToast('Error saving expense', 'error');
         } finally {
             this.isSubmitting = false;
+            if (submitButton) {
+            submitButton.textContent = originalText;
+            submitButton.disabled = false;
+            }
+        }
+    }
+
+         async handleRecurringExpenseSubmit(e) {
+         e.preventDefault();
+         
+         if (this.isSubmittingRecurring) return;
+         
+         this.isSubmittingRecurring = true;
+         const submitButton = document.getElementById('saveRecurringBtn');
+         const originalText = submitButton.textContent;
+         submitButton.textContent = 'Saving...';
+         submitButton.disabled = true;
+         
+         try {
+                      // Get form data manually since we're not using a form element
+         const data = {
+             category_id: document.getElementById('recurringCategory').value,
+             title: document.getElementById('recurringTitle').value.trim(),
+             amount: document.getElementById('recurringAmount').value,
+             description: document.getElementById('recurringDescription').value.trim(),
+             payment_method: document.getElementById('recurringPaymentMethod').value,
+             frequency: document.getElementById('recurringFrequency').value,
+             start_date: document.getElementById('recurringStartDate').value
+         };
+         
+         // Debug logging
+         console.log('=== RECURRING EXPENSE SUBMIT DEBUG ===');
+         console.log('Form data:', data);
+         console.log('Category dropdown options:', document.getElementById('recurringCategory').options.length);
+         console.log('Selected category:', document.getElementById('recurringCategory').value);
+         console.log('Amount field value:', document.getElementById('recurringAmount').value);
+         console.log('Amount field type:', typeof document.getElementById('recurringAmount').value);
+             
+             // Debug: Log all values
+             console.log('Form data:', data);
+             console.log('Category ID:', data.category_id, 'Type:', typeof data.category_id);
+             console.log('Title:', data.title, 'Type:', typeof data.title);
+             console.log('Amount:', data.amount, 'Type:', typeof data.amount);
+             console.log('Frequency:', data.frequency, 'Type:', typeof data.frequency);
+             console.log('Start Date:', data.start_date, 'Type:', typeof data.start_date);
+            
+            if (!data.category_id || !data.title || !data.amount || !data.frequency || !data.start_date) {
+                console.log('Validation failed:');
+                console.log('- category_id:', !data.category_id);
+                console.log('- title:', !data.title);
+                console.log('- amount:', !data.amount);
+                console.log('- frequency:', !data.frequency);
+                console.log('- start_date:', !data.start_date);
+                showToast('Category, title, amount, frequency, and start date are required', 'error');
+                return;
+            }
+
+            // Validate amount is a valid positive number
+            const amount = parseFloat(data.amount);
+            if (isNaN(amount) || amount <= 0) {
+                showToast('Please enter a valid positive amount', 'error');
+                return;
+            }
+            data.amount = amount; // Convert to number for backend
+            
+            const url = this.isEditing ? `/api/recurring-expenses/${this.currentRecurringExpense.recurring_id}` : '/api/recurring-expenses';
+            const method = this.isEditing ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                showToast(this.isEditing ? 'Recurring bill updated successfully' : 'Recurring bill added successfully', 'success');
+                this.closeModals();
+                await this.loadRecurringExpenses();
+            } else {
+                const error = await response.json();
+                showToast(error.error || 'Failed to save recurring bill', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving recurring bill:', error);
+            showToast('Error saving recurring bill', 'error');
+        } finally {
+            this.isSubmittingRecurring = false;
             submitButton.textContent = originalText;
             submitButton.disabled = false;
         }
@@ -593,6 +892,63 @@ class ExpenseManager {
         }
     }
 
+    async editRecurringExpense(recurringId) {
+        const recurring = this.recurringExpenses.find(r => r.recurring_id === recurringId);
+        if (recurring) {
+            this.showRecurringExpenseModal(recurring);
+        }
+    }
+
+    async deleteRecurringExpense(recurringId) {
+        if (!confirm('Are you sure you want to delete this recurring bill? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/recurring-expenses/${recurringId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                showToast('Recurring bill deleted successfully', 'success');
+                await this.loadRecurringExpenses();
+            } else {
+                const error = await response.json();
+                showToast(error.error || 'Failed to delete recurring bill', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting recurring bill:', error);
+            showToast('Error deleting recurring bill', 'error');
+        }
+    }
+
+    async generateRecurringExpenses() {
+        if (!confirm('Generate expenses for all due recurring bills? This will create expense entries for bills that are due.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/recurring-expenses/generate', {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                showToast(result.message, 'success');
+                await this.loadExpenses();
+                await this.loadRecurringExpenses();
+                this.updateStatistics();
+                this.updateDashboard();
+            } else {
+                const error = await response.json();
+                showToast(error.error || 'Failed to generate recurring expenses', 'error');
+            }
+        } catch (error) {
+            console.error('Error generating recurring expenses:', error);
+            showToast('Error generating recurring expenses', 'error');
+        }
+    }
+
     filterExpenses(search) {
         this.applyFilters();
     }
@@ -631,12 +987,83 @@ class ExpenseManager {
         }
     }
 
+    setupAmountValidation() {
+        // Add input validation for expense amount field
+        const expenseAmountField = document.getElementById('expenseAmount');
+        if (expenseAmountField) {
+            expenseAmountField.addEventListener('input', (e) => {
+                const value = e.target.value;
+                // Remove any non-numeric characters except decimal point
+                const cleanValue = value.replace(/[^0-9.]/g, '');
+                
+                // Ensure only one decimal point
+                const parts = cleanValue.split('.');
+                if (parts.length > 2) {
+                    e.target.value = parts[0] + '.' + parts.slice(1).join('');
+                } else {
+                    e.target.value = cleanValue;
+                }
+                
+                // Validate the final value
+                const numValue = parseFloat(cleanValue);
+                if (isNaN(numValue) || numValue < 0) {
+                    e.target.setCustomValidity('Please enter a valid positive number');
+                } else {
+                    e.target.setCustomValidity('');
+                }
+            });
+
+            // Prevent paste of invalid content
+            expenseAmountField.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const cleanText = pastedText.replace(/[^0-9.]/g, '');
+                e.target.value = cleanText;
+            });
+        }
+
+        // Add input validation for recurring expense amount field
+        const recurringAmountField = document.getElementById('recurringAmount');
+        if (recurringAmountField) {
+            recurringAmountField.addEventListener('input', (e) => {
+                const value = e.target.value;
+                // Remove any non-numeric characters except decimal point
+                const cleanValue = value.replace(/[^0-9.]/g, '');
+                
+                // Ensure only one decimal point
+                const parts = cleanValue.split('.');
+                if (parts.length > 2) {
+                    e.target.value = parts[0] + '.' + parts.slice(1).join('');
+                } else {
+                    e.target.value = cleanValue;
+                }
+                
+                // Validate the final value
+                const numValue = parseFloat(cleanValue);
+                if (isNaN(numValue) || numValue < 0) {
+                    e.target.setCustomValidity('Please enter a valid positive number');
+                } else {
+                    e.target.setCustomValidity('');
+                }
+            });
+
+            // Prevent paste of invalid content
+            recurringAmountField.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const cleanText = pastedText.replace(/[^0-9.]/g, '');
+                e.target.value = cleanText;
+            });
+        }
+    }
+
     closeModals() {
         document.querySelectorAll('.modal').forEach(modal => {
             modal.classList.add('hidden');
         });
         this.currentCategory = null;
         this.currentExpense = null;
+        this.currentRecurringExpense = null;
         this.isEditing = false;
     }
 
@@ -667,34 +1094,58 @@ class ExpenseManager {
     }
 }
 
-// SIMPLE SINGLE INSTANCE INITIALIZATION
-let expenseManagerInitialized = false;
+// COMMENTED OUT - This was causing duplicate instances
+// let expenseManagerInitialized = false;
 
-function initializeExpenseManager() {
-    // Only initialize once
-    if (expenseManagerInitialized) {
-        return;
-    }
+// function initializeExpenseManager() {
+//     // Only initialize once
+//     if (expenseManagerInitialized) {
+//         console.log('ExpenseManager already initialized, skipping...');
+//         return;
+//     }
     
-    const container = document.getElementById('expensesContainer');
-    if (container && !window.expenseManager) {
-        window.expenseManager = new ExpenseManager();
-        expenseManagerInitialized = true;
-    }
-}
+//     const container = document.getElementById('expensesContainer');
+//     if (container && !window.expenseManager) {
+//         console.log('Creating ExpenseManager instance...');
+//         window.expenseManager = new ExpenseManager();
+//         expenseManagerInitialized = true;
+//         console.log('ExpenseManager initialized successfully');
+//     }
+// }
 
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeExpenseManager);
-} else {
-    initializeExpenseManager();
-}
+// // Initialize when DOM is ready
+// if (document.readyState === 'loading') {
+//     document.addEventListener('DOMContentLoaded', initializeExpenseManager);
+// } else {
+//     initializeExpenseManager();
+// }
+
+// // Global function for manual refresh (for debugging)
+// window.refreshExpenses = function() {
+//     if (window.expenseManager) {
+//         window.expenseManager.refreshExpenses();
+//     } else {
+//         console.log('ExpenseManager not found, reinitializing...');
+//         expenseManagerInitialized = false;
+//         initializeExpenseManager();
+//     }
+// };
+
+// SIMPLE SINGLE INSTANCE INITIALIZATION
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.expenseManager) {
+        console.log('Creating ExpenseManager instance...');
+        window.expenseManager = new ExpenseManager();
+        console.log('ExpenseManager initialized successfully');
+    }
+});
 
 // Global function for manual refresh (for debugging)
 window.refreshExpenses = function() {
     if (window.expenseManager) {
         window.expenseManager.refreshExpenses();
     } else {
-        initializeExpenseManager();
+        console.log('ExpenseManager not found, creating new instance...');
+        window.expenseManager = new ExpenseManager();
     }
 };

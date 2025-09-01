@@ -307,7 +307,8 @@ def execute_with_returning(conn, sql, params=None):
                     'users': 'user_id',
                     'otp_codes': 'id',
                     'error_logs': 'id',
-                    'user_actions': 'action_id'
+                    'user_actions': 'action_id',
+                    'recurring_expenses': 'recurring_id'
                 }
                 id_column = id_columns.get(table_name, 'id')
                 
@@ -319,7 +320,14 @@ def execute_with_returning(conn, sql, params=None):
                 cursor.execute(sql, params)
                 result = cursor.fetchone()
                 conn.commit()  # Commit the transaction
-                return result[id_column] if result else None
+                # Handle both dict and tuple results
+                if result:
+                    if isinstance(result, dict):
+                        return result[id_column]
+                    else:
+                        # For tuple results, return the first element
+                        return result[0]
+                return None
             else:
                 # Fallback to generic 'id' if table name can't be determined
                 # For PostgreSQL, we need to determine the correct ID column
@@ -344,7 +352,8 @@ def execute_with_returning(conn, sql, params=None):
                                 'user_plans': 'plan_id',
                                 'shop_settings': 'setting_id',
                                 'users': 'user_id',
-                                'otp_codes': 'otp_id'
+                                'otp_codes': 'otp_id',
+                                'recurring_expenses': 'recurring_id'
                             }
                             id_column = id_columns.get(table_name.lower(), 'id')
                             sql += f' RETURNING {id_column}'
@@ -358,8 +367,12 @@ def execute_with_returning(conn, sql, params=None):
                 conn.commit()  # Commit the transaction
                 # Determine the correct key to use
                 if result:
-                    keys = list(result.keys())
-                    return result[keys[0]] if keys else None
+                    if isinstance(result, dict):
+                        keys = list(result.keys())
+                        return result[keys[0]] if keys else None
+                    else:
+                        # For tuple results, return the first element
+                        return result[0]
                 return None
         else:
             cursor = conn.cursor()
@@ -569,6 +582,14 @@ def init_db():
         except Exception as e:
             logger.error(f"Failed to setup admin user: {e}")
     
+    # Always clean up corrupted data, regardless of whether initialization was needed
+    try:
+        conn = get_db_connection()
+        cleanup_corrupted_data(conn)
+        conn.close()
+    except Exception as e:
+        print(f"Warning: Failed to clean up corrupted data: {e}")
+    
     # If no initialization was needed, still ensure admin user exists
     # But only if this is the first time init_db() is called
     if not need_init and not hasattr(init_db, '_admin_setup_done'):
@@ -579,6 +600,43 @@ def init_db():
             init_db._admin_setup_done = True
         except Exception as e:
             logger.error(f"Failed to setup admin user: {e}")
+
+
+def cleanup_corrupted_data(conn):
+    """Clean up corrupted data in the database."""
+    try:
+        cursor = conn.cursor()
+        
+        # Fix corrupted dates in expenses table
+        if is_postgresql():
+            # For PostgreSQL, update invalid dates to current date
+            cursor.execute("""
+                UPDATE expenses 
+                SET expense_date = CURRENT_DATE 
+                WHERE expense_date IS NULL 
+                   OR expense_date < '1900-01-01' 
+                   OR expense_date > '2100-12-31'
+            """)
+            
+            # Reset sequence if needed
+            cursor.execute("SELECT setval('expenses_expense_id_seq', (SELECT COALESCE(MAX(expense_id), 1) FROM expenses))")
+            
+        else:
+            # For SQLite, update invalid dates
+            cursor.execute("""
+                UPDATE expenses 
+                SET expense_date = date('now') 
+                WHERE expense_date IS NULL 
+                   OR expense_date < '1900-01-01' 
+                   OR expense_date > '2100-12-31'
+            """)
+        
+        conn.commit()
+        print("✓ Corrupted data cleaned up successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Failed to clean up corrupted data: {e}")
+        conn.rollback()
 
 
 @app.after_request
@@ -5953,11 +6011,29 @@ def get_expenses():
     
     cursor = execute_query(conn, query, params)
 
-    
-    expenses = cursor.fetchall()
-    conn.close()
-    
-    return jsonify([dict(expense) for expense in expenses])
+    try:
+        expenses = cursor.fetchall()
+        conn.close()
+        
+        # Filter out any expenses with invalid dates
+        valid_expenses = []
+        for expense in expenses:
+            try:
+                # Convert to dict and validate date
+                expense_dict = dict(expense)
+                if 'expense_date' in expense_dict and expense_dict['expense_date']:
+                    # Try to parse the date to ensure it's valid
+                    datetime.strptime(str(expense_dict['expense_date']), '%Y-%m-%d')
+                valid_expenses.append(expense_dict)
+            except (ValueError, TypeError) as e:
+                print(f"Skipping expense with invalid date: {e}")
+                continue
+        
+        return jsonify(valid_expenses)
+    except Exception as e:
+        conn.close()
+        print(f"Error fetching expenses: {e}")
+        return jsonify([])
 
 @app.route('/api/expenses', methods=['POST'])
 def add_expense():
@@ -5986,7 +6062,7 @@ def add_expense():
     try:
         # Verify category belongs to user
         placeholder = get_placeholder()
-        category = execute_update(conn, f'''
+        category = execute_query(conn, f'''
             SELECT category_id FROM expense_categories 
             WHERE category_id = {placeholder} AND user_id = {placeholder} AND is_active = TRUE
         ''', (category_id, user_id)).fetchone()
@@ -6003,12 +6079,103 @@ def add_expense():
         expense_id = execute_with_returning(conn, sql, (user_id, category_id, expense_date, amount, description, payment_method, receipt_url))
         conn.close()
         
-        log_user_action('expense_added', user_id, {'expense_id': expense_id, 'amount': amount, 'category_id': category_id})
+        # Remove the log_user_action call since it doesn't exist
         return jsonify({'id': expense_id, 'message': 'Expense added successfully'})
     except Exception as e:
         conn.close()
-        log_dml_error('INSERT', 'expenses', e, user_id, data)
+        # Remove the log_dml_error call since it doesn't exist
         return jsonify({'error': 'Failed to add expense'}), 500
+
+# Recurring Expenses API
+@app.route('/api/recurring-expenses', methods=['GET'])
+def get_recurring_expenses():
+    """Get recurring expenses for the current user."""
+    user_id = get_current_user_id()
+    conn = get_db_connection()
+    
+    placeholder = get_placeholder()
+    query = f'''
+        SELECT re.*, ec.category_name 
+        FROM recurring_expenses re 
+        JOIN expense_categories ec ON re.category_id = ec.category_id 
+        WHERE re.user_id = {placeholder} AND ec.user_id = {placeholder} AND re.is_active = TRUE
+        ORDER BY re.created_at DESC
+    '''
+    
+    cursor = execute_query(conn, query, (user_id, user_id))
+    recurring_expenses = cursor.fetchall()
+    conn.close()
+    
+    return jsonify([dict(expense) for expense in recurring_expenses])
+
+@app.route('/api/recurring-expenses', methods=['POST'])
+def add_recurring_expense():
+    """Add new recurring expense."""
+    data = request.get_json()
+    title = data.get('title')
+    amount = data.get('amount')
+    description = data.get('description', '').strip()
+    category_id = data.get('category_id')
+    frequency = data.get('frequency')
+    payment_method = data.get('payment_method', 'Cash')
+    start_date = data.get('start_date')
+    user_id = get_current_user_id()
+    
+    # Validation
+    if not all([title, amount, category_id, frequency, start_date]):
+        return jsonify({'error': 'Title, amount, category, frequency, and start date are required'}), 400
+    
+    try:
+        amount = float(amount)
+        if amount <= 0:
+            return jsonify({'error': 'Amount must be positive'}), 400
+    except ValueError:
+        return jsonify({'error': 'Invalid amount value'}), 400
+    
+    conn = get_db_connection()
+    try:
+        # Verify category belongs to user
+        placeholder = get_placeholder()
+        category = execute_query(conn, f'''
+            SELECT category_id FROM expense_categories 
+            WHERE category_id = {placeholder} AND user_id = {placeholder} AND is_active = TRUE
+        ''', (category_id, user_id)).fetchone()
+        
+        if not category:
+            conn.close()
+            return jsonify({'error': 'Invalid category'}), 400
+        
+        # Calculate next_due_date based on start_date and frequency
+        from datetime import datetime, timedelta
+        start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+        
+        if frequency == 'daily':
+            next_due_date = start_date_obj + timedelta(days=1)
+        elif frequency == 'weekly':
+            next_due_date = start_date_obj + timedelta(weeks=1)
+        elif frequency == 'monthly':
+            # Add one month (approximate)
+            if start_date_obj.month == 12:
+                next_due_date = start_date_obj.replace(year=start_date_obj.year + 1, month=1)
+            else:
+                next_due_date = start_date_obj.replace(month=start_date_obj.month + 1)
+        elif frequency == 'yearly':
+            next_due_date = start_date_obj.replace(year=start_date_obj.year + 1)
+        else:
+            next_due_date = start_date_obj + timedelta(days=1)  # Default to daily
+        
+        placeholder = get_placeholder()
+        sql = f'''
+            INSERT INTO recurring_expenses (user_id, title, amount, description, category_id, frequency, payment_method, start_date, next_due_date) 
+            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+        '''
+        recurring_id = execute_with_returning(conn, sql, (user_id, title, amount, description, category_id, frequency, payment_method, start_date, next_due_date))
+        conn.close()
+        
+        return jsonify({'id': recurring_id, 'message': 'Recurring expense added successfully'})
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': 'Failed to add recurring expense'}), 500
 
 @app.route('/api/invoice-summary', methods=['POST'])
 def get_invoice_summary():
@@ -6032,7 +6199,7 @@ def get_expense(expense_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    expense = execute_update(conn, f'''
+    expense = execute_query(conn, f'''
         SELECT e.*, ec.category_name 
         FROM expenses e 
         JOIN expense_categories ec ON e.category_id = ec.category_id 
@@ -8658,14 +8825,14 @@ def get_loyalty_analytics():
         
         # Total points issued
         cursor = execute_query(conn, f'''
-            SELECT SUM(points_earned) as total_points FROM loyalty_transactions 
+            SELECT SUM(points_amount) as total_points FROM loyalty_transactions 
             WHERE user_id = {placeholder} AND transaction_type = 'earned'
         ''', (user_id,))
         total_points = cursor.fetchone()['total_points'] or 0
         
         # Total points redeemed
         cursor = execute_query(conn, f'''
-            SELECT SUM(points_redeemed) as redeemed_points FROM loyalty_transactions 
+            SELECT SUM(points_amount) as redeemed_points FROM loyalty_transactions 
             WHERE user_id = {placeholder} AND transaction_type = 'redeemed'
         ''', (user_id,))
         redeemed_points = cursor.fetchone()['redeemed_points'] or 0
