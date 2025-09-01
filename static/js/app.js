@@ -124,6 +124,118 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize cache clearing functionality
   initializeCacheClearing();
 
+  // Product Tab Switching Function
+  window.switchProductTab = function(tab) {
+    console.log('🔄 Switching to product tab:', tab);
+    // Update tab button states
+    const typesTab = document.getElementById('productTypesTab');
+    const productsTab = document.getElementById('productsTab');
+    const typesContent = document.getElementById('productTypesContent');
+    const productsContent = document.getElementById('productsContent');
+    
+    if (!typesTab || !productsTab || !typesContent || !productsContent) {
+      console.error('❌ Product tab elements not found');
+      return;
+    }
+    
+    if (tab === 'types') {
+      // Show Product Types tab
+      typesTab.classList.add('active', 'text-white', 'border-indigo-500');
+      typesTab.classList.remove('text-neutral-400', 'border-transparent');
+      productsTab.classList.remove('active', 'text-white', 'border-indigo-500');
+      productsTab.classList.add('text-neutral-400', 'border-transparent');
+      
+      typesContent.classList.remove('hidden');
+      productsContent.classList.add('hidden');
+      
+      // Load product types if not already loaded
+      if (window.loadProductTypes) {
+        console.log('📦 Loading product types...');
+        loadProductTypes();
+      } else {
+        console.warn('⚠️ loadProductTypes function not available');
+      }
+    } else if (tab === 'products') {
+      // Show Products tab
+      productsTab.classList.add('active', 'text-white', 'border-indigo-500');
+      productsTab.classList.remove('text-neutral-400', 'border-transparent');
+      typesTab.classList.remove('active', 'text-white', 'border-indigo-500');
+      typesTab.classList.add('text-neutral-400', 'border-transparent');
+      
+      productsContent.classList.remove('hidden');
+      typesContent.classList.add('hidden');
+      
+      // Load products if not already loaded
+      if (window.loadProducts) {
+        console.log('📦 Loading products...');
+        loadProducts();
+      } else {
+        console.warn('⚠️ loadProducts function not available');
+      }
+    }
+  };
+
+  // Shop Settings Tab Switching Function
+  window.switchShopSettingsTab = function(tab) {
+    console.log('🔄 Switching to shop settings tab:', tab);
+    
+    // Get all tab buttons and content
+    const shopInfoTab = document.getElementById('tabShopInfo');
+    const billingConfigTab = document.getElementById('tabBillingConfig');
+    const vatTab = document.getElementById('tabVAT');
+    const shopInfoContent = document.getElementById('shopInfoTabContent');
+    const billingConfigContent = document.getElementById('billingConfigTabContent');
+    const vatContent = document.getElementById('vatTabContent');
+    
+    console.log('🔍 Found elements:', {
+      shopInfoTab: !!shopInfoTab,
+      billingConfigTab: !!billingConfigTab,
+      vatTab: !!vatTab,
+      shopInfoContent: !!shopInfoContent,
+      billingConfigContent: !!billingConfigContent,
+      vatContent: !!vatContent
+    });
+    
+    if (!shopInfoTab || !billingConfigTab || !vatTab || !shopInfoContent || !billingConfigContent || !vatContent) {
+      console.error('❌ Shop settings tab elements not found');
+      return;
+    }
+    
+    // Reset all tabs to inactive state
+    [shopInfoTab, billingConfigTab, vatTab].forEach(tabBtn => {
+      tabBtn.classList.remove('bg-neutral-700', 'text-white', 'border-neutral-600');
+      tabBtn.classList.add('bg-transparent', 'text-neutral-300', 'border-neutral-600/40');
+    });
+    
+    // Hide all content and add contents class to prevent layout issues
+    [shopInfoContent, billingConfigContent, vatContent].forEach(content => {
+      content.classList.add('hidden', 'contents');
+    });
+    
+    // Activate selected tab
+    if (tab === 'shopInfo') {
+      shopInfoTab.classList.add('bg-neutral-700', 'text-white', 'border-neutral-600');
+      shopInfoTab.classList.remove('bg-transparent', 'text-neutral-300', 'border-neutral-600/40');
+      shopInfoContent.classList.remove('hidden', 'contents');
+    } else if (tab === 'billingConfig') {
+      billingConfigTab.classList.add('bg-neutral-700', 'text-white', 'border-neutral-600');
+      billingConfigTab.classList.remove('bg-transparent', 'text-neutral-300', 'border-neutral-600/40');
+      billingConfigContent.classList.remove('hidden', 'contents');
+    } else if (tab === 'vat') {
+      vatTab.classList.add('bg-neutral-700', 'text-white', 'border-neutral-600');
+      vatTab.classList.remove('bg-transparent', 'text-neutral-300', 'border-neutral-600/40');
+      vatContent.classList.remove('hidden', 'contents');
+      
+      // Load VAT data if not already loaded
+      if (window.loadVatRates) {
+        console.log('📦 Loading VAT rates...');
+        loadVatRates();
+      } else {
+        console.warn('⚠️ loadVatRates function not available');
+      }
+    }
+  };
+
   // Navigation functionality
   const navBtns = document.querySelectorAll('.nav-btn');
   const pages = document.querySelectorAll('.page');
@@ -162,15 +274,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Load data for specific sections
         if (btn.dataset.go === 'customerSec') {
           loadCustomers();
-        } else if (btn.dataset.go === 'productTypeSec') {
-          console.log('🔄 Loading product types section...');
-          if (window.loadProductTypes) {
-            loadProductTypes();
-          } else {
-            console.error('❌ loadProductTypes function not found!');
-          }
-        } else if (btn.dataset.go === 'productSec') {
-          loadProducts();
+        } else if (btn.dataset.go === 'productsSec') {
+          console.log('🔄 Loading unified products section...');
+          // Show the products section and default to product types tab
+          switchProductTab('types');
         } else if (btn.dataset.go === 'employeeSec') {
           loadEmployees();
         } else if (btn.dataset.go === 'vatSec') {
@@ -189,7 +296,6 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         } else if (btn.dataset.go === 'advancedReportsSec') {
           initializeReports();
-
         } else if (btn.dataset.go === 'shopSettingsSec') {
           // Ensure the section is visible
           if (targetPage) {
@@ -263,12 +369,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function clearAllCache() {
-
-    
     // Clear localStorage
     try {
       localStorage.clear();
-
     } catch (error) {
       console.error('Error clearing localStorage:', error);
     }
@@ -276,7 +379,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clear sessionStorage
     try {
       sessionStorage.clear();
-
     } catch (error) {
       console.error('Error clearing sessionStorage:', error);
     }
@@ -288,7 +390,6 @@ document.addEventListener('DOMContentLoaded', function() {
         for (const storeName of stores) {
           await window.TajirPWA.offlineStorage.clearStore(storeName);
         }
-  
       }
     } catch (error) {
       console.error('Error clearing IndexedDB:', error);
@@ -301,7 +402,6 @@ document.addEventListener('DOMContentLoaded', function() {
         await Promise.all(
           cacheNames.map(cacheName => caches.delete(cacheName))
         );
-  
       }
     } catch (error) {
       console.error('Error clearing service worker cache:', error);
@@ -311,20 +411,17 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       if ('serviceWorker' in navigator) {
         if (window.isClearingCache) {
-  
+          // Skip during manual cache clear
         } else {
           const registrations = await navigator.serviceWorker.getRegistrations();
           await Promise.all(
             registrations.map(registration => registration.unregister())
           );
-
         }
       }
     } catch (error) {
       console.error('Error unregistering service worker:', error);
     }
-
-
   }
 
   // Navigation function for Upcoming Features
@@ -340,4 +437,62 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   };
+
+  // Initialize Shop Settings tab functionality
+  function initializeShopSettingsTabs() {
+    console.log('🔧 Initializing Shop Settings tabs...');
+    
+    // Shop Settings tab event listeners
+    const shopInfoTab = document.getElementById('tabShopInfo');
+    const billingConfigTab = document.getElementById('tabBillingConfig');
+    const vatTab = document.getElementById('tabVAT');
+    
+    console.log('📋 Tab elements found:', {
+      shopInfoTab: !!shopInfoTab,
+      billingConfigTab: !!billingConfigTab,
+      vatTab: !!vatTab
+    });
+    
+    if (shopInfoTab) {
+      shopInfoTab.addEventListener('click', () => {
+        console.log('🏪 Shop Info tab clicked');
+        switchShopSettingsTab('shopInfo');
+      });
+    }
+    if (billingConfigTab) {
+      billingConfigTab.addEventListener('click', () => {
+        console.log('💳 Billing Config tab clicked');
+        switchShopSettingsTab('billingConfig');
+      });
+    }
+    if (vatTab) {
+      vatTab.addEventListener('click', () => {
+        console.log('💰 VAT tab clicked');
+        switchShopSettingsTab('vat');
+      });
+    }
+    
+    console.log('✅ Shop Settings tabs initialized');
+  }
+
+  // Call initialization when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeShopSettingsTabs);
+  } else {
+    initializeShopSettingsTabs();
+  }
+
+  // Also initialize when Shop Settings section is shown
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'tabVAT') {
+      console.log('🎯 VAT tab clicked via event delegation');
+      setTimeout(() => {
+        if (typeof switchShopSettingsTab === 'function') {
+          switchShopSettingsTab('vat');
+        } else {
+          console.error('❌ switchShopSettingsTab function not available');
+        }
+      }, 100);
+    }
+  });
 }); 

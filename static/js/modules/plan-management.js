@@ -85,7 +85,7 @@ function applyPlanRestrictions() {
   if (userPlan.expired && userPlan.plan === 'trial') {
 
     // Lock all sections except billing
-    const sections = ['productTypeSec', 'productSec', 'customerSec', 'vatSec', 'employeeSec', 'dashSec'];
+    const sections = ['productsSec', 'customerSec', 'employeeSec', 'dashSec'];
     sections.forEach(sectionId => {
       const section = document.getElementById(sectionId);
       if (section) {
