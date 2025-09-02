@@ -184,7 +184,7 @@ def get_db_connection():
         try:
             if database_url:
                 # Use DATABASE_URL (Railway standard approach)
-                print(f"Connecting using DATABASE_URL")
+                # print(f"Connecting using DATABASE_URL")
                 conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
             else:
                 # Fallback to individual variables
@@ -201,14 +201,14 @@ def get_db_connection():
                     'password': pg_password,
                     'cursor_factory': RealDictCursor
                 }
-                print(f"Connecting using individual variables")
+                # print(f"Connecting using individual variables")
                 conn = psycopg2.connect(**pg_config)
             return conn
         except Exception as e:
-            print(f"PostgreSQL connection failed: {e}")
+            # print(f"PostgreSQL connection failed: {e}")
             # Try to create the database if it doesn't exist
             if "database" in str(e).lower() and "does not exist" in str(e).lower():
-                print("Database doesn't exist, attempting to create it...")
+                # print("Database doesn't exist, attempting to create it...")
                 try:
                     # Connect to default 'postgres' database to create our database
                     if database_url:
@@ -242,7 +242,7 @@ def get_db_connection():
                     cursor.close()
                     temp_conn.close()
                     
-                    print(f"Database '{db_name}' created successfully!")
+                    # print(f"Database '{db_name}' created successfully!")
                     
                     # Now try to connect to the newly created database
                     if database_url:
@@ -252,10 +252,12 @@ def get_db_connection():
                     return conn
                     
                 except Exception as create_error:
-                    print(f"Failed to create database: {create_error}")
-                    print("Falling back to SQLite...")
+                    # print(f"Failed to create database: {create_error}")
+                    # print("Falling back to SQLite...")
+                    pass
             else:
-                print("Falling back to SQLite...")
+                # print("Falling back to SQLite...")
+                pass
     
     # Fallback to SQLite (development)
     conn = sqlite3.connect(app.config['DATABASE'], timeout=20.0)
@@ -275,7 +277,7 @@ def is_postgresql():
     database_url = os.getenv('DATABASE_URL')
     pg_host = os.getenv('PGHOST') or os.getenv('POSTGRES_HOST')
     is_pg = POSTGRESQL_AVAILABLE and bool(database_url or pg_host)
-    print(f"is_postgresql() check: POSTGRESQL_AVAILABLE={POSTGRESQL_AVAILABLE}, database_url={'set' if database_url else 'not set'}, pg_host={'set' if pg_host else 'not set'}, result={is_pg}")
+    # print(f"is_postgresql() check: POSTGRESQL_AVAILABLE={POSTGRESQL_AVAILABLE}, database_url={'set' if database_url else 'not set'}, pg_host={'set' if pg_host else 'not set'}, result={is_pg}")
     return is_pg
 
 def get_placeholder():
@@ -462,14 +464,15 @@ def init_db():
             count = result[0] if isinstance(result, tuple) else result['count']
             if count == 0:
                 need_init = True
-                print("PostgreSQL detected - tables don't exist, initializing database...")
+                # print("PostgreSQL detected - tables don't exist, initializing database...")
             else:
-                print("PostgreSQL detected - tables already exist, skipping initialization")
+                # print("PostgreSQL detected - tables already exist, skipping initialization")
+                pass
             conn.close()
         except Exception as e:
             # Table doesn't exist, need to initialize
             need_init = True
-            print(f"PostgreSQL detected - error checking tables: {e}, initializing database...")
+            # print(f"PostgreSQL detected - error checking tables: {e}, initializing database...")
     else:
         # For SQLite, check if database file exists
         if not os.path.exists(app.config['DATABASE']):
@@ -3151,6 +3154,26 @@ def auth_login():
         print(f"Login error: {e}")
         return jsonify({'success': False, 'message': 'Login failed. Please try again.'})
 
+@app.route('/api/auth/logout', methods=['POST'])
+def auth_logout():
+    """Handle user logout."""
+    try:
+        # Log logout action
+        user_id = session.get('user_id')
+        if user_id:
+            log_user_action("LOGOUT", user_id, {
+                'timestamp': datetime.now().isoformat()
+            })
+        
+        # Clear session data
+        session.clear()
+        
+        return jsonify({'success': True, 'message': 'Logout successful'})
+        
+    except Exception as e:
+        print(f"Logout error: {e}")
+        return jsonify({'success': False, 'message': 'Logout failed'}), 500
+
 @app.route('/api/account/password', methods=['PUT'])
 def change_password():
     """Change current user's password (requires current password)."""
@@ -3167,6 +3190,55 @@ def change_password():
             return jsonify({'success': False, 'message': 'Current and new password are required'}), 400
 
         if len(new_password) < 6:
+            return jsonify({'success': False, 'message': 'New password must be at least 6 characters'}), 400
+
+        conn = get_db_connection()
+        placeholder = get_placeholder()
+        cursor = execute_query(conn, f'SELECT user_id, password_hash FROM users WHERE user_id = {placeholder} AND is_active = TRUE', (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+
+        if not bcrypt.checkpw(current_password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+            conn.close()
+            return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
+
+        new_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        placeholder = get_placeholder()
+        execute_update(conn, f'UPDATE users SET password_hash = {placeholder}, updated_at = CURRENT_TIMESTAMP WHERE user_id = {placeholder}', (new_hash, user_id))
+        conn.close()
+        return jsonify({'success': True, 'message': 'Password updated successfully'})
+    except Exception as e:
+        print(f"Change password error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to change password'}), 500
+
+@app.route('/api/change-password', methods=['POST'])
+def change_password_post():
+    """Change current user's password via POST method (for frontend compatibility)."""
+    try:
+        # print(f"Change password request received")
+        data = request.get_json() or {}
+        # print(f"Request data: {data}")
+        
+        current_password = (data.get('current_password') or '').strip()
+        new_password = (data.get('new_password') or '').strip()
+        
+        # print(f"Current password length: {len(current_password)}")
+        # print(f"New password length: {len(new_password)}")
+
+        user_id = get_current_user_id()
+        # print(f"User ID: {user_id}")
+        if not user_id:
+            # print("No user ID found - not authenticated")
+            return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+
+        if not current_password or not new_password:
+            # print(f"Missing passwords - current: {bool(current_password)}, new: {bool(new_password)}")
+            return jsonify({'success': False, 'message': 'Current and new password are required'}), 400
+
+        if len(new_password) < 6:
+            # print(f"New password too short: {len(new_password)}")
             return jsonify({'success': False, 'message': 'New password must be at least 6 characters'}), 400
 
         conn = get_db_connection()
@@ -8841,6 +8913,188 @@ def get_loyalty_analytics():
             'success': False,
             'error': str(e)
         }), 500
+
+# AI API Endpoints
+@app.route('/api/ai/customer-segmentation')
+def get_customer_segmentation():
+    """Get customer segmentation analysis using AI/ML."""
+    try:
+        user_id = get_current_user_id()
+        conn = get_db_connection()
+        placeholder = get_placeholder()
+        
+        # Extract customer features for segmentation
+        cursor = execute_query(conn, f'''
+            SELECT 
+                c.customer_id,
+                c.customer_name,
+                c.customer_mobile,
+                c.customer_type,
+                c.customer_city,
+                c.customer_area,
+                COUNT(b.bill_id) as total_orders,
+                COALESCE(SUM(b.total_amount), 0) as total_spent,
+                COALESCE(AVG(b.total_amount), 0) as avg_order_value,
+                MAX(b.bill_date) as last_order_date,
+                EXTRACT(DAYS FROM NOW() - MAX(b.bill_date)) as days_since_last_order,
+                COUNT(DISTINCT b.bill_date::date) as unique_visit_days,
+                MIN(b.bill_date) as first_order_date,
+                EXTRACT(DAYS FROM MAX(b.bill_date) - MIN(b.bill_date)) as customer_lifetime_days
+            FROM customers c
+            LEFT JOIN bills b ON c.customer_mobile = b.bill_mobile
+            WHERE c.user_id = {placeholder}
+            GROUP BY c.customer_id, c.customer_name, c.customer_mobile, c.customer_type, c.customer_city, c.customer_area
+            HAVING COUNT(b.bill_id) > 0
+            ORDER BY total_spent DESC
+        ''', (user_id,))
+        
+        customers = cursor.fetchall()
+        
+        if not customers:
+            return jsonify({
+                'success': False,
+                'error': 'No customer data available for segmentation'
+            })
+        
+        # Simple segmentation logic (can be enhanced with ML models later)
+        segmented_customers = []
+        for customer in customers:
+            customer_dict = dict(customer)
+            
+            # Calculate customer value score (RFM analysis)
+            recency_score = max(0, 100 - customer_dict['days_since_last_order'] or 0)
+            frequency_score = min(100, (customer_dict['total_orders'] or 0) * 10)
+            monetary_score = min(100, (customer_dict['total_spent'] or 0) / 10)
+            
+            customer_value_score = (recency_score * 0.2 + frequency_score * 0.4 + monetary_score * 0.4)
+            
+            # Determine segment based on value score and behavior
+            if customer_value_score >= 80 and customer_dict['total_orders'] >= 10:
+                segment = 'Loyal VIPs'
+            elif customer_value_score >= 60 and customer_dict['total_orders'] >= 5:
+                segment = 'Regular Customers'
+            elif customer_dict['days_since_last_order'] > 90:
+                segment = 'At-Risk Customers'
+            elif customer_dict['customer_lifetime_days'] < 30:
+                segment = 'New Customers'
+            else:
+                segment = 'Occasional Buyers'
+            
+            customer_dict['segment'] = segment
+            customer_dict['segment_label'] = segment
+            customer_dict['customer_value_score'] = round(customer_value_score, 2)
+            
+            segmented_customers.append(customer_dict)
+        
+        # Group by segments for summary
+        segments_summary = {}
+        for customer in segmented_customers:
+            segment = customer['segment_label']
+            if segment not in segments_summary:
+                segments_summary[segment] = {
+                    'label': segment,
+                    'count': 0,
+                    'total_spent': 0,
+                    'avg_order_value': 0
+                }
+            
+            segments_summary[segment]['count'] += 1
+            segments_summary[segment]['total_spent'] += customer['total_spent']
+            segments_summary[segment]['avg_order_value'] += customer['avg_order_value']
+        
+        # Calculate averages
+        for segment in segments_summary.values():
+            if segment['count'] > 0:
+                segment['avg_order_value'] = round(segment['avg_order_value'] / segment['count'], 2)
+        
+        segments_list = list(segments_summary.values())
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'segments': segments_list,
+            'customers': segmented_customers
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/ai/export-segmentation', methods=['POST'])
+def export_segmentation_data():
+    """Export customer segmentation data in various formats."""
+    try:
+        data = request.get_json()
+        format_type = data.get('format', 'csv')
+        customer_data = data.get('data', [])
+        
+        if not customer_data:
+            return jsonify({
+                'success': False,
+                'error': 'No data provided for export'
+            }), 400
+        
+        if format_type == 'csv':
+            # Create CSV data
+            output = StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            headers = ['Customer ID', 'Name', 'Mobile', 'Segment', 'Total Orders', 'Total Spent', 'Avg Order Value', 'Last Visit', 'Customer Value Score']
+            writer.writerow(headers)
+            
+            # Write data
+            for customer in customer_data:
+                writer.writerow([
+                    customer.get('customer_id', ''),
+                    customer.get('customer_name', ''),
+                    customer.get('customer_mobile', ''),
+                    customer.get('segment_label', ''),
+                    customer.get('total_orders', 0),
+                    customer.get('total_spent', 0),
+                    customer.get('avg_order_value', 0),
+                    customer.get('last_order_date', ''),
+                    customer.get('customer_value_score', 0)
+                ])
+            
+            output.seek(0)
+            
+            return Response(
+                output.getvalue(),
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename=customer-segmentation-{datetime.now().strftime("%Y%m%d")}.csv'}
+            )
+        
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Unsupported export format: {format_type}'
+            }), 400
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/ai-dashboard')
+def ai_dashboard():
+    """AI Dashboard page."""
+    try:
+        user_id = get_current_user_id()
+        if not user_id:
+            return redirect(url_for('login'))
+        
+        # Get user plan info for the template
+        user_plan_info = get_user_plan_info(user_id)
+        
+        return render_template('ai-dashboard.html', user_plan_info=user_plan_info)
+        
+    except Exception as e:
+        return redirect(url_for('login'))
 
 if __name__ == '__main__':
     setup_ocr()  # Initialize OCR
