@@ -13201,3 +13201,31 @@ LINE 6:              RETURNING id
 2025-09-01 19:51:57,050 - werkzeug - INFO - 127.0.0.1 - - [01/Sep/2025 19:51:57] "GET /api/recurring-expenses HTTP/1.1" 200 -
 2025-09-01 19:51:57,428 - werkzeug - INFO - 127.0.0.1 - - [01/Sep/2025 19:51:57] "GET /api/dashboard HTTP/1.1" 200 -
 2025-09-01 19:51:57,428 - werkzeug - INFO - 127.0.0.1 - - [01/Sep/2025 19:51:57] "GET /api/dashboard HTTP/1.1" 200 -
+2025-09-02 05:43:57,074 - root - INFO - Tesseract found at: C:\Program Files\Tesseract-OCR\tesseract.exe
+2025-09-02 05:43:57,454 - root - INFO - Admin user setup completed
+2025-09-02 05:43:57,454 - root - INFO - Admin user setup completed
+2025-09-02 05:43:57,462 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.33:5000
+2025-09-02 05:43:57,462 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.33:5000
+2025-09-02 05:43:57,463 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-02 05:43:57,463 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-02 05:44:05,452 - werkzeug - INFO - 127.0.0.1 - - [02/Sep/2025 05:44:05] "GET /app HTTP/1.1" 200 -
+2025-09-02 05:44:05,452 - werkzeug - INFO - 127.0.0.1 - - [02/Sep/2025 05:44:05] "GET /app HTTP/1.1" 200 -
+2025-09-02 05:49:16,154 - root - INFO - Tesseract found at: C:\Program Files\Tesseract-OCR\tesseract.exe
+2025-09-02 05:49:16,556 - root - INFO - Admin user setup completed
+2025-09-02 05:49:16,556 - root - INFO - Admin user setup completed
+2025-09-02 05:49:16,567 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.33:5000
+2025-09-02 05:49:16,567 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.33:5000
+2025-09-02 05:49:16,568 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-02 05:49:16,568 - werkzeug - INFO - [33mPress CTRL+C to quit[0m

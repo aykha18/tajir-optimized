@@ -8843,14 +8843,6 @@ def get_loyalty_analytics():
         }), 500
 
 if __name__ == '__main__':
-    # Debug PostgreSQL connection first
-    print("=== Starting PostgreSQL Connection Debug ===")
-    try:
-        from debug_connection import debug_connection
-        debug_connection()
-    except Exception as e:
-        print(f"Debug script failed: {e}")
-    
     setup_ocr()  # Initialize OCR
     init_db()  # Initialize database and create tables
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=False, host='0.0.0.0', port=5000) 
