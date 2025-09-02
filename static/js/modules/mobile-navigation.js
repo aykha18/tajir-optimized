@@ -238,7 +238,7 @@ class MobileNavigation {
       const sectionMap = {
         'dashboard': 'dashSec',
         'billing': 'billingSec',
-        'products': 'productSec',
+        'products': 'productsSec',
         'employees': 'employeeSec'
       };
       

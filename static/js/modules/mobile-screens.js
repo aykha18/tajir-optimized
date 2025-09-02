@@ -104,18 +104,7 @@ class MobileScreens {
       console.log('Employee section not found');
     }
 
-    // Add view toggle for VAT screen
-    const vatSection = document.getElementById('vatSec');
-    if (vatSection) {
-      console.log('Found VAT section, adding toggle');
-      const toggleButton = this.createViewToggleButton('vat');
-      const header = vatSection.querySelector('h3');
-      if (header) {
-        header.parentNode.insertBefore(toggleButton, header.nextSibling);
-      }
-    } else {
-      console.log('VAT section not found');
-    }
+    // VAT section moved to Shop Settings as a tab
   }
 
   createViewToggleButton(type) {
