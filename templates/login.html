@@ -530,7 +530,12 @@
       if (data.success) {
         showToast('success', 'Login Successful', 'Welcome back! Redirecting...', 2000);
         setTimeout(() => {
-          window.location.href = '/app';
+          // Check if there's a redirect URL from the server
+          if (data.redirect) {
+            window.location.href = data.redirect;
+          } else {
+            window.location.href = '/app';
+          }
         }, 2000);
       } else {
         showToast('error', 'Login Failed', data.message || 'Invalid email or password');

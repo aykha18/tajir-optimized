@@ -171,6 +171,12 @@ app = Flask(__name__)
 app.config['DATABASE'] = os.getenv('DATABASE_PATH', 'pos_tailor.db')
 app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))  # Add secret key for sessions
 
+# Configure session settings
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)  # Session lasts 8 hours
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent XSS attacks
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
+
 
 
 def get_db_connection():
@@ -403,14 +409,22 @@ def execute_update(conn, sql, params=None):
     return cursor.rowcount
 
 def get_current_user_id():
-    """Get current user_id from session, fallback to 1 for backward compatibility."""
-    # For testing purposes, return user_id 2 since that's where the bills are
-    return session.get('user_id', 2)
+    """Get current user_id from session, fallback to None for proper authentication."""
+    return session.get('user_id')
 
 def get_user_plan_info():
     """Get current user plan information and shop settings for template rendering."""
     try:
         user_id = get_current_user_id()
+        if not user_id:
+            # Return default plan info for unauthenticated users
+            return {
+                'plan_type': 'trial',
+                'plan_name': 'Tajir Trial',
+                'plan_display_name': 'Tajir Trial',
+                'shop_settings': None
+            }
+        
         conn = get_db_connection()
         placeholder = get_placeholder()
         cursor = execute_query(conn, f'SELECT * FROM user_plans WHERE user_id = {placeholder} AND is_active = TRUE', (user_id,))
@@ -495,17 +509,17 @@ def init_db():
     if need_init:
         # Choose the appropriate schema file based on database type
         pg_check = is_postgresql()
-        print(f"Database type check: is_postgresql() = {pg_check}")
-        print(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'Not set')}")
-        print(f"PGHOST: {os.getenv('PGHOST', 'Not set')}")
-        print(f"POSTGRESQL_AVAILABLE: {POSTGRESQL_AVAILABLE}")
+        # print(f"Database type check: is_postgresql() = {pg_check}")
+        # print(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'Not set')}")
+        # print(f"PGHOST: {os.getenv('PGHOST', 'Not set')}")
+        # print(f"POSTGRESQL_AVAILABLE: {POSTGRESQL_AVAILABLE}")
         
         if is_postgresql():
             schema_file = 'database_schema_postgresql.sql'
-            print(f"Using PostgreSQL schema: {schema_file}")
+            # print(f"Using PostgreSQL schema: {schema_file}")
         else:
             schema_file = 'database_schema.sql'
-            print(f"Using SQLite schema: {schema_file}")
+            # print(f"Using SQLite schema: {schema_file}")
         
         try:
             with open(schema_file, 'r') as f:
@@ -522,34 +536,35 @@ def init_db():
                 # For PostgreSQL, execute statements one by one
                 statements = schema.split(';')
                 cursor = conn.cursor()
-                print(f"Executing {len(statements)} statements from schema file...")
+                # print(f"Executing {len(statements)} statements from schema file...")
                 executed_count = 0
                 for i, statement in enumerate(statements):
                     statement = statement.strip()
-                    print(f"Statement {i+1} (length: {len(statement)}): {statement[:50]}...")
+                    # print(f"Statement {i+1} (length: {len(statement)}): {statement[:50]}...")
                     
                     # Skip empty statements
                     if not statement:
-                        print(f"Skipping statement {i+1} (empty)")
+                        # print(f"Skipping statement {i+1} (empty)")
                         continue
                     
                     # Skip pure comment statements (lines that are only comments)
                     if statement.startswith('--') and not any(keyword in statement.upper() for keyword in ['CREATE', 'INSERT', 'ALTER', 'DROP', 'SELECT', 'UPDATE', 'DELETE']):
-                        print(f"Skipping statement {i+1} (pure comment)")
+                        # print(f"Skipping statement {i+1} (pure comment)")
                         continue
                     
                     # Execute the statement
                     try:
-                        print(f"Executing statement {i+1}: {statement[:100]}...")
+                        # print(f"Executing statement {i+1}: {statement[:100]}...")
                         cursor.execute(statement)
                         executed_count += 1
-                        print(f"✅ Statement {i+1} executed successfully")
+                        # print(f"✅ Statement {i+1} executed successfully")
                     except Exception as stmt_error:
-                        print(f"❌ Warning: Failed to execute statement {i+1}: {stmt_error}")
-                        print(f"Statement: {statement}")
+                        # print(f"❌ Warning: Failed to execute statement {i+1}: {stmt_error}")
+                        # print(f"Statement: {statement}")
                         # Continue with other statements
+                        pass
                 
-                print(f"Successfully executed {executed_count} statements")
+                # print(f"Successfully executed {executed_count} statements")
                 conn.commit()  # Commit the transaction
                 cursor.close()
                 
@@ -558,16 +573,17 @@ def init_db():
                     verify_cursor = conn.cursor()
                     verify_cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
                     tables = verify_cursor.fetchall()
-                    print(f"Tables created: {[table[0] for table in tables]}")
+                    # print(f"Tables created: {[table[0] for table in tables]}")
                     verify_cursor.close()
                 except Exception as verify_error:
-                    print(f"Error verifying tables: {verify_error}")
+                    # print(f"Error verifying tables: {verify_error}")
+                    pass
                 
-                print(f"PostgreSQL database initialized successfully using {schema_file}")
+                # print(f"PostgreSQL database initialized successfully using {schema_file}")
             else:
                 # For SQLite, use executescript
                 conn.executescript(schema)
-                print("SQLite database initialized successfully")
+                # print("SQLite database initialized successfully")
             logger.info("Database initialized successfully with logging tables")
         except Exception as e:
             log_dml_error("INIT", "database", e)
@@ -726,11 +742,24 @@ def favicon():
 
 @app.route('/app')
 def app_page():
-    user_plan_info = get_user_plan_info()
-    return render_template('app.html', 
-                        user_plan_info=user_plan_info,
-                        get_user_language=get_user_language,
-                        get_translated_text=get_translated_text)
+    """Main application page - requires authentication."""
+    try:
+        user_id = get_current_user_id()
+        if not user_id:
+            # Store the intended destination in session for redirect after login
+            session['next'] = request.url
+            return redirect(url_for('login'))
+        
+        user_plan_info = get_user_plan_info()
+        return render_template('app.html', 
+                            user_plan_info=user_plan_info,
+                            get_user_language=get_user_language,
+                            get_translated_text=get_translated_text)
+        
+    except Exception as e:
+        # Store the intended destination in session for redirect after login
+        session['next'] = request.url
+        return redirect(url_for('login'))
 
 
 
@@ -3127,6 +3156,7 @@ def auth_login():
         # Set session data (you might want to use Flask-Session or JWT tokens)
         # For now, we'll store user info in session
         from flask import session
+        session.permanent = True  # Make session persistent
         session['user_id'] = user['user_id']
         session['shop_name'] = user['shop_name']
         session['shop_code'] = user['shop_code']
@@ -3139,6 +3169,22 @@ def auth_login():
             'timestamp': datetime.now().isoformat()
         })
         conn.close()
+        
+        # Check if there's a redirect destination stored in session
+        next_url = session.get('next')
+        if next_url:
+            # Remove the stored destination
+            session.pop('next', None)
+            return jsonify({
+                'success': True,
+                'message': 'Login successful',
+                'redirect': next_url,
+                'user': {
+                    'user_id': user['user_id'],
+                    'shop_name': user['shop_name'],
+                    'shop_code': user['shop_code']
+                }
+            })
         
         return jsonify({
             'success': True,
@@ -8927,23 +8973,31 @@ def get_customer_segmentation():
         cursor = execute_query(conn, f'''
             SELECT 
                 c.customer_id,
-                c.customer_name,
-                c.customer_mobile,
+                c.name as customer_name,
+                c.phone as customer_mobile,
                 c.customer_type,
-                c.customer_city,
-                c.customer_area,
+                c.city as customer_city,
+                c.area as customer_area,
                 COUNT(b.bill_id) as total_orders,
                 COALESCE(SUM(b.total_amount), 0) as total_spent,
                 COALESCE(AVG(b.total_amount), 0) as avg_order_value,
                 MAX(b.bill_date) as last_order_date,
-                EXTRACT(DAYS FROM NOW() - MAX(b.bill_date)) as days_since_last_order,
-                COUNT(DISTINCT b.bill_date::date) as unique_visit_days,
-                MIN(b.bill_date) as first_order_date,
-                EXTRACT(DAYS FROM MAX(b.bill_date) - MIN(b.bill_date)) as customer_lifetime_days
+                                            CASE 
+                                WHEN MAX(b.bill_date) IS NOT NULL 
+                                THEN (NOW()::date - MAX(b.bill_date)::date)
+                                ELSE 999 
+                            END as days_since_last_order,
+                            COUNT(DISTINCT b.bill_date::date) as unique_visit_days,
+                            MIN(b.bill_date) as first_order_date,
+                            CASE 
+                                WHEN MAX(b.bill_date) IS NOT NULL AND MIN(b.bill_date) IS NOT NULL 
+                                THEN (MAX(b.bill_date)::date - MIN(b.bill_date)::date)
+                                ELSE 0 
+                            END as customer_lifetime_days
             FROM customers c
-            LEFT JOIN bills b ON c.customer_mobile = b.bill_mobile
+            LEFT JOIN bills b ON c.customer_id = b.customer_id
             WHERE c.user_id = {placeholder}
-            GROUP BY c.customer_id, c.customer_name, c.customer_mobile, c.customer_type, c.customer_city, c.customer_area
+            GROUP BY c.customer_id, c.name, c.phone, c.customer_type, c.city, c.area
             HAVING COUNT(b.bill_id) > 0
             ORDER BY total_spent DESC
         ''', (user_id,))
@@ -8961,21 +9015,28 @@ def get_customer_segmentation():
         for customer in customers:
             customer_dict = dict(customer)
             
+            # Convert Decimal types to float for calculations
+            total_spent = float(customer_dict['total_spent'] or 0)
+            total_orders = int(customer_dict['total_orders'] or 0)
+            days_since_last_order = int(customer_dict['days_since_last_order'] or 0)
+            customer_lifetime_days = int(customer_dict['customer_lifetime_days'] or 0)
+            avg_order_value = float(customer_dict['avg_order_value'] or 0)
+            
             # Calculate customer value score (RFM analysis)
-            recency_score = max(0, 100 - customer_dict['days_since_last_order'] or 0)
-            frequency_score = min(100, (customer_dict['total_orders'] or 0) * 10)
-            monetary_score = min(100, (customer_dict['total_spent'] or 0) / 10)
+            recency_score = max(0, 100 - days_since_last_order)
+            frequency_score = min(100, total_orders * 10)
+            monetary_score = min(100, total_spent / 10)
             
             customer_value_score = (recency_score * 0.2 + frequency_score * 0.4 + monetary_score * 0.4)
             
             # Determine segment based on value score and behavior
-            if customer_value_score >= 80 and customer_dict['total_orders'] >= 10:
+            if customer_value_score >= 80 and total_orders >= 10:
                 segment = 'Loyal VIPs'
-            elif customer_value_score >= 60 and customer_dict['total_orders'] >= 5:
+            elif customer_value_score >= 60 and total_orders >= 5:
                 segment = 'Regular Customers'
-            elif customer_dict['days_since_last_order'] > 90:
+            elif days_since_last_order > 90:
                 segment = 'At-Risk Customers'
-            elif customer_dict['customer_lifetime_days'] < 30:
+            elif customer_lifetime_days < 30:
                 segment = 'New Customers'
             else:
                 segment = 'Occasional Buyers'
@@ -8983,6 +9044,13 @@ def get_customer_segmentation():
             customer_dict['segment'] = segment
             customer_dict['segment_label'] = segment
             customer_dict['customer_value_score'] = round(customer_value_score, 2)
+            
+            # Update the converted values in the dict
+            customer_dict['total_spent'] = total_spent
+            customer_dict['total_orders'] = total_orders
+            customer_dict['days_since_last_order'] = days_since_last_order
+            customer_dict['customer_lifetime_days'] = customer_lifetime_days
+            customer_dict['avg_order_value'] = avg_order_value
             
             segmented_customers.append(customer_dict)
         
@@ -8994,18 +9062,19 @@ def get_customer_segmentation():
                 segments_summary[segment] = {
                     'label': segment,
                     'count': 0,
-                    'total_spent': 0,
-                    'avg_order_value': 0
+                    'total_spent': 0.0,
+                    'avg_order_value': 0.0
                 }
             
             segments_summary[segment]['count'] += 1
-            segments_summary[segment]['total_spent'] += customer['total_spent']
-            segments_summary[segment]['avg_order_value'] += customer['avg_order_value']
+            segments_summary[segment]['total_spent'] += float(customer['total_spent'])
+            segments_summary[segment]['avg_order_value'] += float(customer['avg_order_value'])
         
         # Calculate averages
         for segment in segments_summary.values():
             if segment['count'] > 0:
                 segment['avg_order_value'] = round(segment['avg_order_value'] / segment['count'], 2)
+                segment['total_spent'] = round(segment['total_spent'], 2)
         
         segments_list = list(segments_summary.values())
         
@@ -9086,14 +9155,21 @@ def ai_dashboard():
     try:
         user_id = get_current_user_id()
         if not user_id:
+            # Store the intended destination in session for redirect after login
+            session['next'] = request.url
             return redirect(url_for('login'))
         
         # Get user plan info for the template
-        user_plan_info = get_user_plan_info(user_id)
+        user_plan_info = get_user_plan_info()
         
-        return render_template('ai-dashboard.html', user_plan_info=user_plan_info)
+        return render_template('ai-dashboard.html', 
+                            user_plan_info=user_plan_info,
+                            get_user_language=get_user_language,
+                            get_translated_text=get_translated_text)
         
     except Exception as e:
+        # Store the intended destination in session for redirect after login
+        session['next'] = request.url
         return redirect(url_for('login'))
 
 if __name__ == '__main__':
