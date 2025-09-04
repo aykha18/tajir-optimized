@@ -175,43 +175,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
-  // Shop Settings Tab Switching Function
+  // Shop Settings Tab Switching Function (VAT optional)
   window.switchShopSettingsTab = function(tab) {
     console.log('🔄 Switching to shop settings tab:', tab);
-    
-    // Get all tab buttons and content
+
+    // Collect available tab buttons
     const shopInfoTab = document.getElementById('tabShopInfo');
     const billingConfigTab = document.getElementById('tabBillingConfig');
-    const vatTab = document.getElementById('tabVAT');
+    const vatTab = document.getElementById('tabVAT'); // optional
+
+    // Collect available content containers
     const shopInfoContent = document.getElementById('shopInfoTabContent');
     const billingConfigContent = document.getElementById('billingConfigTabContent');
-    const vatContent = document.getElementById('vatTabContent');
-    
-    console.log('🔍 Found elements:', {
-      shopInfoTab: !!shopInfoTab,
-      billingConfigTab: !!billingConfigTab,
-      vatTab: !!vatTab,
-      shopInfoContent: !!shopInfoContent,
-      billingConfigContent: !!billingConfigContent,
-      vatContent: !!vatContent
-    });
-    
-    if (!shopInfoTab || !billingConfigTab || !vatTab || !shopInfoContent || !billingConfigContent || !vatContent) {
-      console.error('❌ Shop settings tab elements not found');
+    const vatContent = document.getElementById('vatTabContent'); // optional
+
+    const tabButtons = [shopInfoTab, billingConfigTab, vatTab].filter(Boolean);
+    const tabContents = [shopInfoContent, billingConfigContent, vatContent].filter(Boolean);
+
+    if (!shopInfoTab || !billingConfigTab || !shopInfoContent || !billingConfigContent) {
+      console.error('❌ Required Shop Settings tab elements not found');
       return;
     }
-    
-    // Reset all tabs to inactive state
-    [shopInfoTab, billingConfigTab, vatTab].forEach(tabBtn => {
+
+    // Reset all visible tabs to inactive state
+    tabButtons.forEach(tabBtn => {
       tabBtn.classList.remove('bg-neutral-700', 'text-white', 'border-neutral-600');
       tabBtn.classList.add('bg-transparent', 'text-neutral-300', 'border-neutral-600/40');
     });
-    
-    // Hide all content and add contents class to prevent layout issues
-    [shopInfoContent, billingConfigContent, vatContent].forEach(content => {
+
+    // Hide all available content and add contents class to prevent layout issues
+    tabContents.forEach(content => {
       content.classList.add('hidden', 'contents');
     });
-    
+
     // Activate selected tab
     if (tab === 'shopInfo') {
       shopInfoTab.classList.add('bg-neutral-700', 'text-white', 'border-neutral-600');
@@ -221,17 +217,15 @@ document.addEventListener('DOMContentLoaded', function() {
       billingConfigTab.classList.add('bg-neutral-700', 'text-white', 'border-neutral-600');
       billingConfigTab.classList.remove('bg-transparent', 'text-neutral-300', 'border-neutral-600/40');
       billingConfigContent.classList.remove('hidden', 'contents');
-    } else if (tab === 'vat') {
+    } else if (tab === 'vat' && vatTab && vatContent) {
+      // Only handle VAT if present
       vatTab.classList.add('bg-neutral-700', 'text-white', 'border-neutral-600');
       vatTab.classList.remove('bg-transparent', 'text-neutral-300', 'border-neutral-600/40');
       vatContent.classList.remove('hidden', 'contents');
-      
-      // Load VAT data if not already loaded
+
       if (window.loadVatRates) {
         console.log('📦 Loading VAT rates...');
         loadVatRates();
-      } else {
-        console.warn('⚠️ loadVatRates function not available');
       }
     }
   };
@@ -495,4 +489,28 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 100);
     }
   });
+
+  // Initialize VAT configuration
+  try {
+    if (typeof initVatConfig === 'function') {
+      initVatConfig();
+      console.log('✓ VAT configuration initialized');
+    } else {
+      console.error('❌ initVatConfig function not available');
+    }
+  } catch (error) {
+    console.error('❌ Error initializing VAT configuration:', error);
+  }
+
+  // Initialize VAT change listeners
+  try {
+    if (typeof attachVatChangeListeners === 'function') {
+      attachVatChangeListeners();
+      console.log('✓ VAT change listeners attached');
+    } else {
+      console.error('❌ attachVatChangeListeners function not available');
+    }
+  } catch (error) {
+    console.error('❌ Error attaching VAT change listeners:', error);
+  }
 }); 

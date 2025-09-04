@@ -14,28 +14,38 @@
   <!-- Main CSS with aggressive element hiding -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css', v='1.0.1') }}">
   
-  <!-- Custom JavaScript Files -->
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/product-types.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/products.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/customers.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/vat.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/employees.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/plan-management.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/reports.js') }}"></script>
-      <script src="{{ url_for('static', filename='js/modules/shop-settings.js', v='1.0.4') }}"></script>
+  <!-- Custom VAT Icon Positioning (scoped, non-intrusive) -->
+  <style>
+    .vat-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+  </style>
   
-  <script src="{{ url_for('static', filename='js/modules/dashboard.js') }}"></script>
-      <script src="{{ url_for('static', filename='js/modules/billing-system.js', v='1.0.3') }}"></script>
-<script src="{{ url_for('static', filename='js/modules/mobile-enhancements.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/mobile-screens.js') }}"></script>
-          <script src="{{ url_for('static', filename='js/modules/mobile-navigation.js', v='1.0.2') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/mobile-billing.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/account.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/catalog-scanner.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/ocr-scanner.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/modules/barcode-scanner.js') }}"></script>
-<script src="{{ url_for('static', filename='js/modules/loyalty-program.js', v='1.4') }}"></script>
+  <!-- Custom JavaScript Files -->
+  <script src="{{ url_for('static', filename='js/app.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/product-types.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/products.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/customers.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/vat.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/vat-config.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/employees.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/plan-management.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/reports.js', v='1.0.5') }}"></script>
+      <script src="{{ url_for('static', filename='js/modules/shop-settings.js', v='1.0.5') }}"></script>
+  
+  <script src="{{ url_for('static', filename='js/modules/dashboard.js', v='1.0.5') }}"></script>
+      <script src="{{ url_for('static', filename='js/modules/billing-system.js', v='1.0.5') }}"></script>
+<script src="{{ url_for('static', filename='js/modules/mobile-enhancements.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/mobile-screens.js', v='1.0.5') }}"></script>
+          <script src="{{ url_for('static', filename='js/modules/mobile-navigation.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/mobile-billing.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/account.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/catalog-scanner.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/ocr-scanner.js', v='1.0.5') }}"></script>
+  <script src="{{ url_for('static', filename='js/modules/barcode-scanner.js', v='1.0.5') }}"></script>
+<script src="{{ url_for('static', filename='js/modules/loyalty-program.js', v='1.0.5') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -367,10 +377,18 @@
               <input id="billAdvPaid" type="number" min="0" value="0" class="compact-form h-8 text-sm">
             </div>
             <div class="col-span-1 flex flex-col">
-              <label for="vatPercent" class="text-xs text-neutral-400">VAT%</label>
-              <input id="vatPercent" type="number" min="0" step=".01" value="5" class="compact-form h-8 text-sm">
+              <div class="flex items-center justify-between">
+                <label for="vatPercent" class="text-xs text-neutral-400">VAT%</label>
+                <button type="button" id="vatConfigBtn" class="text-neutral-400 hover:text-indigo-400 transition-colors inline-flex items-center justify-center w-5 h-5" title="Configure VAT Settings">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                </button>
+              </div>
+              <input id="vatPercent" type="number" min="0" step=".01" value="5" class="compact-form h-8 text-sm" onchange="console.log('VAT change event triggered'); if(typeof recalcAllItemsForCurrentVat === 'function') { console.log('Calling recalcAllItemsForCurrentVat'); recalcAllItemsForCurrentVat(); } else { console.error('recalcAllItemsForCurrentVat not available'); }" oninput="console.log('VAT input event triggered'); if(typeof recalcAllItemsForCurrentVat === 'function') { console.log('Calling recalcAllItemsForCurrentVat'); recalcAllItemsForCurrentVat(); } else { console.error('recalcAllItemsForCurrentVat not available'); }" onblur="console.log('VAT blur event triggered'); if(typeof recalcAllItemsForCurrentVat === 'function') { console.log('Calling recalcAllItemsForCurrentVat'); recalcAllItemsForCurrentVat(); } else { console.error('recalcAllItemsForCurrentVat not available'); }">
             </div>
-            <button id="addItemBtn" class="col-span-2 modern-btn modern-btn-primary self-end h-8 text-sm">Add Item</button>
+            <button id="addItemBtn" class="col-span-1 modern-btn modern-btn-primary self-end h-8 text-sm w-32 flex-shrink-0 px-3" onclick="console.log('🔄 Add Item button clicked'); console.log('Current VAT input value:', document.getElementById('vatPercent')?.value); console.log('Bill array before adding:', typeof bill !== 'undefined' ? bill.length : 'undefined'); console.log('Bill array contents:', typeof bill !== 'undefined' ? bill : 'undefined');">Add Item</button>
           </div>
 
           <!-- Mobile Layout (visible only on mobile) -->
@@ -407,8 +425,16 @@
 
             <!-- VAT Row -->
             <div class="flex flex-col">
-              <label for="vatPercentMobile" class="text-sm font-medium text-neutral-300 mb-1">Tax Rate (%)</label>
-              <input id="vatPercentMobile" type="number" min="0" step=".01" value="5" class="w-full px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60">
+              <div class="flex items-center justify-between mb-1">
+                <label for="vatPercentMobile" class="text-sm font-medium text-neutral-300">Tax Rate (%)</label>
+                <button type="button" id="vatConfigBtnMobile" class="text-neutral-400 hover:text-indigo-400 transition-colors inline-flex items-center justify-center w-5 h-5" title="Configure VAT Settings">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                </button>
+              </div>
+              <input id="vatPercentMobile" type="number" min="0" step=".01" value="5" class="px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60" onchange="if(typeof recalcAllItemsForCurrentVat === 'function') recalcAllItemsForCurrentVat();" oninput="if(typeof recalcAllItemsForCurrentVat === 'function') recalcAllItemsForCurrentVat();" onblur="if(typeof recalcAllItemsForCurrentVat === 'function') recalcAllItemsForCurrentVat();">
             </div>
 
             <!-- Master Row -->
@@ -418,7 +444,7 @@
             </div>
 
             <!-- Add Button and WhatsApp Button Row -->
-            <button id="addItemBtnMobile" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 w-full">
+            <button id="addItemBtnMobile" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 w-full" onclick="console.log('🔄 Mobile Add Item button clicked'); console.log('Current VAT input value (mobile):', document.getElementById('vatPercentMobile')?.value); console.log('Bill array before adding (mobile):', typeof bill !== 'undefined' ? bill.length : 'undefined'); console.log('Bill array contents (mobile):', typeof bill !== 'undefined' ? bill : 'undefined');">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
               </svg>
@@ -453,8 +479,8 @@
             <span class="text-neutral-400 text-sm">Subtotal:</span>
             <span id="subTotal" class="font-semibold tracking-tight text-sm">AED 0.00</span>
             </div>
-          <div class="bill-summary-row">
-            <span class="text-neutral-400 text-sm">Tax (5%):</span>
+          <div class="bill-summary-row" id="vatSummaryRow">
+            <span class="text-neutral-400 text-sm" id="vatLabel">Tax (5%):</span>
             <span id="vatAmount" class="font-semibold tracking-tight text-sm">AED 0.00</span>
           </div>
           <div class="bill-summary-row">
@@ -501,6 +527,47 @@
           </div>
           <div id="searchInvoiceResults" class="overflow-y-auto max-h-96">
             <!-- Search results will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- VAT CONFIGURATION MODAL -->
+      <div id="vatConfigModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden">
+        <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-md">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-semibold text-white">VAT Configuration</h3>
+            <button id="closeVatConfig" class="text-neutral-400 hover:text-white transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="space-y-6">
+            <div>
+              <label for="defaultVatPercent" class="block text-sm font-medium text-neutral-300 mb-2">Default VAT Percentage</label>
+              <input id="defaultVatPercent" type="number" min="0" max="100" step="0.01" value="5" 
+                     class="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-400/60">
+              <p class="text-xs text-neutral-500 mt-1">This will be the default value for new bills</p>
+            </div>
+            
+            <div>
+              <label for="vatDisplayOption" class="block text-sm font-medium text-neutral-300 mb-2">VAT Display Option</label>
+              <select id="vatDisplayOption" class="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-400/60">
+                <option value="show">Always show VAT in invoices</option>
+                <option value="hide_zero">Hide VAT when set to 0%</option>
+              </select>
+              <p class="text-xs text-neutral-500 mt-1">Choose when to display VAT information</p>
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+              <button id="saveVatConfig" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                Save Settings
+              </button>
+              <button id="cancelVatConfig" class="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       </div>

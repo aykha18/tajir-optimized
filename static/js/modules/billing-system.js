@@ -2603,7 +2603,8 @@ function initializeBillingSystem() {
     const price = parseFloat(priceInput.value) || 0;
     const discount = parseFloat(discountInput?.value) || 0;
     const advance = parseFloat(advanceInput?.value) || 0;
-    const vatPercent = parseFloat(vatInput?.value) || 5;
+    const vatPercent = parseFloat(vatInput?.value) || 0;
+    console.log('🔧 handleAddItem: VAT input value =', vatInput?.value, 'parsed VAT =', vatPercent);
     
     // Check if this product already exists in the bill
     const existingItemIndex = bill.findIndex(item => item.product_id === productId);
@@ -2684,6 +2685,7 @@ function initializeBillingSystem() {
     const discountAmount = Math.round((subtotal * discount / 100) * 100) / 100;
     const total = Math.round((subtotal - discountAmount) * 100) / 100;
     const vatAmount = Math.round(total * (vatPercent / 100) * 100) / 100;
+    console.log('🔧 handleAddItem: VAT calculation - total =', total, 'vatPercent =', vatPercent, 'vatAmount =', vatAmount);
     
     // Add item to bill
     const item = {
@@ -2854,7 +2856,9 @@ function initializeBillingSystem() {
       advanceInput.classList.remove('billing-input-error');
     }
     if (vatInput) {
-      vatInput.value = '5';
+      // Use default VAT from configuration if available
+      const defaultVat = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
+      vatInput.value = defaultVat;
       vatInput.classList.remove('billing-input-error');
     }
     
@@ -3174,6 +3178,37 @@ function initializeBillingSystem() {
 
 
 
+  // Setup VAT input change listeners
+  function setupVatInputListeners() {
+    const vatInputs = [
+      document.getElementById('vatPercent'),
+      document.getElementById('vatPercentMobile')
+    ];
+    
+    vatInputs.forEach(input => {
+      if (input) {
+        input.addEventListener('input', () => {
+          if (window.onVatInputChange) {
+            window.onVatInputChange();
+          }
+          // Also update the VAT label in the summary
+          updateVatSummaryLabel();
+        });
+      }
+    });
+  }
+  
+  // Update VAT summary label
+  function updateVatSummaryLabel() {
+    const vatLabel = document.getElementById('vatLabel');
+    const vatInput = document.getElementById('vatPercent') || document.getElementById('vatPercentMobile');
+    
+    if (vatLabel && vatInput) {
+      const vatPercent = parseFloat(vatInput.value) || 0;
+      vatLabel.textContent = `Tax (${vatPercent}%):`;
+    }
+  }
+
   // Setup Print Button functionality
   function setupPrintButton() {
     const printBtn = document.getElementById('printBtn');
@@ -3237,6 +3272,10 @@ function initializeBillingSystem() {
         const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
         const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
         const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
+        
+        // Check if VAT should be displayed based on configuration
+        const shouldShowVat = window.shouldDisplayVat ? window.shouldDisplayVat(totalVat > 0 ? 1 : 0) : true;
+        
         const totalBeforeAdvance = subtotal + totalVat;
         const amountDue = totalBeforeAdvance - totalAdvance;
         
@@ -3260,6 +3299,7 @@ function initializeBillingSystem() {
             subtotal: subtotal,
             discount: 0, // No discount field in current UI
             vat_amount: totalVat,
+            should_show_vat: shouldShowVat, // Flag for VAT display
             total_amount: amountDue,
             advance_paid: totalAdvance,
             balance_amount: amountDue
@@ -3348,6 +3388,14 @@ function initializeBillingSystem() {
   setupSmartDefaults();
   setupMobileBillingToggle();
   setupPrintButton(); // Add print button setup
+  
+  // Initialize VAT configuration
+  if (window.initVatConfig) {
+    window.initVatConfig();
+  }
+  
+  // Setup VAT input change listeners
+  setupVatInputListeners();
   
   // Initialize Save Bill and WhatsApp functionality
   initializeSaveBill();
@@ -3668,6 +3716,7 @@ function initializeBillingSystem() {
       }
   }
 
+
   // Function to prepare bill data for saving
   async function prepareBillData() {
     // Check if bill has items
@@ -3729,10 +3778,25 @@ function initializeBillingSystem() {
       }
     }
     
+    // Ensure items use the current VAT percent
+    const vatInputEl = document.getElementById('vatPercent') || document.getElementById('vatPercentMobile');
+    const currentVatPercent = parseFloat(vatInputEl?.value) || 0;
+    bill.forEach((it) => {
+      const rate = parseFloat(it.rate) || 0;
+      const quantity = parseInt(it.quantity) || 0;
+      const discount = parseFloat(it.discount) || 0;
+      const subtotalBeforeDiscount = rate * quantity;
+      const discountAmount = (subtotalBeforeDiscount * discount) / 100;
+      const totalAfterDiscount = subtotalBeforeDiscount - discountAmount;
+      it.vat_percent = currentVatPercent;
+      it.vat_amount = (totalAfterDiscount * currentVatPercent) / 100;
+      it.total = totalAfterDiscount + it.vat_amount;
+    });
+
     // Calculate totals from bill array (same logic as updateTotals function)
-    const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
+    const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount (incl. VAT per item)
     const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
-    const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
+    const totalVat = bill.reduce((sum, item) => sum + (item.vat_amount || 0), 0); // Sum of individual VAT amounts
     const totalBeforeAdvance = subtotal + totalVat;
     const amountDue = totalBeforeAdvance - totalAdvance;
     
@@ -3756,6 +3820,7 @@ function initializeBillingSystem() {
         subtotal: subtotal,
         discount: 0, // No discount field in current UI
         vat_amount: totalVat,
+        vat_percent: currentVatPercent,
         total_amount: amountDue,
         advance_paid: totalAdvance,
         balance_amount: amountDue
@@ -4228,10 +4293,13 @@ if (document.readyState === 'loading') {
       
       // Then call the original initialization
       initializeBillingSystem();
+      // Attach VAT listeners
+      try { attachVatChangeListeners(); } catch(e) {}
     } catch (error) {
       console.error('Error in async billing initialization:', error);
       // Fallback to original initialization
       initializeBillingSystem();
+      try { attachVatChangeListeners(); } catch(e) {}
     }
   });
 } else {
@@ -4246,10 +4314,132 @@ if (document.readyState === 'loading') {
       
       // Then call the original initialization
       initializeBillingSystem();
+      try { attachVatChangeListeners(); } catch(e) {}
     } catch (error) {
       console.error('Error in async billing initialization:', error);
       // Fallback to original initialization
       initializeBillingSystem();
+      try { attachVatChangeListeners(); } catch(e) {}
     }
   })();
 }
+
+// VAT Functions - Global Scope
+function recalcAllItemsForCurrentVat() {
+  console.log('🚀 recalcAllItemsForCurrentVat function called!');
+  
+  const vatInput = document.getElementById('vatPercent') || document.getElementById('vatPercentMobile');
+  const currentVat = parseFloat(vatInput?.value) || 0;
+  
+  console.log(`🔄 Recalculating VAT for all items with ${currentVat}%`);
+  console.log(`VAT Input element:`, vatInput);
+  console.log(`VAT Input value:`, vatInput?.value);
+  
+  // Try multiple ways to access the bill array
+  let billArray = null;
+  
+  if (typeof bill !== 'undefined' && Array.isArray(bill)) {
+    billArray = bill;
+    console.log('✓ Found bill array:', billArray.length, 'items');
+  } else if (typeof window.bill !== 'undefined' && Array.isArray(window.bill)) {
+    billArray = window.bill;
+    console.log('✓ Found window.bill array:', billArray.length, 'items');
+  } else {
+    console.error('❌ Bill array not found. Available globals:', Object.keys(window).filter(k => k.includes('bill')));
+    return;
+  }
+  
+  if (billArray && billArray.length > 0) {
+    billArray.forEach((it, index) => {
+      const rate = parseFloat(it.rate) || 0;
+      const quantity = parseInt(it.quantity) || 0;
+      const discount = parseFloat(it.discount) || 0;
+      const subtotalBeforeDiscount = rate * quantity;
+      const discountAmount = (subtotalBeforeDiscount * discount) / 100;
+      const afterDiscount = subtotalBeforeDiscount - discountAmount;
+      
+      // Update VAT values
+      it.vat_percent = currentVat;
+      it.vat_amount = (afterDiscount * currentVat) / 100;
+      it.total = afterDiscount + it.vat_amount;
+      
+      console.log(`Item ${index}: Rate=${rate}, Qty=${quantity}, Discount=${discount}%, VAT=${currentVat}%, VAT Amount=${it.vat_amount}, Total=${it.total}`);
+    });
+    
+    // Call global functions if they exist
+    if (typeof renderBillTable === 'function') {
+      renderBillTable();
+      console.log('✓ Bill table re-rendered');
+    } else {
+      console.error('❌ renderBillTable function not found');
+    }
+    
+    if (typeof updateTotals === 'function') {
+      updateTotals();
+      console.log('✓ Totals updated');
+    } else {
+      console.error('❌ updateTotals function not found');
+    }
+    
+    // Also update VAT display
+    if (typeof updateVatDisplay === 'function') {
+      updateVatDisplay();
+      console.log('✓ VAT display updated');
+    } else {
+      console.error('❌ updateVatDisplay function not found');
+    }
+  } else {
+    console.error('❌ Bill array is empty or not accessible');
+  }
+}
+
+function attachVatChangeListeners() {
+  const vatEls = [document.getElementById('vatPercent'), document.getElementById('vatPercentMobile')].filter(Boolean);
+  console.log(`Found ${vatEls.length} VAT input elements:`, vatEls.map(el => el.id));
+  
+  vatEls.forEach((el) => {
+    el.removeEventListener('input', recalcAllItemsForCurrentVat);
+    el.addEventListener('input', recalcAllItemsForCurrentVat);
+    el.removeEventListener('change', recalcAllItemsForCurrentVat);
+    el.addEventListener('change', recalcAllItemsForCurrentVat);
+    el.removeEventListener('blur', recalcAllItemsForCurrentVat);
+    el.addEventListener('blur', recalcAllItemsForCurrentVat);
+    console.log(`✓ VAT change listeners attached to ${el.id}`);
+  });
+  
+  // Also try to attach listeners with a delay in case elements are not ready
+  setTimeout(() => {
+    const delayedVatEls = [document.getElementById('vatPercent'), document.getElementById('vatPercentMobile')].filter(Boolean);
+    delayedVatEls.forEach((el) => {
+      el.removeEventListener('input', recalcAllItemsForCurrentVat);
+      el.addEventListener('input', recalcAllItemsForCurrentVat);
+      el.removeEventListener('change', recalcAllItemsForCurrentVat);
+      el.addEventListener('change', recalcAllItemsForCurrentVat);
+      el.removeEventListener('blur', recalcAllItemsForCurrentVat);
+      el.addEventListener('blur', recalcAllItemsForCurrentVat);
+    });
+    console.log(`✓ Delayed VAT change listeners attached to ${delayedVatEls.length} elements`);
+  }, 1000);
+}
+
+// Test function to verify event listeners are working
+function testVatEventListeners() {
+  console.log('🧪 Testing VAT event listeners...');
+  const vatInput = document.getElementById('vatPercent');
+  if (vatInput) {
+    console.log('VAT input found:', vatInput);
+    console.log('VAT input value:', vatInput.value);
+    
+    // Simulate a change event
+    const event = new Event('change', { bubbles: true });
+    vatInput.dispatchEvent(event);
+    console.log('✓ Change event dispatched');
+  } else {
+    console.error('❌ VAT input not found');
+  }
+}
+
+// Make VAT functions globally available
+window.recalcAllItemsForCurrentVat = recalcAllItemsForCurrentVat;
+window.attachVatChangeListeners = attachVatChangeListeners;
+window.testVatEventListeners = testVatEventListeners;

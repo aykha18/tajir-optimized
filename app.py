@@ -177,6 +177,19 @@ app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HT
 app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent XSS attacks
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
 
+# Disable caching in development
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable static file caching
+app.config['TEMPLATES_AUTO_RELOAD'] = True  # Auto-reload templates
+
+# Add cache-busting headers for development
+@app.after_request
+def after_request(response):
+    # Disable caching for all responses in development
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 
 
 def get_db_connection():
@@ -1657,7 +1670,7 @@ def create_bill():
                     # Check if customer is enrolled in loyalty program
                     cursor = execute_query(conn, f'''
                         SELECT cl.customer_id, cl.tier_level, cl.available_points,
-                               lc.points_per_currency
+                               lc.points_per_aed
                         FROM customer_loyalty cl
                         LEFT JOIN loyalty_config lc ON cl.user_id = lc.user_id
                         WHERE cl.user_id = {placeholder} AND cl.customer_id = {placeholder}
@@ -1667,8 +1680,8 @@ def create_bill():
                     
                     if loyalty_info and loyalty_info['customer_id']:
                         # Calculate points earned
-                        points_per_currency = float(loyalty_info['points_per_currency'] or 1.0)
-                        loyalty_points_earned = int(total_amount * points_per_currency)
+                        points_per_aed = float(loyalty_info['points_per_aed'] or 1.0)
+                        loyalty_points_earned = int(total_amount * points_per_aed)
                         
                         # Get tier multiplier
                         cursor = execute_query(conn, f'''
@@ -2307,6 +2320,10 @@ def print_bill(bill_id):
         bill_date = datetime.strptime(bill_date, '%Y-%m-%d').date()
     summary_data = get_invoice_summary_data(user_id, bill_date)
     
+    # Check if VAT should be displayed based on VAT amount
+    # If VAT amount is 0, don't show VAT sections
+    should_show_vat = bill.get('should_show_vat', bill.get('vat_amount', 0) > 0)
+    
     return render_template('print_bill.html', 
                          bill=bill, 
                          items=items_with_discount,
@@ -2315,6 +2332,7 @@ def print_bill(bill_id):
                          qr_code_base64=qr_code_base64,
                          shop_settings=shop_settings,
                          summary_data=summary_data,
+                         should_show_vat=should_show_vat,
                          get_user_language=get_user_language,
                          get_translated_text=get_translated_text)
 

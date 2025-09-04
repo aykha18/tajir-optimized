@@ -3,14 +3,14 @@
   'use strict';
 
   // Initialize shop settings when DOM is ready
-  function initializeShopSettings() {
-    const shopSettingsForm = document.getElementById('shopSettingsForm');
+function initializeShopSettings() {
+  const shopSettingsForm = document.getElementById('shopSettingsForm');
     if (!shopSettingsForm) {
       return;
     }
 
     // Load initial shop settings
-    loadShopSettings();
+        loadShopSettings();
     
     // Populate employees dropdown if present
     populateEmployeesDropdown();
@@ -32,6 +32,13 @@
         }
       });
     }
+    
+    // Bind logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn && !logoutBtn.hasAttribute('data-bound')) {
+      logoutBtn.setAttribute('data-bound', 'true');
+      logoutBtn.addEventListener('click', handleLogout);
+    }
   }
 
   // Load shop settings from server
@@ -50,8 +57,8 @@
         // Note: shopSettingsDisplay is commented out in HTML, so we don't show it
       } else {
         await loadBillingConfigDefaults();
-      }
-    } catch (error) {
+          }
+        } catch (error) {
       if (window.showModernAlert) {
         window.showModernAlert('Failed to load shop settings', 'error');
       }
@@ -137,12 +144,12 @@
         }
       }
     } catch (_) {}
-  }
+    }
 
-  // Handle form submission
+    // Handle form submission
   async function handleShopSettingsSubmit(e) {
-    e.preventDefault();
-    
+      e.preventDefault();
+      
     const form = e.target;
     const settings = {
       shop_name: form.querySelector('[name="shop_name"]').value.trim(),
@@ -164,7 +171,7 @@
     
     try {
       const response = await fetch('/api/shop-settings', {
-        method: 'PUT',
+          method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       });
@@ -177,10 +184,10 @@
         }
         // Reload settings to show updated values
         loadShopSettings();
-      } else {
+        } else {
         throw new Error(result.message || 'Failed to update settings');
-      }
-    } catch (error) {
+        }
+      } catch (error) {
       if (window.showModernAlert) {
         window.showModernAlert(error.message || 'Failed to update settings', 'error');
       }
@@ -207,6 +214,109 @@
     
     if (changePasswordModal) {
       changePasswordModal.classList.remove('hidden');
+      
+      // Add event listeners for modal controls
+      setupChangePasswordModal();
+    }
+  }
+
+  // Setup change password modal event listeners
+  function setupChangePasswordModal() {
+    const changePasswordModal = document.getElementById('changePasswordModal');
+    const cancelBtn = document.getElementById('cancelChangePassword');
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    
+    if (!changePasswordModal) return;
+    
+    // Cancel button functionality
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        changePasswordModal.classList.add('hidden');
+        // Clear form fields
+        if (changePasswordForm) {
+          changePasswordForm.reset();
+        }
+      });
+    }
+    
+    // Close modal when clicking outside
+    changePasswordModal.addEventListener('click', (e) => {
+      if (e.target === changePasswordModal) {
+        changePasswordModal.classList.add('hidden');
+        if (changePasswordForm) {
+          changePasswordForm.reset();
+        }
+      }
+    });
+    
+    // Handle form submission
+    if (changePasswordForm) {
+      changePasswordForm.addEventListener('submit', handleChangePasswordSubmit);
+    }
+  }
+
+  // Handle change password form submission
+  async function handleChangePasswordSubmit(e) {
+    e.preventDefault();
+    
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    // Basic validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      if (window.showModernAlert) {
+        window.showModernAlert('Please fill in all fields', 'error');
+      }
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      if (window.showModernAlert) {
+        window.showModernAlert('New passwords do not match', 'error');
+      }
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      if (window.showModernAlert) {
+        window.showModernAlert('New password must be at least 6 characters', 'error');
+      }
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        if (window.showModernAlert) {
+          window.showModernAlert('Password changed successfully', 'success');
+        }
+        // Close modal and reset form
+        const changePasswordModal = document.getElementById('changePasswordModal');
+        if (changePasswordModal) {
+          changePasswordModal.classList.add('hidden');
+        }
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        if (changePasswordForm) {
+          changePasswordForm.reset();
+        }
+      } else {
+        throw new Error(result.message || 'Failed to change password');
+      }
+    } catch (error) {
+      if (window.showModernAlert) {
+        window.showModernAlert(error.message || 'Failed to change password', 'error');
+      }
     }
   }
 
@@ -244,7 +354,35 @@
     initializeChangePassword();
   }
 
+  // Handle logout
+  async function handleLogout() {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        if (window.showModernAlert) {
+          window.showModernAlert('Logout successful', 'success');
+        }
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1000);
+      } else {
+        throw new Error(result.message || 'Logout failed');
+      }
+    } catch (error) {
+      if (window.showModernAlert) {
+        window.showModernAlert(error.message || 'Logout failed', 'error');
+      }
+    }
+  }
+
   // Export functions for global access
-  window.initializeShopSettings = initializeShopSettings;
+  window.initializeShopSettings = initializeShopSettings; 
   window.initializeChangePassword = initializeChangePassword;
 })(); 

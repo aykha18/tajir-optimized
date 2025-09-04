@@ -50,6 +50,8 @@ if (typeof window.MobileBilling === 'undefined') {
       this.setupMobileOptimizations();
       this.loadOfflineProducts();
       
+      // Initialize VAT configuration
+      this.initializeVatConfig();
       
       this.isInitialized = true;
       
@@ -154,8 +156,8 @@ if (typeof window.MobileBilling === 'undefined') {
                     <span class="bill-summary-label">Subtotal:</span>
                     <span class="bill-summary-value" id="mobile-subtotal">0.00</span>
                   </div>
-                  <div class="bill-summary-row-mobile">
-                    <span class="bill-summary-label">Tax (5%):</span>
+                  <div class="bill-summary-row-mobile" id="mobile-vat-summary-row">
+                    <span class="bill-summary-label" id="mobile-vat-label">Tax (5%):</span>
                     <span class="bill-summary-value" id="mobile-tax-amount">0.00</span>
                   </div>
                   <div class="bill-summary-row-mobile">
@@ -400,8 +402,8 @@ if (typeof window.MobileBilling === 'undefined') {
         price: item.price,
         discount: 0, // Default discount
         advance: 0, // Default advance
-        vat_percent: 5, // Default VAT
-        vat_amount: item.total * 0.05, // Calculate VAT
+            vat_percent: window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5, // Get VAT from config
+    vat_amount: item.total * ((window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5) / 100), // Calculate VAT
         subtotal: item.total, // Before discount
         total: item.total // After discount
       }));
@@ -419,7 +421,8 @@ if (typeof window.MobileBilling === 'undefined') {
           // Update existing item quantity
           mainBill[existingIndex].quantity += item.quantity;
           mainBill[existingIndex].total = mainBill[existingIndex].quantity * mainBill[existingIndex].price;
-          mainBill[existingIndex].vat_amount = mainBill[existingIndex].total * 0.05;
+          const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
+        mainBill[existingIndex].vat_amount = mainBill[existingIndex].total * (vatPercent / 100);
 
         } else {
           // Add new item
@@ -849,7 +852,8 @@ if (typeof window.MobileBilling === 'undefined') {
 
   calculateTotals() {
     const subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
-    const tax = subtotal * 0.05; // 5% tax
+    const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
+    const tax = subtotal * (vatPercent / 100); // Calculate VAT based on config
     const discount = this.currentBill.discount || 0;
     const finalTotal = subtotal + tax - discount;
 
@@ -866,7 +870,8 @@ if (typeof window.MobileBilling === 'undefined') {
 
   calculateMobileTotals() {
     const subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
-    const tax = subtotal * 0.05; // 5% tax
+    const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
+    const tax = subtotal * (vatPercent / 100); // Calculate VAT based on config
     const discount = this.currentBill.discount || 0;
     const finalTotal = subtotal + tax - discount;
 
@@ -881,9 +886,35 @@ if (typeof window.MobileBilling === 'undefined') {
     document.getElementById('mobile-discount-amount').textContent = `${discount.toFixed(2)}`;
     document.getElementById('mobile-final-total').textContent = `${finalTotal.toFixed(2)}`;
     
+    // Update VAT label
+    this.updateMobileVatLabel(vatPercent);
+    
     // Update payment method display
     this.updatePaymentMethodDisplay();
     this.updateProcessButtonState();
+  }
+  
+  // Update mobile VAT label
+  updateMobileVatLabel(vatPercent) {
+    const vatLabel = document.getElementById('mobile-vat-label');
+    const vatSummaryRow = document.getElementById('mobile-vat-summary-row');
+    
+    if (vatLabel && vatSummaryRow) {
+      vatLabel.textContent = `Tax (${vatPercent}%):`;
+      
+      // Check if VAT should be displayed based on configuration
+      if (window.shouldDisplayVat && !window.shouldDisplayVat(vatPercent)) {
+        vatSummaryRow.style.display = 'none';
+      } else {
+        vatSummaryRow.style.display = 'flex';
+      }
+    }
+  }
+  
+  // Initialize VAT configuration
+  initializeVatConfig() {
+    const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
+    this.updateMobileVatLabel(vatPercent);
   }
 
   clearBill() {
@@ -2062,7 +2093,8 @@ if (typeof window.MobileBilling === 'undefined') {
   // Enhanced Total Calculation
   calculateMobileTotals() {
     const subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
-    const tax = subtotal * 0.05; // 5% tax
+    const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
+    const tax = subtotal * (vatPercent / 100); // Calculate VAT based on config
     
     // Calculate discount
     let discount = 0;
@@ -2084,6 +2116,9 @@ if (typeof window.MobileBilling === 'undefined') {
     document.getElementById('mobile-tax-amount').textContent = `${tax.toFixed(2)}`;
     document.getElementById('mobile-discount-amount').textContent = `${discount.toFixed(2)}`;
     document.getElementById('mobile-final-total').textContent = `${finalTotal.toFixed(2)}`;
+    
+    // Update VAT label
+    this.updateMobileVatLabel(vatPercent);
     
     // Update payment method display
     this.updatePaymentMethodDisplay();
@@ -2216,7 +2251,8 @@ if (typeof window.MobileBilling === 'undefined') {
 
       // Calculate totals
       const subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
-      const tax = subtotal * 0.05; // 5% VAT
+      const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
+      const tax = subtotal * (vatPercent / 100); // Calculate VAT based on config
       const discount = this.currentBill.discount || 0;
       const finalTotal = subtotal + tax - discount;
 
@@ -2229,7 +2265,7 @@ if (typeof window.MobileBilling === 'undefined') {
         discount: 0, // No discount per item in mobile billing
         advance_paid: 0, // No advance per item in mobile billing
         total: item.total,
-        vat_amount: item.total * 0.05 // 5% VAT per item
+        vat_amount: item.total * (vatPercent / 100) // Calculate VAT per item based on config
       }));
 
              // Prepare bill data in the format expected by the API
@@ -2256,6 +2292,7 @@ if (typeof window.MobileBilling === 'undefined') {
            subtotal: subtotal,
            discount: discount,
            vat_amount: tax,
+           should_show_vat: window.shouldDisplayVat ? window.shouldDisplayVat(vatPercent) : true, // VAT display flag
            total_amount: finalTotal,
            advance_paid: 0, // No advance in mobile billing
            balance_amount: finalTotal,

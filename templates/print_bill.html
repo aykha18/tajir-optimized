@@ -138,6 +138,7 @@
 <body>
     <button class="print-btn no-print" onclick="window.print()">Print Bill</button>
     
+    {% set show_vat = should_show_vat if should_show_vat is not none else (bill.vat_percent|float > 0) %}
     <div class="header">
         {% if shop_settings.use_dynamic_invoice_template %}
             {% if shop_settings.shop_name %}
@@ -252,10 +253,14 @@
                 <th>Product / المنتج</th>
                 <th>Qty / الكمية</th>
                 <th>Rate (AED) / السعر</th>
+                {% if bill.discount and bill.discount > 0 %}
                 <th>Discount (%) / الخصم</th>
                 <th>Discount (AED) / الخصم</th>
-                <th>VAT ({{ bill.vat_percent or '5.0' }}%) / الضريبة</th>
-                {% if shop_settings.enable_advance_payment %}
+                {% endif %}
+                {% if show_vat %}
+                <th>VAT ({{ bill.vat_percent or '0.0' }}%) / الضريبة</th>
+                {% endif %}
+                {% if shop_settings.enable_advance_payment and bill.advance_paid and bill.advance_paid > 0 %}
                 <th>Advance (AED) / الدفعة المقدمة</th>
                 {% endif %}
                 <th>Total (AED) / المجموع</th>
@@ -268,10 +273,14 @@
                  <td>{{ item.product_name }}</td>
                  <td>{{ item.quantity }}</td>
                  <td>{{ "%.2f"|format(item.rate) }}</td>
-                 <td>{{ "%.1f"|format(item.discount) }}%</td>
-                 <td>{{ "%.2f"|format(item.discount_amount) }}</td>
+                                 {% if bill.discount and bill.discount > 0 %}
+                <td>{{ "%.1f"|format(item.discount) }}%</td>
+                <td>{{ "%.2f"|format(item.discount_amount) }}</td>
+                {% endif %}
+                 {% if show_vat %}
                  <td>{{ "%.2f"|format(item.vat_amount) }}</td>
-                 {% if shop_settings.enable_advance_payment %}
+                 {% endif %}
+                 {% if shop_settings.enable_advance_payment and bill.advance_paid and bill.advance_paid > 0 %}
                  <td>{{ "%.2f"|format(item.advance_paid) }}</td>
                  {% endif %}
                  <td>{{ "%.2f"|format(item.total_amount) }}</td>
@@ -285,11 +294,13 @@
             <span>Subtotal / المجموع الفرعي:</span>
             <span>AED {{ "%.2f"|format(bill.subtotal) }}</span>
         </div>
+        {% if show_vat %}
         <div class="total-row">
-            <span>VAT ({{ bill.vat_percent or '5.0' }}%) / الضريبة:</span>
+            <span>VAT ({{ bill.vat_percent or '0.0' }}%) / الضريبة:</span>
             <span>AED {{ "%.2f"|format(bill.vat_amount) }}</span>
         </div>
-        {% if shop_settings.enable_advance_payment %}
+        {% endif %}
+        {% if shop_settings.enable_advance_payment and bill.advance_paid and bill.advance_paid > 0 %}
         <div class="total-row">
             <span>Advance Paid / الدفعة المقدمة:</span>
             <span>AED {{ "%.2f"|format(bill.advance_paid) }}</span>
