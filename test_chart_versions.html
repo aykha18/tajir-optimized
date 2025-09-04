@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart.js Version Test</title>
+    <style>
+        body { 
+            background: #1f2937; 
+            color: white; 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+        }
+        .chart-container { 
+            width: 400px; 
+            height: 300px; 
+            margin: 20px; 
+            border: 1px solid #374151;
+            padding: 10px;
+        }
+        .version-info {
+            background: #374151;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .test-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-btn:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chart.js Version Stability Test</h1>
+    
+    <div class="version-info">
+        <h3>Test Different Chart.js Versions</h3>
+        <p>Click each button to test a different Chart.js version. Look for:</p>
+        <ul>
+            <li>Chart renders without errors</li>
+            <li>No dragging/crashing issues</li>
+            <li>Smooth interactions</li>
+        </ul>
+    </div>
+
+    <div>
+        <button class="test-btn" onclick="testVersion('3.9.1')">Test Chart.js 3.9.1 (Most Stable)</button>
+        <button class="test-btn" onclick="testVersion('4.2.1')">Test Chart.js 4.2.1</button>
+        <button class="test-btn" onclick="testVersion('4.3.0')">Test Chart.js 4.3.0</button>
+        <button class="test-btn" onclick="testVersion('4.4.0')">Test Chart.js 4.4.0</button>
+        <button class="test-btn" onclick="testVersion('4.5.0')">Test Chart.js 4.5.0 (Latest)</button>
+    </div>
+
+    <div class="chart-container">
+        <h4 id="currentVersion">Select a version to test</h4>
+        <canvas id="testChart"></canvas>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        let currentChart = null;
+        let currentVersion = '';
+
+        function testVersion(version) {
+            // Clear previous chart
+            if (currentChart) {
+                try {
+                    currentChart.destroy();
+                } catch (e) {
+                    console.warn('Error destroying chart:', e);
+                }
+                currentChart = null;
+            }
+
+            // Clear previous script
+            const oldScript = document.querySelector('script[data-chartjs]');
+            if (oldScript) {
+                oldScript.remove();
+            }
+
+            // Load new version
+            const script = document.createElement('script');
+            script.src = `https://cdn.jsdelivr.net/npm/chart.js@${version}/dist/chart.umd.min.js`;
+            script.setAttribute('data-chartjs', 'true');
+            
+            script.onload = () => {
+                currentVersion = version;
+                document.getElementById('currentVersion').textContent = `Chart.js ${version}`;
+                createChart(version);
+            };
+            
+            script.onerror = () => {
+                document.getElementById('currentVersion').textContent = `Failed to load Chart.js ${version}`;
+            };
+
+            document.head.appendChild(script);
+        }
+
+        function createChart(version) {
+            try {
+                const ctx = document.getElementById('testChart');
+                if (!ctx) return;
+
+                // Test data
+                const data = {
+                    labels: ['Loyal VIPs', 'Regular', 'At-Risk', 'New', 'Occasional'],
+                    datasets: [{
+                        data: [25, 35, 20, 15, 5],
+                        backgroundColor: ['#8b5cf6', '#10b981', '#f59e0b', '#3b82f6', '#6b7280'],
+                        borderColor: '#1f2937',
+                        borderWidth: 2
+                    }]
+                };
+
+                // Create chart with different options based on version
+                const options = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#ffffff' }
+                        }
+                    }
+                };
+
+                // Version-specific configurations
+                if (version.startsWith('3.')) {
+                    // Chart.js v3 configuration
+                    currentChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: data,
+                        options: options
+                    });
+                } else {
+                    // Chart.js v4 configuration
+                    currentChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: data,
+                        options: {
+                            ...options,
+                            interaction: {
+                                mode: 'nearest',
+                                axis: 'xy',
+                                intersect: false
+                            }
+                        }
+                    });
+                }
+
+                // Test interactions
+                testChartInteractions(version);
+                
+            } catch (error) {
+                console.error(`Error creating chart with version ${version}:`, error);
+                document.getElementById('results').innerHTML += `<div style="color: red; margin: 10px 0;">❌ ${version}: ${error.message}</div>`;
+            }
+        }
+
+        function testChartInteractions(version) {
+            const results = document.getElementById('results');
+            
+            // Test basic functionality
+            let status = '✅';
+            let issues = [];
+            
+            try {
+                // Test if chart responds to hover
+                if (currentChart && currentChart.canvas) {
+                    // Simulate hover event
+                    const event = new MouseEvent('mousemove', {
+                        clientX: currentChart.canvas.offsetLeft + 100,
+                        clientY: currentChart.canvas.offsetTop + 100
+                    });
+                    currentChart.canvas.dispatchEvent(event);
+                    
+                    // Test if chart can be updated
+                    if (typeof currentChart.update === 'function') {
+                        currentChart.update('none'); // Update without animation
+                    }
+                    
+                    status = '✅';
+                } else {
+                    status = '❌';
+                    issues.push('Chart not properly initialized');
+                }
+            } catch (error) {
+                status = '❌';
+                issues.push(error.message);
+            }
+            
+            // Display results
+            const resultDiv = document.createElement('div');
+            resultDiv.style.cssText = 'margin: 10px 0; padding: 10px; background: #374151; border-radius: 5px;';
+            resultDiv.innerHTML = `
+                <strong>${status} Chart.js ${version}</strong><br>
+                ${issues.length > 0 ? `Issues: ${issues.join(', ')}` : 'No issues detected'}
+            `;
+            
+            results.appendChild(resultDiv);
+        }
+
+        // Auto-test version 3.9.1 on load (most stable)
+        window.addEventListener('load', () => {
+            setTimeout(() => testVersion('3.9.1'), 1000);
+        });
+    </script>
+</body>
+</html>
+

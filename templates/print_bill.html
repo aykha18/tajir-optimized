@@ -252,18 +252,18 @@
                 <th>Sr. / م</th>
                 <th>Product / المنتج</th>
                 <th>Qty / الكمية</th>
-                <th>Rate (AED) / السعر</th>
+                <th>Rate ({{ currency_code }}) / السعر</th>
                 {% if bill.discount and bill.discount > 0 %}
                 <th>Discount (%) / الخصم</th>
-                <th>Discount (AED) / الخصم</th>
+                <th>Discount ({{ currency_code }}) / الخصم</th>
                 {% endif %}
                 {% if show_vat %}
                 <th>VAT ({{ bill.vat_percent or '0.0' }}%) / الضريبة</th>
                 {% endif %}
                 {% if shop_settings.enable_advance_payment and bill.advance_paid and bill.advance_paid > 0 %}
-                <th>Advance (AED) / الدفعة المقدمة</th>
+                <th>Advance ({{ currency_code }}) / الدفعة المقدمة</th>
                 {% endif %}
-                <th>Total (AED) / المجموع</th>
+                <th>Total ({{ currency_code }}) / المجموع</th>
             </tr>
         </thead>
         <tbody>
@@ -272,18 +272,18 @@
                  <td>{{ loop.index }}</td>
                  <td>{{ item.product_name }}</td>
                  <td>{{ item.quantity }}</td>
-                 <td>{{ "%.2f"|format(item.rate) }}</td>
+                 <td>{{ currency_symbol }} {{ "%.2f"|format(item.rate) }}</td>
                                  {% if bill.discount and bill.discount > 0 %}
                 <td>{{ "%.1f"|format(item.discount) }}%</td>
-                <td>{{ "%.2f"|format(item.discount_amount) }}</td>
+                <td>{{ currency_symbol }} {{ "%.2f"|format(item.discount_amount) }}</td>
                 {% endif %}
                  {% if show_vat %}
-                 <td>{{ "%.2f"|format(item.vat_amount) }}</td>
+                 <td>{{ currency_symbol }} {{ "%.2f"|format(item.vat_amount) }}</td>
                  {% endif %}
                  {% if shop_settings.enable_advance_payment and bill.advance_paid and bill.advance_paid > 0 %}
-                 <td>{{ "%.2f"|format(item.advance_paid) }}</td>
+                 <td>{{ currency_symbol }} {{ "%.2f"|format(item.advance_paid) }}</td>
                  {% endif %}
-                 <td>{{ "%.2f"|format(item.total_amount) }}</td>
+                 <td>{{ currency_symbol }} {{ "%.2f"|format(item.total_amount) }}</td>
              </tr>
              {% endfor %}
         </tbody>
@@ -292,24 +292,24 @@
     <div class="totals">
         <div class="total-row">
             <span>Subtotal / المجموع الفرعي:</span>
-            <span>AED {{ "%.2f"|format(bill.subtotal) }}</span>
+            <span>{{ currency_symbol }} {{ "%.2f"|format(bill.subtotal) }}</span>
         </div>
         {% if show_vat %}
         <div class="total-row">
             <span>VAT ({{ bill.vat_percent or '0.0' }}%) / الضريبة:</span>
-            <span>AED {{ "%.2f"|format(bill.vat_amount) }}</span>
+            <span>{{ currency_symbol }} {{ "%.2f"|format(bill.vat_amount) }}</span>
         </div>
         {% endif %}
         {% if shop_settings.enable_advance_payment and bill.advance_paid and bill.advance_paid > 0 %}
         <div class="total-row">
             <span>Advance Paid / الدفعة المقدمة:</span>
-            <span>AED {{ "%.2f"|format(bill.advance_paid) }}</span>
+            <span>{{ currency_symbol }} {{ "%.2f"|format(bill.advance_paid) }}</span>
         </div>
         {% endif %}
         <hr style="border: 1px solid #000; margin: 8px 0;">
         <div class="total-row" style="font-weight: bold; font-size: 1.2em; min-width: 0;">
             <span style="flex: 1; min-width: 0;">{% if shop_settings.payment_mode == 'full' %}Total Amount Paid / المبلغ المدفوع الكلي:{% else %}Amount Due / المبلغ المستحق:{% endif %}</span>
-            <span style="flex-shrink: 0; margin-left: 10px;">AED {{ "%.2f"|format(bill.balance_amount) }}</span>
+            <span style="flex-shrink: 0; margin-left: 10px;">{{ currency_symbol }} {{ "%.2f"|format(bill.balance_amount) }}</span>
         </div>
         
         <div class="amount-in-words" style="font-weight: bold; margin-top: 12px;">

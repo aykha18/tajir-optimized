@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Commenting</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1f2937; color: white; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #374151; border-radius: 8px; }
+        .visible { background: #10b981; }
+        .hidden { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>Test Commenting Elements</h1>
+    
+    <div class="test-section visible">
+        <h2>✅ This should be visible</h2>
+        <p>This element is not commented out.</p>
+    </div>
+
+    <!-- COMMENTED OUT SECTION - SHOULD NOT BE VISIBLE -->
+    <!--
+    <div class="test-section hidden">
+        <h2>❌ This should NOT be visible</h2>
+        <p>This element is commented out and should not appear.</p>
+    </div>
+    -->
+
+    <div class="test-section visible">
+        <h2>✅ This should also be visible</h2>
+        <p>This element comes after the commented section.</p>
+    </div>
+
+    <script>
+        console.log('Test page loaded');
+        console.log('Checking for commented elements...');
+        
+        // This should not find the commented element
+        const commentedElement = document.querySelector('.hidden');
+        if (commentedElement) {
+            console.error('❌ Commented element found - this is wrong!');
+        } else {
+            console.log('✅ Commented element not found - this is correct!');
+        }
+        
+        // This should find the visible elements
+        const visibleElements = document.querySelectorAll('.visible');
+        console.log(`✅ Found ${visibleElements.length} visible elements`);
+    </script>
+</body>
+</html>

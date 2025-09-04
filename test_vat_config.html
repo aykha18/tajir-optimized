@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAT Configuration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .vat-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .config-btn {
+            background: #6c757d;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        .config-btn:hover {
+            background: #545b62;
+        }
+        .summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>VAT Configuration Test</h1>
+    
+    <div class="test-section">
+        <h2>Desktop VAT Input</h2>
+        <div class="vat-input">
+            <label for="vatPercent">VAT%:</label>
+            <div style="position: relative;">
+                <input id="vatPercent" type="number" min="0" step="0.01" value="5" style="padding-right: 30px;">
+                <button type="button" id="vatConfigBtn" class="config-btn" title="Configure VAT Settings" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%);">
+                    ⚙️
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Mobile VAT Input</h2>
+        <div class="vat-input">
+            <label for="vatPercentMobile">VAT%:</label>
+            <div style="position: relative;">
+                <input id="vatPercentMobile" type="number" min="0" step="0.01" value="5" style="padding-right: 30px;">
+                <button type="button" id="vatConfigBtnMobile" class="config-btn" title="Configure VAT Settings" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%);">
+                    ⚙️
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Bill Summary</h2>
+        <div class="summary">
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span>AED 100.00</span>
+            </div>
+            <div class="summary-row" id="vatSummaryRow">
+                <span class="text-neutral-400 text-sm" id="vatLabel">Tax (5%):</span>
+                <span id="vatAmount" class="font-semibold tracking-tight text-sm">AED 5.00</span>
+            </div>
+            <div class="summary-row">
+                <span>Total Amount Due:</span>
+                <span>AED 105.00</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Actions</h2>
+        <button onclick="testVatConfig()">Test VAT Configuration</button>
+        <button onclick="testVatDisplay()">Test VAT Display Logic</button>
+        <button onclick="testDefaultVat()">Test Default VAT</button>
+    </div>
+
+    <!-- VAT Configuration Modal -->
+    <div id="vatConfigModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;">
+            <h3>VAT Configuration</h3>
+            <div style="margin: 15px 0;">
+                <label for="defaultVatPercent">Default VAT Percentage:</label>
+                <input id="defaultVatPercent" type="number" min="0" max="100" step="0.01" value="5" style="width: 100%; margin-top: 5px;">
+            </div>
+            <div style="margin: 15px 0;">
+                <label for="vatDisplayOption">VAT Display Option:</label>
+                <select id="vatDisplayOption" style="width: 100%; margin-top: 5px;">
+                    <option value="show">Always show VAT in invoices</option>
+                    <option value="hide_zero">Hide VAT when set to 0%</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="saveVatConfig()" style="flex: 1;">Save Settings</button>
+                <button onclick="closeVatConfigModal()" style="flex: 1; background: #6c757d;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/js/modules/vat-config.js"></script>
+    <script>
+        // Mock functions for testing
+        window.showSimpleToast = function(message, type) {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        };
+        
+        // Initialize VAT configuration
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.initVatConfig) {
+                window.initVatConfig();
+            }
+        });
+        
+        function testVatConfig() {
+            console.log('Testing VAT Configuration...');
+            console.log('Default VAT:', window.getDefaultVatPercent ? window.getDefaultVatPercent() : 'Not available');
+            console.log('Should display VAT (5%):', window.shouldDisplayVat ? window.shouldDisplayVat(5) : 'Not available');
+            console.log('Should display VAT (0%):', window.shouldDisplayVat ? window.shouldDisplayVat(0) : 'Not available');
+        }
+        
+        function testVatDisplay() {
+            console.log('Testing VAT Display Logic...');
+            const vatInput = document.getElementById('vatPercent');
+            const vatLabel = document.getElementById('vatLabel');
+            const vatSummaryRow = document.getElementById('vatSummaryRow');
+            
+            if (vatInput && vatLabel && vatSummaryRow) {
+                const vatPercent = parseFloat(vatInput.value) || 0;
+                console.log(`Current VAT: ${vatPercent}%`);
+                console.log(`VAT Label: ${vatLabel.textContent}`);
+                console.log(`VAT Row Display: ${vatSummaryRow.style.display}`);
+            }
+        }
+        
+        function testDefaultVat() {
+            console.log('Testing Default VAT...');
+            const defaultVat = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
+            console.log(`Default VAT: ${defaultVat}%`);
+            
+            // Update inputs with default value
+            const inputs = ['vatPercent', 'vatPercentMobile'];
+            inputs.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = defaultVat;
+                    input.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+        
+        function saveVatConfig() {
+            const defaultVatInput = document.getElementById('defaultVatPercent');
+            const displayOptionSelect = document.getElementById('vatDisplayOption');
+            
+            if (defaultVatInput && displayOptionSelect) {
+                const newDefaultPercent = parseFloat(defaultVatInput.value) || 0;
+                const newDisplayOption = displayOptionSelect.value;
+                
+                console.log(`Saving VAT config: ${newDefaultPercent}%, display: ${newDisplayOption}`);
+                
+                // Update settings
+                if (window.vatSettings) {
+                    window.vatSettings.defaultPercent = newDefaultPercent;
+                    window.vatSettings.displayOption = newDisplayOption;
+                    localStorage.setItem('vatSettings', JSON.stringify(window.vatSettings));
+                }
+                
+                // Update VAT input fields
+                const inputs = ['vatPercent', 'vatPercentMobile'];
+                inputs.forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.value = newDefaultPercent;
+                        input.dispatchEvent(new Event('input'));
+                    }
+                });
+                
+                closeVatConfigModal();
+                console.log('VAT configuration saved!');
+            }
+        }
+        
+        function closeVatConfigModal() {
+            document.getElementById('vatConfigModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

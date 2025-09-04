@@ -134,6 +134,17 @@
             <!-- Step 2: Shop Details -->
             <div id="step2" class="step-panel hidden">
                 <h2 class="text-2xl font-semibold mb-6">Shop Details</h2>
+                <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-6">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <h3 class="text-blue-400 font-medium mb-1">Important</h3>
+                            <p class="text-blue-300 text-sm">Please use unique contact information. If you get an error about duplicate data, try using a different phone number or email address.</p>
+                        </div>
+                    </div>
+                </div>
                 <form id="shopDetailsForm" class="space-y-6">
                     <!-- Row 1: Shop Information -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -151,11 +162,13 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-neutral-300 mb-2">Contact Number *</label>
-                            <input type="tel" id="contactNumber" required class="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <input type="tel" id="contactNumber" required class="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="e.g., 0501234567">
+                            <p class="text-xs text-neutral-500 mt-1">Use a unique phone number that hasn't been registered before</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-neutral-300 mb-2">Email Address</label>
-                            <input type="email" id="emailAddress" class="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <input type="email" id="emailAddress" class="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="e.g., owner@myshop.com">
+                            <p class="text-xs text-neutral-500 mt-1">Optional - use a unique email or leave blank for auto-generated email</p>
                         </div>
                     </div>
                     
@@ -642,12 +655,30 @@
                 }
             } catch (error) {
                 console.error('Setup error:', error);
-                showToast('Setup failed: ' + error.message, 'error');
+                
+                // Show more helpful error message
+                let errorMessage = error.message;
+                if (errorMessage.includes('email is already registered')) {
+                    errorMessage = 'This email is already registered. Please use a different email address or try logging in instead.';
+                } else if (errorMessage.includes('contact number is already registered')) {
+                    errorMessage = 'This phone number is already registered. Please use a different phone number.';
+                } else if (errorMessage.includes('duplicate data')) {
+                    errorMessage = 'Some information you entered is already in use. Please check your email and phone number, or try different values.';
+                }
+                
+                showToast(errorMessage, 'error');
                 
                 // Reset button state
                 const nextBtn = document.getElementById('nextBtn');
                 nextBtn.textContent = 'Complete Setup';
                 nextBtn.disabled = false;
+                
+                // If it's an email/phone conflict, go back to step 2 to let user fix it
+                if (errorMessage.includes('email') || errorMessage.includes('phone')) {
+                    currentStep = 2;
+                    updateStepIndicators();
+                    showCurrentStep();
+                }
             }
         }
 

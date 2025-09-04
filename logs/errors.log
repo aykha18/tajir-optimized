@@ -3606,3 +3606,31 @@ LINE 6:              RETURNING id
 2025-09-01 19:08:23,153 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
 2025-09-01 19:08:30,188 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
 2025-09-01 19:08:30,188 - root - ERROR - log_user_action:168 - Failed to log user action: Object of type Decimal is not JSON serializable
+2025-09-04 15:59:39,522 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(51) already exists.
+, User: 1, Data: {'customer_name': None, 'total_amount': 100.0, 'item_count': 0}...
+2025-09-04 15:59:39,522 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(51) already exists.
+, User: 1, Data: {'customer_name': None, 'total_amount': 100.0, 'item_count': 0}...
+2025-09-04 15:59:39,589 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-04 15:59:39,589 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-04 15:59:41,888 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(52) already exists.
+, User: 1, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-09-04 15:59:41,888 - root - ERROR - log_dml_error:125 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(52) already exists.
+, User: 1, Data: {'customer_name': None, 'total_amount': 105.0, 'item_count': 0}...
+2025-09-04 15:59:41,953 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-04 15:59:41,953 - root - ERROR - log_dml_error:146 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+

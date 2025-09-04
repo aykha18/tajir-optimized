@@ -29,12 +29,26 @@ Plan status, expiry, and feature access are managed via `config.json` and enforc
 
 ## 💰 Pricing Structure
 
-| Plan | Price | Duration | Features |
-|------|-------|----------|----------|
-| **Tailor Trial** | Free | 15 days | All PRO features |
-| **Tailor Basic** | AED 3000 | 1 month free, then limited | Basic features + limited PRO features |
-| **Tailor PRO** | AED 5000 | Lifetime | All features + upcoming features |
-| **Enterprise** | Custom | Custom | Everything in PRO + custom features |
+| Plan | Price (USD) | Price (EUR) | Price (AED) | Duration | Features |
+|------|-------------|-------------|-------------|----------|----------|
+| **Tailor Trial** | Free | Free | Free | 15 days | All PRO features |
+| **Tailor Basic** | $82 | €75 | 300 | 1 month free, then limited | Basic features + limited PRO features |
+| **Tailor PRO** | $136 | €125 | 500 | Lifetime | All features + upcoming features |
+| **Enterprise** | Custom | Custom | Custom | Custom | Everything in PRO + custom features |
+
+### 🌍 Multi-Currency Support
+- **USD**: $82 (Basic) / $136 (PRO)
+- **EUR**: €75 (Basic) / €125 (PRO)  
+- **AED**: 300 (Basic) / 500 (PRO)
+- **GBP**: £65 (Basic) / £108 (PRO)
+- **CAD**: C$110 (Basic) / C$185 (PRO)
+- **AUD**: A$125 (Basic) / A$210 (PRO)
+- **INR**: ₹6,800 (Basic) / ₹11,300 (PRO)
+- **SAR**: 310 (Basic) / 510 (PRO)
+- **QAR**: 300 (Basic) / 500 (PRO)
+- **KWD**: 25 (Basic) / 42 (PRO)
+- **BHD**: 31 (Basic) / 51 (PRO)
+- **OMR**: 32 (Basic) / 52 (PRO)
 
 ### Upcoming Features (Available in PRO & Enterprise)
 

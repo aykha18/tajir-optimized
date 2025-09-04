@@ -129,6 +129,10 @@ function initializeShopSettings() {
     setValue('use_dynamic_invoice_template', settings.use_dynamic_invoice_template);
     setValue('enable_customer_notes', settings.enable_customer_notes);
     setValue('enable_employee_assignment', settings.enable_employee_assignment);
+    
+    // Currency and timezone settings
+    setValue('currency_code', settings.currency_code || 'AED');
+    setValue('timezone', settings.timezone || 'Asia/Dubai');
 
     // Preserve selected default employee if provided
     try {
@@ -166,7 +170,9 @@ function initializeShopSettings() {
       use_dynamic_invoice_template: form.querySelector('[name="use_dynamic_invoice_template"]').checked,
       enable_customer_notes: form.querySelector('[name="enable_customer_notes"]').checked,
       enable_employee_assignment: form.querySelector('[name="enable_employee_assignment"]').checked,
-      default_employee_id: form.querySelector('[name="default_employee_id"]').value || null
+      default_employee_id: form.querySelector('[name="default_employee_id"]').value || null,
+      currency_code: form.querySelector('[name="currency_code"]').value || 'AED',
+      timezone: form.querySelector('[name="timezone"]').value || 'Asia/Dubai'
     };
     
     try {

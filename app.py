@@ -2324,6 +2324,10 @@ def print_bill(bill_id):
     # If VAT amount is 0, don't show VAT sections
     should_show_vat = bill.get('should_show_vat', bill.get('vat_amount', 0) > 0)
     
+    # Get currency information from shop settings
+    currency_code = shop_settings.get('currency_code', 'AED')
+    currency_symbol = shop_settings.get('currency_symbol', 'د.إ')
+    
     return render_template('print_bill.html', 
                          bill=bill, 
                          items=items_with_discount,
@@ -2333,6 +2337,8 @@ def print_bill(bill_id):
                          shop_settings=shop_settings,
                          summary_data=summary_data,
                          should_show_vat=should_show_vat,
+                         currency_code=currency_code,
+                         currency_symbol=currency_symbol,
                          get_user_language=get_user_language,
                          get_translated_text=get_translated_text)
 
@@ -2995,9 +3001,10 @@ def handle_setup_wizard():
         # Insert new user
         try:
             placeholder = get_placeholder()
-            cursor = execute_update(conn, f'''
+            new_user_id = execute_with_returning(conn, f'''
                 INSERT INTO users (email, mobile, shop_code, password_hash, shop_name, shop_type, contact_number, email_address)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                RETURNING user_id
             ''', (
                 user_email,
                 contact_number_digits,
@@ -3021,13 +3028,11 @@ def handle_setup_wizard():
             conn.close()
             return jsonify({'success': False, 'message': friendly}), 400
         
-        new_user_id = cursor.lastrowid
-        
-        # Create shop settings for new user with TRN, address, and dynamic template enabled
+        # Create shop settings for new user with TRN, address, dynamic template, currency, and timezone
         placeholder = get_placeholder()
         sql = f'''
-            INSERT INTO shop_settings (user_id, shop_name, shop_mobile, trn, address, invoice_static_info, use_dynamic_invoice_template)
-            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            INSERT INTO shop_settings (user_id, shop_name, shop_mobile, trn, address, invoice_static_info, use_dynamic_invoice_template, currency_code, currency_symbol, timezone, date_format, time_format)
+            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
         '''
         execute_with_returning(conn, sql, (
             new_user_id, 
@@ -3036,7 +3041,12 @@ def handle_setup_wizard():
             data.get('trn', ''),
             data.get('address', ''),
             f"Shop Type: {data['shopType']}",
-            1  # Enable dynamic invoice template by default
+            True,  # Enable dynamic invoice template by default
+            'AED',  # Default currency
+            'د.إ',  # Default currency symbol
+            'Asia/Dubai',  # Default timezone
+            'DD/MM/YYYY',  # Default date format
+            '24h'  # Default time format
         ))
         
         # Create shop owner as employee with "Owner" position
@@ -3051,7 +3061,7 @@ def handle_setup_wizard():
             contact_number_digits,
             data.get('address', ''),
             'Owner',
-            1
+            True
         ))
         
         # Create user plan for new user
@@ -3068,7 +3078,7 @@ def handle_setup_wizard():
             INSERT INTO vat_rates (user_id, rate_percentage, effective_from, effective_to, is_active)
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
         '''
-        execute_with_returning(conn, sql, (new_user_id, 5.00, '2018-01-01', '2099-12-31', 1))
+        execute_with_returning(conn, sql, (new_user_id, 5.00, '2018-01-01', '2099-12-31', True))
         conn.close()
         
         return jsonify({
@@ -3083,11 +3093,14 @@ def handle_setup_wizard():
         
     except Exception as e:
         print(f"Setup wizard error: {e}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
         try:
             conn.close()
         except:
             pass
-        return jsonify({'success': False, 'message': 'Setup failed. Please try again.'})
+        return jsonify({'success': False, 'message': f'Setup failed: {str(e)}'})
 
 @app.route('/api/auth/login', methods=['POST'])
 def auth_login():
@@ -4101,6 +4114,13 @@ def update_shop_settings():
         default_trial_days = data.get('default_trial_days', 3)
         default_employee_id = data.get('default_employee_id')
         
+        # Currency and timezone settings
+        currency_code = data.get('currency_code', 'AED')
+        currency_symbol = data.get('currency_symbol', 'د.إ')
+        timezone = data.get('timezone', 'Asia/Dubai')
+        date_format = data.get('date_format', 'DD/MM/YYYY')
+        time_format = data.get('time_format', '24h')
+        
         conn = get_db_connection()
         
         # Check if shop settings exist for this user
@@ -4118,24 +4138,28 @@ def update_shop_settings():
                     use_dynamic_invoice_template = {placeholder}, payment_mode = {placeholder}, 
                     enable_trial_date = {placeholder}, enable_delivery_date = {placeholder}, enable_advance_payment = {placeholder},
                     enable_customer_notes = {placeholder}, enable_employee_assignment = {placeholder}, default_delivery_days = {placeholder}, default_trial_days = {placeholder}, default_employee_id = {placeholder},
+                    currency_code = {placeholder}, currency_symbol = {placeholder}, timezone = {placeholder}, date_format = {placeholder}, time_format = {placeholder},
                     updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = {placeholder}
             ''', (shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
                   invoice_static_info, use_dynamic_invoice_template, payment_mode,
                   enable_trial_date, enable_delivery_date, enable_advance_payment,
-                  enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id, user_id))
+                  enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id,
+                  currency_code, currency_symbol, timezone, date_format, time_format, user_id))
         else:
             # Create new shop settings for this user
             execute_update(conn, '''
                 INSERT INTO shop_settings (user_id, shop_name, address, trn, city, area, logo_url, 
                     shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template, payment_mode,
                     enable_trial_date, enable_delivery_date, enable_advance_payment,
-                    enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id,
+                    currency_code, currency_symbol, timezone, date_format, time_format)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (user_id, shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
                   invoice_static_info, use_dynamic_invoice_template, payment_mode,
                   enable_trial_date, enable_delivery_date, enable_advance_payment,
-                  enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id))
+                  enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id,
+                  currency_code, currency_symbol, timezone, date_format, time_format))
         conn.close()
         
         # Log shop settings update
@@ -4157,6 +4181,170 @@ def update_shop_settings():
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/api/currencies', methods=['GET'])
+def get_currencies():
+    """Get list of supported currencies."""
+    currencies = {
+        'AED': {'code': 'AED', 'symbol': 'د.إ', 'name': 'UAE Dirham', 'region': 'UAE'},
+        'USD': {'code': 'USD', 'symbol': '$', 'name': 'US Dollar', 'region': 'USA'},
+        'EUR': {'code': 'EUR', 'symbol': '€', 'name': 'Euro', 'region': 'Europe'},
+        'GBP': {'code': 'GBP', 'symbol': '£', 'name': 'British Pound', 'region': 'UK'},
+        'CAD': {'code': 'CAD', 'symbol': 'C$', 'name': 'Canadian Dollar', 'region': 'Canada'},
+        'AUD': {'code': 'AUD', 'symbol': 'A$', 'name': 'Australian Dollar', 'region': 'Australia'},
+        'INR': {'code': 'INR', 'symbol': '₹', 'name': 'Indian Rupee', 'region': 'India'},
+        'SAR': {'code': 'SAR', 'symbol': '﷼', 'name': 'Saudi Riyal', 'region': 'Saudi Arabia'},
+        'QAR': {'code': 'QAR', 'symbol': '﷼', 'name': 'Qatari Riyal', 'region': 'Qatar'},
+        'KWD': {'code': 'KWD', 'symbol': 'د.ك', 'name': 'Kuwaiti Dinar', 'region': 'Kuwait'},
+        'BHD': {'code': 'BHD', 'symbol': 'د.ب', 'name': 'Bahraini Dinar', 'region': 'Bahrain'},
+        'OMR': {'code': 'OMR', 'symbol': '﷼', 'name': 'Omani Rial', 'region': 'Oman'},
+        'JPY': {'code': 'JPY', 'symbol': '¥', 'name': 'Japanese Yen', 'region': 'Japan'},
+        'CNY': {'code': 'CNY', 'symbol': '¥', 'name': 'Chinese Yuan', 'region': 'China'},
+        'SGD': {'code': 'SGD', 'symbol': 'S$', 'name': 'Singapore Dollar', 'region': 'Singapore'},
+        'MYR': {'code': 'MYR', 'symbol': 'RM', 'name': 'Malaysian Ringgit', 'region': 'Malaysia'},
+        'THB': {'code': 'THB', 'symbol': '฿', 'name': 'Thai Baht', 'region': 'Thailand'},
+        'PHP': {'code': 'PHP', 'symbol': '₱', 'name': 'Philippine Peso', 'region': 'Philippines'},
+        'IDR': {'code': 'IDR', 'symbol': 'Rp', 'name': 'Indonesian Rupiah', 'region': 'Indonesia'},
+        'VND': {'code': 'VND', 'symbol': '₫', 'name': 'Vietnamese Dong', 'region': 'Vietnam'},
+        'KRW': {'code': 'KRW', 'symbol': '₩', 'name': 'South Korean Won', 'region': 'South Korea'},
+        'TRY': {'code': 'TRY', 'symbol': '₺', 'name': 'Turkish Lira', 'region': 'Turkey'},
+        'RUB': {'code': 'RUB', 'symbol': '₽', 'name': 'Russian Ruble', 'region': 'Russia'},
+        'ZAR': {'code': 'ZAR', 'symbol': 'R', 'name': 'South African Rand', 'region': 'South Africa'},
+        'BRL': {'code': 'BRL', 'symbol': 'R$', 'name': 'Brazilian Real', 'region': 'Brazil'},
+        'MXN': {'code': 'MXN', 'symbol': '$', 'name': 'Mexican Peso', 'region': 'Mexico'},
+        'ARS': {'code': 'ARS', 'symbol': '$', 'name': 'Argentine Peso', 'region': 'Argentina'},
+        'CLP': {'code': 'CLP', 'symbol': '$', 'name': 'Chilean Peso', 'region': 'Chile'},
+        'COP': {'code': 'COP', 'symbol': '$', 'name': 'Colombian Peso', 'region': 'Colombia'},
+        'PEN': {'code': 'PEN', 'symbol': 'S/', 'name': 'Peruvian Sol', 'region': 'Peru'},
+        'UYU': {'code': 'UYU', 'symbol': '$', 'name': 'Uruguayan Peso', 'region': 'Uruguay'},
+        'EGP': {'code': 'EGP', 'symbol': '£', 'name': 'Egyptian Pound', 'region': 'Egypt'},
+        'MAD': {'code': 'MAD', 'symbol': 'د.م.', 'name': 'Moroccan Dirham', 'region': 'Morocco'},
+        'TND': {'code': 'TND', 'symbol': 'د.ت', 'name': 'Tunisian Dinar', 'region': 'Tunisia'},
+        'DZD': {'code': 'DZD', 'symbol': 'د.ج', 'name': 'Algerian Dinar', 'region': 'Algeria'},
+        'LYD': {'code': 'LYD', 'symbol': 'ل.د', 'name': 'Libyan Dinar', 'region': 'Libya'},
+        'JOD': {'code': 'JOD', 'symbol': 'د.ا', 'name': 'Jordanian Dinar', 'region': 'Jordan'},
+        'LBP': {'code': 'LBP', 'symbol': 'ل.ل', 'name': 'Lebanese Pound', 'region': 'Lebanon'},
+        'ILS': {'code': 'ILS', 'symbol': '₪', 'name': 'Israeli Shekel', 'region': 'Israel'},
+        'PKR': {'code': 'PKR', 'symbol': '₨', 'name': 'Pakistani Rupee', 'region': 'Pakistan'},
+        'BDT': {'code': 'BDT', 'symbol': '৳', 'name': 'Bangladeshi Taka', 'region': 'Bangladesh'},
+        'LKR': {'code': 'LKR', 'symbol': '₨', 'name': 'Sri Lankan Rupee', 'region': 'Sri Lanka'},
+        'NPR': {'code': 'NPR', 'symbol': '₨', 'name': 'Nepalese Rupee', 'region': 'Nepal'},
+        'AFN': {'code': 'AFN', 'symbol': '؋', 'name': 'Afghan Afghani', 'region': 'Afghanistan'},
+        'IRR': {'code': 'IRR', 'symbol': '﷼', 'name': 'Iranian Rial', 'region': 'Iran'},
+        'IQD': {'code': 'IQD', 'symbol': 'د.ع', 'name': 'Iraqi Dinar', 'region': 'Iraq'},
+        'YER': {'code': 'YER', 'symbol': '﷼', 'name': 'Yemeni Rial', 'region': 'Yemen'},
+        'SYP': {'code': 'SYP', 'symbol': '£', 'name': 'Syrian Pound', 'region': 'Syria'},
+        'NGN': {'code': 'NGN', 'symbol': '₦', 'name': 'Nigerian Naira', 'region': 'Nigeria'},
+        'KES': {'code': 'KES', 'symbol': 'KSh', 'name': 'Kenyan Shilling', 'region': 'Kenya'},
+        'UGX': {'code': 'UGX', 'symbol': 'USh', 'name': 'Ugandan Shilling', 'region': 'Uganda'},
+        'TZS': {'code': 'TZS', 'symbol': 'TSh', 'name': 'Tanzanian Shilling', 'region': 'Tanzania'},
+        'ETB': {'code': 'ETB', 'symbol': 'Br', 'name': 'Ethiopian Birr', 'region': 'Ethiopia'},
+        'GHS': {'code': 'GHS', 'symbol': '₵', 'name': 'Ghanaian Cedi', 'region': 'Ghana'},
+        'XOF': {'code': 'XOF', 'symbol': 'CFA', 'name': 'West African CFA Franc', 'region': 'West Africa'},
+        'XAF': {'code': 'XAF', 'symbol': 'FCFA', 'name': 'Central African CFA Franc', 'region': 'Central Africa'}
+    }
+    
+    return jsonify({
+        'success': True,
+        'currencies': currencies
+    })
+
+@app.route('/api/timezones', methods=['GET'])
+def get_timezones():
+    """Get list of supported timezones."""
+    timezones = {
+        'Asia/Dubai': 'Dubai (UAE)',
+        'Asia/Kuwait': 'Kuwait',
+        'Asia/Riyadh': 'Riyadh (Saudi Arabia)',
+        'Asia/Qatar': 'Doha (Qatar)',
+        'Asia/Bahrain': 'Manama (Bahrain)',
+        'Asia/Muscat': 'Muscat (Oman)',
+        'Asia/Karachi': 'Karachi (Pakistan)',
+        'Asia/Kolkata': 'Mumbai/Delhi (India)',
+        'Asia/Dhaka': 'Dhaka (Bangladesh)',
+        'Asia/Colombo': 'Colombo (Sri Lanka)',
+        'Asia/Kathmandu': 'Kathmandu (Nepal)',
+        'Asia/Kabul': 'Kabul (Afghanistan)',
+        'Asia/Tehran': 'Tehran (Iran)',
+        'Asia/Baghdad': 'Baghdad (Iraq)',
+        'Asia/Amman': 'Amman (Jordan)',
+        'Asia/Beirut': 'Beirut (Lebanon)',
+        'Asia/Damascus': 'Damascus (Syria)',
+        'Asia/Jerusalem': 'Jerusalem (Israel)',
+        'Asia/Cairo': 'Cairo (Egypt)',
+        'Africa/Casablanca': 'Casablanca (Morocco)',
+        'Africa/Tunis': 'Tunis (Tunisia)',
+        'Africa/Algiers': 'Algiers (Algeria)',
+        'Africa/Tripoli': 'Tripoli (Libya)',
+        'Africa/Khartoum': 'Khartoum (Sudan)',
+        'Africa/Addis_Ababa': 'Addis Ababa (Ethiopia)',
+        'Africa/Nairobi': 'Nairobi (Kenya)',
+        'Africa/Kampala': 'Kampala (Uganda)',
+        'Africa/Dar_es_Salaam': 'Dar es Salaam (Tanzania)',
+        'Africa/Lagos': 'Lagos (Nigeria)',
+        'Africa/Accra': 'Accra (Ghana)',
+        'Africa/Dakar': 'Dakar (Senegal)',
+        'Africa/Abidjan': 'Abidjan (Ivory Coast)',
+        'America/New_York': 'New York (USA)',
+        'America/Chicago': 'Chicago (USA)',
+        'America/Denver': 'Denver (USA)',
+        'America/Los_Angeles': 'Los Angeles (USA)',
+        'America/Toronto': 'Toronto (Canada)',
+        'America/Vancouver': 'Vancouver (Canada)',
+        'America/Mexico_City': 'Mexico City (Mexico)',
+        'America/Sao_Paulo': 'São Paulo (Brazil)',
+        'America/Buenos_Aires': 'Buenos Aires (Argentina)',
+        'America/Santiago': 'Santiago (Chile)',
+        'America/Bogota': 'Bogotá (Colombia)',
+        'America/Lima': 'Lima (Peru)',
+        'America/Montevideo': 'Montevideo (Uruguay)',
+        'Europe/London': 'London (UK)',
+        'Europe/Paris': 'Paris (France)',
+        'Europe/Berlin': 'Berlin (Germany)',
+        'Europe/Rome': 'Rome (Italy)',
+        'Europe/Madrid': 'Madrid (Spain)',
+        'Europe/Amsterdam': 'Amsterdam (Netherlands)',
+        'Europe/Brussels': 'Brussels (Belgium)',
+        'Europe/Vienna': 'Vienna (Austria)',
+        'Europe/Zurich': 'Zurich (Switzerland)',
+        'Europe/Stockholm': 'Stockholm (Sweden)',
+        'Europe/Oslo': 'Oslo (Norway)',
+        'Europe/Copenhagen': 'Copenhagen (Denmark)',
+        'Europe/Helsinki': 'Helsinki (Finland)',
+        'Europe/Warsaw': 'Warsaw (Poland)',
+        'Europe/Prague': 'Prague (Czech Republic)',
+        'Europe/Budapest': 'Budapest (Hungary)',
+        'Europe/Bucharest': 'Bucharest (Romania)',
+        'Europe/Sofia': 'Sofia (Bulgaria)',
+        'Europe/Athens': 'Athens (Greece)',
+        'Europe/Istanbul': 'Istanbul (Turkey)',
+        'Europe/Moscow': 'Moscow (Russia)',
+        'Europe/Kiev': 'Kiev (Ukraine)',
+        'Asia/Tokyo': 'Tokyo (Japan)',
+        'Asia/Shanghai': 'Shanghai (China)',
+        'Asia/Hong_Kong': 'Hong Kong',
+        'Asia/Singapore': 'Singapore',
+        'Asia/Kuala_Lumpur': 'Kuala Lumpur (Malaysia)',
+        'Asia/Bangkok': 'Bangkok (Thailand)',
+        'Asia/Manila': 'Manila (Philippines)',
+        'Asia/Jakarta': 'Jakarta (Indonesia)',
+        'Asia/Ho_Chi_Minh': 'Ho Chi Minh City (Vietnam)',
+        'Asia/Seoul': 'Seoul (South Korea)',
+        'Asia/Taipei': 'Taipei (Taiwan)',
+        'Australia/Sydney': 'Sydney (Australia)',
+        'Australia/Melbourne': 'Melbourne (Australia)',
+        'Australia/Perth': 'Perth (Australia)',
+        'Australia/Adelaide': 'Adelaide (Australia)',
+        'Australia/Brisbane': 'Brisbane (Australia)',
+        'Pacific/Auckland': 'Auckland (New Zealand)',
+        'Pacific/Fiji': 'Suva (Fiji)',
+        'Pacific/Honolulu': 'Honolulu (Hawaii)'
+    }
+    
+    return jsonify({
+        'success': True,
+        'timezones': timezones
+    })
 
 # Arabic Language Support
 def number_to_arabic_words(number):

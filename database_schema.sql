@@ -4,8 +4,8 @@
 -- Users Table (Main tenant table)
 CREATE TABLE IF NOT EXISTS users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE,
-    mobile TEXT UNIQUE,
+    email TEXT,
+    mobile TEXT,
     shop_code TEXT UNIQUE,
     password_hash TEXT NOT NULL,
     shop_name TEXT NOT NULL,

@@ -4,8 +4,8 @@
 -- Users Table (Main tenant table)
 CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE,
-    mobile VARCHAR(20) UNIQUE,
+    email VARCHAR(255),
+    mobile VARCHAR(20),
     shop_code VARCHAR(50) UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     shop_name VARCHAR(255) NOT NULL,
