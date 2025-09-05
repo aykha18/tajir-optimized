@@ -9403,11 +9403,6 @@ if __name__ == '__main__':
     setup_ocr()  # Initialize OCR
     init_db()  # Initialize database and create tables
     
-    # Check if running in Railway production environment
-    if os.environ.get('RAILWAY_ENVIRONMENT') == 'production':
-        # Use Gunicorn for production
-        port = int(os.environ.get('PORT', 5000))
-        app.run(host='0.0.0.0', port=port, debug=False)
-    else:
-        # Use development server for local testing
-        app.run(debug=False, host='0.0.0.0', port=5000) 
+    # Get port from environment variable (Railway sets this)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False) 
