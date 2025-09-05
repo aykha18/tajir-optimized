@@ -700,11 +700,13 @@ def add_security_headers(response):
 
 @app.route('/')
 def index():
-    user_plan_info = get_user_plan_info()
-    return render_template('index.html', 
-                        user_plan_info=user_plan_info,
-                        get_user_language=get_user_language,
-                        get_translated_text=get_translated_text)
+    # Check if user is logged in
+    if 'user_id' in session:
+        # Redirect logged-in users to the app
+        return redirect(url_for('app'))
+    else:
+        # Show landing page for non-logged-in users
+        return render_template('modern_landing.html')
 
 @app.route('/landing')
 def landing():
@@ -713,10 +715,6 @@ def landing():
                         user_plan_info=user_plan_info,
                         get_user_language=get_user_language,
                         get_translated_text=get_translated_text)
-
-@app.route('/')
-def modern_landing():
-    return render_template('modern_landing.html')
 
 @app.route('/home')
 def home():
