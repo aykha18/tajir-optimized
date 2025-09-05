@@ -33,7 +33,7 @@
   <script src="{{ url_for('static', filename='js/modules/employees.js', v='1.0.5') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/plan-management.js', v='1.0.5') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/reports.js', v='1.0.5') }}"></script>
-      <script src="{{ url_for('static', filename='js/modules/shop-settings.js', v='1.0.5') }}"></script>
+      <script src="{{ url_for('static', filename='js/modules/shop-settings.js', v='1.0.8') }}"></script>
   
   <script src="{{ url_for('static', filename='js/modules/dashboard.js', v='1.0.5') }}"></script>
       <script src="{{ url_for('static', filename='js/modules/billing-system.js', v='1.0.5') }}"></script>
@@ -1652,11 +1652,11 @@
             </div>
             <div class="flex flex-col">
               <label for="shopCity" class="text-xs text-neutral-400 mb-1">City</label>
-              <input id="shopCity" name="city" placeholder="e.g. Dubai" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+              <input id="shopCity" name="city" placeholder="e.g. Dubai" autocomplete="off" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
             <div class="flex flex-col">
               <label for="shopArea" class="text-xs text-neutral-400 mb-1">Area</label>
-              <input id="shopArea" name="area" placeholder="e.g. Deira" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+              <input id="shopArea" name="area" placeholder="e.g. Deira" autocomplete="off" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
             <div class="md:col-span-2 flex flex-col">
               <label for="shopAddress" class="text-xs text-neutral-400 mb-1">Complete Address</label>

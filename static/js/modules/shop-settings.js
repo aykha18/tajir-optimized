@@ -39,6 +39,9 @@ function initializeShopSettings() {
       logoutBtn.setAttribute('data-bound', 'true');
       logoutBtn.addEventListener('click', handleLogout);
     }
+    
+    // Setup city and area autocomplete
+    setupShopCityAreaAutocomplete();
   }
 
   // Load shop settings from server
@@ -155,24 +158,41 @@ function initializeShopSettings() {
       e.preventDefault();
       
     const form = e.target;
+    
+    // Helper function to safely get form field values
+    const getFieldValue = (name, defaultValue = '') => {
+      const field = form.querySelector(`[name="${name}"]`);
+      return field ? field.value.trim() : defaultValue;
+    };
+    
+    const getFieldChecked = (name, defaultValue = false) => {
+      const field = form.querySelector(`[name="${name}"]`);
+      return field ? field.checked : defaultValue;
+    };
+    
+    const getFieldNumber = (name, defaultValue = 0) => {
+      const field = form.querySelector(`[name="${name}"]`);
+      return field ? parseInt(field.value || defaultValue, 10) : defaultValue;
+    };
+    
     const settings = {
-      shop_name: form.querySelector('[name="shop_name"]').value.trim(),
-      shop_mobile: form.querySelector('[name="shop_mobile"]').value.trim(),
-      city: form.querySelector('[name="city"]').value.trim(),
-      area: form.querySelector('[name="area"]').value.trim(),
-      address: form.querySelector('[name="address"]').value.trim(),
-      trn: form.querySelector('[name="trn"]').value.trim(),
-      default_delivery_days: parseInt(form.querySelector('[name="default_delivery_days"]').value || '0', 10),
-      default_trial_days: parseInt(form.querySelector('[name="default_trial_days"]').value || '0', 10),
-      enable_trial_date: form.querySelector('[name="enable_trial_date"]').checked,
-      enable_delivery_date: form.querySelector('[name="enable_delivery_date"]').checked,
-      enable_advance_payment: form.querySelector('[name="enable_advance_payment"]').checked,
-      use_dynamic_invoice_template: form.querySelector('[name="use_dynamic_invoice_template"]').checked,
-      enable_customer_notes: form.querySelector('[name="enable_customer_notes"]').checked,
-      enable_employee_assignment: form.querySelector('[name="enable_employee_assignment"]').checked,
-      default_employee_id: form.querySelector('[name="default_employee_id"]').value || null,
-      currency_code: form.querySelector('[name="currency_code"]').value || 'AED',
-      timezone: form.querySelector('[name="timezone"]').value || 'Asia/Dubai'
+      shop_name: getFieldValue('shop_name'),
+      shop_mobile: getFieldValue('shop_mobile'),
+      city: getFieldValue('city'),
+      area: getFieldValue('area'),
+      address: getFieldValue('address'),
+      trn: getFieldValue('trn'),
+      default_delivery_days: getFieldNumber('default_delivery_days', 0),
+      default_trial_days: getFieldNumber('default_trial_days', 0),
+      enable_trial_date: getFieldChecked('enable_trial_date'),
+      enable_delivery_date: getFieldChecked('enable_delivery_date'),
+      enable_advance_payment: getFieldChecked('enable_advance_payment'),
+      use_dynamic_invoice_template: getFieldChecked('use_dynamic_invoice_template'),
+      enable_customer_notes: getFieldChecked('enable_customer_notes'),
+      enable_employee_assignment: getFieldChecked('enable_employee_assignment'),
+      default_employee_id: getFieldValue('default_employee_id') || null,
+      currency_code: getFieldValue('currency_code', 'AED'),
+      timezone: getFieldValue('timezone', 'Asia/Dubai')
     };
     
     try {
@@ -388,7 +408,188 @@ function initializeShopSettings() {
     }
   }
 
+  // FEATURE: City and Area Autocomplete for Shop Settings
+  function setupShopCityAreaAutocomplete() {
+    const cityInput = document.getElementById('shopCity');
+    const areaInput = document.getElementById('shopArea');
+    
+    if (!cityInput || !areaInput) {
+      console.warn('Shop City/Area autocomplete elements not found');
+      return;
+    }
+    
+    let cityDebounceTimer = null;
+    let areaDebounceTimer = null;
+    let cityDropdown = null;
+    let areaDropdown = null;
+    
+    // Create city dropdown container
+    function createCityDropdown() {
+      if (cityDropdown) return;
+      
+      cityDropdown = document.createElement('div');
+      cityDropdown.className = 'absolute z-50 w-full bg-neutral-800 border border-neutral-600 rounded-lg shadow-lg max-h-48 overflow-y-auto';
+      cityDropdown.style.display = 'none';
+      
+      // Position relative to city input
+      const cityContainer = cityInput.parentElement;
+      cityContainer.style.position = 'relative';
+      cityContainer.appendChild(cityDropdown);
+      
+      cityDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+    }
+    
+    // Create area dropdown container
+    function createAreaDropdown() {
+      if (areaDropdown) return;
+      
+      areaDropdown = document.createElement('div');
+      areaDropdown.className = 'absolute z-50 w-full bg-neutral-800 border border-neutral-600 rounded-lg shadow-lg max-h-48 overflow-y-auto';
+      areaDropdown.style.display = 'none';
+      
+      // Position relative to area input
+      const areaContainer = areaInput.parentElement;
+      areaContainer.style.position = 'relative';
+      areaContainer.appendChild(areaDropdown);
+      
+      areaDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+    }
+    
+    // City autocomplete
+    cityInput.addEventListener('input', function() {
+      clearTimeout(cityDebounceTimer);
+      const query = this.value.trim();
+      
+      if (query.length < 2) {
+        hideCityDropdown();
+        return;
+      }
+      
+      cityDebounceTimer = setTimeout(async () => {
+        try {
+          const response = await fetch('/api/cities');
+          const cities = await response.json();
+          const filteredCities = cities.filter(city => 
+            city.toLowerCase().includes(query.toLowerCase())
+          );
+          
+          if (filteredCities && filteredCities.length > 0) {
+            showCityDropdown(filteredCities);
+          } else {
+            hideCityDropdown();
+          }
+        } catch (error) {
+          console.error('Error fetching cities:', error);
+          hideCityDropdown();
+        }
+      }, 300);
+    });
+    
+    // Area autocomplete
+    areaInput.addEventListener('input', function() {
+      clearTimeout(areaDebounceTimer);
+      const query = this.value.trim();
+      
+      if (query.length < 2) {
+        hideAreaDropdown();
+        return;
+      }
+      
+      areaDebounceTimer = setTimeout(async () => {
+        try {
+          const response = await fetch('/api/areas');
+          const areas = await response.json();
+          const filteredAreas = areas.filter(area => 
+            area.toLowerCase().includes(query.toLowerCase())
+          );
+          
+          if (filteredAreas && filteredAreas.length > 0) {
+            showAreaDropdown(filteredAreas);
+          } else {
+            hideAreaDropdown();
+          }
+        } catch (error) {
+          console.error('Error fetching areas:', error);
+          hideAreaDropdown();
+        }
+      }, 300);
+    });
+    
+    function showCityDropdown(cities) {
+      createCityDropdown();
+      
+      cityDropdown.innerHTML = '';
+      cities.forEach(city => {
+        const item = document.createElement('div');
+        item.className = 'px-3 py-2 hover:bg-neutral-700 cursor-pointer text-sm text-neutral-200 border-b border-neutral-700 last:border-b-0';
+        item.textContent = city;
+        item.addEventListener('click', () => {
+          cityInput.value = city;
+          hideCityDropdown();
+          cityInput.focus();
+        });
+        cityDropdown.appendChild(item);
+      });
+      
+      cityDropdown.style.display = 'block';
+    }
+    
+    function showAreaDropdown(areas) {
+      createAreaDropdown();
+      
+      areaDropdown.innerHTML = '';
+      areas.forEach(area => {
+        const item = document.createElement('div');
+        item.className = 'px-3 py-2 hover:bg-neutral-700 cursor-pointer text-sm text-neutral-200 border-b border-neutral-700 last:border-b-0';
+        item.textContent = area;
+        item.addEventListener('click', () => {
+          areaInput.value = area;
+          hideAreaDropdown();
+          areaInput.focus();
+        });
+        areaDropdown.appendChild(item);
+      });
+      
+      areaDropdown.style.display = 'block';
+    }
+    
+    function hideCityDropdown() {
+      if (cityDropdown) {
+        cityDropdown.style.display = 'none';
+      }
+    }
+    
+    function hideAreaDropdown() {
+      if (areaDropdown) {
+        areaDropdown.style.display = 'none';
+      }
+    }
+    
+    // Hide dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!cityInput.contains(e.target) && !cityDropdown?.contains(e.target)) {
+        hideCityDropdown();
+      }
+      if (!areaInput.contains(e.target) && !areaDropdown?.contains(e.target)) {
+        hideAreaDropdown();
+      }
+    });
+    
+    // Hide dropdowns on escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        hideCityDropdown();
+        hideAreaDropdown();
+      }
+    });
+  }
+
   // Export functions for global access
   window.initializeShopSettings = initializeShopSettings; 
   window.initializeChangePassword = initializeChangePassword;
+  window.setupShopCityAreaAutocomplete = setupShopCityAreaAutocomplete;
 })(); 
