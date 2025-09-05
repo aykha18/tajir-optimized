@@ -4105,14 +4105,33 @@ def update_shop_settings():
         payment_mode = data.get('payment_mode', 'advance')
         
         # Configurable input fields
-        enable_trial_date = data.get('enable_trial_date', True)
-        enable_delivery_date = data.get('enable_delivery_date', True)
-        enable_advance_payment = data.get('enable_advance_payment', True)
-        enable_customer_notes = data.get('enable_customer_notes', True)
-        enable_employee_assignment = data.get('enable_employee_assignment', True)
+        enable_trial_date = data.get('enable_trial_date', False)
+        enable_delivery_date = data.get('enable_delivery_date', False)
+        enable_advance_payment = data.get('enable_advance_payment', False)
+        enable_customer_notes = data.get('enable_customer_notes', False)
+        enable_employee_assignment = data.get('enable_employee_assignment', False)
         default_delivery_days = data.get('default_delivery_days', 3)
         default_trial_days = data.get('default_trial_days', 3)
         default_employee_id = data.get('default_employee_id')
+        
+        # Convert to proper types
+        try:
+            default_delivery_days = int(default_delivery_days) if default_delivery_days else 3
+        except (ValueError, TypeError):
+            default_delivery_days = 3
+            
+        try:
+            default_trial_days = int(default_trial_days) if default_trial_days else 3
+        except (ValueError, TypeError):
+            default_trial_days = 3
+            
+        if default_employee_id == '' or default_employee_id is None:
+            default_employee_id = None
+        else:
+            try:
+                default_employee_id = int(default_employee_id)
+            except (ValueError, TypeError):
+                default_employee_id = None
         
         # Currency and timezone settings
         currency_code = data.get('currency_code', 'AED')
@@ -4148,13 +4167,17 @@ def update_shop_settings():
                   currency_code, currency_symbol, timezone, date_format, time_format, user_id))
         else:
             # Create new shop settings for this user
-            execute_update(conn, '''
+            placeholder = get_placeholder()
+            execute_update(conn, f'''
                 INSERT INTO shop_settings (user_id, shop_name, address, trn, city, area, logo_url, 
                     shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template, payment_mode,
                     enable_trial_date, enable_delivery_date, enable_advance_payment,
                     enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id,
                     currency_code, currency_symbol, timezone, date_format, time_format)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 
+                    {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 
+                    {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
+                    {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             ''', (user_id, shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
                   invoice_static_info, use_dynamic_invoice_template, payment_mode,
                   enable_trial_date, enable_delivery_date, enable_advance_payment,

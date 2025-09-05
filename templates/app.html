@@ -33,7 +33,7 @@
   <script src="{{ url_for('static', filename='js/modules/employees.js', v='1.0.5') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/plan-management.js', v='1.0.5') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/reports.js', v='1.0.5') }}"></script>
-      <script src="{{ url_for('static', filename='js/modules/shop-settings.js', v='1.0.8') }}"></script>
+      <script src="{{ url_for('static', filename='js/modules/shop-settings.js', v='1.0.26') }}"></script>
   
   <script src="{{ url_for('static', filename='js/modules/dashboard.js', v='1.0.5') }}"></script>
       <script src="{{ url_for('static', filename='js/modules/billing-system.js', v='1.0.5') }}"></script>
@@ -378,14 +378,14 @@
             </div>
             <div class="col-span-1 flex flex-col">
               <div class="flex items-center justify-between">
-                <label for="vatPercent" class="text-xs text-neutral-400">VAT%</label>
+              <label for="vatPercent" class="text-xs text-neutral-400">VAT%</label>
                 <button type="button" id="vatConfigBtn" class="text-neutral-400 hover:text-indigo-400 transition-colors inline-flex items-center justify-center w-5 h-5" title="Configure VAT Settings">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                   </svg>
                 </button>
-              </div>
+            </div>
               <input id="vatPercent" type="number" min="0" step=".01" value="5" class="compact-form h-8 text-sm" onchange="console.log('VAT change event triggered'); if(typeof recalcAllItemsForCurrentVat === 'function') { console.log('Calling recalcAllItemsForCurrentVat'); recalcAllItemsForCurrentVat(); } else { console.error('recalcAllItemsForCurrentVat not available'); }" oninput="console.log('VAT input event triggered'); if(typeof recalcAllItemsForCurrentVat === 'function') { console.log('Calling recalcAllItemsForCurrentVat'); recalcAllItemsForCurrentVat(); } else { console.error('recalcAllItemsForCurrentVat not available'); }" onblur="console.log('VAT blur event triggered'); if(typeof recalcAllItemsForCurrentVat === 'function') { console.log('Calling recalcAllItemsForCurrentVat'); recalcAllItemsForCurrentVat(); } else { console.error('recalcAllItemsForCurrentVat not available'); }">
             </div>
             <button id="addItemBtn" class="col-span-1 modern-btn modern-btn-primary self-end h-8 text-sm w-32 flex-shrink-0 px-3" onclick="console.log('🔄 Add Item button clicked'); console.log('Current VAT input value:', document.getElementById('vatPercent')?.value); console.log('Bill array before adding:', typeof bill !== 'undefined' ? bill.length : 'undefined'); console.log('Bill array contents:', typeof bill !== 'undefined' ? bill : 'undefined');">Add Item</button>
@@ -1986,7 +1986,6 @@
         if (window.innerWidth <= 768) {
             const mobileScreens = new MobileScreens();
             
-            
             // Expose mobileScreens globally for debugging
             window.mobileScreens = mobileScreens;
             
@@ -2031,92 +2030,84 @@
             
             // Create fallback navigation immediately
             const fallbackNav = document.createElement('nav');
+            fallbackNav.className = 'mobile-nav';
             fallbackNav.id = 'mobile-navigation-bar';
             fallbackNav.style.cssText = `
                 position: fixed;
                 bottom: 0;
                 left: 0;
                 right: 0;
-                background: rgba(17, 24, 39, 0.95);
-                backdrop-filter: blur(10px);
-                border-top: 1px solid #374151;
-                padding: 8px 0;
+                background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+                border-top: 1px solid #475569;
+                padding: 8px;
                 z-index: 1000;
-                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
                 display: flex;
                 justify-content: space-around;
                 align-items: center;
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
             `;
-                
-                fallbackNav.innerHTML = `
-                        <a href="#dashboard" class="mobile-nav-item" data-section="dashboard" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
-                            </svg>
-                            <span style="font-size: 11px; font-weight: 500;">Dashboard</span>
-                        </a>
-                        <a href="#billing" class="mobile-nav-item" data-section="billing" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            <span style="font-size: 11px; font-weight: 500;">Billing</span>
-                        </a>
-                        <a href="#products" class="mobile-nav-item" data-section="products" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                            </svg>
-                            <span style="font-size: 11px; font-weight: 500;">Products</span>
-                        </a>
-                        <a href="#employees" class="mobile-nav-item" data-section="employees" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            </svg>
-                            <span style="font-size: 11px; font-weight: 500;">Employees</span>
-                        </a>
-                        <a href="#more" class="mobile-nav-item" data-section="more" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z"></path>
-                            </svg>
-                            <span style="font-size: 11px; font-weight: 500;">More</span>
-                        </a>
+            
+            // Add navigation items
+            const navItems = [
+                { icon: '🏠', label: 'Home', action: 'showDashboard' },
+                { icon: '📦', label: 'Products', action: 'showProducts' },
+                { icon: '🧾', label: 'Billing', action: 'showBilling' },
+                { icon: '👥', label: 'Customers', action: 'showCustomers' },
+                { icon: '⚙️', label: 'Settings', action: 'showSettings' }
+            ];
+            
+            navItems.forEach(item => {
+                const navItem = document.createElement('button');
+                navItem.className = 'mobile-nav-item';
+                navItem.innerHTML = `
+                    <div style="font-size: 20px; margin-bottom: 2px;">${item.icon}</div>
+                    <div style="font-size: 10px; color: #94a3b8;">${item.label}</div>
+                `;
+                navItem.style.cssText = `
+                    background: transparent;
+                    border: none;
+                    color: #94a3b8;
+                    padding: 8px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    min-width: 50px;
                 `;
                 
-                // Add click handlers for fallback navigation
-                fallbackNav.addEventListener('click', (e) => {
-                    const navItem = e.target.closest('.mobile-nav-item');
-                    if (navItem) {
-                        e.preventDefault();
-                        const section = navItem.dataset.section;
-                        const sectionMap = {
-                            'dashboard': 'dashSec',
-                            'billing': 'billingSec',
-                            'products': 'productSec',
-                            'employees': 'employeeSec'
-                        };
-                        
-                        if (section === 'more') {
-                            // Show simple more menu
-                            alert('More menu - Coming soon!');
-                            return;
-                        }
-                        
-                        const targetSection = sectionMap[section];
-                        if (targetSection) {
-                            const navButton = document.querySelector(`[data-go="${targetSection}"]`);
-                            if (navButton) {
-                                navButton.click();
-                            }
-                        }
-                    }
+                navItem.addEventListener('click', () => {
+                    console.log(`Mobile nav clicked: ${item.action}`);
+                    // Add navigation logic here
                 });
+                
+                navItem.addEventListener('mouseenter', () => {
+                    navItem.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                    navItem.style.color = '#60a5fa';
+                });
+                
+                navItem.addEventListener('mouseleave', () => {
+                    navItem.style.backgroundColor = 'transparent';
+                    navItem.style.color = '#94a3b8';
+                });
+                
+                fallbackNav.appendChild(navItem);
+            });
+            
+            // Remove existing mobile nav if present
+            const existingNav = document.querySelector('.mobile-nav, #mobile-navigation-bar');
+            if (existingNav) {
+                existingNav.remove();
+            }
                 
                 document.body.appendChild(fallbackNav);
                 console.log('Fallback mobile navigation created');
-            }
         }
     });
+</script>
     
+<script>
     // Function to force mobile navigation to show
     function forceMobileNavigation() {
         console.log('Forcing mobile navigation to show...');
@@ -2227,6 +2218,50 @@
     <button id="force-mobile-nav-btn" class="fixed top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg z-50 lg:hidden" onclick="forceMobileNavigation()">
         Show Mobile Nav
     </button>
+
+    <!-- Simple Navigation System -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Navigation system loaded
+        
+        // Handle navigation buttons with data-go attributes
+        document.addEventListener('click', function(e) {
+          const button = e.target.closest('[data-go]');
+          if (button) {
+            // Navigation button clicked
+            e.preventDefault();
+            const targetSection = button.getAttribute('data-go');
+            
+            // Hide all sections
+            document.querySelectorAll('.page').forEach(section => {
+              section.classList.add('hidden');
+            });
+            
+            // Show target section
+            const target = document.getElementById(targetSection);
+            if (target) {
+              target.classList.remove('hidden');
+                                    // Section shown
+              
+              // Initialize shop settings if it's the target
+              if (targetSection === 'shopSettingsSec') {
+                // Initializing shop settings
+                if (window.initializeShopSettings) {
+                  window.initializeShopSettings();
+                }
+              }
+            }
+          }
+        });
+        
+        // Show billing section by default
+        const billingSection = document.getElementById('billingSec');
+        if (billingSection) {
+          billingSection.classList.remove('hidden');
+          // Billing section shown by default
+        }
+      });
+    </script>
 
     <!-- Mobile Billing V3 Container -->
     <div id="mobile-billing-v3-overlay" class="mobile-billing-v3 fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden">

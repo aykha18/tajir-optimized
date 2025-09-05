@@ -18,20 +18,8 @@ function initializeShopSettings() {
     // Bind form submission
     shopSettingsForm.addEventListener('submit', handleShopSettingsSubmit);
     
-    // Bind explicit save button
-    const saveBtn = document.getElementById('saveShopSettingsBtn');
-    if (saveBtn && !saveBtn.hasAttribute('data-bound')) {
-      saveBtn.setAttribute('data-bound', 'true');
-      saveBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        // Trigger same handler using the form element
-        try {
-          handleShopSettingsSubmit({ preventDefault: () => {}, target: shopSettingsForm });
-        } catch (err) {
-          // Silent error handling
-        }
-      });
-    }
+    // COMPLETELY REWRITTEN SAVE FUNCTIONALITY
+    setupSaveButton();
     
     // Bind logout button
     const logoutBtn = document.getElementById('logoutBtn');
@@ -46,8 +34,18 @@ function initializeShopSettings() {
 
   // Load shop settings from server
   async function loadShopSettings() {
+    // Load shop settings
+    
     try {
-      const response = await fetch('/api/shop-settings');
+      const response = await fetch('/api/shop-settings?' + Date.now(), {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      // API response received
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -99,6 +97,8 @@ function initializeShopSettings() {
 
   // Populate form with current settings
   function populateShopSettingsForm(settings) {
+    // Populate shop settings form
+    
     // Set form values
     const form = document.getElementById('shopSettingsForm');
     if (!form) {
@@ -110,6 +110,7 @@ function initializeShopSettings() {
       const input = findEl(name);
       if (!input) return;
       if (input.type === 'checkbox') {
+        // Set checkbox value
         input.checked = Boolean(value);
       } else if (input.type === 'number') {
         input.value = value ?? '';
@@ -158,6 +159,12 @@ function initializeShopSettings() {
       e.preventDefault();
       
     const form = e.target;
+    // Handle shop settings submit
+    
+    if (!form) {
+      console.error('❌ Form is null in handleShopSettingsSubmit');
+      return;
+    }
     
     // Helper function to safely get form field values
     const getFieldValue = (name, defaultValue = '') => {
@@ -167,7 +174,9 @@ function initializeShopSettings() {
     
     const getFieldChecked = (name, defaultValue = false) => {
       const field = form.querySelector(`[name="${name}"]`);
-      return field ? field.checked : defaultValue;
+      const result = field ? field.checked : defaultValue;
+      // Get field checked value
+      return result;
     };
     
     const getFieldNumber = (name, defaultValue = 0) => {
@@ -194,6 +203,8 @@ function initializeShopSettings() {
       currency_code: getFieldValue('currency_code', 'AED'),
       timezone: getFieldValue('timezone', 'Asia/Dubai')
     };
+    
+          // Send form data
     
     try {
       const response = await fetch('/api/shop-settings', {
@@ -588,8 +599,181 @@ function initializeShopSettings() {
     });
   }
 
+  // NEW: Simple, direct save button setup
+  function setupSaveButton() {
+    const saveBtn = document.getElementById('saveShopSettingsBtn');
+    if (!saveBtn) {
+      console.error('❌ Save button not found');
+      return;
+    }
+
+    // Remove any existing event listeners
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+    // Add new event listener
+    newSaveBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      // Save button clicked
+      
+      // Collect all form data from the entire shop settings section
+      const data = {};
+      
+      // Get all text inputs from shop settings section
+      const textInputs = document.querySelectorAll('#shopSettingsSec input[type="text"], #shopSettingsSec input[type="email"], #shopSettingsSec input[type="tel"]');
+      textInputs.forEach(input => {
+        if (input.name) {
+          data[input.name] = input.value;
+        }
+      });
+      
+      // Get all select elements from shop settings section
+      const selects = document.querySelectorAll('#shopSettingsSec select');
+      selects.forEach(select => {
+        if (select.name) {
+          // Handle empty values for integer fields
+          if (select.name === 'default_employee_id' && select.value === '') {
+            data[select.name] = null;
+          } else {
+            data[select.name] = select.value;
+          }
+        }
+      });
+      
+      // Get ALL checkbox values from shop settings section (including unchecked ones)
+      const checkboxes = document.querySelectorAll('#shopSettingsSec input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        if (checkbox.name) {
+          data[checkbox.name] = checkbox.checked;
+        }
+      });
+      
+      // Get all number inputs from shop settings section
+      const numberInputs = document.querySelectorAll('#shopSettingsSec input[type="number"]');
+      numberInputs.forEach(input => {
+        if (input.name) {
+          data[input.name] = input.value;
+        }
+      });
+
+      // Form data collected
+
+      // Send to API
+      fetch('/api/shop-settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(result => {
+        // Save successful
+        if (result.success) {
+          // Show modern success notification
+          showModernNotification('Settings saved successfully!', 'success');
+        } else {
+          console.error('❌ Save failed:', result.error);
+          showModernNotification('Failed to save settings: ' + (result.error || 'Unknown error'), 'error');
+        }
+      })
+      .catch(error => {
+        console.error('❌ Save error:', error);
+        showModernNotification('Error saving settings: ' + error.message, 'error');
+      });
+    });
+
+    // Save button setup complete
+  }
+
+  // Modern notification system
+  function showModernNotification(message, type = 'success') {
+    // Remove any existing notifications
+    const existingNotifications = document.querySelectorAll('.modern-notification');
+    existingNotifications.forEach(notification => notification.remove());
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'modern-notification';
+    
+    // Set colors based on type
+    const colors = {
+      success: {
+        bg: 'bg-green-500/90',
+        border: 'border-green-400',
+        icon: '✅',
+        iconBg: 'bg-green-600'
+      },
+      error: {
+        bg: 'bg-red-500/90',
+        border: 'border-red-400',
+        icon: '❌',
+        iconBg: 'bg-red-600'
+      },
+      warning: {
+        bg: 'bg-yellow-500/90',
+        border: 'border-yellow-400',
+        icon: '⚠️',
+        iconBg: 'bg-yellow-600'
+      },
+      info: {
+        bg: 'bg-blue-500/90',
+        border: 'border-blue-400',
+        icon: 'ℹ️',
+        iconBg: 'bg-blue-600'
+      }
+    };
+
+    const colorScheme = colors[type] || colors.success;
+
+    notification.innerHTML = `
+      <div class="fixed top-4 right-4 z-50 ${colorScheme.bg} backdrop-blur-sm border ${colorScheme.border} rounded-lg shadow-2xl p-4 min-w-80 max-w-96 transform transition-all duration-300 ease-out translate-x-full opacity-0">
+        <div class="flex items-center gap-3">
+          <div class="flex-shrink-0 w-8 h-8 ${colorScheme.iconBg} rounded-full flex items-center justify-center text-white text-sm font-bold">
+            ${colorScheme.icon}
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-medium text-sm leading-relaxed">${message}</p>
+          </div>
+          <button class="flex-shrink-0 text-white/70 hover:text-white transition-colors duration-200" onclick="this.closest('.modern-notification').remove()">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add to page
+    document.body.appendChild(notification);
+
+    // Animate in
+    setTimeout(() => {
+      const notificationContent = notification.querySelector('div');
+      notificationContent.classList.remove('translate-x-full', 'opacity-0');
+      notificationContent.classList.add('translate-x-0', 'opacity-100');
+    }, 10);
+
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+      const notificationContent = notification.querySelector('div');
+      if (notificationContent) {
+        notificationContent.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.remove();
+          }
+        }, 300);
+      }
+    }, 4000);
+  }
+
   // Export functions for global access
   window.initializeShopSettings = initializeShopSettings; 
   window.initializeChangePassword = initializeChangePassword;
   window.setupShopCityAreaAutocomplete = setupShopCityAreaAutocomplete;
+  window.loadShopSettings = loadShopSettings;
+  window.handleShopSettingsSubmit = handleShopSettingsSubmit;
+  window.setupSaveButton = setupSaveButton;
+  window.showModernNotification = showModernNotification;
 })(); 

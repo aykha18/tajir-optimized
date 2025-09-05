@@ -441,32 +441,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const billingConfigTab = document.getElementById('tabBillingConfig');
     const vatTab = document.getElementById('tabVAT');
     
-    console.log('📋 Tab elements found:', {
-      shopInfoTab: !!shopInfoTab,
-      billingConfigTab: !!billingConfigTab,
-      vatTab: !!vatTab
-    });
+    // Tab elements found
     
     if (shopInfoTab) {
       shopInfoTab.addEventListener('click', () => {
-        console.log('🏪 Shop Info tab clicked');
+        // Shop Info tab clicked
         switchShopSettingsTab('shopInfo');
       });
     }
     if (billingConfigTab) {
       billingConfigTab.addEventListener('click', () => {
-        console.log('💳 Billing Config tab clicked');
+        // Billing Config tab clicked
         switchShopSettingsTab('billingConfig');
       });
     }
     if (vatTab) {
       vatTab.addEventListener('click', () => {
-        console.log('💰 VAT tab clicked');
+        // VAT tab clicked
         switchShopSettingsTab('vat');
       });
     }
     
-    console.log('✅ Shop Settings tabs initialized');
+    // Shop Settings tabs initialized
   }
 
   // Call initialization when DOM is ready

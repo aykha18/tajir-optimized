@@ -18,17 +18,16 @@ let billingConfig = {
 // Load billing configuration from shop settings
 async function loadBillingConfiguration() {
     try {
-        console.log('🔄 Billing System: Loading billing configuration...');
+        // Loading billing configuration
         const response = await fetch('/api/shop-settings/billing-config');
         const data = await response.json();
         
         if (data.success) {
             billingConfig = data.config;
-            console.log('✅ Billing System: Loaded billing config successfully:', billingConfig);
-            console.log('📋 Billing System: Default employee ID from config:', billingConfig.default_employee_id);
+            // Billing config loaded successfully
             applyBillingConfiguration();
         } else {
-            console.log('⚠️ Billing System: No billing config found, using defaults');
+            // No billing config found, using defaults
             applyBillingConfiguration();
         }
     } catch (error) {
@@ -2210,7 +2209,7 @@ function initializeBillingSystem() {
         
         // Set global selected master ID
         window.selectedMasterId = owner.employee_id;
-        console.log('Billing System: Set owner as default:', owner.name);
+        // Set owner as default
         
       } else {
         // If no owner found, set the first available employee as default
