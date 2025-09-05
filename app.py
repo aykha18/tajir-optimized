@@ -671,6 +671,12 @@ def cleanup_corrupted_data(conn):
         conn.rollback()
 
 
+@app.before_request
+def redirect_railway_subdomain():
+    """Redirect Railway subdomain to custom domain"""
+    if request.host and 'railway.app' in request.host:
+        return redirect('https://tajirtech.com' + request.full_path, code=301)
+
 @app.after_request
 def add_security_headers(response):
     """Add security headers to all responses."""
@@ -754,6 +760,11 @@ def landing():
 @app.route('/home')
 def home():
     return render_template('modern_landing.html')
+
+@app.route('/railway-redirect')
+def railway_redirect():
+    """Redirect Railway subdomain to custom domain"""
+    return redirect('https://tajirtech.com', code=301)
 
 @app.route('/setup-wizard')
 def setup_wizard():
