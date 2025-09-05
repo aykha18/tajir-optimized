@@ -701,16 +701,33 @@ def add_security_headers(response):
 @app.route('/')
 def index():
     try:
-        # Check if user is logged in
+        # Check if user is logged in and user still exists in database
         if 'user_id' in session:
-            # Redirect logged-in users to the app
-            return redirect(url_for('app'))
-        else:
-            # Show landing page for non-logged-in users
-            return render_template('modern_landing.html')
+            user_id = session.get('user_id')
+            # Verify user still exists in database
+            try:
+                conn = get_db_connection()
+                cursor = execute_query(conn, 'SELECT user_id FROM users WHERE user_id = ?', (user_id,))
+                user_exists = cursor.fetchone()
+                conn.close()
+                
+                if user_exists:
+                    # Redirect logged-in users to the app
+                    return redirect(url_for('app'))
+                else:
+                    # User was deleted, clear session
+                    session.clear()
+            except Exception as db_error:
+                print(f"Database error checking user: {db_error}")
+                # If database check fails, clear session to be safe
+                session.clear()
+        
+        # Show landing page for non-logged-in users
+        return render_template('modern_landing.html')
     except Exception as e:
         print(f"Error in root route: {e}")
-        # Fallback to simple HTML response
+        # Clear session and show fallback
+        session.clear()
         return """
         <!DOCTYPE html>
         <html>
