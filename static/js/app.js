@@ -177,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Shop Settings Tab Switching Function (VAT optional)
   window.switchShopSettingsTab = function(tab) {
-    console.log('🔄 Switching to shop settings tab:', tab);
 
     // Collect available tab buttons
     const shopInfoTab = document.getElementById('tabShopInfo');
@@ -434,7 +433,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Initialize Shop Settings tab functionality
   function initializeShopSettingsTabs() {
-    console.log('🔧 Initializing Shop Settings tabs...');
     
     // Shop Settings tab event listeners
     const shopInfoTab = document.getElementById('tabShopInfo');

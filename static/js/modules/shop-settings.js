@@ -15,6 +15,9 @@ function initializeShopSettings() {
     // Populate employees dropdown if present
     populateEmployeesDropdown();
     
+    // Setup TRN validation
+    setupTRNValidation();
+    
     // Bind form submission
     shopSettingsForm.addEventListener('submit', handleShopSettingsSubmit);
     
@@ -768,6 +771,35 @@ function initializeShopSettings() {
     }, 4000);
   }
 
+  // Setup TRN field to only allow digits
+  function setupTRNValidation() {
+    const trnField = document.getElementById('shopTRN');
+    if (trnField) {
+      trnField.addEventListener('input', function(e) {
+        // Remove any non-digit characters
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+      });
+      
+      trnField.addEventListener('keypress', function(e) {
+        // Only allow digits (0-9), backspace, delete, tab, escape, enter
+        const allowedKeys = [8, 9, 27, 13, 46]; // backspace, tab, escape, enter, delete
+        const isDigit = (e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105);
+        
+        if (!isDigit && allowedKeys.indexOf(e.keyCode) === -1) {
+          e.preventDefault();
+        }
+      });
+      
+      trnField.addEventListener('paste', function(e) {
+        // Handle paste events to filter out non-digits
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData('text');
+        const digitsOnly = paste.replace(/[^0-9]/g, '');
+        e.target.value = digitsOnly;
+      });
+    }
+  }
+
   // Export functions for global access
   window.initializeShopSettings = initializeShopSettings; 
   window.initializeChangePassword = initializeChangePassword;
@@ -776,4 +808,5 @@ function initializeShopSettings() {
   window.handleShopSettingsSubmit = handleShopSettingsSubmit;
   window.setupSaveButton = setupSaveButton;
   window.showModernNotification = showModernNotification;
+  window.setupTRNValidation = setupTRNValidation;
 })(); 

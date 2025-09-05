@@ -2182,7 +2182,6 @@ function initializeBillingSystem() {
           
           // Set global selected master ID
           window.selectedMasterId = defaultEmployee.employee_id || defaultEmployee.id;
-          console.log('Billing System: Set default employee from shop settings:', defaultEmployee.name);
           return;
         }
       }

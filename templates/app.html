@@ -33,7 +33,7 @@
   <script src="{{ url_for('static', filename='js/modules/employees.js', v='1.0.5') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/plan-management.js', v='1.0.5') }}"></script>
   <script src="{{ url_for('static', filename='js/modules/reports.js', v='1.0.5') }}"></script>
-      <script src="{{ url_for('static', filename='js/modules/shop-settings.js', v='1.0.26') }}"></script>
+      <script src="{{ url_for('static', filename='js/modules/shop-settings.js', v='1.0.30') }}"></script>
   
   <script src="{{ url_for('static', filename='js/modules/dashboard.js', v='1.0.5') }}"></script>
       <script src="{{ url_for('static', filename='js/modules/billing-system.js', v='1.0.5') }}"></script>
@@ -1644,27 +1644,27 @@
           <form id="shopSettingsForm" class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="flex flex-col">
               <label for="shopName" class="text-xs text-neutral-400 mb-1">Shop Name</label>
-              <input id="shopName" name="shop_name" placeholder="e.g. Tajir Tailoring" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+              <input id="shopName" name="shop_name" type="text" placeholder="e.g. Tajir Tailoring" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
             <div class="flex flex-col">
               <label for="shopMobile" class="text-xs text-neutral-400 mb-1">Shop Mobile</label>
-              <input id="shopMobile" name="shop_mobile" placeholder="e.g. 0501234567" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+              <input id="shopMobile" name="shop_mobile" type="text" placeholder="e.g. 0501234567" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
             <div class="flex flex-col">
               <label for="shopCity" class="text-xs text-neutral-400 mb-1">City</label>
-              <input id="shopCity" name="city" placeholder="e.g. Dubai" autocomplete="off" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+              <input id="shopCity" name="city" type="text" placeholder="e.g. Dubai" autocomplete="off" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
             <div class="flex flex-col">
               <label for="shopArea" class="text-xs text-neutral-400 mb-1">Area</label>
-              <input id="shopArea" name="area" placeholder="e.g. Deira" autocomplete="off" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+              <input id="shopArea" name="area" type="text" placeholder="e.g. Deira" autocomplete="off" required class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
             <div class="md:col-span-2 flex flex-col">
               <label for="shopAddress" class="text-xs text-neutral-400 mb-1">Complete Address</label>
-              <input id="shopAddress" name="address" placeholder="Shop #123, Building, Street, Area, City" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+              <input id="shopAddress" name="address" type="text" placeholder="Shop #123, Building, Street, Area, City" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
             <div class="flex flex-col">
               <label for="shopTRN" class="text-xs text-neutral-400 mb-1">TRN</label>
-              <input id="shopTRN" name="trn" placeholder="Tax Registration Number" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+              <input id="shopTRN" name="trn" type="text" placeholder="Tax Registration Number" pattern="[0-9]*" inputmode="numeric" class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
             
             <!-- Currency and Timezone Settings -->
@@ -1864,7 +1864,7 @@
                     <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    Use Dynamic Invoice Template
+                    Show Shop Details in Invoice
                   </label>
                 </div>
               </div>
