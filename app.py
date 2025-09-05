@@ -700,13 +700,31 @@ def add_security_headers(response):
 
 @app.route('/')
 def index():
-    # Check if user is logged in
-    if 'user_id' in session:
-        # Redirect logged-in users to the app
-        return redirect(url_for('app'))
-    else:
-        # Show landing page for non-logged-in users
-        return render_template('modern_landing.html')
+    try:
+        # Check if user is logged in
+        if 'user_id' in session:
+            # Redirect logged-in users to the app
+            return redirect(url_for('app'))
+        else:
+            # Show landing page for non-logged-in users
+            return render_template('modern_landing.html')
+    except Exception as e:
+        print(f"Error in root route: {e}")
+        # Fallback to simple HTML response
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Tajir POS - UAE's Smart Point of Sale System</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body>
+            <h1>Tajir POS</h1>
+            <p>UAE's Smart Point of Sale System</p>
+            <p><a href="/home">Go to Home</a></p>
+        </body>
+        </html>
+        """
 
 @app.route('/landing')
 def landing():
