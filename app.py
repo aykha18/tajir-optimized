@@ -671,11 +671,7 @@ def cleanup_corrupted_data(conn):
         conn.rollback()
 
 
-@app.before_request
-def redirect_railway_subdomain():
-    """Redirect Railway subdomain to custom domain"""
-    if request.host and 'railway.app' in request.host:
-        return redirect('https://tajirtech.com' + request.full_path, code=301)
+# Railway subdomain redirect removed - subdomain not working properly
 
 @app.after_request
 def add_security_headers(response):
