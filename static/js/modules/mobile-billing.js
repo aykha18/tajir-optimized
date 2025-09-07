@@ -851,11 +851,26 @@ if (typeof window.MobileBilling === 'undefined') {
   }
 
   calculateTotals() {
-    const subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
+    const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
     const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
-    const tax = subtotal * (vatPercent / 100); // Calculate VAT based on config
+    
+    let subtotal, tax, finalTotal;
+    
+    if (includeVatInPrice) {
+      // VAT is already included in item prices
+      const totalWithVat = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
+      subtotal = totalWithVat / (1 + vatPercent / 100); // Calculate subtotal without VAT
+      tax = totalWithVat - subtotal; // VAT amount
+      finalTotal = totalWithVat; // Final total is the same as total with VAT
+    } else {
+      // Traditional VAT calculation (VAT added on top)
+      subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
+      tax = subtotal * (vatPercent / 100);
+      finalTotal = subtotal + tax;
+    }
+    
     const discount = this.currentBill.discount || 0;
-    const finalTotal = subtotal + tax - discount;
+    finalTotal = finalTotal - discount;
 
     this.currentBill.subtotal = subtotal;
     this.currentBill.tax = tax;
@@ -869,11 +884,26 @@ if (typeof window.MobileBilling === 'undefined') {
   }
 
   calculateMobileTotals() {
-    const subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
+    const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
     const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
-    const tax = subtotal * (vatPercent / 100); // Calculate VAT based on config
+    
+    let subtotal, tax, finalTotal;
+    
+    if (includeVatInPrice) {
+      // VAT is already included in item prices
+      const totalWithVat = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
+      subtotal = totalWithVat / (1 + vatPercent / 100); // Calculate subtotal without VAT
+      tax = totalWithVat - subtotal; // VAT amount
+      finalTotal = totalWithVat; // Final total is the same as total with VAT
+    } else {
+      // Traditional VAT calculation (VAT added on top)
+      subtotal = this.currentBill.items.reduce((sum, item) => sum + item.total, 0);
+      tax = subtotal * (vatPercent / 100);
+      finalTotal = subtotal + tax;
+    }
+    
     const discount = this.currentBill.discount || 0;
-    const finalTotal = subtotal + tax - discount;
+    finalTotal = finalTotal - discount;
 
     this.currentBill.subtotal = subtotal;
     this.currentBill.tax = tax;

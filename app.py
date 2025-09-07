@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify, send_file, session, send_from_directory, redirect, url_for
-import sqlite3
 import os
 import secrets
 from datetime import datetime, date, timedelta
@@ -176,7 +175,7 @@ def log_user_action(action, user_id=None, details=None):
         logger.error(f"Failed to log user action: {e}")
 
 app = Flask(__name__)
-app.config['DATABASE'] = os.getenv('DATABASE_PATH', 'pos_tailor.db')
+# PostgreSQL database configuration is handled via environment variables
 app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))  # Add secret key for sessions
 
 # Configure session settings
@@ -209,229 +208,116 @@ def after_request(response):
 
 
 def get_db_connection():
-    """Get database connection - supports both SQLite (development) and PostgreSQL (production)"""
-    # Check if we should use PostgreSQL (Railway deployment)
-    # Prioritize DATABASE_URL (Railway standard), then PG_ variables, then custom POSTGRES_ variables
+    """Get PostgreSQL database connection"""
     database_url = os.getenv('DATABASE_URL')
     pg_host = os.getenv('PGHOST') or os.getenv('POSTGRES_HOST')
     
-    if POSTGRESQL_AVAILABLE and (database_url or pg_host):
-        try:
-            if database_url:
-                # Use DATABASE_URL (Railway standard approach)
-                # print(f"Connecting using DATABASE_URL")
-                conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
-            else:
-                # Fallback to individual variables
-                pg_port = os.getenv('PGPORT') or os.getenv('POSTGRES_PORT', '5432')
-                pg_database = os.getenv('PGDATABASE') or os.getenv('POSTGRES_DB', 'tajir_pos')
-                pg_user = os.getenv('PGUSER') or os.getenv('POSTGRES_USER', 'postgres')
-                pg_password = os.getenv('PGPASSWORD') or os.getenv('POSTGRES_PASSWORD', 'password')
-                
-                pg_config = {
-                    'host': pg_host,
-                    'port': pg_port,
-                    'database': pg_database,
-                    'user': pg_user,
-                    'password': pg_password,
-                    'cursor_factory': RealDictCursor
-                }
-                # print(f"Connecting using individual variables")
-                conn = psycopg2.connect(**pg_config)
-            return conn
-        except Exception as e:
-            # print(f"PostgreSQL connection failed: {e}")
-            # Try to create the database if it doesn't exist
-            if "database" in str(e).lower() and "does not exist" in str(e).lower():
-                # print("Database doesn't exist, attempting to create it...")
-                try:
-                    # Connect to default 'postgres' database to create our database
-                    if database_url:
-                        # Parse DATABASE_URL to get connection details
-                        from urllib.parse import urlparse
-                        parsed = urlparse(database_url)
-                        create_db_config = {
-                            'host': parsed.hostname,
-                            'port': parsed.port,
-                            'database': 'postgres',  # Connect to default database
-                            'user': parsed.username,
-                            'password': parsed.password
-                        }
-                    else:
-                        create_db_config = {
-                            'host': pg_host,
-                            'port': pg_port,
-                            'database': 'postgres',  # Connect to default database
-                            'user': pg_user,
-                            'password': pg_password
-                        }
-                    
-                    # Connect to default database and create our database
-                    temp_conn = psycopg2.connect(**create_db_config)
-                    temp_conn.autocommit = True
-                    cursor = temp_conn.cursor()
-                    
-                    # Get database name
-                    db_name = parsed.path[1:] if database_url else pg_database
-                    cursor.execute(f"CREATE DATABASE {db_name}")
-                    cursor.close()
-                    temp_conn.close()
-                    
-                    # print(f"Database '{db_name}' created successfully!")
-                    
-                    # Now try to connect to the newly created database
-                    if database_url:
-                        conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
-                    else:
-                        conn = psycopg2.connect(**pg_config)
-                    return conn
-                    
-                except Exception as create_error:
-                    # print(f"Failed to create database: {create_error}")
-                    # print("Falling back to SQLite...")
-                    pass
-            else:
-                # print("Falling back to SQLite...")
-                pass
-    
-    # Fallback to SQLite (development)
-    conn = sqlite3.connect(app.config['DATABASE'], timeout=20.0)
-    conn.row_factory = sqlite3.Row
+    if database_url:
+        # Use DATABASE_URL (Railway standard approach)
+        conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+    else:
+        # Use individual variables
+        pg_port = os.getenv('PGPORT') or os.getenv('POSTGRES_PORT', '5432')
+        pg_database = os.getenv('PGDATABASE') or os.getenv('POSTGRES_DB', 'tajir_pos')
+        pg_user = os.getenv('PGUSER') or os.getenv('POSTGRES_USER', 'postgres')
+        pg_password = os.getenv('PGPASSWORD') or os.getenv('POSTGRES_PASSWORD', 'password')
+        
+        pg_config = {
+            'host': pg_host,
+            'port': pg_port,
+            'database': pg_database,
+            'user': pg_user,
+            'password': pg_password,
+            'cursor_factory': RealDictCursor
+        }
+        conn = psycopg2.connect(**pg_config)
     return conn
 
 def get_db_integrity_error():
-    """Get the appropriate IntegrityError class for the current database"""
-    if POSTGRESQL_AVAILABLE and os.getenv('POSTGRES_HOST'):
-        return psycopg2.IntegrityError
-    else:
-        return sqlite3.IntegrityError
+    """Get PostgreSQL IntegrityError class"""
+    return psycopg2.IntegrityError
 
 def is_postgresql():
-    """Check if we're using PostgreSQL"""
-    # Check for DATABASE_URL (Railway standard) or Railway's PG_ variables or our custom POSTGRES_ variables
-    database_url = os.getenv('DATABASE_URL')
-    pg_host = os.getenv('PGHOST') or os.getenv('POSTGRES_HOST')
-    is_pg = POSTGRESQL_AVAILABLE and bool(database_url or pg_host)
-    # print(f"is_postgresql() check: POSTGRESQL_AVAILABLE={POSTGRESQL_AVAILABLE}, database_url={'set' if database_url else 'not set'}, pg_host={'set' if pg_host else 'not set'}, result={is_pg}")
-    return is_pg
+    """Check if we're using PostgreSQL - always True now"""
+    return True
 
 def get_placeholder():
-    """Get the appropriate placeholder for the current database"""
-    return '%s' if is_postgresql() else '?'
+    """Get PostgreSQL placeholder"""
+    return '%s'
 
 def execute_with_returning(conn, sql, params=None):
-    """Execute SQL and return the inserted ID for both SQLite and PostgreSQL"""
-    if is_postgresql():
-        # For PostgreSQL, determine the correct ID column name based on the table
-        if sql.strip().upper().startswith('INSERT'):
-            # Extract table name from INSERT statement
-            table_match = re.search(r'INSERT INTO (\w+)', sql, re.IGNORECASE)
-            if table_match:
-                table_name = table_match.group(1)
-                # Map table names to their ID column names
-                id_columns = {
-                    'employees': 'employee_id',
-                    'customers': 'customer_id',
-                    'products': 'product_id',
-                    'product_types': 'type_id',
-                    'bills': 'bill_id',
-                    'bill_items': 'item_id',
-                    'expenses': 'expense_id',
-                    'expense_categories': 'category_id',
-                    'vat_rates': 'vat_id',
-                    'user_plans': 'plan_id',
-                    'shop_settings': 'setting_id',
-                    'users': 'user_id',
-                    'otp_codes': 'id',
-                    'error_logs': 'id',
-                    'user_actions': 'action_id',
-                    'recurring_expenses': 'recurring_id'
-                }
-                id_column = id_columns.get(table_name, 'id')
-                
-                # Add RETURNING clause if not already present
-                if 'RETURNING' not in sql.upper():
-                    sql += f' RETURNING {id_column}'
-                
-                cursor = conn.cursor()
-                cursor.execute(sql, params)
-                result = cursor.fetchone()
-                conn.commit()  # Commit the transaction
-                # Handle both dict and tuple results
-                if result:
-                    if isinstance(result, dict):
-                        return result[id_column]
-                    else:
-                        # For tuple results, return the first element
-                        return result[0]
-                return None
-            else:
-                # Fallback to generic 'id' if table name can't be determined
-                # For PostgreSQL, we need to determine the correct ID column
-                if 'RETURNING' not in sql.upper():
-                    # Try to extract table name from INSERT statement
-                    if sql.strip().upper().startswith('INSERT INTO'):
-                        # Extract table name from INSERT INTO table_name
-                        parts = sql.split()
-                        if len(parts) >= 3:
-                            table_name = parts[2].strip()
-                            # Map common table names to their ID columns
-                            id_columns = {
-                                'employees': 'employee_id',
-                                'products': 'product_id', 
-                                'customers': 'customer_id',
-                                'bills': 'bill_id',
-                                'bill_items': 'item_id',
-                                'product_types': 'type_id',
-                                'vat_rates': 'vat_id',
-                                'expense_categories': 'category_id',
-                                'expenses': 'expense_id',
-                                'user_plans': 'plan_id',
-                                'shop_settings': 'setting_id',
-                                'users': 'user_id',
-                                'otp_codes': 'otp_id',
-                                'recurring_expenses': 'recurring_id'
-                            }
-                            id_column = id_columns.get(table_name.lower(), 'id')
-                            sql += f' RETURNING {id_column}'
-                        else:
-                            sql += ' RETURNING id'
-                    else:
-                        sql += ' RETURNING id'
-                cursor = conn.cursor()
-                cursor.execute(sql, params)
-                result = cursor.fetchone()
-                conn.commit()  # Commit the transaction
-                # Determine the correct key to use
-                if result:
-                    if isinstance(result, dict):
-                        keys = list(result.keys())
-                        return result[keys[0]] if keys else None
-                    else:
-                        # For tuple results, return the first element
-                        return result[0]
-                return None
-        else:
+    """Execute SQL and return the inserted ID for PostgreSQL"""
+    # For PostgreSQL, determine the correct ID column name based on the table
+    if sql.strip().upper().startswith('INSERT'):
+        # Extract table name from INSERT statement
+        table_match = re.search(r'INSERT INTO (\w+)', sql, re.IGNORECASE)
+        if table_match:
+            table_name = table_match.group(1)
+            # Map table names to their ID column names
+            id_columns = {
+                'employees': 'employee_id',
+                'customers': 'customer_id',
+                'products': 'product_id',
+                'product_types': 'type_id',
+                'bills': 'bill_id',
+                'bill_items': 'item_id',
+                'expenses': 'expense_id',
+                'expense_categories': 'category_id',
+                'vat_rates': 'vat_id',
+                'user_plans': 'plan_id',
+                'shop_settings': 'setting_id',
+                'users': 'user_id',
+                'otp_codes': 'id',
+                'error_logs': 'id',
+                'user_actions': 'action_id',
+                'recurring_expenses': 'recurring_id'
+            }
+            id_column = id_columns.get(table_name, 'id')
+            
+            # Add RETURNING clause if not already present
+            if 'RETURNING' not in sql.upper():
+                sql += f' RETURNING {id_column}'
+            
             cursor = conn.cursor()
             cursor.execute(sql, params)
+            result = cursor.fetchone()
             conn.commit()  # Commit the transaction
+            # Handle both dict and tuple results
+            if result:
+                if isinstance(result, dict):
+                    return result[id_column]
+                else:
+                    # For tuple results, return the first element
+                    return result[0]
+            return None
+        else:
+            # Fallback to generic 'id' if table name can't be determined
+            if 'RETURNING' not in sql.upper():
+                sql += ' RETURNING id'
+            cursor = conn.cursor()
+            cursor.execute(sql, params)
+            result = cursor.fetchone()
+            conn.commit()  # Commit the transaction
+            if result:
+                if isinstance(result, dict):
+                    return result['id']
+                else:
+                    return result[0]
             return None
     else:
-        # For SQLite, use the original approach
         cursor = conn.cursor()
         cursor.execute(sql, params)
-        if sql.strip().upper().startswith('INSERT'):
-            return cursor.lastrowid
+        conn.commit()  # Commit the transaction
         return None
 
 def execute_query(conn, sql, params=None):
-    """Execute a query and return results - works for both SQLite and PostgreSQL"""
+    """Execute a query and return results for PostgreSQL"""
     cursor = conn.cursor()
     cursor.execute(sql, params)
     return cursor
 
 def execute_update(conn, sql, params=None):
-    """Execute an UPDATE/DELETE statement - works for both SQLite and PostgreSQL"""
+    """Execute an UPDATE/DELETE statement for PostgreSQL"""
     cursor = conn.cursor()
     cursor.execute(sql, params)
     conn.commit()
@@ -497,123 +383,79 @@ def get_user_plan_info():
 
 def init_db():
     need_init = False
-    if is_postgresql():
-        # For PostgreSQL, check if tables exist
-        try:
-            conn = get_db_connection()
-            cursor = execute_query(conn, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'product_types'")
-            result = cursor.fetchone()
-            # Handle both PostgreSQL (dict) and SQLite (tuple) results
-            count = result[0] if isinstance(result, tuple) else result['count']
-            if count == 0:
-                need_init = True
-                # print("PostgreSQL detected - tables don't exist, initializing database...")
-            else:
-                # print("PostgreSQL detected - tables already exist, skipping initialization")
-                pass
-            conn.close()
-        except Exception as e:
-            # Table doesn't exist, need to initialize
+    # For PostgreSQL, check if tables exist
+    try:
+        conn = get_db_connection()
+        cursor = execute_query(conn, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'product_types'")
+        result = cursor.fetchone()
+        count = result['count']
+        if count == 0:
             need_init = True
-            # print(f"PostgreSQL detected - error checking tables: {e}, initializing database...")
-    else:
-        # For SQLite, check if database file exists
-        if not os.path.exists(app.config['DATABASE']):
-            need_init = True
-        else:
-            # Check if main tables are empty
-            conn = get_db_connection()
-            try:
-                cursor = execute_query(conn, "SELECT COUNT(*) FROM product_types")
-                result = cursor.fetchone()
-                # Handle both PostgreSQL (dict) and SQLite (tuple) results
-                count = result[0] if isinstance(result, tuple) else result['count']
-                if count == 0:
-                    need_init = True
-            except Exception:
-                # Table doesn't exist, need to initialize
-                need_init = True
-            conn.close()
+        conn.close()
+    except Exception as e:
+        # Table doesn't exist, need to initialize
+        need_init = True
     
     if need_init:
-        # Choose the appropriate schema file based on database type
-        pg_check = is_postgresql()
-        # print(f"Database type check: is_postgresql() = {pg_check}")
-        # print(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'Not set')}")
-        # print(f"PGHOST: {os.getenv('PGHOST', 'Not set')}")
-        # print(f"POSTGRESQL_AVAILABLE: {POSTGRESQL_AVAILABLE}")
-        
-        if is_postgresql():
-            schema_file = 'database_schema_postgresql.sql'
-            # print(f"Using PostgreSQL schema: {schema_file}")
-        else:
-            schema_file = 'database_schema.sql'
-            # print(f"Using SQLite schema: {schema_file}")
+        # Use PostgreSQL schema file
+        schema_file = 'database_schema_postgresql.sql'
         
         try:
             with open(schema_file, 'r') as f:
                 schema = f.read()
         except FileNotFoundError:
-            print(f"Schema file {schema_file} not found, using default schema")
-            schema_file = 'database_schema.sql'
-            with open(schema_file, 'r') as f:
-                schema = f.read()
+            print(f"Schema file {schema_file} not found")
+            return
         
         conn = get_db_connection()
         try:
-            if is_postgresql():
-                # For PostgreSQL, execute statements one by one
-                statements = schema.split(';')
-                cursor = conn.cursor()
-                # print(f"Executing {len(statements)} statements from schema file...")
-                executed_count = 0
-                for i, statement in enumerate(statements):
-                    statement = statement.strip()
-                    # print(f"Statement {i+1} (length: {len(statement)}): {statement[:50]}...")
-                    
-                    # Skip empty statements
-                    if not statement:
-                        # print(f"Skipping statement {i+1} (empty)")
-                        continue
-                    
-                    # Skip pure comment statements (lines that are only comments)
-                    if statement.startswith('--') and not any(keyword in statement.upper() for keyword in ['CREATE', 'INSERT', 'ALTER', 'DROP', 'SELECT', 'UPDATE', 'DELETE']):
-                        # print(f"Skipping statement {i+1} (pure comment)")
-                        continue
-                    
-                    # Execute the statement
-                    try:
-                        # print(f"Executing statement {i+1}: {statement[:100]}...")
-                        cursor.execute(statement)
-                        executed_count += 1
-                        # print(f"✅ Statement {i+1} executed successfully")
-                    except Exception as stmt_error:
-                        # print(f"❌ Warning: Failed to execute statement {i+1}: {stmt_error}")
-                        # print(f"Statement: {statement}")
-                        # Continue with other statements
-                        pass
+            # For PostgreSQL, execute statements one by one
+            statements = schema.split(';')
+            cursor = conn.cursor()
+            # print(f"Executing {len(statements)} statements from schema file...")
+            executed_count = 0
+            for i, statement in enumerate(statements):
+                statement = statement.strip()
+                # print(f"Statement {i+1} (length: {len(statement)}): {statement[:50]}...")
                 
-                # print(f"Successfully executed {executed_count} statements")
-                conn.commit()  # Commit the transaction
-                cursor.close()
+                # Skip empty statements
+                if not statement:
+                    # print(f"Skipping statement {i+1} (empty)")
+                    continue
                 
-                # Verify tables were created
+                # Skip pure comment statements (lines that are only comments)
+                if statement.startswith('--') and not any(keyword in statement.upper() for keyword in ['CREATE', 'INSERT', 'ALTER', 'DROP', 'SELECT', 'UPDATE', 'DELETE']):
+                    # print(f"Skipping statement {i+1} (pure comment)")
+                    continue
+                
+                # Execute the statement
                 try:
-                    verify_cursor = conn.cursor()
-                    verify_cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
-                    tables = verify_cursor.fetchall()
-                    # print(f"Tables created: {[table[0] for table in tables]}")
-                    verify_cursor.close()
-                except Exception as verify_error:
-                    # print(f"Error verifying tables: {verify_error}")
+                    # print(f"Executing statement {i+1}: {statement[:100]}...")
+                    cursor.execute(statement)
+                    executed_count += 1
+                    # print(f"✅ Statement {i+1} executed successfully")
+                except Exception as stmt_error:
+                    # print(f"❌ Warning: Failed to execute statement {i+1}: {stmt_error}")
+                    # print(f"Statement: {statement}")
+                    # Continue with other statements
                     pass
-                
-                # print(f"PostgreSQL database initialized successfully using {schema_file}")
-            else:
-                # For SQLite, use executescript
-                conn.executescript(schema)
-                # print("SQLite database initialized successfully")
-            logger.info("Database initialized successfully with logging tables")
+            
+            # print(f"Successfully executed {executed_count} statements")
+            conn.commit()  # Commit the transaction
+            cursor.close()
+            
+            # Verify tables were created
+            try:
+                verify_cursor = conn.cursor()
+                verify_cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+                tables = verify_cursor.fetchall()
+                # print(f"Tables created: {[table[0] for table in tables]}")
+                verify_cursor.close()
+            except Exception as verify_error:
+                # print(f"Error verifying tables: {verify_error}")
+                pass
+            
+            logger.info("PostgreSQL database initialized successfully")
         except Exception as e:
             log_dml_error("INIT", "database", e)
             print(f"Database initialization error: {e}")
@@ -656,28 +498,17 @@ def cleanup_corrupted_data(conn):
         cursor = conn.cursor()
         
         # Fix corrupted dates in expenses table
-        if is_postgresql():
-            # For PostgreSQL, update invalid dates to current date
-            cursor.execute("""
-                UPDATE expenses 
-                SET expense_date = CURRENT_DATE 
-                WHERE expense_date IS NULL 
-                   OR expense_date < '1900-01-01' 
-                   OR expense_date > '2100-12-31'
-            """)
-            
-            # Reset sequence if needed
-            cursor.execute("SELECT setval('expenses_expense_id_seq', (SELECT COALESCE(MAX(expense_id), 1) FROM expenses))")
-            
-        else:
-            # For SQLite, update invalid dates
-            cursor.execute("""
-                UPDATE expenses 
-                SET expense_date = date('now') 
-                WHERE expense_date IS NULL 
-                   OR expense_date < '1900-01-01' 
-                   OR expense_date > '2100-12-31'
-            """)
+        # For PostgreSQL, update invalid dates to current date
+        cursor.execute("""
+            UPDATE expenses 
+            SET expense_date = CURRENT_DATE 
+            WHERE expense_date IS NULL 
+               OR expense_date < '1900-01-01' 
+               OR expense_date > '2100-12-31'
+        """)
+        
+        # Reset sequence if needed
+        cursor.execute("SELECT setval('expenses_expense_id_seq', (SELECT COALESCE(MAX(expense_id), 1) FROM expenses))")
         
         conn.commit()
         print("✓ Corrupted data cleaned up successfully")
@@ -1100,8 +931,8 @@ def delete_product(product_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
-    is_active_value = 'FALSE' if is_postgresql() else '0'
+    # Use TRUE/FALSE for PostgreSQL
+    is_active_value = 'FALSE'
     execute_update(conn, f'UPDATE products SET is_active = {is_active_value} WHERE product_id = {placeholder} AND user_id = {placeholder}', (product_id, user_id))
     conn.close()
     return jsonify({'message': 'Product deleted successfully'})
@@ -1130,13 +961,8 @@ def get_customers():
     elif search:
         like_search = f"%{search}%"
         placeholder = get_placeholder()
-        # Use ILIKE for case-insensitive search in PostgreSQL, fallback to LOWER() for SQLite
-        if POSTGRESQL_AVAILABLE and (os.getenv('DATABASE_URL') or os.getenv('POSTGRES_HOST')):
-            # PostgreSQL - use ILIKE for case-insensitive search
-            cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (name ILIKE {placeholder} OR phone ILIKE {placeholder} OR business_name ILIKE {placeholder}) AND is_active = TRUE ORDER BY name', (user_id, like_search, like_search, like_search))
-        else:
-            # SQLite - use LOWER() for case-insensitive search
-            cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (LOWER(name) LIKE LOWER({placeholder}) OR LOWER(phone) LIKE LOWER({placeholder}) OR LOWER(business_name) LIKE LOWER({placeholder})) AND is_active = TRUE ORDER BY name', (user_id, like_search, like_search, like_search))
+        # Use ILIKE for case-insensitive search in PostgreSQL
+        cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (name ILIKE {placeholder} OR phone ILIKE {placeholder} OR business_name ILIKE {placeholder}) AND is_active = TRUE ORDER BY name', (user_id, like_search, like_search, like_search))
         customers = cursor.fetchall()
     else:
         placeholder = get_placeholder()
@@ -1288,8 +1114,8 @@ def delete_customer(customer_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
-    is_active_value = 'FALSE' if is_postgresql() else '0'
+    # Use TRUE/FALSE for PostgreSQL
+    is_active_value = 'FALSE'
     execute_update(conn, f'UPDATE customers SET is_active = {is_active_value} WHERE customer_id = {placeholder} AND user_id = {placeholder}', (customer_id, user_id))
     conn.close()
     return jsonify({'message': 'Customer deleted successfully'})
@@ -1402,8 +1228,8 @@ def delete_vat_rate(vat_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
-    is_active_value = 'FALSE' if is_postgresql() else '0'
+    # Use TRUE/FALSE for PostgreSQL
+    is_active_value = 'FALSE'
     execute_update(conn, f'UPDATE vat_rates SET is_active = {is_active_value} WHERE vat_id = {placeholder} AND user_id = {placeholder}', (vat_id, user_id))
     conn.close()
     return jsonify({'message': 'VAT rate deleted successfully'})
@@ -2380,6 +2206,9 @@ def print_bill(bill_id):
     # If VAT amount is 0, don't show VAT sections
     should_show_vat = bill.get('should_show_vat', bill.get('vat_amount', 0) > 0)
     
+    # Get VAT include setting from shop settings
+    include_vat_in_price = shop_settings.get('include_vat_in_price', False)
+    
     # Get currency information from shop settings
     currency_code = shop_settings.get('currency_code', 'AED')
     currency_symbol = shop_settings.get('currency_symbol', 'د.إ')
@@ -2393,6 +2222,7 @@ def print_bill(bill_id):
                          shop_settings=shop_settings,
                          summary_data=summary_data,
                          should_show_vat=should_show_vat,
+                         include_vat_in_price=include_vat_in_price,
                          currency_code=currency_code,
                          currency_symbol=currency_symbol,
                          get_user_language=get_user_language,
@@ -2430,11 +2260,11 @@ def customer_invoice_heatmap():
         for m in months:
             cursor = execute_query(conn, f"""
                 SELECT COUNT(*) FROM bills
-                WHERE customer_id = {placeholder} AND strftime('%Y-%m', bill_date) = {placeholder} AND user_id = {placeholder}
+                WHERE customer_id = {placeholder} AND to_char(bill_date, 'YYYY-MM') = {placeholder} AND user_id = {placeholder}
             """, (cid, m, user_id))
             result = cursor.fetchone()
-            # Handle both PostgreSQL (dict) and SQLite (tuple) results
-            count = result[0] if isinstance(result, tuple) else result['count']
+            # Handle PostgreSQL (dict) results
+            count = result['count']
             row.append(count)
         matrix.append(row)
     conn.close()
@@ -2614,8 +2444,8 @@ def delete_employee(employee_id):
     user_id = get_current_user_id()
     conn = get_db_connection()
     placeholder = get_placeholder()
-    # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
-    is_active_value = 'FALSE' if is_postgresql() else '0'
+    # Use TRUE/FALSE for PostgreSQL
+    is_active_value = 'FALSE'
     execute_update(conn, f'UPDATE employees SET is_active = {is_active_value} WHERE employee_id = {placeholder} AND user_id = {placeholder}', (employee_id, user_id))
     conn.close()
     return jsonify({'message': 'Employee deleted successfully'})
@@ -2713,13 +2543,7 @@ def employee_analytics():
         'shares': [dict(row) for row in shares]
     })
 
-# Helper: zip the database file in memory
-def zip_db():
-    mem_zip = BytesIO()
-    with zipfile.ZipFile(mem_zip, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.write('pos_tailor.db', arcname='pos_tailor.db')
-    mem_zip.seek(0)
-    return mem_zip
+# Database backup functionality removed - using PostgreSQL only
 
 
 
@@ -4560,7 +4384,7 @@ def get_billing_config():
         placeholder = get_placeholder()
         cursor = execute_query(conn, f'''
             SELECT enable_trial_date, enable_delivery_date, enable_advance_payment, 
-                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id
+                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id, include_vat_in_price
             FROM shop_settings WHERE user_id = {placeholder}
         ''', (user_id,))
         settings = cursor.fetchone()
@@ -4575,7 +4399,8 @@ def get_billing_config():
                 'enable_employee_assignment': bool(settings['enable_employee_assignment']),
                 'default_delivery_days': int(settings['default_delivery_days']),
                 'default_trial_days': int(settings['default_trial_days']) if 'default_trial_days' in settings.keys() else 3,
-                'default_employee_id': settings['default_employee_id']
+                'default_employee_id': settings['default_employee_id'],
+                'include_vat_in_price': bool(settings['include_vat_in_price']) if 'include_vat_in_price' in settings.keys() else False
             }
         else:
             # Default configuration
@@ -4587,7 +4412,8 @@ def get_billing_config():
                 'enable_employee_assignment': True,
                 'default_delivery_days': 3,
                 'default_trial_days': 3,
-                'default_employee_id': None
+                'default_employee_id': None,
+                'include_vat_in_price': False
             }
         
         return jsonify({
@@ -4606,9 +4432,50 @@ def get_billing_config():
                 'enable_employee_assignment': True,
                 'default_delivery_days': 3,
                 'default_trial_days': 3,
-                'default_employee_id': None
+                'default_employee_id': None,
+                'include_vat_in_price': False
             }
         }), 500
+
+@app.route('/api/shop-settings/vat-config', methods=['PUT'])
+def update_vat_config():
+    """Update only VAT-related settings without affecting other shop settings."""
+    try:
+        user_id = get_current_user_id()
+        data = request.get_json()
+        
+        include_vat_in_price = data.get('include_vat_in_price', False)
+        
+        conn = get_db_connection()
+        
+        # Check if shop settings exist for this user
+        placeholder = get_placeholder()
+        cursor = execute_query(conn, f'SELECT setting_id FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
+        existing_settings = cursor.fetchone()
+        
+        if existing_settings:
+            # Update only the include_vat_in_price field
+            placeholder = get_placeholder()
+            execute_update(conn, f'''
+                UPDATE shop_settings 
+                SET include_vat_in_price = {placeholder}, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = {placeholder}
+            ''', (include_vat_in_price, user_id))
+        else:
+            # Create new shop settings with only VAT config
+            placeholder = get_placeholder()
+            execute_update(conn, f'''
+                INSERT INTO shop_settings (user_id, include_vat_in_price)
+                VALUES ({placeholder}, {placeholder})
+            ''', (user_id, include_vat_in_price))
+        
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'VAT configuration updated successfully'})
+        
+    except Exception as e:
+        print(f"Error updating VAT config: {e}")
+        return jsonify({'error': 'Failed to update VAT configuration'}), 500
 
 @app.route('/api/shop-settings', methods=['PUT'])
 def update_shop_settings():
@@ -4638,6 +4505,7 @@ def update_shop_settings():
         default_delivery_days = data.get('default_delivery_days', 3)
         default_trial_days = data.get('default_trial_days', 3)
         default_employee_id = data.get('default_employee_id')
+        include_vat_in_price = data.get('include_vat_in_price', False)
         
         # Convert to proper types
         try:
@@ -4682,6 +4550,7 @@ def update_shop_settings():
                     use_dynamic_invoice_template = {placeholder}, payment_mode = {placeholder}, 
                     enable_trial_date = {placeholder}, enable_delivery_date = {placeholder}, enable_advance_payment = {placeholder},
                     enable_customer_notes = {placeholder}, enable_employee_assignment = {placeholder}, default_delivery_days = {placeholder}, default_trial_days = {placeholder}, default_employee_id = {placeholder},
+                    include_vat_in_price = {placeholder},
                     currency_code = {placeholder}, currency_symbol = {placeholder}, timezone = {placeholder}, date_format = {placeholder}, time_format = {placeholder},
                     updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = {placeholder}
@@ -4689,6 +4558,7 @@ def update_shop_settings():
                   invoice_static_info, use_dynamic_invoice_template, payment_mode,
                   enable_trial_date, enable_delivery_date, enable_advance_payment,
                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id,
+                  include_vat_in_price,
                   currency_code, currency_symbol, timezone, date_format, time_format, user_id))
         else:
             # Create new shop settings for this user
@@ -4698,15 +4568,18 @@ def update_shop_settings():
                     shop_mobile, working_hours, invoice_static_info, use_dynamic_invoice_template, payment_mode,
                     enable_trial_date, enable_delivery_date, enable_advance_payment,
                     enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id,
+                    include_vat_in_price,
                     currency_code, currency_symbol, timezone, date_format, time_format)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 
                     {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 
                     {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
+                    {placeholder},
                     {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             ''', (user_id, shop_name, address, trn, city, area, logo_url, shop_mobile, working_hours, 
                   invoice_static_info, use_dynamic_invoice_template, payment_mode,
                   enable_trial_date, enable_delivery_date, enable_advance_payment,
                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id,
+                  include_vat_in_price,
                   currency_code, currency_symbol, timezone, date_format, time_format))
         conn.close()
         
@@ -5766,7 +5639,7 @@ def send_email_invoice(bill_id, recipient_email, language='en'):
             'customer_area': bill.get('customer_area', ''),
             'subtotal': float(bill.get('subtotal', 0)),
             'vat_amount': float(bill.get('vat_amount', 0)),
-            'vat_percent': float(bill.get('vat_percent', 0)),
+            'vat_percent': (float(bill.get('vat_amount', 0)) / float(bill.get('subtotal', 1)) * 100) if float(bill.get('subtotal', 0)) > 0 else 0,
             'total_amount': float(bill.get('total_amount', 0)),
             'advance_paid': float(bill.get('advance_paid', 0)),
             'items': []
@@ -6537,8 +6410,8 @@ def admin_upgrade_plan():
         
         # Insert new plan
         placeholder = get_placeholder()
-        # Use TRUE/FALSE for PostgreSQL, 1/0 for SQLite
-        is_active_value = 'TRUE' if is_postgresql() else '1'
+        # Use TRUE/FALSE for PostgreSQL
+        is_active_value = 'TRUE'
         sql = f'''
             INSERT INTO user_plans (user_id, plan_type, plan_start_date, plan_end_date, is_active)
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {is_active_value})

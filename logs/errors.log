@@ -3634,3 +3634,99 @@ LINE 6:              RETURNING id
 LINE 6:              RETURNING id
                                ^
 
+2025-09-07 06:17:15,715 - app - ERROR - log_exception:1414 - Exception on /api/subscription/webhook [POST]
+Traceback (most recent call last):
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Khana\tailor_pos\app.py", line 3300, in stripe_webhook
+    event = stripe.Webhook.construct_event(
+        payload, sig_header, STRIPE_WEBHOOK_SECRET
+    )
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 24, in construct_event
+    WebhookSignature.verify_header(payload, sig_header, secret, tolerance)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 73, in verify_header
+    expected_sig = cls._compute_signature(signed_payload, secret)
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 38, in _compute_signature
+    secret.encode("utf-8"),
+    ^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'encode'
+2025-09-07 06:17:15,715 - app - ERROR - log_exception:1414 - Exception on /api/subscription/webhook [POST]
+Traceback (most recent call last):
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Khana\tailor_pos\app.py", line 3300, in stripe_webhook
+    event = stripe.Webhook.construct_event(
+        payload, sig_header, STRIPE_WEBHOOK_SECRET
+    )
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 24, in construct_event
+    WebhookSignature.verify_header(payload, sig_header, secret, tolerance)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 73, in verify_header
+    expected_sig = cls._compute_signature(signed_payload, secret)
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 38, in _compute_signature
+    secret.encode("utf-8"),
+    ^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'encode'
+2025-09-07 06:31:25,766 - app - ERROR - log_exception:1414 - Exception on /api/subscription/webhook [POST]
+Traceback (most recent call last):
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Khana\tailor_pos\app.py", line 3300, in stripe_webhook
+    event = stripe.Webhook.construct_event(
+        payload, sig_header, STRIPE_WEBHOOK_SECRET
+    )
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 24, in construct_event
+    WebhookSignature.verify_header(payload, sig_header, secret, tolerance)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 73, in verify_header
+    expected_sig = cls._compute_signature(signed_payload, secret)
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 38, in _compute_signature
+    secret.encode("utf-8"),
+    ^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'encode'
+2025-09-07 06:31:25,766 - app - ERROR - log_exception:1414 - Exception on /api/subscription/webhook [POST]
+Traceback (most recent call last):
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Khana\tailor_pos\app.py", line 3300, in stripe_webhook
+    event = stripe.Webhook.construct_event(
+        payload, sig_header, STRIPE_WEBHOOK_SECRET
+    )
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 24, in construct_event
+    WebhookSignature.verify_header(payload, sig_header, secret, tolerance)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 73, in verify_header
+    expected_sig = cls._compute_signature(signed_payload, secret)
+  File "C:\Users\Khana\AppData\Local\Programs\Python\Python313\Lib\site-packages\stripe\_webhook.py", line 38, in _compute_signature
+    secret.encode("utf-8"),
+    ^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'encode'

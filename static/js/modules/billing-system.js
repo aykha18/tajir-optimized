@@ -575,6 +575,9 @@ function initializeBillingSystem() {
     const tbody = document.getElementById('billTable')?.querySelector('tbody');
     if (!tbody) return;
     
+    // Check if VAT should be hidden when included in price
+    const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
+    
     tbody.innerHTML = bill.map((item, index) => `
       <tr class="hover:bg-neutral-800/50 transition-colors swipe-action" data-index="${index}">
         <td class="px-3 py-3">${item.product_name || ''}</td>
@@ -601,7 +604,7 @@ function initializeBillingSystem() {
                  onblur="updateBillItemField(${index}, 'advance_paid', this.value)"
                  ${window.paymentMode === 'full' ? 'disabled' : ''}>
         </td>
-        <td class="px-3 py-3">${(item.vat_amount || 0).toFixed(2)}</td>
+        ${includeVatInPrice ? '' : `<td class="px-3 py-3">${(item.vat_amount || 0).toFixed(2)}</td>`}
         <td class="px-3 py-3">${(item.total || 0).toFixed(2)}</td>
         <td class="px-3 py-3 flex gap-2">
           <button class="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded transition-all duration-200 transform hover:scale-110 hover:shadow-sm mobile-btn" onclick="deleteBillItem(${index})">
@@ -611,6 +614,9 @@ function initializeBillingSystem() {
       </tr>
     `).join('');
     
+    // Update table header to show/hide VAT column
+    updateBillTableHeader(includeVatInPrice);
+    
     // Reinitialize swipe actions for mobile after rendering table
     if (window.mobileEnhancements && window.mobileEnhancements.setupSwipeActions) {
       setTimeout(() => {
@@ -619,11 +625,37 @@ function initializeBillingSystem() {
     }
   }
 
+  function updateBillTableHeader(includeVatInPrice) {
+    const thead = document.getElementById('billTable')?.querySelector('thead tr');
+    if (!thead) return;
+    
+    // Find the Tax column header (6th column, index 5)
+    const taxHeader = thead.children[5];
+    if (taxHeader) {
+      taxHeader.style.display = includeVatInPrice ? 'none' : '';
+    }
+  }
+
   function updateTotals() {
-    const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
+    const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
+    const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
+    
+    let subtotal, totalVat, totalBeforeAdvance;
+    
+    if (includeVatInPrice) {
+      // VAT is already included in item prices
+      const totalWithVat = bill.reduce((sum, item) => sum + item.total, 0);
+      subtotal = totalWithVat / (1 + vatPercent / 100); // Calculate subtotal without VAT
+      totalVat = totalWithVat - subtotal; // VAT amount
+      totalBeforeAdvance = totalWithVat; // Total before advance is the same as total with VAT
+    } else {
+      // Traditional VAT calculation (VAT added on top)
+      subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
+      totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
+      totalBeforeAdvance = subtotal + totalVat;
+    }
+    
     const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0); // Total advance paid
-    const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
-    const totalBeforeAdvance = subtotal + totalVat;
     const amountDue = totalBeforeAdvance - totalAdvance; // Deduct advance from total
     
     // Enable/disable action buttons based on bill items

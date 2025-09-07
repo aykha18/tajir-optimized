@@ -257,13 +257,14 @@
                 <th>Discount (%) / الخصم</th>
                 <th>Discount ({{ currency_code }}) / الخصم</th>
                 {% endif %}
-                {% if show_vat %}
-                <th>VAT ({{ bill.vat_percent or '0.0' }}%) / الضريبة</th>
+                {% if show_vat and not include_vat_in_price %}
+                {% set calculated_vat_percent = (bill.vat_amount / bill.subtotal * 100) if bill.subtotal > 0 else 0 %}
+                <th>VAT ({{ "%.1f"|format(calculated_vat_percent) }}%) / الضريبة</th>
                 {% endif %}
                 {% if shop_settings.enable_advance_payment and bill.advance_paid and bill.advance_paid > 0 %}
                 <th>Advance ({{ currency_code }}) / الدفعة المقدمة</th>
                 {% endif %}
-                <th>Total ({{ currency_code }}) / المجموع</th>
+                <th>Net Amount ({{ currency_code }}) / المجموع</th>
             </tr>
         </thead>
         <tbody>
@@ -277,7 +278,7 @@
                 <td>{{ "%.1f"|format(item.discount) }}%</td>
                 <td>{{ currency_symbol }} {{ "%.2f"|format(item.discount_amount) }}</td>
                 {% endif %}
-                 {% if show_vat %}
+                 {% if show_vat and not include_vat_in_price %}
                  <td>{{ currency_symbol }} {{ "%.2f"|format(item.vat_amount) }}</td>
                  {% endif %}
                  {% if shop_settings.enable_advance_payment and bill.advance_paid and bill.advance_paid > 0 %}
@@ -295,8 +296,9 @@
             <span>{{ currency_symbol }} {{ "%.2f"|format(bill.subtotal) }}</span>
         </div>
         {% if show_vat %}
+        {% set calculated_vat_percent = (bill.vat_amount / bill.subtotal * 100) if bill.subtotal > 0 else 0 %}
         <div class="total-row">
-            <span>VAT ({{ bill.vat_percent or '0.0' }}%) / الضريبة:</span>
+            <span>VAT ({{ "%.1f"|format(calculated_vat_percent) }}%{% if include_vat_in_price %} included{% endif %}) / الضريبة:</span>
             <span>{{ currency_symbol }} {{ "%.2f"|format(bill.vat_amount) }}</span>
         </div>
         {% endif %}

@@ -3,7 +3,8 @@
 // Default VAT settings
 let vatSettings = {
   defaultPercent: 5,
-  displayOption: 'show' // 'show' or 'hide_zero'
+  displayOption: 'show', // 'show' or 'hide_zero'
+  includeVatInPrice: false // New setting for including VAT in item price
 };
 
 // Initialize VAT configuration
@@ -13,12 +14,28 @@ function initVatConfig() {
   updateVatDisplay();
 }
 
-// Load VAT settings from localStorage
-function loadVatSettings() {
+// Load VAT settings from shop settings API
+async function loadVatSettings() {
+  try {
+    // Load from shop settings API
+    const response = await fetch('/api/shop-settings/billing-config');
+    const data = await response.json();
+    
+    if (data.success && data.config) {
+      // Update include_vat_in_price setting
+      vatSettings.includeVatInPrice = data.config.include_vat_in_price || false;
+    }
+  } catch (error) {
+    console.warn('Failed to load VAT settings from API:', error);
+  }
+  
+  // Also load from localStorage for backward compatibility
   const savedSettings = localStorage.getItem('vatSettings');
   if (savedSettings) {
     try {
-      vatSettings = { ...vatSettings, ...JSON.parse(savedSettings) };
+      const localSettings = JSON.parse(savedSettings);
+      vatSettings.defaultPercent = localSettings.defaultPercent || vatSettings.defaultPercent;
+      vatSettings.displayOption = localSettings.displayOption || vatSettings.displayOption;
     } catch (e) {
       console.warn('Failed to parse saved VAT settings:', e);
     }
@@ -27,9 +44,11 @@ function loadVatSettings() {
   // Update input fields with loaded settings
   const defaultVatInput = document.getElementById('defaultVatPercent');
   const displayOptionSelect = document.getElementById('vatDisplayOption');
+  const includeVatInPriceCheckbox = document.getElementById('includeVatInPrice');
   
   if (defaultVatInput) defaultVatInput.value = vatSettings.defaultPercent;
   if (displayOptionSelect) displayOptionSelect.value = vatSettings.displayOption;
+  if (includeVatInPriceCheckbox) includeVatInPriceCheckbox.checked = vatSettings.includeVatInPrice;
   
   // Update VAT input fields with default value
   updateVatInputs();
@@ -105,14 +124,16 @@ function closeVatConfigModal() {
 }
 
 // Handle saving VAT configuration
-function handleSaveVatConfig() {
+async function handleSaveVatConfig() {
   const defaultVatInput = document.getElementById('defaultVatPercent');
   const displayOptionSelect = document.getElementById('vatDisplayOption');
+  const includeVatInPriceCheckbox = document.getElementById('includeVatInPrice');
   
   if (!defaultVatInput || !displayOptionSelect) return;
   
   const newDefaultPercent = parseFloat(defaultVatInput.value) || 0;
   const newDisplayOption = displayOptionSelect.value;
+  const newIncludeVatInPrice = includeVatInPriceCheckbox ? includeVatInPriceCheckbox.checked : false;
   
   // Validate input
   if (newDefaultPercent < 0 || newDefaultPercent > 100) {
@@ -125,23 +146,52 @@ function handleSaveVatConfig() {
   // Update settings
   vatSettings.defaultPercent = newDefaultPercent;
   vatSettings.displayOption = newDisplayOption;
+  vatSettings.includeVatInPrice = newIncludeVatInPrice;
   
-  // Save to localStorage
+  // Save include_vat_in_price to VAT config API
+  try {
+    const response = await fetch('/api/shop-settings/vat-config', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        include_vat_in_price: newIncludeVatInPrice
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to save VAT include setting');
+    }
+  } catch (error) {
+    console.error('Error saving VAT include setting:', error);
+    if (window.showSimpleToast) {
+      window.showSimpleToast('Failed to save VAT include setting', 'error');
+    }
+    return;
+  }
+  
+  // Save other settings to localStorage
   saveVatSettings();
   
   // Update VAT input fields
   updateVatInputs();
   
-  // Update VAT display
-  updateVatDisplay();
-  
-  // Close modal
-  closeVatConfigModal();
-  
-  // Show success message
-  if (window.showSimpleToast) {
-    window.showSimpleToast('VAT settings saved successfully!', 'success');
-  }
+      // Update VAT display
+      updateVatDisplay();
+      
+      // Refresh bill table to show/hide VAT column
+      if (window.renderBillTable) {
+        window.renderBillTable();
+      }
+      
+      // Close modal
+      closeVatConfigModal();
+      
+      // Show success message
+      if (window.showSimpleToast) {
+        window.showSimpleToast('VAT settings saved successfully!', 'success');
+      }
 }
 
 // Update VAT input fields with default value
@@ -179,8 +229,13 @@ function updateVatDisplay() {
     vatSummaryRow.style.display = 'none';
   } else {
     vatSummaryRow.style.display = 'flex';
-    // Update the label to show current percentage
-    vatLabel.textContent = `Tax (${currentVatPercent}%):`;
+    
+    // Update the label based on VAT include setting
+    if (vatSettings.includeVatInPrice) {
+      vatLabel.textContent = `Tax (${currentVatPercent}% included):`;
+    } else {
+      vatLabel.textContent = `Tax (${currentVatPercent}%):`;
+    }
   }
 }
 
@@ -197,6 +252,11 @@ function getDefaultVatPercent() {
   return vatSettings.defaultPercent;
 }
 
+// Function to get VAT include in price setting (for external use)
+function getIncludeVatInPrice() {
+  return vatSettings.includeVatInPrice;
+}
+
 // Function to update VAT display when VAT input changes (for external use)
 function onVatInputChange() {
   updateVatDisplay();
@@ -206,5 +266,6 @@ function onVatInputChange() {
 window.initVatConfig = initVatConfig;
 window.shouldDisplayVat = shouldDisplayVat;
 window.getDefaultVatPercent = getDefaultVatPercent;
+window.getIncludeVatInPrice = getIncludeVatInPrice;
 window.onVatInputChange = onVatInputChange;
 window.openVatConfigModal = openVatConfigModal;
