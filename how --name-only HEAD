@@ -1,5 +1,0 @@
-[33m94cdb52[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmobile-enhancements[m[33m, [m[1;31morigin/mobile-enhancements[m[33m)[m Update employee screen theme to match products screen: modern cards, consistent styling, mobile enhancements
-[33me1f8915[m Add sample data generator for user_id=2 and mobile fixes
-[33m92ddb64[m Mobile fixes: save City/Area/Mobile; require customer mobile; phone validation; More menu (Customers/Reports/Shop Settings/Product Types); Employees mobile UX & actions; Shop Settings mobile init/validation; seed areas for all cities; bug fixes
-[33m9014bb7[m test(regression): add Selenium + PyTest regression scaffolding (smoke, employees CRUD), fixtures, docs; add requirements for selenium/webdriver-manager/pytest
-[33mc29b396[m Employees: make role optional, align to DB 'position', add Address field; UI: add Role column, guard nulls; Setup Wizard: change default password to 'kyuaykha123'; Print: widen labels, non-wrapping rows, remove Payment Method from totals, fix seller header overlap via grid layout

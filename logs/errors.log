@@ -3730,3 +3730,55 @@ Traceback (most recent call last):
     secret.encode("utf-8"),
     ^^^^^^^^^^^^^
 AttributeError: 'NoneType' object has no attribute 'encode'
+2025-09-08 14:18:29,505 - root - ERROR - log_dml_error:132 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(53) already exists.
+, Data: {'customer_name': None, 'total_amount': 304.5, 'item_count': 0}...
+2025-09-08 14:18:29,505 - root - ERROR - log_dml_error:132 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(53) already exists.
+, Data: {'customer_name': None, 'total_amount': 304.5, 'item_count': 0}...
+2025-09-08 14:18:29,602 - root - ERROR - log_dml_error:153 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-08 14:18:29,602 - root - ERROR - log_dml_error:153 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-09 07:09:38,003 - root - ERROR - log_dml_error:132 - DML Error - Operation: CREATE, Table: bills, Error: tuple index out of range, User: 1, Data: {'customer_name': None, 'total_amount': 0.0, 'item_count': 0}...
+2025-09-09 07:09:38,075 - root - ERROR - log_dml_error:153 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-09 07:20:35,022 - root - ERROR - log_dml_error:132 - DML Error - Operation: CREATE, Table: bills, Error: tuple index out of range, User: 1, Data: {'customer_name': None, 'total_amount': 0.0, 'item_count': 0}...
+2025-09-09 07:20:35,102 - root - ERROR - log_dml_error:153 - Failed to log to database: column "id" does not exist
+LINE 4:              RETURNING id
+                               ^
+
+2025-09-09 09:06:15,031 - root - ERROR - log_dml_error:132 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(54) already exists.
+, Data: {'customer_name': None, 'total_amount': 0.0, 'item_count': 0}...
+2025-09-09 09:06:15,031 - root - ERROR - log_dml_error:132 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(54) already exists.
+, Data: {'customer_name': None, 'total_amount': 0.0, 'item_count': 0}...
+2025-09-09 09:06:15,139 - root - ERROR - log_dml_error:153 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-09 09:06:15,139 - root - ERROR - log_dml_error:153 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-09 09:06:15,313 - root - ERROR - log_dml_error:132 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(55) already exists.
+, Data: {'customer_name': None, 'total_amount': 0.0, 'item_count': 0}...
+2025-09-09 09:06:15,313 - root - ERROR - log_dml_error:132 - DML Error - Operation: CREATE, Table: bills, Error: duplicate key value violates unique constraint "customers_pkey"
+DETAIL:  Key (customer_id)=(55) already exists.
+, Data: {'customer_name': None, 'total_amount': 0.0, 'item_count': 0}...
+2025-09-09 09:06:15,410 - root - ERROR - log_dml_error:153 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+
+2025-09-09 09:06:15,410 - root - ERROR - log_dml_error:153 - Failed to log to database: column "id" does not exist
+LINE 6:              RETURNING id
+                               ^
+

@@ -535,7 +535,7 @@
       <div id="vatConfigModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden">
         <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-md">
           <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-semibold text-white">VAT Configuration</h3>
+            <h3 class="text-xl font-semibold text-white">Quick Configuration</h3>
             <button id="closeVatConfig" class="text-neutral-400 hover:text-white transition-colors">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -566,6 +566,15 @@
                 <span class="text-sm font-medium text-neutral-300">Include VAT in Item Price</span>
               </label>
               <p class="text-xs text-neutral-500 mt-1 ml-7">When enabled, VAT will be added to item prices (e.g., 100 AED item becomes 105 AED with 5% VAT)</p>
+            </div>
+            
+            <div>
+              <label for="billTemplate" class="block text-sm font-medium text-neutral-300 mb-2">Bill Template</label>
+              <select id="billTemplate" class="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-400/60">
+                <option value="default">Default Template</option>
+                <option value="receipt">Receipt Template</option>
+              </select>
+              <p class="text-xs text-neutral-500 mt-1">Choose the template for printing bills</p>
             </div>
             
             <div class="flex gap-3 pt-4">

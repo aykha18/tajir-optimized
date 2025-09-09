@@ -4,7 +4,8 @@
 let vatSettings = {
   defaultPercent: 5,
   displayOption: 'show', // 'show' or 'hide_zero'
-  includeVatInPrice: false // New setting for including VAT in item price
+  includeVatInPrice: false, // New setting for including VAT in item price
+  billTemplate: 'default' // Bill template selection
 };
 
 // Initialize VAT configuration
@@ -24,6 +25,8 @@ async function loadVatSettings() {
     if (data.success && data.config) {
       // Update include_vat_in_price setting
       vatSettings.includeVatInPrice = data.config.include_vat_in_price || false;
+      // Update bill template setting
+      vatSettings.billTemplate = data.config.bill_template || 'default';
     }
   } catch (error) {
     console.warn('Failed to load VAT settings from API:', error);
@@ -45,10 +48,12 @@ async function loadVatSettings() {
   const defaultVatInput = document.getElementById('defaultVatPercent');
   const displayOptionSelect = document.getElementById('vatDisplayOption');
   const includeVatInPriceCheckbox = document.getElementById('includeVatInPrice');
+  const billTemplateSelect = document.getElementById('billTemplate');
   
   if (defaultVatInput) defaultVatInput.value = vatSettings.defaultPercent;
   if (displayOptionSelect) displayOptionSelect.value = vatSettings.displayOption;
   if (includeVatInPriceCheckbox) includeVatInPriceCheckbox.checked = vatSettings.includeVatInPrice;
+  if (billTemplateSelect) billTemplateSelect.value = vatSettings.billTemplate;
   
   // Update VAT input fields with default value
   updateVatInputs();
@@ -128,12 +133,14 @@ async function handleSaveVatConfig() {
   const defaultVatInput = document.getElementById('defaultVatPercent');
   const displayOptionSelect = document.getElementById('vatDisplayOption');
   const includeVatInPriceCheckbox = document.getElementById('includeVatInPrice');
+  const billTemplateSelect = document.getElementById('billTemplate');
   
   if (!defaultVatInput || !displayOptionSelect) return;
   
   const newDefaultPercent = parseFloat(defaultVatInput.value) || 0;
   const newDisplayOption = displayOptionSelect.value;
   const newIncludeVatInPrice = includeVatInPriceCheckbox ? includeVatInPriceCheckbox.checked : false;
+  const newBillTemplate = billTemplateSelect ? billTemplateSelect.value : 'default';
   
   // Validate input
   if (newDefaultPercent < 0 || newDefaultPercent > 100) {
@@ -147,6 +154,7 @@ async function handleSaveVatConfig() {
   vatSettings.defaultPercent = newDefaultPercent;
   vatSettings.displayOption = newDisplayOption;
   vatSettings.includeVatInPrice = newIncludeVatInPrice;
+  vatSettings.billTemplate = newBillTemplate;
   
   // Save include_vat_in_price to VAT config API
   try {
@@ -156,7 +164,8 @@ async function handleSaveVatConfig() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        include_vat_in_price: newIncludeVatInPrice
+        include_vat_in_price: newIncludeVatInPrice,
+        bill_template: newBillTemplate
       })
     });
     

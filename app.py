@@ -1026,6 +1026,17 @@ def add_customer():
         sql = f'''
             INSERT INTO customers (user_id, name, phone, trn, city, area, email, address, customer_type, business_name, business_address) 
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            ON CONFLICT (user_id, phone) DO UPDATE SET
+                name = EXCLUDED.name,
+                trn = EXCLUDED.trn,
+                city = EXCLUDED.city,
+                area = EXCLUDED.area,
+                email = EXCLUDED.email,
+                address = EXCLUDED.address,
+                customer_type = EXCLUDED.customer_type,
+                business_name = EXCLUDED.business_name,
+                business_address = EXCLUDED.business_address
+            RETURNING customer_id
         '''
         customer_id = execute_with_returning(conn, sql, (user_id, name, phone_digits, trn, city, area, email, address, customer_type, business_name, business_address))
         conn.close()
@@ -1351,11 +1362,20 @@ def create_bill():
             if existing_customer:
                 customer_id = existing_customer['customer_id']
             else:
-                # Create new customer
+                # Create new customer with duplicate handling
                 placeholder = get_placeholder()
                 sql = f'''
                     INSERT INTO customers (user_id, name, phone, trn, city, area, customer_type, business_name, business_address) 
                     VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                    ON CONFLICT (user_id, phone) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        trn = EXCLUDED.trn,
+                        city = EXCLUDED.city,
+                        area = EXCLUDED.area,
+                        customer_type = EXCLUDED.customer_type,
+                        business_name = EXCLUDED.business_name,
+                        business_address = EXCLUDED.business_address
+                    RETURNING customer_id
                 '''
                 customer_id = execute_with_returning(conn, sql, (
                     user_id, bill_data.get('customer_name', ''),
@@ -1512,7 +1532,11 @@ def create_bill():
                 INSERT INTO bill_items (
                     user_id, bill_id, product_id, product_name, quantity, 
                     rate, discount, vat_amount, advance_paid, total_amount
-                ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                ) SELECT {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM bill_items 
+                    WHERE bill_id = {placeholder} AND product_id = {placeholder} AND product_name = {placeholder} AND rate = {placeholder} AND quantity = {placeholder}
+                )
             '''
                 try:
                     execute_with_returning(conn, sql, (
@@ -1524,7 +1548,8 @@ def create_bill():
                 item_discount_percent,  # Store discount percentage
                 item_vat_amount,
                 item.get('advance_paid', 0),
-                item_total_amount
+                item_total_amount,
+                bill_id, item.get('product_id'), item.get('product_name'), item.get('rate', 0), item.get('quantity', 1)
             ))
                 except get_db_integrity_error() as e:
                     # Heal bill_items sequence and retry once if PK collision
@@ -1725,11 +1750,16 @@ def create_bill():
                 customer_id = existing_customer['customer_id']
                 print(f"DEBUG: Using existing customer_id: {customer_id}")
             else:
-                # Create new customer
+                # Create new customer with duplicate handling
                 placeholder = get_placeholder()
                 sql = f'''
                     INSERT INTO customers (user_id, name, phone, city, area) 
                     VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                    ON CONFLICT (user_id, phone) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        city = EXCLUDED.city,
+                        area = EXCLUDED.area
+                    RETURNING customer_id
                 '''
                 customer_id = execute_with_returning(conn, sql, (user_id, customer_name, customer_phone, customer_city, customer_area))
                 print(f"DEBUG: Created new customer_id: {customer_id}")
@@ -1751,20 +1781,62 @@ def create_bill():
                         bill_number = f'BILL-{today}-{timestamp:04d}'
                     
                     placeholder = get_placeholder()
-                    sql = f'''
-                        INSERT INTO bills (
-                            user_id, bill_number, customer_id, customer_name, customer_phone, 
-                            customer_city, customer_area, uuid, bill_date, delivery_date, 
-                            payment_method, subtotal, vat_amount, total_amount, 
-                            advance_paid, balance_amount, status, master_id, trial_date, notes
-                        ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
-                    '''
-                    bill_id = execute_with_returning(conn, sql, (
-                        user_id, bill_number, customer_id, customer_name, customer_phone,
-                        customer_city, customer_area, bill_uuid, bill_date, delivery_date,
-                        payment_method, subtotal, vat_amount, total_amount,
-                        advance_paid, balance_amount, 'Pending', master_id, trial_date, notes
-                    ))
+
+                    # Ensure a unique index exists so ON CONFLICT works
+                    if is_postgresql():
+                        try:
+                            execute_update(conn, "CREATE UNIQUE INDEX IF NOT EXISTS uniq_bills_user_billno ON bills(user_id, bill_number)")
+                        except Exception:
+                            pass
+
+                    # Idempotent insert: one of concurrent requests will insert, others fetch existing
+                    if is_postgresql():
+                        sql = f'''
+                            INSERT INTO bills (
+                                user_id, bill_number, customer_id, customer_name, customer_phone, 
+                                customer_city, customer_area, uuid, bill_date, delivery_date, 
+                                payment_method, subtotal, vat_amount, total_amount, 
+                                advance_paid, balance_amount, status, master_id, trial_date, notes
+                            ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                            ON CONFLICT (user_id, bill_number) DO NOTHING
+                            RETURNING bill_id
+                        '''
+                        cur = execute_query(conn, sql, (
+                            user_id, bill_number, customer_id, customer_name, customer_phone,
+                            customer_city, customer_area, bill_uuid, bill_date, delivery_date,
+                            payment_method, subtotal, vat_amount, total_amount,
+                            advance_paid, balance_amount, 'Pending', master_id, trial_date, notes
+                        ))
+                        row = cur.fetchone()
+                        if row:
+                            bill_id = row['bill_id'] if isinstance(row, dict) else row[0]
+                            bill_created = True
+                        else:
+                            # Someone else inserted; fetch existing
+                            cur = execute_query(conn, f"SELECT bill_id FROM bills WHERE user_id = {placeholder} AND bill_number = {placeholder}", (user_id, bill_number))
+                            exist = cur.fetchone()
+                            bill_id = exist['bill_id'] if isinstance(exist, dict) else exist[0]
+                            bill_created = False
+                    else:
+                        # SQLite fallback
+                        sql = f'''
+                            INSERT OR IGNORE INTO bills (
+                                user_id, bill_number, customer_id, customer_name, customer_phone, 
+                                customer_city, customer_area, uuid, bill_date, delivery_date, 
+                                payment_method, subtotal, vat_amount, total_amount, 
+                                advance_paid, balance_amount, status, master_id, trial_date, notes
+                            ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+                        '''
+                        execute_update(conn, sql, (
+                            user_id, bill_number, customer_id, customer_name, customer_phone,
+                            customer_city, customer_area, bill_uuid, bill_date, delivery_date,
+                            payment_method, subtotal, vat_amount, total_amount,
+                            advance_paid, balance_amount, 'Pending', master_id, trial_date, notes
+                        ))
+                        cur = execute_query(conn, f"SELECT bill_id FROM bills WHERE user_id = {placeholder} AND bill_number = {placeholder}", (user_id, bill_number))
+                        exist = cur.fetchone()
+                        bill_id = exist['bill_id'] if isinstance(exist, dict) else exist[0]
+                        bill_created = True
                     bill_created = True
                     break
                     
@@ -2209,24 +2281,33 @@ def print_bill(bill_id):
     # Get VAT include setting from shop settings
     include_vat_in_price = shop_settings.get('include_vat_in_price', False)
     
+    # Get bill template setting from shop settings
+    bill_template = shop_settings.get('bill_template', 'default')
+    
     # Get currency information from shop settings
     currency_code = shop_settings.get('currency_code', 'AED')
     currency_symbol = shop_settings.get('currency_symbol', 'د.إ')
     
-    return render_template('print_bill.html', 
-                         bill=bill, 
-                         items=items_with_discount,
-                         amount_in_words=amount_in_words,
-                         arabic_amount_in_words=arabic_amount_in_words,
-                         qr_code_base64=qr_code_base64,
-                         shop_settings=shop_settings,
-                         summary_data=summary_data,
-                         should_show_vat=should_show_vat,
-                         include_vat_in_price=include_vat_in_price,
-                         currency_code=currency_code,
-                         currency_symbol=currency_symbol,
-                         get_user_language=get_user_language,
-                         get_translated_text=get_translated_text)
+    # Choose template based on setting
+    if bill_template == 'receipt':
+        # For receipt template, redirect to the receipt route
+        return redirect(f'/bills/{bill_id}/receipt')
+    else:
+        # Use default template
+        return render_template('print_bill.html', 
+                             bill=bill, 
+                             items=items_with_discount,
+                             amount_in_words=amount_in_words,
+                             arabic_amount_in_words=arabic_amount_in_words,
+                             qr_code_base64=qr_code_base64,
+                             shop_settings=shop_settings,
+                             summary_data=summary_data,
+                             should_show_vat=should_show_vat,
+                             include_vat_in_price=include_vat_in_price,
+                             currency_code=currency_code,
+                             currency_symbol=currency_symbol,
+                             get_user_language=get_user_language,
+                             get_translated_text=get_translated_text)
 
 @app.route('/api/customer-invoice-heatmap', methods=['GET'])
 def customer_invoice_heatmap():
@@ -4384,7 +4465,7 @@ def get_billing_config():
         placeholder = get_placeholder()
         cursor = execute_query(conn, f'''
             SELECT enable_trial_date, enable_delivery_date, enable_advance_payment, 
-                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id, include_vat_in_price
+                   enable_customer_notes, enable_employee_assignment, default_delivery_days, default_trial_days, default_employee_id, include_vat_in_price, bill_template
             FROM shop_settings WHERE user_id = {placeholder}
         ''', (user_id,))
         settings = cursor.fetchone()
@@ -4400,7 +4481,8 @@ def get_billing_config():
                 'default_delivery_days': int(settings['default_delivery_days']),
                 'default_trial_days': int(settings['default_trial_days']) if 'default_trial_days' in settings.keys() else 3,
                 'default_employee_id': settings['default_employee_id'],
-                'include_vat_in_price': bool(settings['include_vat_in_price']) if 'include_vat_in_price' in settings.keys() else False
+                'include_vat_in_price': bool(settings['include_vat_in_price']) if 'include_vat_in_price' in settings.keys() else False,
+                'bill_template': settings['bill_template'] if 'bill_template' in settings.keys() else 'default'
             }
         else:
             # Default configuration
@@ -4413,7 +4495,8 @@ def get_billing_config():
                 'default_delivery_days': 3,
                 'default_trial_days': 3,
                 'default_employee_id': None,
-                'include_vat_in_price': False
+                'include_vat_in_price': False,
+                'bill_template': 'default'
             }
         
         return jsonify({
@@ -4437,6 +4520,168 @@ def get_billing_config():
             }
         }), 500
 
+@app.route('/bills/<int:bill_id>/receipt', methods=['GET'])
+def print_receipt(bill_id):
+    """Print bill using the receipt template."""
+    try:
+        user_id = get_current_user_id()
+        conn = get_db_connection()
+        
+        # Get bill details
+        placeholder = get_placeholder()
+        cursor = execute_query(conn, f'''
+            SELECT b.*, c.name as customer_name, c.phone as customer_phone, c.city as customer_city, c.area as customer_area
+            FROM bills b
+            LEFT JOIN customers c ON b.customer_id = c.customer_id
+            WHERE b.bill_id = {placeholder} AND b.user_id = {placeholder}
+        ''', (bill_id, user_id))
+        bill = cursor.fetchone()
+        
+        if not bill:
+            conn.close()
+            return "Bill not found", 404
+        
+        # Get bill items
+        cursor = execute_query(conn, f'''
+            SELECT * FROM bill_items WHERE bill_id = {placeholder} ORDER BY item_id
+        ''', (bill_id,))
+        items = cursor.fetchall()
+        
+        # Get shop settings
+        cursor = execute_query(conn, f'''
+            SELECT * FROM shop_settings WHERE user_id = {placeholder}
+        ''', (user_id,))
+        shop_settings = cursor.fetchone()
+        
+        conn.close()
+        
+        # Convert rows to dicts for safe access and pre-compute line totals
+        bill = dict(bill)
+        shop_settings = dict(shop_settings) if shop_settings else {}
+        items_dicts = []
+        for i in items:
+            item = dict(i)
+            try:
+                rate = float(item.get('rate') or 0)
+                qty = float(item.get('quantity') or 0)
+                discount = float(item.get('discount') or 0)
+            except Exception:
+                rate = qty = discount = 0.0
+            gross = rate * qty
+            discount_amount = gross * discount / 100.0
+            net_amount = gross - discount_amount
+            item['rate_float'] = rate
+            item['quantity_float'] = qty
+            item['discount_float'] = discount
+            item['gross_amount'] = round(gross, 2)
+            item['discount_amount'] = round(discount_amount, 2)
+            item['net_amount'] = round(net_amount, 2)
+            items_dicts.append(item)
+        items = items_dicts
+        
+        # Determine if VAT should be shown
+        show_vat = bool(bill.get('should_show_vat', bill.get('vat_amount', 0) > 0))
+        
+        # Get currency symbol
+        currency_symbol = "AED"
+        # Include VAT in price flag from shop settings
+        include_vat_in_price = bool(shop_settings.get('include_vat_in_price', False))
+        
+        # Calculate VAT percentage dynamically
+        vat_percent = 0
+        if bill.get('subtotal') and float(bill.get('subtotal')) > 0:
+            vat_amount_val = float(bill.get('vat_amount', 0))
+            subtotal_val = float(bill.get('subtotal', 0))
+            vat_percent = (vat_amount_val / subtotal_val) * 100
+        
+        # Precompute monetary totals as floats to avoid Decimal/float mix
+        try:
+            gross_amount = round(float(bill.get('subtotal') or 0), 2)
+        except Exception:
+            gross_amount = 0.0
+        try:
+            discount_amount = round(float(bill.get('discount') or 0), 2)
+        except Exception:
+            discount_amount = 0.0
+        total_before_tax = round(gross_amount - discount_amount, 2)
+        try:
+            tax_amount = round(float(bill.get('vat_amount') or 0), 2)
+        except Exception:
+            tax_amount = 0.0
+        try:
+            net_amount = round(float(bill.get('total_amount') or (total_before_tax + tax_amount)), 2)
+        except Exception:
+            net_amount = round(total_before_tax + tax_amount, 2)
+        try:
+            advance_paid = round(float(bill.get('advance_paid') or bill.get('advance_payment') or 0), 2)
+        except Exception:
+            advance_paid = 0.0
+        change_amount = round(max(0.0, advance_paid - net_amount), 2)
+
+        # Current date/time for template
+        now = datetime.now()
+        current_date = now.date()
+        current_time = now
+        # Bill date display
+        bill_date = bill.get('bill_date', current_date)
+        try:
+            bill_date_display = bill_date.strftime('%d %b %Y')
+        except Exception:
+            bill_date_display = str(bill_date)
+
+        # For receipt display, show net amount as integer (floor)
+        from math import floor
+        net_amount_integer = int(floor(net_amount))
+
+        # Distribute VAT across items when VAT is included in price
+        total_net_no_vat = sum(i.get('net_amount', 0) for i in items)
+        if bool(shop_settings.get('include_vat_in_price', False)) and total_net_no_vat > 0 and tax_amount > 0:
+            for i in items:
+                share = (i.get('net_amount', 0) / total_net_no_vat)
+                i['display_amount'] = round(i.get('net_amount', 0) + tax_amount * share, 2)
+        else:
+            for i in items:
+                i['display_amount'] = round(i.get('net_amount', 0), 2)
+
+        # Generate QR code image (base64)
+        qr_code_base64 = None
+        try:
+            import qrcode
+            import base64
+            from io import BytesIO
+            payload = f"INV:{bill.get('bill_number','')}|DATE:{bill_date_display}|TOTAL:{net_amount:.2f}|VAT:{tax_amount:.2f}"
+            img = qrcode.make(payload)
+            buf = BytesIO()
+            img.save(buf, format='PNG')
+            qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        except Exception:
+            pass
+
+        return render_template('receipt_template.html',
+                             bill=bill,
+                             items=items,
+                             shop_settings=shop_settings,
+                             show_vat=show_vat,
+                             currency_symbol=currency_symbol,
+                             vat_percent=vat_percent,
+                             current_date=current_date,
+                             current_time=current_time,
+                             bill_date_display=bill_date_display,
+                             gross_amount=gross_amount,
+                             discount_amount=discount_amount,
+                             total_before_tax=total_before_tax,
+                             tax_amount=tax_amount,
+                             net_amount=net_amount,
+                             net_amount_integer=net_amount_integer,
+                             advance_paid=advance_paid,
+                             change_amount=change_amount,
+                             qr_code_base64=qr_code_base64,
+                             include_vat_in_price=include_vat_in_price)
+        
+    except Exception as e:
+        print(f"Error generating receipt: {e}")
+        return "Error generating receipt", 500
+
 @app.route('/api/shop-settings/vat-config', methods=['PUT'])
 def update_vat_config():
     """Update only VAT-related settings without affecting other shop settings."""
@@ -4445,6 +4690,7 @@ def update_vat_config():
         data = request.get_json()
         
         include_vat_in_price = data.get('include_vat_in_price', False)
+        bill_template = data.get('bill_template', 'default')
         
         conn = get_db_connection()
         
@@ -4458,16 +4704,16 @@ def update_vat_config():
             placeholder = get_placeholder()
             execute_update(conn, f'''
                 UPDATE shop_settings 
-                SET include_vat_in_price = {placeholder}, updated_at = CURRENT_TIMESTAMP
+                SET include_vat_in_price = {placeholder}, bill_template = {placeholder}, updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = {placeholder}
-            ''', (include_vat_in_price, user_id))
+            ''', (include_vat_in_price, bill_template, user_id))
         else:
             # Create new shop settings with only VAT config
             placeholder = get_placeholder()
             execute_update(conn, f'''
-                INSERT INTO shop_settings (user_id, include_vat_in_price)
-                VALUES ({placeholder}, {placeholder})
-            ''', (user_id, include_vat_in_price))
+                INSERT INTO shop_settings (user_id, include_vat_in_price, bill_template)
+                VALUES ({placeholder}, {placeholder}, {placeholder})
+            ''', (user_id, include_vat_in_price, bill_template))
         
         conn.close()
         

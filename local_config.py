@@ -3,6 +3,9 @@
 
 import os
 
+# Local PostgreSQL connection string
+DATABASE_URL = "postgresql://postgres:aykha123@localhost:5432/tajir_pos"
+
 def setup_local_environment():
     """Set up environment variables for local PostgreSQL development"""
     # Set local development environment
