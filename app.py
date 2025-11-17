@@ -1340,14 +1340,51 @@ def create_bill():
                     print(f"DEBUG: Error getting default master: {e}")
                     master_id = None
             
-            # Use totals calculated by frontend instead of recalculating
+            # Get shop settings to check VAT configuration
+            conn = get_db_connection()
+            placeholder = get_placeholder()
+            cursor = execute_query(conn, f'SELECT include_vat_in_price FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
+            shop_settings = cursor.fetchone()
+            include_vat_in_price = bool(shop_settings['include_vat_in_price']) if shop_settings and 'include_vat_in_price' in shop_settings else True  # Default to True since user says prices include VAT
+            conn.close()
+
+            # Use totals calculated by frontend but recalculate VAT if needed
             subtotal = float(bill_data.get('subtotal', 0))
             vat_amount = float(bill_data.get('vat_amount', 0))
             total_amount = float(bill_data.get('total_amount', 0))
             advance_paid = float(bill_data.get('advance_paid', 0))
             balance_amount = float(bill_data.get('balance_amount', 0))
             vat_percent = 5.0  # Keep this for bill item calculations
-            
+
+            # Recalculate VAT correctly based on include_vat_in_price setting
+            if include_vat_in_price:
+                # If prices include VAT, the subtotal passed from frontend is actually the total including VAT
+                # We need to calculate the actual subtotal (excluding VAT) and VAT amount
+                total_including_vat = subtotal
+                vat_rate = vat_percent / 100
+
+                # Calculate actual subtotal (price excluding VAT)
+                correct_subtotal = total_including_vat / (1 + vat_rate)
+                # Calculate VAT amount
+                correct_vat_amount = total_including_vat - correct_subtotal
+                # Total remains the same
+                correct_total_amount = total_including_vat
+                correct_balance_amount = correct_total_amount - advance_paid
+
+                # Update subtotal as well
+                subtotal = round(correct_subtotal, 2)
+            else:
+                # If prices don't include VAT, VAT amount = subtotal * vat_rate
+                vat_rate = vat_percent / 100
+                correct_vat_amount = subtotal * vat_rate
+                correct_total_amount = subtotal + correct_vat_amount
+                correct_balance_amount = correct_total_amount - advance_paid
+
+            # Use corrected values
+            vat_amount = round(correct_vat_amount, 2)
+            total_amount = round(correct_total_amount, 2)
+            balance_amount = round(correct_balance_amount, 2)
+
             # Get or create customer
             conn = get_db_connection()
             
@@ -1524,8 +1561,15 @@ def create_bill():
                 item_subtotal_before_discount = item_rate * item_quantity
                 item_discount_amount = item_subtotal_before_discount * (item_discount_percent / 100)
                 item_subtotal = item_subtotal_before_discount - item_discount_amount
-                item_vat_amount = item_subtotal * (vat_percent / 100)
-                item_total_amount = item_subtotal + item_vat_amount
+
+                if include_vat_in_price:
+                    # If VAT is included in price, item total is just the discounted subtotal
+                    item_vat_amount = 0  # VAT is already included in the rate
+                    item_total_amount = item_subtotal
+                else:
+                    # If VAT is not included, add it on top
+                    item_vat_amount = item_subtotal * (vat_percent / 100)
+                    item_total_amount = item_subtotal + item_vat_amount
                 
                 placeholder = get_placeholder()
                 sql = f'''
@@ -2183,7 +2227,7 @@ def get_dashboard_data():
 @app.route('/api/bills/<int:bill_id>/print', methods=['GET'])
 def print_bill(bill_id):
     user_id = get_current_user_id()
-    print(f"DEBUG: print_bill called for bill_id: {bill_id}")
+    logger.info(f"DEBUG: print_bill called for bill_id: {bill_id}")
     
     conn = get_db_connection()
     placeholder = get_placeholder()
@@ -2203,32 +2247,62 @@ def print_bill(bill_id):
         conn.close()
         return jsonify({'error': 'Bill not found'}), 404
     
+    # Get shop settings first
+    placeholder = get_placeholder()
+    cursor = execute_query(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
+    shop_settings = cursor.fetchone()
+
+    # Check if VAT should be recalculated for display
+    include_vat_in_price = shop_settings.get('include_vat_in_price', True) if shop_settings else True  # Default to True since user says prices include VAT
+
     # Get bill items
     cursor = execute_query(conn, f'''
         SELECT * FROM bill_items WHERE bill_id = {placeholder} AND user_id = {placeholder}
     ''', (bill_id, user_id))
     items = cursor.fetchall()
-    
-    # Calculate discount amount for each item
+    conn.close()
+
+    # Calculate discount amount for each item and recalculate totals if needed
     items_with_discount = []
     for item in items:
         item_dict = dict(item)
         # Calculate discount amount: (rate * quantity * discount_percentage) / 100
         discount_amount = (float(item_dict['rate']) * float(item_dict['quantity']) * float(item_dict['discount'])) / 100
         item_dict['discount_amount'] = round(discount_amount, 2)
+
+        # Recalculate item total based on include_vat_in_price setting
+        if include_vat_in_price:
+            # If VAT is included in price, item total is just discounted amount
+            item_total = (float(item_dict['rate']) * float(item_dict['quantity'])) - discount_amount
+            item_dict['total_amount'] = round(item_total, 2)
+            item_dict['vat_amount'] = 0  # VAT already included
+
         items_with_discount.append(item_dict)
-    
-    # Get shop settings
-    placeholder = get_placeholder()
-    cursor = execute_query(conn, f'SELECT * FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
-    shop_settings = cursor.fetchone()
-    conn.close()
     
     bill = dict(bill)
     shop_settings = dict(shop_settings) if shop_settings else {}
-    print(f"DEBUG: Retrieved bill data: {bill}")
-    print(f"DEBUG: Bill notes from database: '{bill.get('notes')}'")
-    print(f"DEBUG: Notes type: {type(bill.get('notes'))}")
+
+    # Check if VAT should be recalculated for display
+    if include_vat_in_price:
+        # If prices include VAT, the stored subtotal is actually the total including VAT
+        # We need to calculate the actual subtotal (excluding VAT) and VAT amount
+        total_including_vat = float(bill.get('subtotal', 0))  # This is actually the total
+        vat_rate = 0.05  # 5%
+
+        # Calculate actual subtotal (price excluding VAT)
+        actual_subtotal = total_including_vat / (1 + vat_rate)
+        # Calculate VAT amount
+        correct_vat_amount = total_including_vat - actual_subtotal
+
+        # Update bill data for display
+        bill['subtotal'] = round(actual_subtotal, 2)
+        bill['vat_amount'] = round(correct_vat_amount, 2)
+        bill['total_amount'] = round(total_including_vat, 2)  # This should remain the same
+
+    logger.info(f"DEBUG: Retrieved bill data: {bill}")
+    logger.info(f"DEBUG: Bill notes from database: '{bill.get('notes')}'")
+    logger.info(f"DEBUG: Notes type: {type(bill.get('notes'))}")
+    logger.info(f"DEBUG: include_vat_in_price: {include_vat_in_price}")
     
     # Generate amount_in_words for the balance_amount
     try:
@@ -2243,13 +2317,13 @@ def print_bill(bill_id):
         # Generate Arabic amount in words
         arabic_amount_in_words = number_to_arabic_words(amount)
     except Exception as e:
-        print(f"DEBUG: Error calculating amount in words: {e}")
+        logger.info(f"DEBUG: Error calculating amount in words: {e}")
         amount_in_words = ''
         arabic_amount_in_words = ''
-    
-    print(f"DEBUG: Final amount_in_words: {amount_in_words}")
-    print(f"DEBUG: Final arabic_amount_in_words: {arabic_amount_in_words}")
-    print(f"DEBUG: Template variables - bill.notes: '{bill.get('notes')}', amount_in_words: '{amount_in_words}'")
+
+    logger.info(f"DEBUG: Final amount_in_words: {amount_in_words}")
+    logger.info(f"DEBUG: Final arabic_amount_in_words: {arabic_amount_in_words}")
+    logger.info(f"DEBUG: Template variables - bill.notes: '{bill.get('notes')}', amount_in_words: '{amount_in_words}'")
     
     # Generate QR code for FTA compliance
     try:
@@ -2265,7 +2339,7 @@ def print_bill(bill_id):
             total_with_vat, vat_amount
         )
     except Exception as e:
-        print(f"DEBUG: Error generating QR code: {e}")
+        logger.info(f"DEBUG: Error generating QR code: {e}")
         qr_code_base64 = None
     
     # Get summary data
@@ -4481,7 +4555,7 @@ def get_billing_config():
                 'default_delivery_days': int(settings['default_delivery_days']),
                 'default_trial_days': int(settings['default_trial_days']) if 'default_trial_days' in settings.keys() else 3,
                 'default_employee_id': settings['default_employee_id'],
-                'include_vat_in_price': bool(settings['include_vat_in_price']) if 'include_vat_in_price' in settings.keys() else False,
+                'include_vat_in_price': bool(settings['include_vat_in_price']) if 'include_vat_in_price' in settings.keys() else True,
                 'bill_template': settings['bill_template'] if 'bill_template' in settings.keys() else 'default'
             }
         else:
@@ -4495,7 +4569,7 @@ def get_billing_config():
                 'default_delivery_days': 3,
                 'default_trial_days': 3,
                 'default_employee_id': None,
-                'include_vat_in_price': False,
+                'include_vat_in_price': True,
                 'bill_template': 'default'
             }
         
