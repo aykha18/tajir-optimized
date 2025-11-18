@@ -182,6 +182,7 @@ CREATE TABLE IF NOT EXISTS bill_items (
     bill_id INTEGER NOT NULL,
     product_id INTEGER,
     product_name VARCHAR(255) NOT NULL,
+    notes TEXT DEFAULT '',
     quantity INTEGER NOT NULL DEFAULT 1,
     rate DECIMAL(10,2) NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,

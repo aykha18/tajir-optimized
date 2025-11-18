@@ -271,7 +271,7 @@
                          {% for item in items %}
              <tr>
                  <td>{{ loop.index }}</td>
-                 <td>{{ item.product_name }}</td>
+                 <td>{{ item.product_name }}{% if item.notes %} ({{ item.notes }}){% endif %}</td>
                  <td>{{ item.quantity }}</td>
                  <td>{{ currency_symbol }} {{ "%.2f"|format(item.rate) }}</td>
                                  {% if bill.discount and bill.discount > 0 %}

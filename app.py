@@ -1574,11 +1574,11 @@ def create_bill():
                 placeholder = get_placeholder()
                 sql = f'''
                 INSERT INTO bill_items (
-                    user_id, bill_id, product_id, product_name, quantity, 
+                    user_id, bill_id, product_id, product_name, notes, quantity,
                     rate, discount, vat_amount, advance_paid, total_amount
-                ) SELECT {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}
+                ) SELECT {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}
                 WHERE NOT EXISTS (
-                    SELECT 1 FROM bill_items 
+                    SELECT 1 FROM bill_items
                     WHERE bill_id = {placeholder} AND product_id = {placeholder} AND product_name = {placeholder} AND rate = {placeholder} AND quantity = {placeholder}
                 )
             '''
@@ -1587,6 +1587,7 @@ def create_bill():
                 user_id, bill_id,
                 item.get('product_id'),
                 item.get('product_name'),
+                item.get('notes', ''),  # Add notes field
                 item.get('quantity', 1),
                 item.get('rate', 0),
                 item_discount_percent,  # Store discount percentage
