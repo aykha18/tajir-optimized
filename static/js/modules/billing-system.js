@@ -3811,6 +3811,7 @@ function initializeBillingSystem() {
     // Ensure items use the current VAT percent
     const vatInputEl = document.getElementById('vatPercent') || document.getElementById('vatPercentMobile');
     const currentVatPercent = parseFloat(vatInputEl?.value) || 0;
+    const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
     bill.forEach((it) => {
       const rate = parseFloat(it.rate) || 0;
       const quantity = parseInt(it.quantity) || 0;
@@ -3819,8 +3820,13 @@ function initializeBillingSystem() {
       const discountAmount = (subtotalBeforeDiscount * discount) / 100;
       const totalAfterDiscount = subtotalBeforeDiscount - discountAmount;
       it.vat_percent = currentVatPercent;
-      it.vat_amount = (totalAfterDiscount * currentVatPercent) / 100;
-      it.total = totalAfterDiscount + it.vat_amount;
+      if (includeVatInPrice) {
+        it.vat_amount = 0;
+        it.total = totalAfterDiscount;
+      } else {
+        it.vat_amount = (totalAfterDiscount * currentVatPercent) / 100;
+        it.total = totalAfterDiscount + it.vat_amount;
+      }
     });
 
     // Calculate totals from bill array (same logic as updateTotals function)
@@ -4176,7 +4182,7 @@ function initializeBillingSystem() {
   window.updateBillItemField = function(index, field, value) {
     const item = bill[index];
     if (!item) return;
-    
+
     // Convert value to appropriate type
     let parsedValue;
     if (field === 'quantity') {
@@ -4186,39 +4192,50 @@ function initializeBillingSystem() {
       parsedValue = parseFloat(value) || 0;
       if (parsedValue < 0) parsedValue = 0;
     }
-    
+
     // Update the field
     item[field] = parsedValue;
-    
+
+    // Check if VAT is included in price
+    const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
+    console.log('🔧 updateBillItemField: includeVatInPrice =', includeVatInPrice);
+
     // Recalculate totals for this item
     const rate = parseFloat(item.rate) || 0;
     const quantity = parseInt(item.quantity) || 0;
     const discount = parseFloat(item.discount) || 0;
     const vatPercent = parseFloat(item.vat_percent) || 5;
-    
+
     // Calculate subtotal (before discount)
     const subtotal = rate * quantity;
-    
+
     // Calculate discount amount from percentage
     const discountAmount = (subtotal * discount / 100);
-    
+
     // Calculate total after discount
     const totalAfterDiscount = subtotal - discountAmount;
-    
-    // Calculate VAT amount
-    const vatAmount = (totalAfterDiscount * vatPercent) / 100;
-    
-    // Calculate final total
-    const total = totalAfterDiscount + vatAmount;
-    
+
+    let vatAmount, total;
+    if (includeVatInPrice) {
+      // VAT is already included in the price, so don't add extra VAT
+      vatAmount = 0;
+      total = totalAfterDiscount;
+      console.log('🔧 updateBillItemField: VAT included in price, setting vatAmount=0, total=', total);
+    } else {
+      // Calculate VAT amount and add to total
+      vatAmount = (totalAfterDiscount * vatPercent) / 100;
+      total = totalAfterDiscount + vatAmount;
+      console.log('🔧 updateBillItemField: VAT added on top, vatAmount=', vatAmount, 'total=', total);
+    }
+
     // Update item totals
     item.total = total;
     item.vat_amount = vatAmount;
-    
+
     // Re-render table and update totals
     renderBillTable();
     updateTotals();
-    
+
     // Show success message
     if (window.showSimpleToast) {
       window.showSimpleToast(`${field.charAt(0).toUpperCase() + field.slice(1)} updated!`, 'success');
@@ -4390,8 +4407,13 @@ function recalcAllItemsForCurrentVat() {
       
       // Update VAT values
       it.vat_percent = currentVat;
-      it.vat_amount = (afterDiscount * currentVat) / 100;
-      it.total = afterDiscount + it.vat_amount;
+      if (includeVatInPrice) {
+        it.vat_amount = 0;
+        it.total = afterDiscount;
+      } else {
+        it.vat_amount = (afterDiscount * currentVat) / 100;
+        it.total = afterDiscount + it.vat_amount;
+      }
       
       console.log(`Item ${index}: Rate=${rate}, Qty=${quantity}, Discount=${discount}%, VAT=${currentVat}%, VAT Amount=${it.vat_amount}, Total=${it.total}`);
     });
