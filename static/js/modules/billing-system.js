@@ -643,11 +643,11 @@ function initializeBillingSystem() {
     let subtotal, totalVat, totalBeforeAdvance;
     
     if (includeVatInPrice) {
-      // VAT is already included in item prices
+      // VAT is included in prices, calculate VAT per item and round to avoid rounding issues
       const totalWithVat = bill.reduce((sum, item) => sum + item.total, 0);
-      subtotal = totalWithVat / (1 + vatPercent / 100); // Calculate subtotal without VAT
-      totalVat = totalWithVat - subtotal; // VAT amount
-      totalBeforeAdvance = totalWithVat; // Total before advance is the same as total with VAT
+      totalVat = bill.reduce((sum, item) => sum + Math.round(item.total * vatPercent / 100 * 100) / 100, 0);
+      subtotal = totalWithVat - totalVat;
+      totalBeforeAdvance = totalWithVat;
     } else {
       // Traditional VAT calculation (VAT added on top)
       subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
@@ -3829,12 +3829,21 @@ function initializeBillingSystem() {
       }
     });
 
-    // Calculate totals from bill array (same logic as updateTotals function)
-    const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount (incl. VAT per item)
+    // Calculate totals
+    let subtotal, totalVat, totalBeforeAdvance;
+    if (includeVatInPrice) {
+      const totalWithVat = bill.reduce((sum, item) => sum + item.total, 0);
+      totalVat = bill.reduce((sum, item) => sum + Math.round(item.total * currentVatPercent / 100 * 100) / 100, 0);
+      subtotal = totalWithVat - totalVat;
+      totalBeforeAdvance = totalWithVat;
+    } else {
+      subtotal = bill.reduce((sum, item) => sum + item.total, 0);
+      totalVat = bill.reduce((sum, item) => sum + (item.vat_amount || 0), 0);
+      totalBeforeAdvance = subtotal + totalVat;
+    }
     const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
-    const totalVat = bill.reduce((sum, item) => sum + (item.vat_amount || 0), 0); // Sum of individual VAT amounts
-    const totalBeforeAdvance = subtotal + totalVat;
     const amountDue = totalBeforeAdvance - totalAdvance;
+
     
     const billData = {
       bill: {
