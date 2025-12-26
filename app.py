@@ -162,7 +162,7 @@ def log_user_action(action, user_id=None, details=None):
         conn = get_db_connection()
         placeholder = get_placeholder()
         execute_update(conn, f'''
-            INSERT INTO user_actions (timestamp, action, user_id, details)
+            INSERT INTO user_actions (created_at, action, user_id, details)
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
         ''', (
             datetime.now().isoformat(),
@@ -1346,6 +1346,8 @@ def create_bill():
             cursor = execute_query(conn, f'SELECT include_vat_in_price FROM shop_settings WHERE user_id = {placeholder}', (user_id,))
             shop_settings = cursor.fetchone()
             include_vat_in_price = bool(shop_settings['include_vat_in_price']) if shop_settings and 'include_vat_in_price' in shop_settings else True  # Default to True since user says prices include VAT
+            print(f"DEBUG: shop_settings fetched: {shop_settings}")
+            print(f"DEBUG: include_vat_in_price determined: {include_vat_in_price}")
             conn.close()
 
             # Use totals calculated by frontend but recalculate VAT if needed
@@ -1355,8 +1357,16 @@ def create_bill():
             advance_paid = float(bill_data.get('advance_paid', 0))
             balance_amount = float(bill_data.get('balance_amount', 0))
             vat_percent = 5.0  # Keep this for bill item calculations
+        
+            # Debug logging for VAT calculation issue
+            print(f"DEBUG: Received bill data - subtotal: {subtotal}, vat_amount: {vat_amount}, total_amount: {total_amount}, advance_paid: {advance_paid}, balance_amount: {balance_amount}")
+            print(f"DEBUG: include_vat_in_price: {include_vat_in_price}")
 
-            # Recalculate VAT correctly based on include_vat_in_price setting
+            # Log incoming values for debugging
+            logger.info(f"DEBUG VAT: Incoming values - subtotal: {subtotal}, vat_amount: {vat_amount}, total_amount: {total_amount}, advance_paid: {advance_paid}, balance_amount: {balance_amount}, include_vat_in_price: {include_vat_in_price}")
+
+            # Always recalculate VAT correctly based on include_vat_in_price setting
+            # Advance payment should not affect VAT calculation - it only affects balance
             if include_vat_in_price:
                 # If prices include VAT, the subtotal passed from frontend is actually the total including VAT
                 # We need to calculate the actual subtotal (excluding VAT) and VAT amount
@@ -1384,6 +1394,8 @@ def create_bill():
             vat_amount = round(correct_vat_amount, 2)
             total_amount = round(correct_total_amount, 2)
             balance_amount = round(correct_balance_amount, 2)
+            print(f"DEBUG: Corrected values - subtotal: {subtotal}, vat_amount: {vat_amount}, total_amount: {total_amount}, balance_amount: {balance_amount}")
+            logger.info(f"DEBUG VAT: Recalculated values - subtotal: {subtotal}, vat_amount: {vat_amount}, total_amount: {total_amount}, balance_amount: {balance_amount}")
 
             # Get or create customer
             conn = get_db_connection()
@@ -2283,22 +2295,19 @@ def print_bill(bill_id):
     bill = dict(bill)
     shop_settings = dict(shop_settings) if shop_settings else {}
 
-    # Check if VAT should be recalculated for display
-    if include_vat_in_price:
-        # If prices include VAT, the stored subtotal is actually the total including VAT
-        # We need to calculate the actual subtotal (excluding VAT) and VAT amount
-        total_including_vat = float(bill.get('subtotal', 0))  # This is actually the total
-        vat_rate = 0.05  # 5%
+    # For include_vat_in_price, stored values are already correct
+    if not include_vat_in_price:
+        # Recalculate VAT for display
+        actual_subtotal = sum(item['total_amount'] for item in items)
+        # Recalculate VAT
+        correct_vat_amount = actual_subtotal * (vat_percent / 100)
+        correct_total_amount = actual_subtotal + correct_vat_amount
+        correct_balance_amount = correct_total_amount - advance_paid
 
-        # Calculate actual subtotal (price excluding VAT)
-        actual_subtotal = total_including_vat / (1 + vat_rate)
-        # Calculate VAT amount
-        correct_vat_amount = total_including_vat - actual_subtotal
-
-        # Update bill data for display
-        bill['subtotal'] = round(actual_subtotal, 2)
+        # Use corrected values
         bill['vat_amount'] = round(correct_vat_amount, 2)
-        bill['total_amount'] = round(total_including_vat, 2)  # This should remain the same
+        bill['total_amount'] = round(correct_total_amount, 2)
+        bill['balance_amount'] = round(correct_balance_amount, 2)
 
     logger.info(f"DEBUG: Retrieved bill data: {bill}")
     logger.info(f"DEBUG: Bill notes from database: '{bill.get('notes')}'")
