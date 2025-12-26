@@ -2295,8 +2295,13 @@ def print_bill(bill_id):
     bill = dict(bill)
     shop_settings = dict(shop_settings) if shop_settings else {}
 
-    # For include_vat_in_price, stored values are already correct
-    if not include_vat_in_price:
+    # Handle VAT calculation based on include_vat_in_price setting
+    if include_vat_in_price:
+        # For include_vat_in_price, ensure correct VAT calculation from total
+        total_amount = float(bill.get('total_amount', 0))
+        bill['vat_amount'] = round(total_amount * (vat_percent / 100), 2)
+        bill['subtotal'] = round(total_amount - bill['vat_amount'], 2)
+    else:
         # Recalculate VAT for display
         actual_subtotal = sum(item['total_amount'] for item in items)
         # Recalculate VAT
