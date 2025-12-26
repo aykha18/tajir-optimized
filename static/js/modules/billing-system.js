@@ -643,9 +643,9 @@ function initializeBillingSystem() {
     let subtotal, totalVat, totalBeforeAdvance;
     
     if (includeVatInPrice) {
-      // VAT is included in prices, calculate VAT per item and round to avoid rounding issues
+      // VAT is included in prices, calculate VAT on total to avoid rounding issues
       const totalWithVat = bill.reduce((sum, item) => sum + item.total, 0);
-      totalVat = bill.reduce((sum, item) => sum + Math.round(item.total * vatPercent / 100 * 100) / 100, 0);
+      totalVat = Math.round(totalWithVat * vatPercent / 100 * 100) / 100;
       subtotal = totalWithVat - totalVat;
       totalBeforeAdvance = totalWithVat;
     } else {
@@ -3833,7 +3833,7 @@ function initializeBillingSystem() {
     let subtotal, totalVat, totalBeforeAdvance;
     if (includeVatInPrice) {
       const totalWithVat = bill.reduce((sum, item) => sum + item.total, 0);
-      totalVat = bill.reduce((sum, item) => sum + Math.round(item.total * currentVatPercent / 100 * 100) / 100, 0);
+      totalVat = Math.round(totalWithVat * currentVatPercent / 100 * 100) / 100;
       subtotal = totalWithVat - totalVat;
       totalBeforeAdvance = totalWithVat;
     } else {
