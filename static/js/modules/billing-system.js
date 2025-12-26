@@ -597,13 +597,6 @@ function initializeBillingSystem() {
             <span class="text-xs text-gray-400">${((item.rate || 0) * (item.quantity || 0) * (item.discount || 0) / 100).toFixed(2)}</span>
           </div>
         </td>
-        <td class="px-3 py-3">
-          <input type="number" min="0" step="0.01" value="${(item.advance_paid || 0).toFixed(2)}" 
-                 class="w-20 bg-transparent border-none text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded px-1"
-                 onchange="updateBillItemField(${index}, 'advance_paid', this.value)"
-                 onblur="updateBillItemField(${index}, 'advance_paid', this.value)"
-                 ${window.paymentMode === 'full' ? 'disabled' : ''}>
-        </td>
         ${includeVatInPrice ? '' : `<td class="px-3 py-3">${(item.vat_amount || 0).toFixed(2)}</td>`}
         <td class="px-3 py-3">${(item.total || 0).toFixed(2)}</td>
         <td class="px-3 py-3 flex gap-2">
@@ -628,11 +621,17 @@ function initializeBillingSystem() {
   function updateBillTableHeader(includeVatInPrice) {
     const thead = document.getElementById('billTable')?.querySelector('thead tr');
     if (!thead) return;
-    
+
     // Find the Tax column header (6th column, index 5)
     const taxHeader = thead.children[5];
     if (taxHeader) {
       taxHeader.style.display = includeVatInPrice ? 'none' : '';
+    }
+
+    // Hide the Adv column header (5th column, index 4)
+    const advHeader = thead.children[4];
+    if (advHeader) {
+      advHeader.style.display = 'none';
     }
   }
 
@@ -713,7 +712,7 @@ function initializeBillingSystem() {
     const subtotalElement = document.getElementById('subTotal');
     const vatElement = document.getElementById('vatAmount');
     const totalElement = document.getElementById('amountDue');
-    
+
          if (subtotalElement) {
        subtotalElement.textContent = `${subtotal.toFixed(2)}`;
      }
@@ -723,6 +722,9 @@ function initializeBillingSystem() {
      if (totalElement) {
        totalElement.textContent = `${amountDue.toFixed(2)}`;
      }
+
+    // Update total advance field
+    updateTotalAdvanceField();
   }
 
 
@@ -2891,7 +2893,11 @@ function initializeBillingSystem() {
       vatInput.value = defaultVat;
       vatInput.classList.remove('billing-input-error');
     }
-    
+
+    // Clear total advance field
+    const totalAdvanceInput = document.getElementById('totalAdvancePaid');
+    if (totalAdvanceInput) totalAdvanceInput.value = '';
+
     // Remove any error messages
     const errorMessages = document.querySelectorAll('.billing-error-message');
     errorMessages.forEach(msg => msg.remove());
@@ -3408,29 +3414,30 @@ function initializeBillingSystem() {
   loadRecentCustomers(); // Load recent customers for quick selection
   initializeMobileRecentCustomers(); // Initialize mobile recent customers
   setupMasterAutocomplete();
-  
+
   // Setup city and area autocomplete
   setupCityAreaAutocomplete();
   setupAddItemHandler();
+  setupTotalAdvanceDistribution(); // Setup total advance distribution
   setupSearchAndReprint();
   setupCustomerQuickSearch();
   setupProductQuickAdd();
   setupSmartDefaults();
   setupMobileBillingToggle();
   setupPrintButton(); // Add print button setup
-  
+
   // Initialize VAT configuration
   if (window.initVatConfig) {
     window.initVatConfig();
   }
-  
+
   // Setup VAT input change listeners
   setupVatInputListeners();
-  
+
   // Initialize Save Bill and WhatsApp functionality
   initializeSaveBill();
   initializeWhatsApp();
-  
+
   // Initialize payment mode
   initializePaymentMode();
   
@@ -3438,27 +3445,98 @@ function initializeBillingSystem() {
   
   
   
+  // Setup total advance distribution
+  function setupTotalAdvanceDistribution() {
+    // Add total advance input field in bill summary section
+    const subtotalElement = document.getElementById('subTotal');
+    if (subtotalElement && !document.getElementById('totalAdvancePaid')) {
+      const summaryRow = subtotalElement.closest('.bill-summary-row') || subtotalElement.parentElement;
+      if (summaryRow) {
+        const totalAdvanceRow = document.createElement('div');
+        totalAdvanceRow.className = 'bill-summary-row flex justify-between items-center py-2';
+        totalAdvanceRow.innerHTML = `
+          <span class="text-neutral-400">Total Advance Paid:</span>
+          <input type="number" id="totalAdvancePaid" min="0" value="0" class="compact-form h-8 text-sm w-24" style="font-size: 16px;">
+        `;
+        summaryRow.parentNode.insertBefore(totalAdvanceRow, summaryRow);
+      }
+    }
+
+    const totalAdvanceInput = document.getElementById('totalAdvancePaid');
+    if (totalAdvanceInput) {
+      totalAdvanceInput.addEventListener('blur', function() {
+        const totalAdvance = parseFloat(this.value) || 0;
+        distributeAdvance(totalAdvance);
+      });
+    }
+  }
+
+  // Distribute advance proportionally across items
+  function distributeAdvance(totalAdvance) {
+    if (bill.length === 0) return;
+
+    const totalAmount = bill.reduce((sum, item) => sum + item.total, 0);
+    if (totalAmount === 0) return;
+
+    // Calculate proportional advances
+    let distributed = [];
+    let totalDistributed = 0;
+
+    // Calculate for all items except the last
+    for (let i = 0; i < bill.length - 1; i++) {
+      const item = bill[i];
+      const proportion = item.total / totalAmount;
+      const advance = Math.round(proportion * totalAdvance * 100) / 100;
+      distributed.push(advance);
+      totalDistributed += advance;
+    }
+
+    // Last item gets the remainder to ensure exact total
+    const lastAdvance = totalAdvance - totalDistributed;
+    distributed.push(Math.round(lastAdvance * 100) / 100);
+
+    // Update items
+    for (let i = 0; i < bill.length; i++) {
+      bill[i].advance_paid = distributed[i];
+    }
+
+    // Update grid and totals
+    renderBillTable();
+    updateTotals();
+  }
+
+  // Update total advance field when individual advances change
+  function updateTotalAdvanceField() {
+    const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
+    const totalAdvanceInput = document.getElementById('totalAdvancePaid');
+    if (totalAdvanceInput) {
+      totalAdvanceInput.value = totalAdvance.toFixed(2);
+    }
+  }
+
   // Initialize payment mode
   async function initializePaymentMode() {
     try {
       const response = await fetch('/api/shop-settings/payment-mode');
       const data = await response.json();
-      
+
       if (data.success) {
         const paymentMode = data.payment_mode;
         window.paymentMode = paymentMode; // Store globally
-        
+
         // Hide/show advance payment fields based on mode
         const advanceFields = [
           document.getElementById('billAdvPaid'),
-          document.getElementById('billAdvPaidMobile')
+          document.getElementById('billAdvPaidMobile'),
+          document.getElementById('totalAdvancePaid')
         ];
-        
+
         const advanceLabels = [
           document.querySelector('label[for="billAdvPaid"]'),
-          document.querySelector('label[for="billAdvPaidMobile"]')
+          document.querySelector('label[for="billAdvPaidMobile"]'),
+          document.querySelector('label[for="totalAdvancePaid"]')
         ];
-        
+
         if (paymentMode === 'full') {
           // Keep advance payment fields visible but disable them
           advanceFields.forEach(field => {
@@ -3468,57 +3546,38 @@ function initializeBillingSystem() {
               field.value = '0';
             }
           });
-          
+
           advanceLabels.forEach(label => {
             if (label) {
               label.style.display = '';
             }
           });
-          
+
           // Keep table header visible
           const advHeader = document.getElementById('advHeader');
           if (advHeader) {
             advHeader.style.display = '';
           }
-          
+
           // Update the "Total Amount Paid" label for full payment mode
           const totalAmountLabel = document.querySelector('.bill-summary-row:last-child .text-neutral-400');
           if (totalAmountLabel) {
             totalAmountLabel.textContent = 'Total Amount Paid:';
           }
-          
-          // Desktop repositioning - reduce Product field and fit Add button in same row
-          const billProduct = document.getElementById('billProduct');
-          const billRate = document.getElementById('billRate');
-          const billQty = document.getElementById('billQty');
-          const billDiscount = document.getElementById('billDiscount');
-          const vatPercent = document.getElementById('vatPercent');
-          const addItemBtn = document.getElementById('addItemBtn');
-          
-          if (billProduct && billProduct.parentElement) {
-            billProduct.parentElement.className = 'col-span-5 flex flex-col';
-          }
-          if (billRate && billRate.parentElement) {
-            billRate.parentElement.className = 'col-span-1 flex flex-col';
-          }
-          if (billQty && billQty.parentElement) {
-            billQty.parentElement.className = 'col-span-1 flex flex-col';
-          }
-          if (billDiscount && billDiscount.parentElement) {
-            billDiscount.parentElement.className = 'col-span-1 flex flex-col';
-          }
-          if (vatPercent && vatPercent.parentElement) {
-            vatPercent.parentElement.className = 'col-span-1 flex flex-col';
-          }
-          if (addItemBtn) {
-            addItemBtn.className = 'col-span-2 modern-btn modern-btn-primary self-end h-8 text-sm';
-          }
-          
+
+
           // Set all advance payments to 0
           bill.forEach(item => {
             item.advance_paid = 0;
           });
-          
+
+          // Disable total advance input
+          const totalAdvanceInput = document.getElementById('totalAdvancePaid');
+          if (totalAdvanceInput) {
+            totalAdvanceInput.disabled = true;
+            totalAdvanceInput.value = '0';
+          }
+
           // Update totals
           updateTotals();
         } else {
@@ -3530,46 +3589,26 @@ function initializeBillingSystem() {
               field.value = '';
             }
           });
-          
+
           advanceLabels.forEach(label => {
             if (label) {
               label.style.display = '';
             }
           });
-          
+
           // Show table header
           const advHeader = document.getElementById('advHeader');
           if (advHeader) {
             advHeader.style.display = '';
           }
-          
-          // Reset desktop layout for advance payment mode
-          const billProduct = document.getElementById('billProduct');
-          const billRate = document.getElementById('billRate');
-          const billQty = document.getElementById('billQty');
-          const billDiscount = document.getElementById('billDiscount');
-          const vatPercent = document.getElementById('vatPercent');
-          const addItemBtn = document.getElementById('addItemBtn');
-          
-          if (billProduct && billProduct.parentElement) {
-            billProduct.parentElement.className = 'col-span-5 flex flex-col';
+
+
+          // Enable total advance input
+          const totalAdvanceInput = document.getElementById('totalAdvancePaid');
+          if (totalAdvanceInput) {
+            totalAdvanceInput.disabled = false;
           }
-          if (billRate && billRate.parentElement) {
-            billRate.parentElement.className = 'col-span-1 flex flex-col';
-          }
-          if (billQty && billQty.parentElement) {
-            billQty.parentElement.className = 'col-span-1 flex flex-col';
-          }
-          if (billDiscount && billDiscount.parentElement) {
-            billDiscount.parentElement.className = 'col-span-1 flex flex-col';
-          }
-          if (vatPercent && vatPercent.parentElement) {
-            vatPercent.parentElement.className = 'col-span-1 flex flex-col';
-          }
-          if (addItemBtn) {
-            addItemBtn.className = 'col-span-2 modern-btn modern-btn-primary self-end h-8 text-sm';
-          }
-          
+
           // Update the "Total Amount Paid" label for advance payment mode
           const totalAmountLabel = document.querySelector('.bill-summary-row:last-child .text-neutral-400');
           if (totalAmountLabel) {
@@ -4245,6 +4284,11 @@ function initializeBillingSystem() {
     renderBillTable();
     updateTotals();
 
+    // Update total advance field if advance was changed
+    if (field === 'advance_paid') {
+      updateTotalAdvanceField();
+    }
+
     // Show success message
     if (window.showSimpleToast) {
       window.showSimpleToast(`${field.charAt(0).toUpperCase() + field.slice(1)} updated!`, 'success');
@@ -4383,11 +4427,12 @@ if (document.readyState === 'loading') {
 // VAT Functions - Global Scope
 function recalcAllItemsForCurrentVat() {
   console.log('🚀 recalcAllItemsForCurrentVat function called!');
-  
+
   const vatInput = document.getElementById('vatPercent') || document.getElementById('vatPercentMobile');
   const currentVat = parseFloat(vatInput?.value) || 0;
-  
-  console.log(`🔄 Recalculating VAT for all items with ${currentVat}%`);
+  const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
+
+  console.log(`🔄 Recalculating VAT for all items with ${currentVat}%, includeVatInPrice =`, includeVatInPrice);
   console.log(`VAT Input element:`, vatInput);
   console.log(`VAT Input value:`, vatInput?.value);
   
