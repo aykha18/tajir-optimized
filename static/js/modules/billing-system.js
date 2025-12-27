@@ -2530,10 +2530,10 @@ function initializeBillingSystem() {
   }
 
   async function handleAddItem(formType) {
-    
+
     // Get form elements based on form type
-    let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput;
-    
+    let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput, notesInput;
+
     if (formType === 'mobile') {
       productInput = document.getElementById('billProductMobile');
       quantityInput = document.getElementById('billQtyMobile');
@@ -2541,6 +2541,7 @@ function initializeBillingSystem() {
       discountInput = document.getElementById('billDiscountMobile');
       advanceInput = document.getElementById('billAdvPaidMobile');
       vatInput = document.getElementById('vatPercentMobile');
+      notesInput = null; // No notes input for mobile
     } else {
       productInput = document.getElementById('billProduct');
       quantityInput = document.getElementById('billQty');
@@ -2548,6 +2549,7 @@ function initializeBillingSystem() {
       discountInput = document.getElementById('billDiscount');
       advanceInput = document.getElementById('billAdvPaid');
       vatInput = document.getElementById('vatPercent');
+      notesInput = document.getElementById('itemNotes');
     }
     
     // Clear previous error states
@@ -2719,6 +2721,9 @@ function initializeBillingSystem() {
     const vatAmount = Math.round(total * (vatPercent / 100) * 100) / 100;
     console.log('🔧 handleAddItem: VAT calculation - total =', total, 'vatPercent =', vatPercent, 'vatAmount =', vatAmount);
     
+    // Get notes value
+    const notes = notesInput ? notesInput.value.trim() : '';
+
     // Add item to bill
     const item = {
       product_id: productId,
@@ -2726,11 +2731,12 @@ function initializeBillingSystem() {
       quantity: quantity,
       rate: price, // Changed from 'price' to 'rate' to match backend expectation
       discount: discount,
-              advance_paid: window.paymentMode === 'full' ? 0 : advance, // Set to 0 if full payment mode
+               advance_paid: window.paymentMode === 'full' ? 0 : advance, // Set to 0 if full payment mode
       vat_percent: vatPercent,
       vat_amount: vatAmount,
       subtotal: subtotal, // Store subtotal (before discount)
-      total: total // Store final total (after discount)
+      total: total, // Store final total (after discount)
+      notes: notes // Include notes in the item
     };
     
     
@@ -2848,8 +2854,8 @@ function initializeBillingSystem() {
 
   // Helper function to clear billing form
   function clearBillingForm(formType = 'desktop') {
-    let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput;
-    
+    let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput,notesInput;
+
     if (formType === 'mobile') {
       productInput = document.getElementById('billProductMobile');
       quantityInput = document.getElementById('billQtyMobile');
@@ -2857,6 +2863,7 @@ function initializeBillingSystem() {
       discountInput = document.getElementById('billDiscountMobile');
       advanceInput = document.getElementById('billAdvPaidMobile');
       vatInput = document.getElementById('vatPercentMobile');
+      notesInput=null;
     } else {
       productInput = document.getElementById('billProduct');
       quantityInput = document.getElementById('billQty');
@@ -2864,8 +2871,9 @@ function initializeBillingSystem() {
       discountInput = document.getElementById('billDiscount');
       advanceInput = document.getElementById('billAdvPaid');
       vatInput = document.getElementById('vatPercent');
+      notesInput = document.getElementById('itemNotes');
     }
-    
+
     if (productInput) {
       productInput.value = '';
       productInput.removeAttribute('data-selected-product');
@@ -2892,6 +2900,9 @@ function initializeBillingSystem() {
       const defaultVat = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
       vatInput.value = defaultVat;
       vatInput.classList.remove('billing-input-error');
+    }
+    if (notesInput) {
+      notesInput.value = '';
     }
 
     // Clear total advance field

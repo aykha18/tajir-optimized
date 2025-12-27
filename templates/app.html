@@ -360,7 +360,12 @@
               <label for="billProduct" class="text-xs text-neutral-400">Product</label>
               <input id="billProduct" type="text" placeholder="Search products..." required class="compact-form h-8 text-sm">
           </div>
-            <div class="col-span-1 flex flex-col">
+          <div class="col-span-2 flex flex-col">
+              <label for="Notes" class="text-xs text-neutral-400">Notes</label>
+              <input id="itemNotes" type="text"  placeholder="Enter Notes(Optional)" required class="compact-form h-8 text-sm">
+          </div>
+
+          <div class="col-span-1 flex flex-col">
               <label for="billRate" class="text-xs text-neutral-400">Rate</label>
               <input id="billRate" type="number" min="0" step=".01" placeholder="0.00" required class="compact-form h-8 text-sm">
           </div>
@@ -372,10 +377,10 @@
               <label for="billDiscount" class="text-xs text-neutral-400">Disc %</label>
               <input id="billDiscount" type="number" min="0" max="100" step="0.01" value="0" class="compact-form h-8 text-sm">
             </div>
-            <div class="col-span-1 flex flex-col">
+            <!-- <div class="col-span-1 flex flex-col">
               <label for="billAdvPaid" class="text-xs text-neutral-400">Adv</label>
               <input id="billAdvPaid" type="number" min="0" value="0" class="compact-form h-8 text-sm">
-            </div>
+            </div> -->
             <div class="col-span-1 flex flex-col">
               <div class="flex items-center justify-between">
               <label for="vatPercent" class="text-xs text-neutral-400">VAT%</label>
@@ -388,7 +393,7 @@
             </div>
               <input id="vatPercent" type="number" min="0" step=".01" value="5" class="compact-form h-8 text-sm" onchange="console.log('VAT change event triggered'); if(typeof recalcAllItemsForCurrentVat === 'function') { console.log('Calling recalcAllItemsForCurrentVat'); recalcAllItemsForCurrentVat(); } else { console.error('recalcAllItemsForCurrentVat not available'); }" oninput="console.log('VAT input event triggered'); if(typeof recalcAllItemsForCurrentVat === 'function') { console.log('Calling recalcAllItemsForCurrentVat'); recalcAllItemsForCurrentVat(); } else { console.error('recalcAllItemsForCurrentVat not available'); }" onblur="console.log('VAT blur event triggered'); if(typeof recalcAllItemsForCurrentVat === 'function') { console.log('Calling recalcAllItemsForCurrentVat'); recalcAllItemsForCurrentVat(); } else { console.error('recalcAllItemsForCurrentVat not available'); }">
             </div>
-            <button id="addItemBtn" class="col-span-1 modern-btn modern-btn-primary self-end h-8 text-sm w-32 flex-shrink-0 px-3" onclick="console.log('🔄 Add Item button clicked'); console.log('Current VAT input value:', document.getElementById('vatPercent')?.value); console.log('Bill array before adding:', typeof bill !== 'undefined' ? bill.length : 'undefined'); console.log('Bill array contents:', typeof bill !== 'undefined' ? bill : 'undefined');">Add Item</button>
+            <button id="addItemBtn" class="col-span-1 modern-btn modern-btn-primary self-end h-8 text-sm w-24 flex-shrink-0 px-3" onclick="console.log('🔄 Add Item button clicked'); console.log('Current VAT input value:', document.getElementById('vatPercent')?.value); console.log('Bill array before adding:', typeof bill !== 'undefined' ? bill.length : 'undefined'); console.log('Bill array contents:', typeof bill !== 'undefined' ? bill : 'undefined');">Add Item</button>
           </div>
 
           <!-- Mobile Layout (visible only on mobile) -->
@@ -435,6 +440,12 @@
                 </button>
               </div>
               <input id="vatPercentMobile" type="number" min="0" step=".01" value="5" class="px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60" onchange="if(typeof recalcAllItemsForCurrentVat === 'function') recalcAllItemsForCurrentVat();" oninput="if(typeof recalcAllItemsForCurrentVat === 'function') recalcAllItemsForCurrentVat();" onblur="if(typeof recalcAllItemsForCurrentVat === 'function') recalcAllItemsForCurrentVat();">
+            </div>
+
+            <!-- Notes Row -->
+            <div class="flex flex-col">
+              <label for="itemNotesMobile" class="text-sm font-medium text-neutral-300 mb-1">Notes</label>
+              <input id="itemNotesMobile" type="text" placeholder="Enter Notes (Optional)" class="w-full px-3 py-2 bg-neutral-900/70 border border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400/60">
             </div>
 
             <!-- Master Row -->
