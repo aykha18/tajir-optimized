@@ -1,260 +1,467 @@
-﻿// Billing System Module - v1.0.2 (Updated with modern text and WhatsApp integration)
+// Billing System Module - v1.0.2 (Updated with modern text and WhatsApp integration)
 
 // Global variables
 let bill = []; // Primary declaration of 'bill'
 let currentBillNumber = '';
 let selectedMasterId = null;
 
+// Load country codes from JSON file
+async function loadCountryCodes() {
+  console.log('loadCountryCodes: Starting to load country codes');
+  try {
+    const response = await fetch('/static/data/countryCodes.json');
+    console.log('loadCountryCodes: Fetch response status:', response.status);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    countryCodes = await response.json();
+    console.log('Country codes loaded successfully:', countryCodes.length, 'entries');
+    console.log('Country codes data:', countryCodes);
+  } catch (error) {
+    console.error('Error loading country codes:', error);
+    // Fallback to old hardcoded array
+    countryCodes = [
+      { code: "+971", country: "UAE", flag: "🇦🇪" },
+      { code: "+91", country: "India", flag: "🇮🇳" },
+      { code: "+966", country: "Saudi Arabia", flag: "🇸🇦" },
+      { code: "+973", country: "Bahrain", flag: "🇧🇭" },
+      { code: "+968", country: "Oman", flag: "🇴🇲" },
+      { code: "+965", country: "Kuwait", flag: "🇰🇼" },
+      { code: "+974", country: "Qatar", flag: "🇶🇦" },
+      { code: "+1", country: "USA", flag: "🇺🇸" },
+      { code: "+44", country: "UK", flag: "🇬🇧" },
+      { code: "+20", country: "Egypt", flag: "🇪🇬" },
+      { code: "+92", country: "Pakistan", flag: "🇵🇰" },
+      { code: "+63", country: "Philippines", flag: "🇵🇭" },
+      { code: "+880", country: "Bangladesh", flag: "🇧🇩" }
+    ];
+    console.log('Using fallback country codes:', countryCodes.length, 'entries');
+  }
+}
+
 // Add billing configuration loading and field management
 let billingConfig = {
-    enable_trial_date: true,
-    enable_delivery_date: true,
-    enable_advance_payment: true,
-    enable_customer_notes: true,
-    enable_employee_assignment: true,
-    default_delivery_days: 3
+  enable_trial_date: true,
+  enable_delivery_date: true,
+  enable_advance_payment: true,
+  enable_customer_notes: true,
+  enable_employee_assignment: true,
+  default_delivery_days: 3
 };
+
+// Country Codes Data - loaded from JSON
+let countryCodes = [];
+
+// Helper to get combined phone number
+function getCombinedPhoneNumber() {
+  const codeBtn = document.getElementById('countryCodeText');
+  const mobileInput = document.getElementById('billMobile');
+
+  if (!mobileInput) return '';
+
+  const code = codeBtn ? codeBtn.textContent.trim() : '+971';
+  const number = mobileInput.value.trim();
+
+  if (!number) return '';
+
+  // If number already starts with +, assume it's full international and ignore code
+  if (number.startsWith('+')) return number;
+
+  // Remove leading zeros if any, to avoid +971050...
+  const cleanNumber = number.replace(/^0+/, '');
+
+  return code + cleanNumber;
+}
+
+// Helper to parse phone number into code and local part
+function parsePhoneNumber(fullNumber) {
+  if (!fullNumber) return { code: '+971', number: '' };
+
+  // Normalize: ensure it starts with single +
+  // If it has ++, replace with +
+  // If it has no +, add +
+  let normalized = fullNumber;
+  if (normalized.startsWith('++')) {
+      normalized = normalized.replace(/^\++/, '+');
+  } else if (!normalized.startsWith('+')) {
+      normalized = '+' + normalized;
+  }
+
+  // Sort codes by length desc to match longest prefix first
+  const sortedCodes = [...countryCodes].sort((a, b) => b.code.length - a.code.length);
+
+  for (const country of sortedCodes) {
+    if (normalized.startsWith(country.code)) {
+      return {
+        code: country.code,
+        number: normalized.slice(country.code.length)
+      };
+    }
+  }
+
+  // Fallback/Default
+  return { code: '+971', number: normalized.replace(/^\+971/, '') };
+}
+
+// Setup Country Code Selector
+function setupCountryCodeSelector() {
+   const btn = document.getElementById('countryCodeBtn');
+   const flagSpan = document.getElementById('countryFlag');
+   const codeSpan = document.getElementById('countryCodeText');
+   const input = document.getElementById('billMobile');
+
+   if (!btn) return;
+
+   let modal = null;
+   let searchInput = null;
+   let optionsContainer = null;
+
+   // Create dropdown
+   function createModal() {
+     if (modal) return modal;
+
+     modal = document.createElement('div');
+     modal.className = 'absolute bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg z-50 w-full max-w-md overflow-hidden';
+     modal.style.display = 'none';
+
+     modal.innerHTML = `
+       <div class="p-2 border-b border-neutral-700">
+         <input type="text" placeholder="Search countries..." class="search-input w-full bg-neutral-800 border border-neutral-600 rounded px-2 py-1 text-white placeholder-neutral-400 focus:ring-2 focus:ring-indigo-400/60 focus:border-transparent text-sm">
+       </div>
+       <div class="options-container max-h-48 overflow-y-auto p-1">
+         ${renderOptions(countryCodes)}
+       </div>
+     `;
+
+     document.body.appendChild(modal);
+
+     // Get references
+     searchInput = modal.querySelector('.search-input');
+     optionsContainer = modal.querySelector('.options-container');
+
+     // Search functionality
+     searchInput.addEventListener('input', (e) => {
+       const query = e.target.value.toLowerCase().trim();
+       const filtered = countryCodes.filter(c =>
+         c.country.toLowerCase().includes(query) ||
+         c.code.toLowerCase().includes(query)
+       );
+       optionsContainer.innerHTML = renderOptions(filtered);
+     });
+
+     return modal;
+   }
+
+   // Render options
+   function renderOptions(countries) {
+     return countries.map(c => `
+       <div class="country-option px-3 py-2 hover:bg-neutral-700 cursor-pointer flex items-center gap-3 transition-colors rounded-lg" data-code="${c.code}" data-flag="${c.flag}">
+         <span class="text-lg">${c.flag}</span>
+         <span class="text-white font-medium w-12">${c.code}</span>
+         <span class="text-neutral-400 text-sm truncate">${c.country}</span>
+       </div>
+     `).join('');
+   }
+
+   // Show dropdown
+   function showModal() {
+     if (!modal) createModal();
+     const rect = btn.getBoundingClientRect();
+     modal.style.left = rect.left + 'px';
+     modal.style.top = (rect.bottom + 4) + 'px';
+     modal.style.width = Math.max(rect.width, 200) + 'px';
+     modal.style.display = 'block';
+     if (searchInput) {
+       searchInput.focus();
+       searchInput.value = '';
+       optionsContainer.innerHTML = renderOptions(countryCodes);
+     }
+   }
+
+   // Hide modal
+   function hideModal() {
+     if (modal) {
+       modal.style.display = 'none';
+     }
+   }
+
+   // Handle selection
+   function handleSelection(code, flag) {
+     if (codeSpan) codeSpan.textContent = code;
+     if (flagSpan) flagSpan.textContent = flag;
+     hideModal();
+     if (input) input.focus();
+
+     // Trigger search if input has value
+     if (input && input.value) {
+       input.dispatchEvent(new Event('input'));
+     }
+   }
+
+   // Toggle modal on button click
+   btn.addEventListener('click', (e) => {
+     e.stopPropagation();
+     showModal();
+   });
+
+   // Handle option clicks (delegated)
+   document.addEventListener('click', (e) => {
+     if (e.target.closest('.country-option') && modal && modal.style.display !== 'none') {
+       const option = e.target.closest('.country-option');
+       const code = option.getAttribute('data-code');
+       const flag = option.getAttribute('data-flag');
+       handleSelection(code, flag);
+     }
+   });
+
+   // Close on escape key
+   document.addEventListener('keydown', (e) => {
+     if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+       hideModal();
+     }
+   });
+}
 
 // Load billing configuration from shop settings
 async function loadBillingConfiguration() {
-    try {
-        // Loading billing configuration
-        const response = await fetch('/api/shop-settings/billing-config');
-        const data = await response.json();
-        
-        if (data.success) {
-            billingConfig = data.config;
-            // Billing config loaded successfully
-            applyBillingConfiguration();
-        } else {
-            // No billing config found, using defaults
-            applyBillingConfiguration();
-        }
-    } catch (error) {
-        console.error('❌ Billing System: Error loading billing configuration:', error);
-        // Use default configuration
-        applyBillingConfiguration();
+  try {
+    // Loading billing configuration
+    const response = await fetch('/api/shop-settings/billing-config');
+    const data = await response.json();
+
+    if (data.success) {
+      billingConfig = data.config;
+      // Billing config loaded successfully
+      applyBillingConfiguration();
+    } else {
+      // No billing config found, using defaults
+      applyBillingConfiguration();
     }
+  } catch (error) {
+    console.error('❌ Billing System: Error loading billing configuration:', error);
+    // Use default configuration
+    applyBillingConfiguration();
+  }
 }
 
 // Apply billing configuration to show/hide fields
 function applyBillingConfiguration() {
-    
-    // Trial Date field
-    const trialDateField = document.getElementById('trialDate');
-    const trialDateLabel = document.querySelector('label[for="trialDate"]');
-    const trialDateContainer = trialDateField?.closest('.form-group') || trialDateField?.parentElement;
-    
-    if (trialDateContainer) {
-        if (billingConfig.enable_trial_date) {
-            trialDateContainer.style.display = '';
-            // Set default trial date if field is enabled and no value set
-            if (trialDateField && !trialDateField.value) {
-                // Set default trial date based on config
-                const today = new Date();
-                const trial = new Date();
-                const defaultDays = billingConfig.default_trial_days || 2; // Use trial days, fallback to 2
-                trial.setDate(today.getDate() + defaultDays);
-                trialDateField.value = trial.toISOString().split('T')[0];
-            }
-        } else {
-            trialDateContainer.style.display = 'none';
-        }
-    }
-    
-    // Delivery Date field
-    const deliveryDateField = document.getElementById('deliveryDate');
-    const deliveryDateLabel = document.querySelector('label[for="deliveryDate"]');
-    const deliveryDateContainer = deliveryDateField?.closest('.form-group') || deliveryDateField?.parentElement;
-    
 
-    
-    if (deliveryDateContainer) {
-        if (billingConfig.enable_delivery_date) {
-            deliveryDateContainer.style.display = '';
-            // Set default delivery date if field is enabled
-            if (deliveryDateField && !deliveryDateField.value) {
-                const today = new Date();
-                const delivery = new Date();
-                const defaultDays = billingConfig.default_delivery_days || 3;
-                delivery.setDate(today.getDate() + defaultDays);
-                const newDeliveryDate = delivery.toISOString().split('T')[0];
-                deliveryDateField.value = newDeliveryDate;
-            } else if (deliveryDateField && deliveryDateField.value) {
-                // Delivery date already has value
-            }
+  // Trial Date field
+  const trialDateField = document.getElementById('trialDate');
+  const trialDateLabel = document.querySelector('label[for="trialDate"]');
+  const trialDateContainer = trialDateField?.closest('.form-group') || trialDateField?.parentElement;
+
+  if (trialDateContainer) {
+    if (billingConfig.enable_trial_date) {
+      trialDateContainer.style.display = '';
+      // Set default trial date if field is enabled and no value set
+      if (trialDateField && !trialDateField.value) {
+        // Set default trial date based on config
+        const today = new Date();
+        const trial = new Date();
+        const defaultDays = billingConfig.default_trial_days || 2; // Use trial days, fallback to 2
+        trial.setDate(today.getDate() + defaultDays);
+        trialDateField.value = trial.toISOString().split('T')[0];
+      }
+    } else {
+      trialDateContainer.style.display = 'none';
+    }
+  }
+
+  // Delivery Date field
+  const deliveryDateField = document.getElementById('deliveryDate');
+  const deliveryDateLabel = document.querySelector('label[for="deliveryDate"]');
+  const deliveryDateContainer = deliveryDateField?.closest('.form-group') || deliveryDateField?.parentElement;
 
 
-        } else {
-            deliveryDateContainer.style.display = 'none';
-        }
-    }
-    
-    // Advance Payment field
-    const advancePaymentField = document.getElementById('advancePayment');
-    const advancePaymentLabel = document.querySelector('label[for="advancePayment"]');
-    const advancePaymentContainer = advancePaymentField?.closest('.form-group') || advancePaymentField?.parentElement;
-    
-    if (advancePaymentContainer) {
-        if (billingConfig.enable_advance_payment) {
-            advancePaymentContainer.style.display = '';
-        } else {
-            advancePaymentContainer.style.display = 'none';
-            // Clear advance payment if disabled
-            if (advancePaymentField) {
-                advancePaymentField.value = '';
-                updateBillSummary();
-            }
-        }
-    }
-    
-    // Customer Notes field
-    const customerNotesField = document.getElementById('billNotes');
-    const customerNotesLabel = document.querySelector('label[for="billNotes"]');
-    const customerNotesContainer = customerNotesField?.closest('.form-group') || customerNotesField?.parentElement;
-    
-    if (customerNotesContainer) {
-        if (billingConfig.enable_customer_notes) {
-            customerNotesContainer.style.display = '';
-        } else {
-            customerNotesContainer.style.display = 'none';
-            // Clear customer notes if disabled
-            if (customerNotesField) {
-                customerNotesField.value = '';
-            }
-        }
-    }
-    
-    // Employee Assignment field (using existing masterName field)
-    const employeeField = document.getElementById('masterName');
-    const employeeLabel = document.querySelector('label[for="masterName"]');
-    const employeeContainer = employeeField?.closest('.form-group') || employeeField?.parentElement;
-    
-    if (employeeContainer) {
-        if (billingConfig.enable_employee_assignment) {
-            employeeContainer.style.display = '';
-            // Populate employee dropdown if enabled
-            populateEmployeeDropdown();
-        } else {
-            // Don't hide the field, just clear it and remove datalist
-            if (employeeField) {
-                employeeField.value = '';
-                employeeField.removeAttribute('list');
-                employeeField.removeAttribute('data-selected-employee-id');
-            }
-            // Remove datalist if it exists
-            const datalist = document.getElementById('employeeDatalist');
-            if (datalist) {
-                datalist.remove();
-            }
 
-        }
+  if (deliveryDateContainer) {
+    if (billingConfig.enable_delivery_date) {
+      deliveryDateContainer.style.display = '';
+      // Set default delivery date if field is enabled
+      if (deliveryDateField && !deliveryDateField.value) {
+        const today = new Date();
+        const delivery = new Date();
+        const defaultDays = billingConfig.default_delivery_days || 3;
+        delivery.setDate(today.getDate() + defaultDays);
+        const newDeliveryDate = delivery.toISOString().split('T')[0];
+        deliveryDateField.value = newDeliveryDate;
+      } else if (deliveryDateField && deliveryDateField.value) {
+        // Delivery date already has value
+      }
+
+
+    } else {
+      deliveryDateContainer.style.display = 'none';
     }
-    
-    // Set basic default dates (bill date and bill number) after configuration is applied
-    setBasicDefaultDates();
-    
-    // Re-apply default employee if employees are already loaded
-    if (window.allEmployees && window.allEmployees.length > 0) {
-        // Call the global setDefaultOwner function if it exists
-        if (typeof window.setDefaultOwner === 'function') {
-            window.setDefaultOwner();
-        }
+  }
+
+  // Advance Payment field
+  const advancePaymentField = document.getElementById('advancePayment');
+  const advancePaymentLabel = document.querySelector('label[for="advancePayment"]');
+  const advancePaymentContainer = advancePaymentField?.closest('.form-group') || advancePaymentField?.parentElement;
+
+  if (advancePaymentContainer) {
+    if (billingConfig.enable_advance_payment) {
+      advancePaymentContainer.style.display = '';
+    } else {
+      advancePaymentContainer.style.display = 'none';
+      // Clear advance payment if disabled
+      if (advancePaymentField) {
+        advancePaymentField.value = '';
+        updateBillSummary();
+      }
     }
+  }
+
+  // Customer Notes field
+  const customerNotesField = document.getElementById('billNotes');
+  const customerNotesLabel = document.querySelector('label[for="billNotes"]');
+  const customerNotesContainer = customerNotesField?.closest('.form-group') || customerNotesField?.parentElement;
+
+  if (customerNotesContainer) {
+    if (billingConfig.enable_customer_notes) {
+      customerNotesContainer.style.display = '';
+    } else {
+      customerNotesContainer.style.display = 'none';
+      // Clear customer notes if disabled
+      if (customerNotesField) {
+        customerNotesField.value = '';
+      }
+    }
+  }
+
+  // Employee Assignment field (using existing masterName field)
+  const employeeField = document.getElementById('masterName');
+  const employeeLabel = document.querySelector('label[for="masterName"]');
+  const employeeContainer = employeeField?.closest('.form-group') || employeeField?.parentElement;
+
+  if (employeeContainer) {
+    if (billingConfig.enable_employee_assignment) {
+      employeeContainer.style.display = '';
+      // Populate employee dropdown if enabled
+      populateEmployeeDropdown();
+    } else {
+      // Don't hide the field, just clear it and remove datalist
+      if (employeeField) {
+        employeeField.value = '';
+        employeeField.removeAttribute('list');
+        employeeField.removeAttribute('data-selected-employee-id');
+      }
+      // Remove datalist if it exists
+      const datalist = document.getElementById('employeeDatalist');
+      if (datalist) {
+        datalist.remove();
+      }
+
+    }
+  }
+
+  // Set basic default dates (bill date and bill number) after configuration is applied
+  setBasicDefaultDates();
+
+  // Re-apply default employee if employees are already loaded
+  if (window.allEmployees && window.allEmployees.length > 0) {
+    // Call the global setDefaultOwner function if it exists
+    if (typeof window.setDefaultOwner === 'function') {
+      window.setDefaultOwner();
+    }
+  }
 }
 
 // Get next bill number from API
 async function getNextBillNumber() {
-    try {
-        const response = await fetch('/api/next-bill-number');
-        const data = await response.json();
-        return data.next_number;
-    } catch (error) {
-        console.error('Error getting next bill number:', error);
-        return null;
-    }
+  try {
+    const response = await fetch('/api/next-bill-number');
+    const data = await response.json();
+    return data.next_number;
+  } catch (error) {
+    console.error('Error getting next bill number:', error);
+    return null;
+  }
 }
 
 // Set basic default dates (bill date and bill number) without interfering with configurable fields
 async function setBasicDefaultDates() {
-    const today = new Date();
-    
-    const billDateElement = document.getElementById('billDate');
-    const billNumberElement = document.getElementById('billNumber');
-    
-    // Set default bill date to today
-    if (billDateElement) {
-        billDateElement.value = today.toISOString().slice(0, 10);
+  const today = new Date();
+
+  const billDateElement = document.getElementById('billDate');
+  const billNumberElement = document.getElementById('billNumber');
+
+  // Set default bill date to today
+  if (billDateElement) {
+    billDateElement.value = today.toISOString().slice(0, 10);
+  }
+
+  // Set auto-generated bill number
+  if (billNumberElement) {
+    const nextBillNumber = await getNextBillNumber();
+    if (nextBillNumber) {
+      billNumberElement.value = nextBillNumber;
     }
-    
-    // Set auto-generated bill number
-    if (billNumberElement) {
-        const nextBillNumber = await getNextBillNumber();
-        if (nextBillNumber) {
-            billNumberElement.value = nextBillNumber;
-        }
-    }
+  }
 }
 
 // Populate employee dropdown with available employees
 async function populateEmployeeDropdown() {
-    const employeeField = document.getElementById('masterName');
-    if (!employeeField) {
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/employees');
-        const employees = await response.json();
-        
-        // Create or get existing datalist for autocomplete
-        let datalist = document.getElementById('employeeDatalist');
-        if (!datalist) {
-            datalist = document.createElement('datalist');
-            datalist.id = 'employeeDatalist';
-            document.body.appendChild(datalist);
-        }
-        
-        // Clear existing options
-        datalist.innerHTML = '';
-        
-        // Add employee options to datalist
-        if (Array.isArray(employees)) {
-            employees.forEach(emp => {
-                const option = document.createElement('option');
-                option.value = emp.name || `Employee #${emp.employee_id}`;
-                option.setAttribute('data-employee-id', emp.employee_id || emp.id || '');
-                datalist.appendChild(option);
-            });
-            
-            // Set the datalist for the input field
-            employeeField.setAttribute('list', 'employeeDatalist');
-            
+  const employeeField = document.getElementById('masterName');
+  if (!employeeField) {
+    return;
+  }
 
-            
-            // Preselect default employee if configured
-            if (billingConfig.default_employee_id) {
-                const defaultEmployee = employees.find(emp => 
-                    (emp.employee_id || emp.id) == billingConfig.default_employee_id
-                );
-                if (defaultEmployee) {
-                    employeeField.value = defaultEmployee.name || `Employee #${defaultEmployee.employee_id}`;
-                    employeeField.setAttribute('data-selected-employee-id', defaultEmployee.employee_id || defaultEmployee.id);
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error populating employee dropdown:', error);
+  try {
+    const response = await fetch('/api/employees');
+    const employees = await response.json();
+
+    // Create or get existing datalist for autocomplete
+    let datalist = document.getElementById('employeeDatalist');
+    if (!datalist) {
+      datalist = document.createElement('datalist');
+      datalist.id = 'employeeDatalist';
+      document.body.appendChild(datalist);
     }
+
+    // Clear existing options
+    datalist.innerHTML = '';
+
+    // Add employee options to datalist
+    if (Array.isArray(employees)) {
+      employees.forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.name || `Employee #${emp.employee_id}`;
+        option.setAttribute('data-employee-id', emp.employee_id || emp.id || '');
+        datalist.appendChild(option);
+      });
+
+      // Set the datalist for the input field
+      employeeField.setAttribute('list', 'employeeDatalist');
+
+
+
+      // Preselect default employee if configured
+      if (billingConfig.default_employee_id) {
+        const defaultEmployee = employees.find(emp =>
+          (emp.employee_id || emp.id) == billingConfig.default_employee_id
+        );
+        if (defaultEmployee) {
+          employeeField.value = defaultEmployee.name || `Employee #${defaultEmployee.employee_id}`;
+          employeeField.setAttribute('data-selected-employee-id', defaultEmployee.employee_id || defaultEmployee.id);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error populating employee dropdown:', error);
+  }
 }
 
 function initializeBillingSystem() {
 
 
-  function showPaymentModal({billNum, customer, paid, due, max, total, delivery, status, onOk}) {
+  function showPaymentModal({ billNum, customer, paid, due, max, total, delivery, status, onOk }) {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
-    
+
     modal.innerHTML = `
       <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-6 max-w-md w-full mx-4">
         <h3 class="text-lg font-semibold mb-4">Payment Details</h3>
@@ -304,13 +511,13 @@ function initializeBillingSystem() {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
+
     function cleanup() {
       document.body.removeChild(modal);
     }
-    
+
     function onOkClick() {
       const paymentAmount = parseFloat(modal.querySelector('.payment-amount-input').value) || 0;
       cleanup();
@@ -322,15 +529,15 @@ function initializeBillingSystem() {
         }
       }
     }
-    
+
     function onCancelClick() {
       cleanup();
     }
-    
+
     modal.querySelector('.ok-btn').addEventListener('click', onOkClick);
     modal.querySelector('.cancel-btn').addEventListener('click', onCancelClick);
-    
-    modal.addEventListener('click', function(e) {
+
+    modal.addEventListener('click', function (e) {
       if (e.target === modal) {
         onCancelClick();
       }
@@ -340,7 +547,7 @@ function initializeBillingSystem() {
   function showPaymentProgressModal(onDone) {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
-    
+
     modal.innerHTML = `
       <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-6 max-w-md w-full mx-4">
         <div class="text-center">
@@ -357,13 +564,13 @@ function initializeBillingSystem() {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
+
     function animateStep() {
       const progressBar = modal.querySelector('.bg-indigo-600');
       let width = 60;
-      
+
       const interval = setInterval(() => {
         width += Math.random() * 10;
         if (width >= 100) {
@@ -377,7 +584,7 @@ function initializeBillingSystem() {
         progressBar.style.width = width + '%';
       }, 200);
     }
-    
+
     setTimeout(animateStep, 1000);
   }
 
@@ -388,10 +595,10 @@ function initializeBillingSystem() {
       showSimpleToast('Item Added', 'success');
       return;
     }
-    
+
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
-    
+
     // Determine colors based on type
     let iconColor, bgColor, borderColor, textColor;
     switch (type) {
@@ -419,7 +626,7 @@ function initializeBillingSystem() {
         borderColor = 'border-blue-500/30';
         textColor = 'text-blue-400';
     }
-    
+
     // Get appropriate icon
     let iconSvg;
     switch (type) {
@@ -443,7 +650,7 @@ function initializeBillingSystem() {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>`;
     }
-    
+
     modal.innerHTML = `
       <div class="bg-neutral-900 border ${borderColor} rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
         <div class="flex items-start space-x-3">
@@ -464,9 +671,9 @@ function initializeBillingSystem() {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
+
     // Auto-remove after 5 seconds for success/info, 8 seconds for warnings, 10 seconds for errors
     const autoRemoveTime = type === 'success' || type === 'info' ? 5000 : type === 'warning' ? 8000 : 10000;
     const autoRemove = setTimeout(() => {
@@ -474,7 +681,7 @@ function initializeBillingSystem() {
         document.body.removeChild(modal);
       }
     }, autoRemoveTime);
-    
+
     // Manual close
     const closeModal = () => {
       clearTimeout(autoRemove);
@@ -482,14 +689,14 @@ function initializeBillingSystem() {
         document.body.removeChild(modal);
       }
     };
-    
+
     modal.querySelector('button').addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         closeModal();
       }
     });
-    
+
     // Keyboard support
     const handleKeydown = (e) => {
       if (e.key === 'Escape' || e.key === 'Enter') {
@@ -504,10 +711,10 @@ function initializeBillingSystem() {
     // Remove any existing toasts
     const existingToasts = document.querySelectorAll('.simple-toast');
     existingToasts.forEach(toast => toast.remove());
-    
+
     const toast = document.createElement('div');
     toast.className = 'simple-toast fixed top-4 right-4 z-50 transform transition-all duration-300 ease-out translate-x-full';
-    
+
     // Determine colors based on type
     let bgColor, textColor, iconColor;
     switch (type) {
@@ -536,7 +743,7 @@ function initializeBillingSystem() {
         textColor = 'text-white';
         iconColor = 'text-green-100';
     }
-    
+
     toast.innerHTML = `
       <div class="${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 max-w-sm">
         <svg class="w-5 h-5 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,14 +752,14 @@ function initializeBillingSystem() {
         <span class="text-sm font-medium">${message}</span>
       </div>
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     // Animate in
     setTimeout(() => {
       toast.style.transform = 'translateX(0)';
     }, 10);
-    
+
     // Auto-remove after 2 seconds
     setTimeout(() => {
       toast.style.transform = 'translateX(100%)';
@@ -574,10 +781,10 @@ function initializeBillingSystem() {
   function renderBillTable() {
     const tbody = document.getElementById('billTable')?.querySelector('tbody');
     if (!tbody) return;
-    
+
     // Check if VAT should be hidden when included in price
     const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
-    
+
     tbody.innerHTML = bill.map((item, index) => `
       <tr class="hover:bg-neutral-800/50 transition-colors swipe-action" data-index="${index}">
         <td class="px-3 py-3">${item.product_name || ''}</td>
@@ -606,10 +813,10 @@ function initializeBillingSystem() {
         </td>
       </tr>
     `).join('');
-    
+
     // Update table header to show/hide VAT column
     updateBillTableHeader(includeVatInPrice);
-    
+
     // Reinitialize swipe actions for mobile after rendering table
     if (window.mobileEnhancements && window.mobileEnhancements.setupSwipeActions) {
       setTimeout(() => {
@@ -638,9 +845,9 @@ function initializeBillingSystem() {
   function updateTotals() {
     const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
     const vatPercent = window.getDefaultVatPercent ? window.getDefaultVatPercent() : 5;
-    
+
     let subtotal, totalVat, totalBeforeAdvance;
-    
+
     if (includeVatInPrice) {
       // VAT is included in prices, calculate VAT on total to avoid rounding issues
       const totalWithVat = bill.reduce((sum, item) => sum + item.total, 0);
@@ -653,16 +860,16 @@ function initializeBillingSystem() {
       totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
       totalBeforeAdvance = subtotal + totalVat;
     }
-    
+
     const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0); // Total advance paid
     const amountDue = totalBeforeAdvance - totalAdvance; // Deduct advance from total
-    
+
     // Enable/disable action buttons based on bill items
     const saveBillBtn = document.getElementById('saveBillBtn');
     const whatsappBtn = document.getElementById('whatsappBtn');
     const emailBtn = document.getElementById('emailBtn');
     const printBtn = document.getElementById('printBtn');
-    
+
     if (bill.length > 0) {
       // Enable buttons when items exist
       if (saveBillBtn) {
@@ -708,20 +915,20 @@ function initializeBillingSystem() {
         printBtn.classList.remove('bg-indigo-600', 'text-white', 'hover:bg-indigo-500');
       }
     }
-    
+
     const subtotalElement = document.getElementById('subTotal');
     const vatElement = document.getElementById('vatAmount');
     const totalElement = document.getElementById('amountDue');
 
-         if (subtotalElement) {
-       subtotalElement.textContent = `${subtotal.toFixed(2)}`;
-     }
-     if (vatElement) {
-       vatElement.textContent = `${totalVat.toFixed(2)}`;
-     }
-     if (totalElement) {
-       totalElement.textContent = `${amountDue.toFixed(2)}`;
-     }
+    if (subtotalElement) {
+      subtotalElement.textContent = `${subtotal.toFixed(2)}`;
+    }
+    if (vatElement) {
+      vatElement.textContent = `${totalVat.toFixed(2)}`;
+    }
+    if (totalElement) {
+      totalElement.textContent = `${amountDue.toFixed(2)}`;
+    }
 
     // Update total advance field
     updateTotalAdvanceField();
@@ -733,15 +940,15 @@ function initializeBillingSystem() {
     const today = new Date();
     const defaultDays = billingConfig?.default_delivery_days || 3;
     const deliveryDate = new Date(today.getTime() + defaultDays * 24 * 60 * 60 * 1000); // Configurable days from now
-    
+
     const deliveryDateElement = document.getElementById('deliveryDate');
     const trialDateElement = document.getElementById('trialDate');
-    
+
     // Only set delivery date if it's enabled in billing config
     if (deliveryDateElement && billingConfig?.enable_delivery_date) {
       deliveryDateElement.value = deliveryDate.toISOString().slice(0, 10);
     }
-    
+
     // Only set trial date if it's enabled in billing config
     if (trialDateElement && billingConfig?.enable_trial_date) {
       // Trial date should be the same as delivery date
@@ -775,20 +982,38 @@ function initializeBillingSystem() {
     const billCustomerTypeElement = document.getElementById('billCustomerType');
     const billBusinessNameElement = document.getElementById('billBusinessName');
     const billBusinessAddressElement = document.getElementById('billBusinessAddress');
-    
+
     if (billCustomerElement) billCustomerElement.value = customer.name || '';
-    if (billMobileElement) billMobileElement.value = customer.phone || '';
+    if (billCustomerElement) billCustomerElement.value = customer.name || '';
+
+    // Handle phone number parsing
+    if (billMobileElement) {
+      const fullPhone = customer.phone || '';
+      const { code, number } = parsePhoneNumber(fullPhone);
+
+      // Update UI
+      const codeElement = document.getElementById('countryCodeText');
+      const flagElement = document.getElementById('countryFlag');
+
+      if (codeElement) codeElement.textContent = code;
+
+      // Find flag
+      const country = countryCodes.find(c => c.code === code);
+      if (flagElement && country) flagElement.textContent = country.flag;
+
+      billMobileElement.value = number;
+    }
     if (billCityElement) billCityElement.value = customer.city || '';
     if (billAreaElement) billAreaElement.value = customer.area || '';
     if (billTRNElement) billTRNElement.value = customer.trn || '';
     if (billCustomerTypeElement) billCustomerTypeElement.value = customer.customer_type || 'Individual';
     if (billBusinessNameElement) billBusinessNameElement.value = customer.business_name || '';
     if (billBusinessAddressElement) billBusinessAddressElement.value = customer.business_address || '';
-    
+
     // Show/hide business fields based on customer type
     const businessFields = document.querySelectorAll('.business-billing-field');
     const trnField = document.querySelector('.trn-billing-field');
-    
+
     if (customer.customer_type === 'Business') {
       businessFields.forEach(field => field.style.display = 'flex');
       if (trnField) trnField.style.display = 'flex';
@@ -820,7 +1045,7 @@ function initializeBillingSystem() {
     const billCustomerTypeElement = document.getElementById('billCustomerType');
     const billBusinessNameElement = document.getElementById('billBusinessName');
     const billBusinessAddressElement = document.getElementById('billBusinessAddress');
-    
+
     if (billCustomerElement) billCustomerElement.value = '';
     if (billMobileElement) billMobileElement.value = '';
     if (billCityElement) billCityElement.value = '';
@@ -829,7 +1054,7 @@ function initializeBillingSystem() {
     if (billCustomerTypeElement) billCustomerTypeElement.value = 'Individual';
     if (billBusinessNameElement) billBusinessNameElement.value = '';
     if (billBusinessAddressElement) billBusinessAddressElement.value = '';
-    
+
     // Hide business fields for new customer
     const businessFields = document.querySelectorAll('.business-billing-field');
     const trnField = document.querySelector('.trn-billing-field');
@@ -837,7 +1062,7 @@ function initializeBillingSystem() {
     if (trnField) trnField.style.display = 'none';
     if (billBusinessNameElement) billBusinessNameElement.required = false;
     if (billBusinessAddressElement) billBusinessAddressElement.required = false;
-    
+
     // Clear loyalty summary panel
     const loyaltySummaryElement = document.getElementById('loyaltySummary');
     if (loyaltySummaryElement) {
@@ -847,9 +1072,14 @@ function initializeBillingSystem() {
   }
 
   // Setup mobile input event listener for customer fetching
-  function setupMobileCustomerFetch() {
+  async function setupMobileCustomerFetch() {
     const billMobileElement = document.getElementById('billMobile');
     if (billMobileElement) {
+      // Load country codes first
+      await loadCountryCodes();
+      // Initialize Country Code Selector
+      setupCountryCodeSelector();
+
       let mobileDropdown = null;
       let debounceTimer = null;
 
@@ -858,13 +1088,13 @@ function initializeBillingSystem() {
         if (mobileDropdown) {
           document.body.removeChild(mobileDropdown);
         }
-        
+
         mobileDropdown = document.createElement('div');
         mobileDropdown.id = 'mobileDropdown';
         mobileDropdown.className = 'fixed bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-99999';
         mobileDropdown.style.display = 'none';
         document.body.appendChild(mobileDropdown);
-        
+
         return mobileDropdown;
       }
 
@@ -873,7 +1103,7 @@ function initializeBillingSystem() {
         if (!mobileDropdown) {
           mobileDropdown = createMobileDropdown();
         }
-        
+
         if (customers.length === 0) {
           mobileDropdown.style.display = 'none';
           return;
@@ -904,10 +1134,9 @@ function initializeBillingSystem() {
 
         // Add click handlers
         mobileDropdown.querySelectorAll('.mobile-suggestion-item').forEach(item => {
-          item.addEventListener('click', async function() {
+          item.addEventListener('click', async function () {
             const customer = JSON.parse(this.dataset.customer);
             await populateCustomerFields(customer);
-            billMobileElement.value = customer.phone;
             hideMobileDropdown();
           });
         });
@@ -926,10 +1155,13 @@ function initializeBillingSystem() {
           const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
           if (response.ok) {
             const customers = await response.json();
-            // Filter customers whose phone number starts with the query
-            const filteredCustomers = customers.filter(customer => 
-              customer.phone && customer.phone.startsWith(query)
-            );
+            // Filter customers whose phone number contains the query (local part) or matches full number
+            const filteredCustomers = customers.filter(customer => {
+              if (!customer.phone) return false;
+              // Check if it matches the combined query (if we searching by full number)
+              // or if it matches the local part entered
+              return customer.phone.includes(query) || (customer.phone.replace(/^\+\d+/, '')).startsWith(query);
+            });
             return filteredCustomers.slice(0, 5); // Limit to 5 suggestions
           }
           return [];
@@ -953,9 +1185,9 @@ function initializeBillingSystem() {
       }
 
       // Input event for real-time autocomplete
-      billMobileElement.addEventListener('input', function(e) {
+      billMobileElement.addEventListener('input', function (e) {
         // Keep only digits and enforce max length 10
-        const sanitized = (e.target.value || '').replace(/\D/g, '').slice(0, 10);
+        const sanitized = (e.target.value || '').replace(/\D/g, '').slice(0, 15);
         if (e.target.value !== sanitized) {
           e.target.value = sanitized;
         }
@@ -968,7 +1200,7 @@ function initializeBillingSystem() {
       });
 
       // Focus event to show suggestions if there's a value
-      billMobileElement.addEventListener('focus', function(e) {
+      billMobileElement.addEventListener('focus', function (e) {
         const phone = e.target.value.trim();
         if (phone.length >= 5) {
           debouncedMobileSearch(phone);
@@ -976,25 +1208,25 @@ function initializeBillingSystem() {
       });
 
       // Blur event: validate length and optionally fetch existing customer
-      billMobileElement.addEventListener('blur', async function(e) {
+      billMobileElement.addEventListener('blur', async function (e) {
         // Delay hiding dropdown to allow click events
         setTimeout(() => {
           hideMobileDropdown();
         }, 200);
-        
+
         const phone = (e.target.value || '').trim();
         if (!phone) return;
 
-        // Enforce min length 9 digits
-        if (phone.length > 0 && phone.replace(/\D/g, '').length < 9) {
+        // Enforce min length 5 digits (reduced restriction to allow diverse international lengths)
+        if (phone.length > 0 && phone.replace(/\D/g, '').length < 5) {
           if (typeof showModernAlert === 'function') {
-            showModernAlert('Please enter at least 9 digits for mobile number', 'warning', 'Invalid Mobile');
+            showModernAlert('Please enter valid mobile number', 'warning', 'Invalid Mobile');
           }
           // Refocus the field to correct input
           e.target.focus();
           return;
         }
-        
+
         const customer = await fetchCustomerByMobile(phone);
         if (customer) {
           await populateCustomerFields(customer);
@@ -1002,14 +1234,14 @@ function initializeBillingSystem() {
       });
 
       // Handle escape key
-      billMobileElement.addEventListener('keydown', function(e) {
+      billMobileElement.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
           hideMobileDropdown();
         }
       });
 
       // Hide dropdown when clicking outside
-      document.addEventListener('click', function(e) {
+      document.addEventListener('click', function (e) {
         if (mobileDropdown && !billMobileElement.contains(e.target) && !mobileDropdown.contains(e.target)) {
           hideMobileDropdown();
         }
@@ -1021,13 +1253,13 @@ function initializeBillingSystem() {
   function setupCustomerTypeHandler() {
     const billCustomerTypeElement = document.getElementById('billCustomerType');
     if (billCustomerTypeElement) {
-      billCustomerTypeElement.addEventListener('change', function() {
+      billCustomerTypeElement.addEventListener('change', function () {
         const customerType = this.value;
         const businessFields = document.querySelectorAll('.business-billing-field');
         const trnField = document.querySelector('.trn-billing-field');
         const billBusinessNameElement = document.getElementById('billBusinessName');
         const billBusinessAddressElement = document.getElementById('billBusinessAddress');
-        
+
         if (customerType === 'Business') {
           businessFields.forEach(field => field.style.display = 'flex');
           if (trnField) trnField.style.display = 'flex';
@@ -1048,12 +1280,12 @@ function initializeBillingSystem() {
     try {
       const response = await fetch('/api/customers/recent');
       const recentCustomers = await response.json();
-      
+
       const container = document.getElementById('recentCustomersContainer');
       if (!container) return;
-      
+
       if (recentCustomers && recentCustomers.length > 0) {
-                     container.innerHTML = recentCustomers.map(customer => `
+        container.innerHTML = recentCustomers.map(customer => `
                <button 
                  class="customer-pill"
                  data-customer-id="${customer.customer_id}"
@@ -1071,10 +1303,10 @@ function initializeBillingSystem() {
                  ${customer.phone ? `<span class="text-neutral-300">(${customer.phone})</span>` : ''}
                </button>
              `).join('');
-        
+
         // Add event listeners to recent customer buttons
         container.querySelectorAll('.customer-pill').forEach(btn => {
-          btn.addEventListener('click', async function() {
+          btn.addEventListener('click', async function () {
             const customerData = {
               customer_id: this.getAttribute('data-customer-id'),
               name: this.getAttribute('data-customer-name'),
@@ -1086,20 +1318,20 @@ function initializeBillingSystem() {
               business_name: this.getAttribute('data-business-name'),
               business_address: this.getAttribute('data-business-address')
             };
-            
+
             await populateCustomerFields(customerData);
           });
 
           // Add hover event listeners for tooltip
-          btn.addEventListener('mouseenter', function() {
+          btn.addEventListener('mouseenter', function () {
             showCustomerTooltip(this);
           });
 
-          btn.addEventListener('mouseleave', function() {
+          btn.addEventListener('mouseleave', function () {
             hideCustomerTooltip();
           });
         });
-        
+
         // Refresh Lucide icons
         try {
           if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -1124,22 +1356,22 @@ function initializeBillingSystem() {
   function initializeMobileRecentCustomers() {
     const mobileBtn = document.getElementById('mobileRecentCustomersBtn');
     const mobileDropdown = document.getElementById('mobileRecentCustomersDropdown');
-    
+
     if (mobileBtn && mobileDropdown) {
       // Toggle dropdown on button click
-      mobileBtn.addEventListener('click', function(e) {
+      mobileBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         const isVisible = !mobileDropdown.classList.contains('hidden');
-        
+
         if (isVisible) {
           hideMobileRecentCustomersDropdown();
         } else {
           showMobileRecentCustomersDropdown();
         }
       });
-      
+
       // Close dropdown when clicking outside
-      document.addEventListener('click', function(e) {
+      document.addEventListener('click', function (e) {
         if (!mobileBtn.contains(e.target) && !mobileDropdown.contains(e.target)) {
           hideMobileRecentCustomersDropdown();
         }
@@ -1166,10 +1398,10 @@ function initializeBillingSystem() {
     try {
       const response = await fetch('/api/customers/recent');
       const recentCustomers = await response.json();
-      
+
       const container = document.getElementById('mobileRecentCustomersList');
       if (!container) return;
-      
+
       if (recentCustomers && recentCustomers.length > 0) {
         container.innerHTML = recentCustomers.map(customer => `
           <button 
@@ -1195,10 +1427,10 @@ function initializeBillingSystem() {
             </div>
           </button>
         `).join('');
-        
+
         // Add event listeners to mobile customer items
         container.querySelectorAll('.mobile-customer-item').forEach(btn => {
-          btn.addEventListener('click', async function() {
+          btn.addEventListener('click', async function () {
             const customerData = {
               customer_id: this.getAttribute('data-customer-id'),
               name: this.getAttribute('data-customer-name'),
@@ -1210,11 +1442,11 @@ function initializeBillingSystem() {
               business_name: this.getAttribute('data-business-name'),
               business_address: this.getAttribute('data-business-address')
             };
-            
+
 
             await populateCustomerFields(customerData);
             hideMobileRecentCustomersDropdown();
-            
+
             // Show success notification
             if (window.showSimpleToast) {
               window.showSimpleToast(`Customer "${customerData.name}" selected`, 'success');
@@ -1237,7 +1469,7 @@ function initializeBillingSystem() {
   function showCustomerTooltip(element) {
     // Remove any existing tooltip
     hideCustomerTooltip();
-    
+
     const customerData = {
       name: element.getAttribute('data-customer-name'),
       phone: element.getAttribute('data-customer-phone'),
@@ -1248,7 +1480,7 @@ function initializeBillingSystem() {
       business_name: element.getAttribute('data-business-name'),
       business_address: element.getAttribute('data-business-address')
     };
-    
+
 
 
     // Create tooltip content
@@ -1294,42 +1526,42 @@ function initializeBillingSystem() {
     tooltip.className = 'customer-tooltip';
     tooltip.innerHTML = tooltipContent;
     tooltip.id = 'customerTooltip';
-    
+
     // Position tooltip
     const rect = element.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const tooltipWidth = 300; // Approximate tooltip width
     const padding = 20; // Padding from viewport edge
-    
+
     tooltip.style.position = 'fixed';
     tooltip.style.zIndex = '10000';
-    
+
     // Calculate left position - try to position to the right first
     let leftPosition = rect.left + rect.width + 10;
     let isPositionedLeft = false;
-    
+
     // If tooltip would go off-screen to the right, position it to the left
     if (leftPosition + tooltipWidth + padding > viewportWidth) {
       leftPosition = rect.left - tooltipWidth - 10;
       isPositionedLeft = true;
     }
-    
+
     // Ensure tooltip doesn't go off-screen to the left
     if (leftPosition < padding) {
       leftPosition = padding;
       isPositionedLeft = false;
     }
-    
+
     // Add positioning class for arrow direction
     if (isPositionedLeft) {
       tooltip.classList.add('tooltip-left');
     } else {
       tooltip.classList.add('tooltip-right');
     }
-    
+
     tooltip.style.left = leftPosition + 'px';
     tooltip.style.top = rect.top + 'px';
-    
+
     document.body.appendChild(tooltip);
   }
 
@@ -1355,9 +1587,9 @@ function initializeBillingSystem() {
       dropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
       dropdown.style.display = 'none';
       document.body.appendChild(dropdown);
-      
+
       // Prevent dropdown from hiding when clicking inside it
-      dropdown.addEventListener('click', function(e) {
+      dropdown.addEventListener('click', function (e) {
         e.stopPropagation();
       });
     }
@@ -1365,14 +1597,14 @@ function initializeBillingSystem() {
     // Show customer suggestions
     function showCustomerSuggestions(customers) {
       if (!dropdown) createCustomerDropdown();
-      
+
       // Calculate position relative to input
       const inputRect = customerInput.getBoundingClientRect();
       dropdown.style.left = inputRect.left + 'px';
       dropdown.style.top = (inputRect.bottom + 4) + 'px';
       dropdown.style.width = inputRect.width + 'px';
       dropdown.style.minWidth = '200px'; // Ensure minimum width
-      
+
       dropdown.innerHTML = customers.map(customer => `
         <div class="customer-option px-4 py-2 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0" 
              data-customer-id="${customer.customer_id}"
@@ -1392,16 +1624,16 @@ function initializeBillingSystem() {
           </div>
         </div>
       `).join('');
-      
+
       // Add click listeners directly to each option
       const options = dropdown.querySelectorAll('.customer-option');
       options.forEach(option => {
-        option.addEventListener('click', async function(e) {
+        option.addEventListener('click', async function (e) {
           e.preventDefault();
           e.stopPropagation();
-          
 
-          
+
+
           const customerData = {
             customer_id: this.getAttribute('data-customer-id'),
             name: this.getAttribute('data-customer-name'),
@@ -1415,14 +1647,14 @@ function initializeBillingSystem() {
             business_name: this.getAttribute('data-business-name'),
             business_address: this.getAttribute('data-business-address')
           };
-          
+
 
           await populateCustomerFields(customerData);
           hideCustomerDropdown();
           customerInput.value = customerData.name;
         });
       });
-      
+
       dropdown.style.display = 'block';
     }
 
@@ -1432,7 +1664,7 @@ function initializeBillingSystem() {
         dropdown.style.transition = 'all 0.2s ease';
         dropdown.style.opacity = '0';
         dropdown.style.transform = 'translateY(-10px)';
-        
+
         setTimeout(() => {
           dropdown.style.display = 'none';
           // Remove from DOM to prevent memory leaks
@@ -1452,18 +1684,18 @@ function initializeBillingSystem() {
       }
 
       try {
-  
+
         const response = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
-        
+
         if (!response.ok) {
           console.error('Customer search failed:', response.status, response.statusText);
           hideCustomerDropdown();
           return;
         }
-        
+
         const customers = await response.json();
 
-        
+
         if (customers && customers.length > 0) {
           showCustomerSuggestions(customers);
         } else {
@@ -1482,28 +1714,28 @@ function initializeBillingSystem() {
     }
 
     // Event listeners
-    customerInput.addEventListener('input', function() {
+    customerInput.addEventListener('input', function () {
       debouncedSearch(this.value);
     });
 
-    customerInput.addEventListener('focus', function() {
+    customerInput.addEventListener('focus', function () {
       if (this.value.trim()) {
         debouncedSearch(this.value);
       }
     });
 
     // Hide dropdown when clicking outside - but NOT when clicking on options
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       // Don't hide if clicking on a customer option
       if (e.target.closest('.customer-option')) {
         return;
       }
-      
+
       // Don't hide if clicking on the input itself
       if (customerInput.contains(e.target)) {
         return;
       }
-      
+
       // Hide only if clicking outside both input and dropdown
       if (!customerInput.contains(e.target) && (!dropdown || !dropdown.contains(e.target))) {
         hideCustomerDropdown();
@@ -1516,7 +1748,7 @@ function initializeBillingSystem() {
     // Setup desktop product quick add
     const billProductInput = document.getElementById('billProduct');
     const billRateInput = document.getElementById('billRate');
-    
+
     if (billProductInput) {
       setupProductQuickAddForInput(billProductInput, billRateInput, 'desktop');
     }
@@ -1524,7 +1756,7 @@ function initializeBillingSystem() {
     // Setup mobile product quick add
     const billProductInputMobile = document.getElementById('billProductMobile');
     const billRateInputMobile = document.getElementById('billRateMobile');
-    
+
     if (billProductInputMobile) {
       setupProductQuickAddForInput(billProductInputMobile, billRateInputMobile, 'mobile');
     }
@@ -1545,14 +1777,14 @@ function initializeBillingSystem() {
       productDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
       productDropdown.style.display = 'none';
       document.body.appendChild(productDropdown);
-      
+
       // Prevent dropdown from hiding when clicking inside it
-      productDropdown.addEventListener('click', function(e) {
+      productDropdown.addEventListener('click', function (e) {
         e.stopPropagation();
       });
 
       // Add touch event handling for mobile
-      productDropdown.addEventListener('touchstart', function(e) {
+      productDropdown.addEventListener('touchstart', function (e) {
         e.stopPropagation();
       });
     }
@@ -1563,7 +1795,7 @@ function initializeBillingSystem() {
         const response = await fetch('/api/products');
         allProducts = await response.json();
         window.allProducts = allProducts; // Store globally for validation
-    
+
       } catch (error) {
         console.error('Error loading products:', error);
         // Show user-friendly error message
@@ -1574,22 +1806,22 @@ function initializeBillingSystem() {
     // Filter products with improved search
     function filterProducts(query) {
       if (!query.trim()) return [];
-      
+
       const searchTerm = query.toLowerCase();
       return allProducts.filter(product => {
         const productName = product.product_name.toLowerCase();
         const typeName = (product.type_name || '').toLowerCase();
-        
-        return productName.includes(searchTerm) || 
-               typeName.includes(searchTerm) ||
-               productName.split(' ').some(word => word.startsWith(searchTerm));
+
+        return productName.includes(searchTerm) ||
+          typeName.includes(searchTerm) ||
+          productName.split(' ').some(word => word.startsWith(searchTerm));
       }).slice(0, 10); // Limit to 10 results for better performance
     }
 
     // Render dropdown options with mobile-optimized styling
     function renderDropdownOptions(filteredProducts) {
       if (!productDropdown) createProductDropdown();
-      
+
       if (filteredProducts.length === 0) {
         productDropdown.innerHTML = `
           <div class="product-option-mobile" style="color: #9ca3af; text-align: center; padding: 16px;">
@@ -1599,7 +1831,7 @@ function initializeBillingSystem() {
         `;
         return;
       }
-      
+
       productDropdown.innerHTML = filteredProducts.map(product => `
         <div class="product-option-mobile" data-product-id="${product.product_id}" data-product-name="${product.product_name}" data-product-price="${product.rate}" data-product-type="${product.type_name || ''}" style="padding: 12px 16px; border-bottom: 1px solid #374151; cursor: pointer; transition: background-color 0.2s; display: flex; justify-content: space-between; align-items: center; color: #f3f4f6;">
           <div style="flex: 1;">
@@ -1609,55 +1841,55 @@ function initializeBillingSystem() {
           <div class="product-price" style="font-weight: 600; color: #10b981;">${product.rate}</div>
         </div>
       `).join('');
-      
+
       // Add click listeners with improved touch handling
       const options = productDropdown.querySelectorAll('.product-option-mobile');
       options.forEach(option => {
         // Add hover effects
-        option.addEventListener('mouseenter', function() {
+        option.addEventListener('mouseenter', function () {
           this.style.backgroundColor = '#374151';
         });
-        
-        option.addEventListener('mouseleave', function() {
+
+        option.addEventListener('mouseleave', function () {
           this.style.backgroundColor = 'transparent';
         });
-        
-        const handleSelection = function(e) {
+
+        const handleSelection = function (e) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           const productData = {
             product_id: this.getAttribute('data-product-id'),
             name: this.getAttribute('data-product-name'),
             price: this.getAttribute('data-product-price'),
             product_type: this.getAttribute('data-product-type')
           };
-          
+
           // Set the input value
           productInput.value = productData.name;
-          
+
           // Auto-fill the rate field
           if (rateInput) {
             rateInput.value = productData.price;
             // Trigger change event to update any dependent fields
             rateInput.dispatchEvent(new Event('change', { bubbles: true }));
           }
-          
+
           // Set data attribute for validation
           productInput.setAttribute('data-selected-product', JSON.stringify(productData));
-          
+
           // Add visual feedback
           productInput.style.borderColor = '#10b981';
           setTimeout(() => {
             productInput.style.borderColor = '';
           }, 1000);
-          
+
           hideDropdown();
-          
+
           // Show success feedback
           showSimpleToast(`${productData.name} selected`, 'success');
         };
-        
+
         // Handle both click and touch events
         option.addEventListener('click', handleSelection);
         option.addEventListener('touchend', handleSelection);
@@ -1667,26 +1899,26 @@ function initializeBillingSystem() {
     // Show dropdown with animation
     function showDropdown() {
       if (!productDropdown) createProductDropdown();
-      
+
       if (!productDropdown || !productDropdown.style) return;
-      
+
       // Calculate position relative to input
       const inputRect = productInput.getBoundingClientRect();
       productDropdown.style.left = inputRect.left + 'px';
       productDropdown.style.top = (inputRect.bottom + 4) + 'px';
       productDropdown.style.width = inputRect.width + 'px';
       productDropdown.style.minWidth = '200px';
-      
+
       productDropdown.style.display = 'block';
       productDropdown.style.opacity = '0';
       productDropdown.style.transform = 'translateY(-10px)';
-      
+
       // Animate in
       setTimeout(() => {
         if (productDropdown && productDropdown.style) {
-        productDropdown.style.transition = 'all 0.2s ease';
-        productDropdown.style.opacity = '1';
-        productDropdown.style.transform = 'translateY(0)';
+          productDropdown.style.transition = 'all 0.2s ease';
+          productDropdown.style.opacity = '1';
+          productDropdown.style.transform = 'translateY(0)';
         }
       }, 10);
     }
@@ -1697,25 +1929,25 @@ function initializeBillingSystem() {
         productDropdown.style.transition = 'all 0.2s ease';
         productDropdown.style.opacity = '0';
         productDropdown.style.transform = 'translateY(-10px)';
-        
+
         setTimeout(() => {
           if (productDropdown && productDropdown.style) {
-          productDropdown.style.display = 'none';
-          // Remove from DOM to prevent memory leaks
-          if (productDropdown.parentNode) {
-            productDropdown.parentNode.removeChild(productDropdown);
-          }
-          productDropdown = null;
+            productDropdown.style.display = 'none';
+            // Remove from DOM to prevent memory leaks
+            if (productDropdown.parentNode) {
+              productDropdown.parentNode.removeChild(productDropdown);
+            }
+            productDropdown = null;
           }
         }, 200);
       }
     }
 
     // Enhanced input event handling
-    productInput.addEventListener('input', function() {
+    productInput.addEventListener('input', function () {
       const query = this.value;
       const filteredProducts = filterProducts(query);
-      
+
       if (filteredProducts.length > 0) {
         renderDropdownOptions(filteredProducts);
         showDropdown();
@@ -1725,7 +1957,7 @@ function initializeBillingSystem() {
     });
 
     // Enhanced focus event handling
-    productInput.addEventListener('focus', function() {
+    productInput.addEventListener('focus', function () {
       if (this.value.trim()) {
         const filteredProducts = filterProducts(this.value);
         if (filteredProducts.length > 0) {
@@ -1736,7 +1968,7 @@ function initializeBillingSystem() {
     });
 
     // Enhanced blur event handling
-    productInput.addEventListener('blur', function() {
+    productInput.addEventListener('blur', function () {
       // Delay hiding to allow for option selection
       setTimeout(() => {
         hideDropdown();
@@ -1744,17 +1976,17 @@ function initializeBillingSystem() {
     });
 
     // Improved click outside handling
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       // Don't hide if clicking on a product option
       if (e.target.closest('.product-option-mobile')) {
         return;
       }
-      
+
       // Don't hide if clicking on the input itself
       if (productInput.contains(e.target)) {
         return;
       }
-      
+
       // Hide only if clicking outside both input and dropdown
       if (!productInput.contains(e.target) && (!productDropdown || !productDropdown.contains(e.target))) {
         hideDropdown();
@@ -1762,26 +1994,26 @@ function initializeBillingSystem() {
     });
 
     // Add keyboard navigation
-    productInput.addEventListener('keydown', function(e) {
+    productInput.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         const options = productDropdown?.querySelectorAll('.product-option-mobile');
         if (!options || options.length === 0) return;
-        
-        const currentIndex = Array.from(options).findIndex(option => 
+
+        const currentIndex = Array.from(options).findIndex(option =>
           option.classList.contains('selected')
         );
-        
+
         let newIndex;
         if (e.key === 'ArrowDown') {
           newIndex = currentIndex < options.length - 1 ? currentIndex + 1 : 0;
         } else {
           newIndex = currentIndex > 0 ? currentIndex - 1 : options.length - 1;
         }
-        
+
         // Remove previous selection
         options.forEach(option => option.classList.remove('selected'));
-        
+
         // Add new selection
         options[newIndex].classList.add('selected');
         options[newIndex].scrollIntoView({ block: 'nearest' });
@@ -1804,7 +2036,7 @@ function initializeBillingSystem() {
   function setupSmartDefaults() {
     const billDateInput = document.getElementById('billDate');
     const deliveryDateInput = document.getElementById('deliveryDate');
-    
+
     if (!billDateInput || !deliveryDateInput) {
       return;
     }
@@ -1828,7 +2060,7 @@ function initializeBillingSystem() {
     // Update delivery date when bill date changes (only if enabled)
     if (billingConfig?.enable_delivery_date) {
       billDateInput.addEventListener('change', updateDeliveryDate);
-      
+
       // Set initial delivery date
       updateDeliveryDate();
     }
@@ -1845,7 +2077,7 @@ function initializeBillingSystem() {
           trialDateInput.value = trialDate.toISOString().split('T')[0];
         }
       }
-      
+
       // Keep trial date in sync when delivery or bill date changes
       deliveryDateInput.addEventListener('change', updateTrialDate);
       billDateInput.addEventListener('change', updateTrialDate);
@@ -1857,17 +2089,17 @@ function initializeBillingSystem() {
   function setupCityAreaAutocomplete() {
     const cityInput = document.getElementById('billCity');
     const areaInput = document.getElementById('billArea');
-    
+
     if (!cityInput || !areaInput) {
       console.warn('City/Area autocomplete elements not found');
       return;
     }
-    
+
     let cityDebounceTimer = null;
     let areaDebounceTimer = null;
     let cityDropdown = null;
     let areaDropdown = null;
-    
+
     // Create city dropdown container
     function createCityDropdown() {
       if (cityDropdown) {
@@ -1878,13 +2110,13 @@ function initializeBillingSystem() {
       cityDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
       cityDropdown.style.display = 'none';
       document.body.appendChild(cityDropdown);
-      
+
       // Prevent dropdown from hiding when clicking inside it
-      cityDropdown.addEventListener('click', function(e) {
+      cityDropdown.addEventListener('click', function (e) {
         e.stopPropagation();
       });
     }
-    
+
     // Create area dropdown container
     function createAreaDropdown() {
       if (areaDropdown) {
@@ -1895,31 +2127,31 @@ function initializeBillingSystem() {
       areaDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
       areaDropdown.style.display = 'none';
       document.body.appendChild(areaDropdown);
-      
+
       // Prevent dropdown from hiding when clicking inside it
-      areaDropdown.addEventListener('click', function(e) {
+      areaDropdown.addEventListener('click', function (e) {
         e.stopPropagation();
       });
     }
-    
+
     // City autocomplete
-    cityInput.addEventListener('input', function() {
+    cityInput.addEventListener('input', function () {
       clearTimeout(cityDebounceTimer);
       const query = this.value.trim();
-      
+
       if (query.length < 2) {
         hideCityDropdown();
         return;
       }
-      
+
       cityDebounceTimer = setTimeout(async () => {
         try {
           const response = await fetch('/api/cities');
           const cities = await response.json();
-          const filteredCities = cities.filter(city => 
+          const filteredCities = cities.filter(city =>
             city.toLowerCase().includes(query.toLowerCase())
           );
-          
+
           if (filteredCities.length > 0) {
             showCitySuggestions(filteredCities);
           } else {
@@ -1930,53 +2162,53 @@ function initializeBillingSystem() {
         }
       }, 300);
     });
-    
+
     // Show city suggestions
     function showCitySuggestions(cities) {
       if (!cityDropdown) createCityDropdown();
-      
+
       // Calculate position relative to input
       const inputRect = cityInput.getBoundingClientRect();
       cityDropdown.style.left = inputRect.left + 'px';
       cityDropdown.style.top = (inputRect.bottom + 4) + 'px';
       cityDropdown.style.width = inputRect.width + 'px';
       cityDropdown.style.minWidth = '200px'; // Ensure minimum width
-      
+
       cityDropdown.innerHTML = cities.map(city => `
         <div class="city-option px-4 py-2 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0" data-city="${city}">
           ${city}
         </div>
       `).join('');
-      
+
       // Add click listeners directly to each option
       const options = cityDropdown.querySelectorAll('.city-option');
       options.forEach(option => {
-        option.addEventListener('click', function(e) {
+        option.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           const selectedCity = this.getAttribute('data-city');
           cityInput.value = selectedCity;
           hideCityDropdown();
-          
+
           // Clear area when city changes
           areaInput.value = '';
-          
+
           // Update area dropdown to show areas for selected city
           updateAreaDropdownForCity(selectedCity);
         });
       });
-      
+
       cityDropdown.style.display = 'block';
     }
-    
+
     // Hide city dropdown
     function hideCityDropdown() {
       if (cityDropdown) {
         cityDropdown.style.transition = 'all 0.2s ease';
         cityDropdown.style.opacity = '0';
         cityDropdown.style.transform = 'translateY(-10px)';
-        
+
         setTimeout(() => {
           cityDropdown.style.display = 'none';
           // Remove from DOM to prevent memory leaks
@@ -1987,27 +2219,27 @@ function initializeBillingSystem() {
         }, 200);
       }
     }
-    
+
     // Area autocomplete
-    areaInput.addEventListener('input', function() {
+    areaInput.addEventListener('input', function () {
       clearTimeout(areaDebounceTimer);
       const query = this.value.trim();
-      
+
       if (query.length < 2) {
         hideAreaDropdown();
         return;
       }
-      
+
       areaDebounceTimer = setTimeout(async () => {
         try {
           const cityValue = cityInput.value.trim();
           const url = cityValue ? `/api/areas?city=${encodeURIComponent(cityValue)}` : '/api/areas';
           const response = await fetch(url);
           const areas = await response.json();
-          const filteredAreas = areas.filter(area => 
+          const filteredAreas = areas.filter(area =>
             area.toLowerCase().includes(query.toLowerCase())
           );
-          
+
           if (filteredAreas.length > 0) {
             showAreaSuggestions(filteredAreas);
           } else {
@@ -2018,52 +2250,52 @@ function initializeBillingSystem() {
         }
       }, 300);
     });
-    
+
     // Show area suggestions
     function showAreaSuggestions(areas) {
       if (!areaDropdown) createAreaDropdown();
-      
+
       // Calculate position relative to input
       const inputRect = areaInput.getBoundingClientRect();
       areaDropdown.style.left = inputRect.left + 'px';
       areaDropdown.style.top = (inputRect.bottom + 4) + 'px';
       areaDropdown.style.width = inputRect.width + 'px';
       areaDropdown.style.minWidth = '200px'; // Ensure minimum width
-      
+
       areaDropdown.innerHTML = areas.map(area => `
         <div class="area-option px-4 py-2 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0" data-area="${area}">
           ${area}
         </div>
       `).join('');
-      
+
       // Add click listeners directly to each option
       const options = areaDropdown.querySelectorAll('.area-option');
       options.forEach(option => {
-        option.addEventListener('click', function(e) {
+        option.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           const selectedArea = this.getAttribute('data-area');
           areaInput.value = selectedArea;
           hideAreaDropdown();
-          
+
           // If no city is selected, try to find the city for this area
           if (!cityInput.value.trim()) {
             findCityForArea(selectedArea);
           }
         });
       });
-      
+
       areaDropdown.style.display = 'block';
     }
-    
+
     // Hide area dropdown
     function hideAreaDropdown() {
       if (areaDropdown) {
         areaDropdown.style.transition = 'all 0.2s ease';
         areaDropdown.style.opacity = '0';
         areaDropdown.style.transform = 'translateY(-10px)';
-        
+
         setTimeout(() => {
           areaDropdown.style.display = 'none';
           // Remove from DOM to prevent memory leaks
@@ -2074,19 +2306,19 @@ function initializeBillingSystem() {
         }, 200);
       }
     }
-    
+
     // Hide dropdowns when clicking outside
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       // Don't hide if clicking on dropdown options
       if (e.target.closest('.city-option') || e.target.closest('.area-option')) {
         return;
       }
-      
+
       // Don't hide if clicking on the inputs themselves
       if (cityInput.contains(e.target) || areaInput.contains(e.target)) {
         return;
       }
-      
+
       // Hide only if clicking outside both inputs and dropdowns
       if (!cityInput.contains(e.target) && (!cityDropdown || !cityDropdown.contains(e.target))) {
         hideCityDropdown();
@@ -2095,28 +2327,28 @@ function initializeBillingSystem() {
         hideAreaDropdown();
       }
     });
-    
+
     // Update area dropdown for specific city
     async function updateAreaDropdownForCity(city) {
       try {
         const response = await fetch(`/api/areas?city=${encodeURIComponent(city)}`);
         const areas = await response.json();
-        
+
         if (areas.length > 0) {
           showAreaSuggestions(areas);
         } else {
           // Show message that no areas found
           if (!areaDropdown) createAreaDropdown();
-          
+
           const inputRect = areaInput.getBoundingClientRect();
           areaDropdown.style.left = inputRect.left + 'px';
           areaDropdown.style.top = (inputRect.bottom + 4) + 'px';
           areaDropdown.style.width = inputRect.width + 'px';
           areaDropdown.style.minWidth = '200px';
-          
+
           areaDropdown.innerHTML = '<div class="px-4 py-2 text-neutral-400 text-sm">No areas found for this city</div>';
           areaDropdown.style.display = 'block';
-          
+
           // Hide after 2 seconds
           setTimeout(() => {
             hideAreaDropdown();
@@ -2126,13 +2358,13 @@ function initializeBillingSystem() {
         console.error('Error updating areas for city:', error);
       }
     }
-    
+
     // Find city for selected area
     async function findCityForArea(area) {
       try {
         const response = await fetch(`/api/cities?area=${encodeURIComponent(area)}`);
         const cities = await response.json();
-        
+
         if (cities.length > 0) {
           cityInput.value = cities[0]; // Use the first city found
         }
@@ -2144,10 +2376,10 @@ function initializeBillingSystem() {
 
   // FEATURE 3: Master Autocomplete
   function setupMasterAutocomplete() {
-  
+
     const masterInput = document.getElementById('masterName');
     const masterInputMobile = document.getElementById('masterNameMobile');
-    
+
     if (!masterInput && !masterInputMobile) {
       return;
     }
@@ -2163,9 +2395,9 @@ function initializeBillingSystem() {
       masterDropdown.style.cssText = 'position: fixed; z-index: 99999 !important; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
       masterDropdown.style.display = 'none';
       document.body.appendChild(masterDropdown);
-      
+
       // Prevent dropdown from hiding when clicking inside it
-      masterDropdown.addEventListener('click', function(e) {
+      masterDropdown.addEventListener('click', function (e) {
         e.stopPropagation();
       });
     }
@@ -2173,27 +2405,27 @@ function initializeBillingSystem() {
     // Load employees
     async function loadEmployees() {
       try {
-  
+
         const response = await fetch('/api/employees');
         employees = await response.json();
 
-        
+
         // Make employees available globally for debugging
         window.allEmployees = employees;
 
-        
+
         // Set default owner if available
         setDefaultOwner();
       } catch (error) {
         console.error('Γ¥î Error loading employees:', error);
       }
     }
-    
+
     // Set default owner
-    window.setDefaultOwner = function() {
+    window.setDefaultOwner = function () {
       // First, check if there's a default employee configured in shop settings
       if (billingConfig && billingConfig.default_employee_id) {
-        const defaultEmployee = employees.find(emp => 
+        const defaultEmployee = employees.find(emp =>
           (emp.employee_id || emp.id) == billingConfig.default_employee_id
         );
         if (defaultEmployee) {
@@ -2205,7 +2437,7 @@ function initializeBillingSystem() {
               master_name: defaultEmployee.name
             }));
           }
-          
+
           if (masterInputMobile) {
             masterInputMobile.value = defaultEmployee.name;
             masterInputMobile.setAttribute('data-selected-master', JSON.stringify({
@@ -2213,13 +2445,13 @@ function initializeBillingSystem() {
               master_name: defaultEmployee.name
             }));
           }
-          
+
           // Set global selected master ID
           window.selectedMasterId = defaultEmployee.employee_id || defaultEmployee.id;
           return;
         }
       }
-      
+
       // Fallback to owner or first employee if no shop settings default
       const owner = employees.find(emp => emp.position === 'Owner');
       if (owner) {
@@ -2231,7 +2463,7 @@ function initializeBillingSystem() {
             master_name: owner.name
           }));
         }
-        
+
         if (masterInputMobile) {
           masterInputMobile.value = owner.name;
           masterInputMobile.setAttribute('data-selected-master', JSON.stringify({
@@ -2239,11 +2471,11 @@ function initializeBillingSystem() {
             master_name: owner.name
           }));
         }
-        
+
         // Set global selected master ID
         window.selectedMasterId = owner.employee_id;
         // Set owner as default
-        
+
       } else {
         // If no owner found, set the first available employee as default
         if (employees.length > 0) {
@@ -2257,7 +2489,7 @@ function initializeBillingSystem() {
               master_name: firstEmployee.name
             }));
           }
-          
+
           if (masterInputMobile) {
             masterInputMobile.value = firstEmployee.name;
             masterInputMobile.setAttribute('data-selected-master', JSON.stringify({
@@ -2265,11 +2497,11 @@ function initializeBillingSystem() {
               master_name: firstEmployee.name
             }));
           }
-          
+
           // Set global selected master ID
           window.selectedMasterId = firstEmployee.employee_id;
           console.log('Billing System: Set first employee as default:', firstEmployee.name);
-          
+
         }
       }
     }
@@ -2277,7 +2509,7 @@ function initializeBillingSystem() {
     // Filter employees
     function filterEmployees(query) {
       if (!query.trim()) return [];
-      
+
       return employees.filter(employee =>
         employee.name.toLowerCase().includes(query.toLowerCase()) ||
         employee.phone?.toLowerCase().includes(query.toLowerCase())
@@ -2287,7 +2519,7 @@ function initializeBillingSystem() {
     // Render dropdown options
     function renderDropdownOptions(filteredEmployees) {
       if (!masterDropdown) createMasterDropdown();
-      
+
       masterDropdown.innerHTML = filteredEmployees.map(employee => `
         <div class="master-option" data-master-id="${employee.employee_id}" data-master-name="${employee.name}" data-master-phone="${employee.phone || ''}" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #f8fafc;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -2296,20 +2528,20 @@ function initializeBillingSystem() {
           </div>
         </div>
       `).join('');
-      
+
       // Add click listeners directly to each option
       const options = masterDropdown.querySelectorAll('.master-option');
       options.forEach(option => {
-        option.addEventListener('click', function(e) {
+        option.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           const masterId = this.getAttribute('data-master-id');
           const masterName = this.getAttribute('data-master-name');
-          
+
           window.selectedMasterId = masterId;
-          
-          
+
+
           // Update both inputs if they exist
           if (masterInput) {
             masterInput.value = masterName;
@@ -2318,7 +2550,7 @@ function initializeBillingSystem() {
               master_name: masterName
             }));
           }
-          
+
           if (masterInputMobile) {
             masterInputMobile.value = masterName;
             masterInputMobile.setAttribute('data-selected-master', JSON.stringify({
@@ -2326,7 +2558,7 @@ function initializeBillingSystem() {
               master_name: masterName
             }));
           }
-          
+
           hideDropdown();
         });
       });
@@ -2334,33 +2566,33 @@ function initializeBillingSystem() {
 
     // Show dropdown
     function showDropdown(activeInput) {
-      
-      
+
+
       if (!masterDropdown) createMasterDropdown();
-      
+
       if (!masterDropdown || !masterDropdown.style) return;
-      
+
       // Calculate position relative to input
       const inputRect = activeInput.getBoundingClientRect();
-      
-      
+
+
       masterDropdown.style.left = inputRect.left + 'px';
       masterDropdown.style.top = (inputRect.bottom + 4) + 'px';
       masterDropdown.style.width = inputRect.width + 'px';
       masterDropdown.style.minWidth = '200px'; // Ensure minimum width
-      
 
-      
+
+
       masterDropdown.style.display = 'block';
       masterDropdown.style.opacity = '0';
       masterDropdown.style.transform = 'translateY(-10px)';
-      
+
       // Animate in
       setTimeout(() => {
         if (masterDropdown && masterDropdown.style) {
-        masterDropdown.style.transition = 'all 0.2s ease';
-        masterDropdown.style.opacity = '1';
-        masterDropdown.style.transform = 'translateY(0)';
+          masterDropdown.style.transition = 'all 0.2s ease';
+          masterDropdown.style.opacity = '1';
+          masterDropdown.style.transform = 'translateY(0)';
 
         }
       }, 10);
@@ -2372,15 +2604,15 @@ function initializeBillingSystem() {
         masterDropdown.style.transition = 'all 0.2s ease';
         masterDropdown.style.opacity = '0';
         masterDropdown.style.transform = 'translateY(-10px)';
-        
+
         setTimeout(() => {
           if (masterDropdown && masterDropdown.style) {
-          masterDropdown.style.display = 'none';
-          // Remove from DOM to prevent memory leaks
-          if (masterDropdown.parentNode) {
-            masterDropdown.parentNode.removeChild(masterDropdown);
-          }
-          masterDropdown = null;
+            masterDropdown.style.display = 'none';
+            // Remove from DOM to prevent memory leaks
+            if (masterDropdown.parentNode) {
+              masterDropdown.parentNode.removeChild(masterDropdown);
+            }
+            masterDropdown = null;
           }
         }, 200);
       }
@@ -2389,11 +2621,11 @@ function initializeBillingSystem() {
     // Event listeners for desktop
     if (masterInput) {
 
-      masterInput.addEventListener('input', function() {
- 
+      masterInput.addEventListener('input', function () {
+
         const query = this.value;
         const filteredEmployees = filterEmployees(query);
-        
+
         if (filteredEmployees.length > 0) {
           renderDropdownOptions(filteredEmployees);
           showDropdown(this);
@@ -2402,7 +2634,7 @@ function initializeBillingSystem() {
         }
       });
 
-      masterInput.addEventListener('focus', function() {
+      masterInput.addEventListener('focus', function () {
         if (this.value.trim()) {
           const filteredEmployees = filterEmployees(this.value);
           if (filteredEmployees.length > 0) {
@@ -2416,11 +2648,11 @@ function initializeBillingSystem() {
     // Event listeners for mobile
     if (masterInputMobile) {
 
-      
-      masterInputMobile.addEventListener('input', function() {
+
+      masterInputMobile.addEventListener('input', function () {
         const query = this.value;
         const filteredEmployees = filterEmployees(query);
-        
+
         if (filteredEmployees.length > 0) {
           renderDropdownOptions(filteredEmployees);
           showDropdown(this);
@@ -2429,7 +2661,7 @@ function initializeBillingSystem() {
         }
       });
 
-      masterInputMobile.addEventListener('focus', function() {
+      masterInputMobile.addEventListener('focus', function () {
         if (this.value.trim()) {
           const filteredEmployees = filterEmployees(this.value);
           if (filteredEmployees.length > 0) {
@@ -2438,28 +2670,28 @@ function initializeBillingSystem() {
           }
         }
       });
-      
+
     }
-    
-    
+
+
 
     // Hide dropdown when clicking outside - but NOT when clicking on options
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       // Don't hide if clicking on a master option
       if (e.target.closest('.master-option')) {
         return;
       }
-      
+
       // Don't hide if clicking on either input
-      if ((masterInput && masterInput.contains(e.target)) || 
-          (masterInputMobile && masterInputMobile.contains(e.target))) {
+      if ((masterInput && masterInput.contains(e.target)) ||
+        (masterInputMobile && masterInputMobile.contains(e.target))) {
         return;
       }
-      
+
       // Hide only if clicking outside both inputs and dropdown
-      if ((!masterInput || !masterInput.contains(e.target)) && 
-          (!masterInputMobile || !masterInputMobile.contains(e.target)) && 
-          (!masterDropdown || !masterDropdown.contains(e.target))) {
+      if ((!masterInput || !masterInput.contains(e.target)) &&
+        (!masterInputMobile || !masterInputMobile.contains(e.target)) &&
+        (!masterDropdown || !masterDropdown.contains(e.target))) {
         hideDropdown();
       }
     });
@@ -2468,22 +2700,22 @@ function initializeBillingSystem() {
     async function initializeBillingSystem() {
       // Load billing configuration first
       await loadBillingConfiguration();
-      
+
       // Then load employees (which will use the billing config)
       await loadEmployees();
     }
-    
+
     // Initialize the billing system
     initializeBillingSystem();
   }
 
   // Make selected master ID available globally
-  window.getSelectedMasterId = function() {
+  window.getSelectedMasterId = function () {
     return window.selectedMasterId;
   };
 
   // Test function for master dropdown
-  window.testMasterDropdown = function() {
+  window.testMasterDropdown = function () {
     if (masterInputMobile) {
       masterInputMobile.focus();
       masterInputMobile.value = 'test';
@@ -2492,12 +2724,12 @@ function initializeBillingSystem() {
   };
 
   // Test function to check master selection status
-  window.testMasterSelection = function() {
+  window.testMasterSelection = function () {
     const masterNameElement = document.getElementById('masterName');
     const masterNameMobileElement = document.getElementById('masterNameMobile');
   };
 
-    // Setup Add Item button functionality
+  // Setup Add Item button functionality
   function setupAddItemHandler() {
     // Setup desktop add item handler
     const addItemBtn = document.getElementById('addItemBtn');
@@ -2505,9 +2737,9 @@ function initializeBillingSystem() {
       // Remove existing event listeners by cloning the element
       const newAddItemBtn = addItemBtn.cloneNode(true);
       addItemBtn.parentNode.replaceChild(newAddItemBtn, addItemBtn);
-      
+
       newAddItemBtn.classList.add('add-item-btn-mobile');
-      newAddItemBtn.addEventListener('click', function(e) {
+      newAddItemBtn.addEventListener('click', function (e) {
         e.preventDefault();
 
         handleAddItem('desktop');
@@ -2520,8 +2752,8 @@ function initializeBillingSystem() {
       // Remove existing event listeners by cloning the element
       const newAddItemBtnMobile = addItemBtnMobile.cloneNode(true);
       addItemBtnMobile.parentNode.replaceChild(newAddItemBtnMobile, addItemBtnMobile);
-      
-      newAddItemBtnMobile.addEventListener('click', function(e) {
+
+      newAddItemBtnMobile.addEventListener('click', function (e) {
         e.preventDefault();
 
         handleAddItem('mobile');
@@ -2541,7 +2773,7 @@ function initializeBillingSystem() {
       discountInput = document.getElementById('billDiscountMobile');
       advanceInput = document.getElementById('billAdvPaidMobile');
       vatInput = document.getElementById('vatPercentMobile');
-      notesInput = null; // No notes input for mobile
+      notesInput = document.getElementById('itemNotesMobile');
     } else {
       productInput = document.getElementById('billProduct');
       quantityInput = document.getElementById('billQty');
@@ -2551,7 +2783,7 @@ function initializeBillingSystem() {
       vatInput = document.getElementById('vatPercent');
       notesInput = document.getElementById('itemNotes');
     }
-    
+
     // Clear previous error states
     [productInput, quantityInput, priceInput].forEach(input => {
       if (input) {
@@ -2560,21 +2792,21 @@ function initializeBillingSystem() {
         if (errorMsg) errorMsg.remove();
       }
     });
-    
+
     // Validate required fields with better error handling
     let hasErrors = false;
-    
+
     if (!productInput || !productInput.value.trim()) {
       showFieldError(productInput, 'Please select a product');
       hasErrors = true;
     }
-    
+
     // Get selected product data
     const selectedProductData = productInput?.getAttribute('data-selected-product');
-    
+
     // Debug logging
 
-    
+
     if (!selectedProductData && productInput?.value.trim()) {
       // Check if we have a valid product name but no data attribute
       // This might happen if the product was selected but the attribute wasn't set properly
@@ -2583,11 +2815,11 @@ function initializeBillingSystem() {
         // Try to find the product in our loaded products
         const allProducts = window.allProducts || [];
         const foundProduct = allProducts.find(p => p.name === productName || p.product_name === productName);
-        
+
         if (foundProduct) {
           // Set the data attribute now
           productInput.setAttribute('data-selected-product', JSON.stringify(foundProduct));
-  
+
         } else {
           // Add a small delay to allow for any pending DOM updates
           setTimeout(() => {
@@ -2604,7 +2836,7 @@ function initializeBillingSystem() {
         hasErrors = true;
       }
     }
-    
+
     let productData;
     try {
       productData = JSON.parse(selectedProductData);
@@ -2613,23 +2845,23 @@ function initializeBillingSystem() {
       showFieldError(productInput, 'Invalid product data. Please select a product again.');
       hasErrors = true;
     }
-    
+
     if (!quantityInput || !quantityInput.value || quantityInput.value <= 0) {
       showFieldError(quantityInput, 'Please enter a valid quantity');
       hasErrors = true;
     }
-    
+
     if (!priceInput || !priceInput.value || priceInput.value <= 0) {
       showFieldError(priceInput, 'Please enter a valid price');
       hasErrors = true;
     }
-    
+
     if (hasErrors) {
       // Show overall error message
       showModernAlert('Please fix the errors above before adding the item', 'warning', 'Validation Error');
       return;
     }
-    
+
     // Get values with better parsing
     const productId = productData.product_id;
     const productName = productData.name || productData.product_name;
@@ -2639,11 +2871,11 @@ function initializeBillingSystem() {
     const advance = parseFloat(advanceInput?.value) || 0;
     const vatPercent = parseFloat(vatInput?.value) || 0;
     console.log('🔧 handleAddItem: VAT input value =', vatInput?.value, 'parsed VAT =', vatPercent);
-    
+
     // Check if this product already exists in the bill
     const existingItemIndex = bill.findIndex(item => item.product_id === productId);
-    
-    
+
+
     if (existingItemIndex !== -1) {
       // Product already exists, show confirmation dialog
       const existingItem = bill[existingItemIndex];
@@ -2653,18 +2885,18 @@ function initializeBillingSystem() {
       const newDiscountAmount = Math.round((newSubtotal * discount / 100) * 100) / 100;
       const newTotal = Math.round((newSubtotal - newDiscountAmount) * 100) / 100;
       const newVatAmount = Math.round(newTotal * (vatPercent / 100) * 100) / 100;
-      
-      
-      
+
+
+
       // Show modern confirmation dialog
-      
-      
+
+
       let confirmed;
       if (typeof showConfirmDialog !== 'function') {
         console.error('showConfirmDialog is not available!');
         // Fallback to simple confirm
         confirmed = confirm(`"${productName}" is already in the bill. Would you like to increase the quantity?`);
-        
+
       } else {
         confirmed = await showConfirmDialog(
           `"${productName}" is already in the bill with quantity ${existingItem.quantity}.<br><br>Would you like to increase the quantity to ${newQuantity} instead of adding a duplicate item?`,
@@ -2673,9 +2905,9 @@ function initializeBillingSystem() {
         );
 
       }
-      
+
       if (confirmed) {
-        
+
         // Update existing item with new quantity and recalculate totals
         bill[existingItemIndex] = {
           ...existingItem,
@@ -2688,19 +2920,19 @@ function initializeBillingSystem() {
           subtotal: newSubtotal,
           total: newTotal
         };
-        
-        
-        
+
+
+
         // Update display
         renderBillTable();
         updateTotals();
-        
+
         // Clear form fields
         clearBillingForm(formType);
-        
+
         // Show success message
         showSimpleToast('Quantity updated', 'success');
-        
+
         // Focus back to product input
         setTimeout(() => {
           if (productInput) {
@@ -2708,11 +2940,11 @@ function initializeBillingSystem() {
           }
         }, 500);
       } else {
-        
+
       }
       return;
     }
-    
+
     // Calculate total with better precision
     const subtotal = Math.round(quantity * price * 100) / 100;
     // Calculate discount amount from percentage
@@ -2720,7 +2952,7 @@ function initializeBillingSystem() {
     const total = Math.round((subtotal - discountAmount) * 100) / 100;
     const vatAmount = Math.round(total * (vatPercent / 100) * 100) / 100;
     console.log('🔧 handleAddItem: VAT calculation - total =', total, 'vatPercent =', vatPercent, 'vatAmount =', vatAmount);
-    
+
     // Get notes value
     const notes = notesInput ? notesInput.value.trim() : '';
 
@@ -2731,47 +2963,47 @@ function initializeBillingSystem() {
       quantity: quantity,
       rate: price, // Changed from 'price' to 'rate' to match backend expectation
       discount: discount,
-               advance_paid: window.paymentMode === 'full' ? 0 : advance, // Set to 0 if full payment mode
+      advance_paid: window.paymentMode === 'full' ? 0 : advance, // Set to 0 if full payment mode
       vat_percent: vatPercent,
       vat_amount: vatAmount,
       subtotal: subtotal, // Store subtotal (before discount)
       total: total, // Store final total (after discount)
       notes: notes // Include notes in the item
     };
-    
-    
+
+
     bill.push(item);
-    
+
     // Update display
     renderBillTable();
     updateTotals();
-    
+
     // Clear form fields with better UX
     clearBillingForm(formType);
-    
+
     // Show success message with better feedback
     showSimpleToast('Item added', 'success');
-    
-         // Focus back to product input for quick addition of next item
-     setTimeout(() => {
-       if (productInput) {
-         productInput.focus();
-       }
-     }, 500);
-   }
+
+    // Focus back to product input for quick addition of next item
+    setTimeout(() => {
+      if (productInput) {
+        productInput.focus();
+      }
+    }, 500);
+  }
 
   // Helper function to show field-specific errors
   function showFieldError(input, message) {
     if (!input) return;
-    
+
     input.classList.add('billing-input-error');
-    
+
     // Remove existing error message
     const existingError = input.parentNode.querySelector('.billing-error-message');
     if (existingError) {
       existingError.remove();
     }
-    
+
     // Add new error message
     const errorDiv = document.createElement('div');
     errorDiv.className = 'billing-error-message';
@@ -2783,14 +3015,14 @@ function initializeBillingSystem() {
   async function resetBillingForm() {
     // Clear the bill array
     bill.length = 0;
-    
+
     // Clear customer fields
     clearCustomerFields();
-    
+
     // Clear billing form fields (both desktop and mobile)
     clearBillingForm('desktop');
     clearBillingForm('mobile');
-    
+
     // Clear master fields
     const masterNameElement = document.getElementById('masterName');
     const masterNameMobileElement = document.getElementById('masterNameMobile');
@@ -2802,7 +3034,7 @@ function initializeBillingSystem() {
       masterNameMobileElement.value = '';
       masterNameMobileElement.removeAttribute('data-selected-master');
     }
-    
+
     // Clear bill details
     const billNumberElement = document.getElementById('billNumber');
     const billCustomerElement = document.getElementById('billCustomer');
@@ -2811,7 +3043,7 @@ function initializeBillingSystem() {
     const deliveryDateElement = document.getElementById('deliveryDate');
     const trialDateElement = document.getElementById('trialDate');
     const billNotesElement = document.getElementById('billNotes');
-    
+
     if (billNumberElement) billNumberElement.value = '';
     if (billCustomerElement) billCustomerElement.value = '';
     if (billMobileElement) billMobileElement.value = '';
@@ -2819,20 +3051,20 @@ function initializeBillingSystem() {
     if (deliveryDateElement) deliveryDateElement.value = '';
     if (trialDateElement) trialDateElement.value = '';
     if (billNotesElement) billNotesElement.value = '';
-    
+
     // Update the bill table display and totals
     renderBillTable();
     updateTotals();
-    
+
     // Set default dates and bill number
     setDefaultBillingDates();
     await setBasicDefaultDates();
-    
+
     // Disable action buttons
     const whatsappBtn = document.getElementById('whatsappBtn');
     const emailBtn = document.getElementById('emailBtn');
     const printBtn = document.getElementById('printBtn');
-    
+
     if (whatsappBtn) {
       whatsappBtn.disabled = true;
       whatsappBtn.classList.add('opacity-50', 'pointer-events-none', 'bg-green-600/40', 'text-white/60');
@@ -2848,13 +3080,13 @@ function initializeBillingSystem() {
       printBtn.classList.add('opacity-50', 'pointer-events-none', 'bg-indigo-600/40', 'text-white/60');
       printBtn.classList.remove('bg-indigo-600', 'text-white', 'hover:bg-indigo-500');
     }
-    
+
 
   }
 
   // Helper function to clear billing form
   function clearBillingForm(formType = 'desktop') {
-    let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput,notesInput;
+    let productInput, quantityInput, priceInput, discountInput, advanceInput, vatInput, notesInput;
 
     if (formType === 'mobile') {
       productInput = document.getElementById('billProductMobile');
@@ -2863,7 +3095,7 @@ function initializeBillingSystem() {
       discountInput = document.getElementById('billDiscountMobile');
       advanceInput = document.getElementById('billAdvPaidMobile');
       vatInput = document.getElementById('vatPercentMobile');
-      notesInput=null;
+      notesInput = null;
     } else {
       productInput = document.getElementById('billProduct');
       quantityInput = document.getElementById('billQty');
@@ -2925,7 +3157,7 @@ function initializeBillingSystem() {
       </svg>
       <span>${message}</span>
     `;
-    
+
     // Try to insert after desktop add item button first
     const addItemBtn = document.getElementById('addItemBtn');
     if (addItemBtn && addItemBtn.parentNode) {
@@ -2940,7 +3172,7 @@ function initializeBillingSystem() {
         document.body.appendChild(successDiv);
       }
     }
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
       if (successDiv.parentNode) {
@@ -2958,11 +3190,11 @@ function initializeBillingSystem() {
       document.getElementById('searchInvoiceResults').innerHTML = '';
       document.getElementById('searchInvoiceInput').focus();
     });
-    
+
     document.getElementById('closeSearchInvoice')?.addEventListener('click', () => {
       document.getElementById('searchInvoiceModal').classList.add('hidden');
     });
-    
+
     document.getElementById('searchInvoiceInput')?.addEventListener('input', async (e) => {
       const q = e.target.value.trim().toLowerCase();
       if (!q) {
@@ -3005,20 +3237,20 @@ function initializeBillingSystem() {
           </table>`
         : '<div class="text-neutral-400 text-center py-4">No invoices found matching your search.</div>';
     });
-    
+
     // Combined Reprint, WhatsApp, and Mark as Paid functionality
-    document.getElementById('searchInvoiceResults')?.addEventListener('click', async function(e) {
+    document.getElementById('searchInvoiceResults')?.addEventListener('click', async function (e) {
       const reprintBtn = e.target.closest('.reprint-btn');
       const whatsappBtn = e.target.closest('.whatsapp-btn');
       const payBtn = e.target.closest('.mark-paid-btn');
-      
+
       // Handle Reprint functionality
       if (reprintBtn) {
         const billId = reprintBtn.getAttribute('data-id');
         window.open(`/api/bills/${billId}/print`, '_blank');
         return; // Prevent further processing
       }
-      
+
       // Handle WhatsApp functionality
       if (whatsappBtn) {
         const billId = whatsappBtn.getAttribute('data-id');
@@ -3029,15 +3261,15 @@ function initializeBillingSystem() {
             showModernAlert('Failed to get bill details', 'error');
             return;
           }
-          
+
           const billData = await billResponse.json();
           const customerPhone = billData.bill?.customer_phone || '';
-          
+
           if (!customerPhone) {
             showModernAlert('Customer phone number not found for this bill', 'error');
             return;
           }
-          
+
           // Now call the WhatsApp endpoint with required parameters
           const response = await fetch(`/api/bills/${billId}/whatsapp`, {
             method: 'POST',
@@ -3049,7 +3281,7 @@ function initializeBillingSystem() {
               language: 'en' // Default to English
             })
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             if (data.whatsapp_url) {
@@ -3065,7 +3297,7 @@ function initializeBillingSystem() {
         }
         return; // Prevent further processing
       }
-      
+
       // Handle Mark as Paid functionality
       if (payBtn) {
         const billId = payBtn.getAttribute('data-id');
@@ -3079,7 +3311,7 @@ function initializeBillingSystem() {
         const billNum = row.children[0].textContent;
         const customer = row.children[1].textContent;
         const date = row.children[2].textContent;
-        const total = parseFloat(row.children[3].textContent.replace('AED',''));
+        const total = parseFloat(row.children[3].textContent.replace('AED', ''));
         const status = row.children[4].textContent;
         // Fetch delivery date from backend (optional, fallback to '-')
         let delivery = '-';
@@ -3087,7 +3319,7 @@ function initializeBillingSystem() {
           const resp = await fetch(`/api/bills/${billId}`);
           const data = await resp.json();
           if (data && data.bill && data.bill.delivery_date) delivery = data.bill.delivery_date;
-        } catch {}
+        } catch { }
         const paid = total - balance;
         showPaymentModal({
           billNum,
@@ -3100,30 +3332,30 @@ function initializeBillingSystem() {
           status,
           onOk: async (amount) => {
             try {
-            payBtn.disabled = true;
-            payBtn.textContent = 'Processing...';
-              
+              payBtn.disabled = true;
+              payBtn.textContent = 'Processing...';
+
               // Add timeout to prevent hanging
               const controller = new AbortController();
               const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-              
-            const resp = await fetch(`/api/bills/${billId}/payment`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
+
+              const resp = await fetch(`/api/bills/${billId}/payment`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ amount_paid: amount }),
                 signal: controller.signal
-            });
-              
-              clearTimeout(timeoutId);
-            const result = await resp.json();
-              
-            if (result && result.bill && !result.error) {
-              showPaymentProgressModal(() => {
-                showModernAlert('Payment recorded. Bill is now ' + (result.bill.status || 'updated'), 'success');
-                document.getElementById('searchInvoiceInput').dispatchEvent(new Event('input'));
               });
-            } else {
-              showModernAlert(result?.error || 'Failed to update payment', 'error');
+
+              clearTimeout(timeoutId);
+              const result = await resp.json();
+
+              if (result && result.bill && !result.error) {
+                showPaymentProgressModal(() => {
+                  showModernAlert('Payment recorded. Bill is now ' + (result.bill.status || 'updated'), 'success');
+                  document.getElementById('searchInvoiceInput').dispatchEvent(new Event('input'));
+                });
+              } else {
+                showModernAlert(result?.error || 'Failed to update payment', 'error');
                 payBtn.disabled = false;
                 payBtn.textContent = 'Mark as Paid';
               }
@@ -3147,11 +3379,11 @@ function initializeBillingSystem() {
   function setupMobileBillingToggle() {
     const mobileBillingToggle = document.getElementById('mobileBillingToggle');
     if (mobileBillingToggle) {
-      mobileBillingToggle.addEventListener('click', function() {
+      mobileBillingToggle.addEventListener('click', function () {
         // Show mobile billing interface
         if (window.TajirPWA && window.TajirPWA.mobileBilling) {
           try {
-          window.TajirPWA.mobileBilling.showMobileBilling();
+            window.TajirPWA.mobileBilling.showMobileBilling();
           } catch (error) {
             console.error('Error showing mobile billing:', error);
             showModernAlert('Mobile billing encountered an error. Please try again.', 'error', 'Error');
@@ -3166,7 +3398,7 @@ function initializeBillingSystem() {
     // Setup Mobile Billing V3 Toggle
     const mobileBillingToggleV3 = document.getElementById('mobileBillingToggleV3');
     if (mobileBillingToggleV3) {
-      mobileBillingToggleV3.addEventListener('click', function() {
+      mobileBillingToggleV3.addEventListener('click', function () {
         console.log('Mobile Billing V3 Toggle clicked');
         // Show mobile billing V3 interface
         if (window.mobileBillingV3) {
@@ -3186,7 +3418,7 @@ function initializeBillingSystem() {
     // Setup Mobile Billing Banner
     const mobileBillingBannerBtn = document.getElementById('mobileBillingBannerBtn');
     if (mobileBillingBannerBtn) {
-      mobileBillingBannerBtn.addEventListener('click', function() {
+      mobileBillingBannerBtn.addEventListener('click', function () {
         if (window.mobileBillingV3) {
           try {
             window.mobileBillingV3.show();
@@ -3231,7 +3463,7 @@ function initializeBillingSystem() {
       document.getElementById('vatPercent'),
       document.getElementById('vatPercentMobile')
     ];
-    
+
     vatInputs.forEach(input => {
       if (input) {
         input.addEventListener('input', () => {
@@ -3244,12 +3476,12 @@ function initializeBillingSystem() {
       }
     });
   }
-  
+
   // Update VAT summary label
   function updateVatSummaryLabel() {
     const vatLabel = document.getElementById('vatLabel');
     const vatInput = document.getElementById('vatPercent') || document.getElementById('vatPercentMobile');
-    
+
     if (vatLabel && vatInput) {
       const vatPercent = parseFloat(vatInput.value) || 0;
       vatLabel.textContent = `Tax (${vatPercent}%):`;
@@ -3260,9 +3492,9 @@ function initializeBillingSystem() {
   function setupPrintButton() {
     const printBtn = document.getElementById('printBtn');
     if (printBtn) {
-      printBtn.addEventListener('click', async function() {
-    
-        
+      printBtn.addEventListener('click', async function () {
+
+
         if (bill.length === 0) {
           showModernAlert('Please add items to the bill first', 'warning', 'No Items');
           return;
@@ -3279,103 +3511,104 @@ function initializeBillingSystem() {
 
         // Check if bill is already saved
         let billId = window.currentBillId;
-        
+
         // If bill is not saved, save it first
         if (!billId) {
-        // Generate bill number if not exists
-        const billNumberInput = document.getElementById('billNumber');
-        if (billNumberInput && !billNumberInput.value.trim()) {
-          const timestamp = Date.now();
-          billNumberInput.value = `BILL-${timestamp}`;
-        }
-
-        // Collect bill data
-        const masterNameElement = document.getElementById('masterName');
-        const masterNameMobileElement = document.getElementById('masterNameMobile');
-        let masterId = null;
-        
-        // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
-        let selectedMasterElement = masterNameElement;
-        if (!selectedMasterElement || !selectedMasterElement.getAttribute('data-selected-master')) {
-          selectedMasterElement = masterNameMobileElement;
-        }
-        
-        if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
-          try {
-            const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
-            masterId = selectedMaster.master_id;
-
-          } catch (e) {
-            console.warn('Failed to parse selected master data:', e);
+          // Generate bill number if not exists
+          const billNumberInput = document.getElementById('billNumber');
+          if (billNumberInput && !billNumberInput.value.trim()) {
+            const timestamp = Date.now();
+            billNumberInput.value = `BILL-${timestamp}`;
           }
-        } else {
-          // Try to use global selectedMasterId as fallback
-          if (window.selectedMasterId) {
-            masterId = window.selectedMasterId;
-          }
-        }
-        
-        // Calculate totals from bill array (same logic as updateTotals function)
-        const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
-        const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
-        const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
-        
-        // Check if VAT should be displayed based on configuration
-        const shouldShowVat = window.shouldDisplayVat ? window.shouldDisplayVat(totalVat > 0 ? 1 : 0) : true;
-        
-        const totalBeforeAdvance = subtotal + totalVat;
-        const amountDue = totalBeforeAdvance - totalAdvance;
-        
-        const billData = {
-          bill: {
-            bill_number: document.getElementById('billNumber')?.value || '',
-            customer_name: document.getElementById('billCustomer')?.value || '',
-            customer_phone: document.getElementById('billMobile')?.value || '',
-            customer_city: document.getElementById('billCity')?.value || '',
-            customer_area: document.getElementById('billArea')?.value || '',
-            customer_trn: document.getElementById('billTRN')?.value || '',
-            customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
-            business_name: document.getElementById('billBusinessName')?.value || '',
-            business_address: document.getElementById('billBusinessAddress')?.value || '',
-            bill_date: document.getElementById('billDate')?.value || '',
-            delivery_date: document.getElementById('deliveryDate')?.value || '',
-            trial_date: document.getElementById('trialDate')?.value || '',
-            master_id: masterId,
-            master_name: document.getElementById('masterName')?.value || '',
-            notes: document.getElementById('billNotes')?.value || '',
-            subtotal: subtotal,
-            discount: 0, // No discount field in current UI
-            vat_amount: totalVat,
-            should_show_vat: shouldShowVat, // Flag for VAT display
-            total_amount: amountDue,
-            advance_paid: totalAdvance,
-            balance_amount: amountDue
-          },
-          items: bill
-        };
 
-        try {
-          // Save bill first
-          const saveResponse = await fetch('/api/bills', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
+          // Collect bill data
+          const masterNameElement = document.getElementById('masterName');
+          const masterNameMobileElement = document.getElementById('masterNameMobile');
+          let masterId = null;
+
+          // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
+          let selectedMasterElement = masterNameElement;
+          if (!selectedMasterElement || !selectedMasterElement.getAttribute('data-selected-master')) {
+            selectedMasterElement = masterNameMobileElement;
+          }
+
+          if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
+            try {
+              const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
+              masterId = selectedMaster.master_id;
+
+            } catch (e) {
+              console.warn('Failed to parse selected master data:', e);
+            }
+          } else {
+            // Try to use global selectedMasterId as fallback
+            if (window.selectedMasterId) {
+              masterId = window.selectedMasterId;
+            }
+          }
+
+          // Calculate totals from bill array (same logic as updateTotals function)
+          const subtotal = bill.reduce((sum, item) => sum + item.total, 0); // Total after discount
+          const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
+          const totalVat = bill.reduce((sum, item) => sum + item.vat_amount, 0); // Sum of individual VAT amounts
+
+          // Check if VAT should be displayed based on configuration
+          const shouldShowVat = window.shouldDisplayVat ? window.shouldDisplayVat(totalVat > 0 ? 1 : 0) : true;
+
+          const totalBeforeAdvance = subtotal + totalVat;
+          const amountDue = totalBeforeAdvance - totalAdvance;
+
+          const billData = {
+            bill: {
+              bill_number: document.getElementById('billNumber')?.value || '',
+              customer_name: document.getElementById('billCustomer')?.value || '',
+              customer_phone: getCombinedPhoneNumber() || '',
+              country_code: document.getElementById('countryCodeText')?.textContent.trim() || '',
+              customer_city: document.getElementById('billCity')?.value || '',
+              customer_area: document.getElementById('billArea')?.value || '',
+              customer_trn: document.getElementById('billTRN')?.value || '',
+              customer_type: document.getElementById('billCustomerType')?.value || 'Individual',
+              business_name: document.getElementById('billBusinessName')?.value || '',
+              business_address: document.getElementById('billBusinessAddress')?.value || '',
+              bill_date: document.getElementById('billDate')?.value || '',
+              delivery_date: document.getElementById('deliveryDate')?.value || '',
+              trial_date: document.getElementById('trialDate')?.value || '',
+              master_id: masterId,
+              master_name: document.getElementById('masterName')?.value || '',
+              notes: document.getElementById('billNotes')?.value || '',
+              subtotal: subtotal,
+              discount: 0, // No discount field in current UI
+              vat_amount: totalVat,
+              should_show_vat: shouldShowVat, // Flag for VAT display
+              total_amount: amountDue,
+              advance_paid: totalAdvance,
+              balance_amount: amountDue
             },
-            body: JSON.stringify(billData)
-          });
+            items: bill
+          };
 
-          const saveResult = await saveResponse.json();
-          
-          if (saveResult.error) {
-            showModernAlert(saveResult.error, 'error', 'Save Failed');
-            return;
-          }
+          try {
+            // Save bill first
+            const saveResponse = await fetch('/api/bills', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(billData)
+            });
 
-          if (saveResult.bill_id) {
+            const saveResult = await saveResponse.json();
+
+            if (saveResult.error) {
+              showModernAlert(saveResult.error, 'error', 'Save Failed');
+              return;
+            }
+
+            if (saveResult.bill_id) {
               // Store the current bill ID
               window.currentBillId = saveResult.bill_id;
               billId = saveResult.bill_id;
-              
+
               // Update bill number field with the actual bill number from response
               if (saveResult.bill_number) {
                 const billNumberElement = document.getElementById('billNumber');
@@ -3383,16 +3616,16 @@ function initializeBillingSystem() {
                   billNumberElement.value = saveResult.bill_number;
                 }
               }
-            
-            // Show success message
+
+              // Show success message
               showSimpleToast('Bill saved successfully!', 'success');
-          } else {
-            showModernAlert('Failed to save bill', 'error', 'Save Failed');
+            } else {
+              showModernAlert('Failed to save bill', 'error', 'Save Failed');
               return;
-          }
-        } catch (error) {
-          console.error('Error saving bill:', error);
-          showModernAlert('Failed to save bill. Please try again.', 'error', 'Save Failed');
+            }
+          } catch (error) {
+            console.error('Error saving bill:', error);
+            showModernAlert('Failed to save bill. Please try again.', 'error', 'Save Failed');
             return;
           }
         }
@@ -3401,10 +3634,10 @@ function initializeBillingSystem() {
         if (billId) {
           // Open print window
           window.open(`/api/bills/${billId}/print`, '_blank');
-          
+
           // Show success message
           showSimpleToast('Print window opened', 'success');
-          
+
           // Reset the billing form after printing
           setTimeout(async () => {
             await resetBillingForm();
@@ -3451,11 +3684,11 @@ function initializeBillingSystem() {
 
   // Initialize payment mode
   initializePaymentMode();
-  
 
-  
-  
-  
+
+
+
+
   // Setup total advance distribution
   function setupTotalAdvanceDistribution() {
     // Add total advance input field in bill summary section
@@ -3475,7 +3708,7 @@ function initializeBillingSystem() {
 
     const totalAdvanceInput = document.getElementById('totalAdvancePaid');
     if (totalAdvanceInput) {
-      totalAdvanceInput.addEventListener('blur', function() {
+      totalAdvanceInput.addEventListener('blur', function () {
         const totalAdvance = parseFloat(this.value) || 0;
         distributeAdvance(totalAdvance);
       });
@@ -3633,7 +3866,7 @@ function initializeBillingSystem() {
       window.paymentMode = 'advance';
     }
   }
-  
+
   // Make functions globally available
   window.initializeBillingSystem = initializeBillingSystem;
   window.showPaymentModal = showPaymentModal;
@@ -3650,36 +3883,36 @@ function initializeBillingSystem() {
   window.populateCustomerFields = populateCustomerFields; // Expose for manual use
   window.clearCustomerFields = clearCustomerFields; // Expose for manual use
   window.setupAddItemHandler = setupAddItemHandler; // Expose for manual use
-  
 
-  
+
+
   // Function to reset billing form with fresh defaults
-  window.resetBillingForm = async function() {
+  window.resetBillingForm = async function () {
     // Clear bill items
     bill.length = 0;
     renderBillTable();
     updateTotals();
-    
+
     // Clear current bill ID to allow new bill creation
     window.currentBillId = null;
-    
+
     // Reset form fields
     const form = document.getElementById('billingForm');
     if (form) {
       form.reset();
     }
-    
+
     // Set fresh defaults
     await setDefaultBillingDates();
     await setBasicDefaultDates();
   };
-  
-  window.editBillItem = function(index) {
+
+  window.editBillItem = function (index) {
     const item = bill[index];
     if (!item) {
       return;
     }
-    
+
     // Desktop form elements
     const billProductElement = document.getElementById('billProduct');
     const billQuantityElement = document.getElementById('billQty');
@@ -3687,7 +3920,7 @@ function initializeBillingSystem() {
     const billDiscountElement = document.getElementById('billDiscount');
     const billAdvanceElement = document.getElementById('billAdvPaid');
     const billVatElement = document.getElementById('vatPercent');
-    
+
     // Mobile form elements
     const billProductMobileElement = document.getElementById('billProductMobile');
     const billQuantityMobileElement = document.getElementById('billQtyMobile');
@@ -3695,7 +3928,7 @@ function initializeBillingSystem() {
     const billDiscountMobileElement = document.getElementById('billDiscountMobile');
     const billAdvanceMobileElement = document.getElementById('billAdvPaidMobile');
     const billVatMobileElement = document.getElementById('vatPercentMobile');
-    
+
     // Populate desktop form elements
     if (billProductElement) {
       billProductElement.value = item.product_name;
@@ -3711,7 +3944,7 @@ function initializeBillingSystem() {
     if (billDiscountElement) billDiscountElement.value = item.discount || 0;
     if (billAdvanceElement) billAdvanceElement.value = item.advance_paid || 0;
     if (billVatElement) billVatElement.value = item.vat_percent || 5;
-    
+
     // Populate mobile form elements
     if (billProductMobileElement) {
       billProductMobileElement.value = item.product_name;
@@ -3722,43 +3955,43 @@ function initializeBillingSystem() {
         product_type: 'Unknown'
       }));
     }
-    
+
     if (billQuantityMobileElement) {
       billQuantityMobileElement.value = item.quantity;
     }
-    
+
     if (billPriceMobileElement) {
       billPriceMobileElement.value = item.rate; // Changed from item.price to item.rate
     }
-    
+
     if (billDiscountMobileElement) billDiscountMobileElement.value = item.discount || 0;
     if (billAdvanceMobileElement) billAdvanceMobileElement.value = item.advance || 0;
     if (billVatMobileElement) billVatMobileElement.value = item.vat_percent || 5;
-    
+
     bill.splice(index, 1);
     renderBillTable();
     updateTotals();
-    
+
     // Show success message
     if (window.showSimpleToast) {
       window.showSimpleToast('Item loaded for editing!', 'info');
     }
-    
+
 
   };
-  
-  window.deleteBillItem = async function(index) {
+
+  window.deleteBillItem = async function (index) {
     const confirmed = await showConfirmDialog(
       'Are you sure you want to delete this item? This action cannot be undone.',
       'Delete Item',
       'delete'
     );
-    
+
     if (confirmed) {
       bill.splice(index, 1);
       renderBillTable();
       updateTotals();
-      
+
       // Show success toast
       if (window.showSimpleToast) {
         window.showSimpleToast('Item deleted successfully!', 'success');
@@ -3770,9 +4003,9 @@ function initializeBillingSystem() {
   function initializeSaveBill() {
     setTimeout(() => {
       const saveBillBtn = document.getElementById('saveBillBtn');
-      
+
       if (saveBillBtn) {
-        saveBillBtn.addEventListener('click', function(e) {
+        saveBillBtn.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
           handleSaveBillClick();
@@ -3783,17 +4016,17 @@ function initializeBillingSystem() {
 
   // WhatsApp functionality
   function initializeWhatsApp() {
-      const whatsappBtn = document.getElementById('whatsappBtn');
-      
-      if (whatsappBtn) {
+    const whatsappBtn = document.getElementById('whatsappBtn');
+
+    if (whatsappBtn) {
       // Remove any existing event listeners to prevent duplicates
       whatsappBtn.removeEventListener('click', handleWhatsAppClick);
-        whatsappBtn.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          handleWhatsAppClick();
-        });
-      }
+      whatsappBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleWhatsAppClick();
+      });
+    }
   }
 
 
@@ -3806,10 +4039,10 @@ function initializeBillingSystem() {
       }
       return null;
     }
-    
+
     // Validate required fields
     const customerMobile = document.getElementById('billMobile')?.value?.trim();
-    
+
     if (!customerMobile) {
       if (window.showSimpleToast) {
         window.showSimpleToast('Please enter customer mobile number in the Mobile field', 'warning');
@@ -3837,13 +4070,13 @@ function initializeBillingSystem() {
     const masterNameElement = document.getElementById('masterName');
     const masterNameMobileElement = document.getElementById('masterNameMobile');
     let masterId = null;
-    
+
     // Try to get master_id from the data-selected-master attribute (check both desktop and mobile)
     let selectedMasterElement = masterNameElement;
     if (!selectedMasterElement || !selectedMasterElement.getAttribute('data-selected-master')) {
       selectedMasterElement = masterNameMobileElement;
     }
-    
+
     if (selectedMasterElement && selectedMasterElement.getAttribute('data-selected-master')) {
       try {
         const selectedMaster = JSON.parse(selectedMasterElement.getAttribute('data-selected-master'));
@@ -3857,7 +4090,7 @@ function initializeBillingSystem() {
         masterId = window.selectedMasterId;
       }
     }
-    
+
     // Ensure items use the current VAT percent
     const vatInputEl = document.getElementById('vatPercent') || document.getElementById('vatPercentMobile');
     const currentVatPercent = parseFloat(vatInputEl?.value) || 0;
@@ -3894,12 +4127,13 @@ function initializeBillingSystem() {
     const totalAdvance = bill.reduce((sum, item) => sum + (item.advance_paid || 0), 0);
     const amountDue = totalBeforeAdvance - totalAdvance;
 
-    
+
     const billData = {
       bill: {
         bill_number: document.getElementById('billNumber')?.value || '',
         customer_name: document.getElementById('billCustomer')?.value || '',
-        customer_phone: document.getElementById('billMobile')?.value || '',
+        customer_phone: getCombinedPhoneNumber() || '',
+        country_code: document.getElementById('countryCodeText')?.textContent.trim() || '',
         customer_city: document.getElementById('billCity')?.value || '',
         customer_area: document.getElementById('billArea')?.value || '',
         customer_trn: document.getElementById('billTRN')?.value || '',
@@ -3934,7 +4168,7 @@ function initializeBillingSystem() {
       }
       return;
     }
-    
+
     try {
       // Create the bill data
       const billData = await prepareBillData();
@@ -3944,7 +4178,7 @@ function initializeBillingSystem() {
         }
         return;
       }
-      
+
       // Save the bill
       const saveResponse = await fetch('/api/bills', {
         method: 'POST',
@@ -3953,24 +4187,24 @@ function initializeBillingSystem() {
         },
         body: JSON.stringify(billData)
       });
-      
+
       if (!saveResponse.ok) {
         throw new Error('Failed to save bill');
       }
-      
+
       const saveResult = await saveResponse.json();
-      
+
       if (saveResult.error) {
         if (window.showSimpleToast) {
           window.showSimpleToast(saveResult.error, 'error');
         }
         return;
       }
-      
+
       if (saveResult.bill_id) {
         // Store the current bill ID
         window.currentBillId = saveResult.bill_id;
-        
+
         // Update bill number field with the actual bill number from response
         if (saveResult.bill_number) {
           const billNumberElement = document.getElementById('billNumber');
@@ -3978,19 +4212,19 @@ function initializeBillingSystem() {
             billNumberElement.value = saveResult.bill_number;
           }
         }
-        
+
         // Show success message
         if (window.showSimpleToast) {
           window.showSimpleToast('Bill saved successfully!', 'success');
         }
-        
+
         // Update button text to show saved status
         const saveBillBtn = document.getElementById('saveBillBtn');
         if (saveBillBtn) {
           saveBillBtn.innerHTML = '<svg data-lucide="check" class="w-4 h-4"></svg> Saved';
           saveBillBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-500');
           saveBillBtn.classList.add('bg-green-600', 'hover:bg-green-500');
-          
+
           // Reset button after 3 seconds
           setTimeout(() => {
             saveBillBtn.innerHTML = '<svg data-lucide="save" class="w-4 h-4"></svg> Save Invoice';
@@ -3998,13 +4232,13 @@ function initializeBillingSystem() {
             saveBillBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-500');
           }, 3000);
         }
-        
+
       } else {
         if (window.showSimpleToast) {
           window.showSimpleToast('Failed to save bill', 'error');
         }
       }
-      
+
     } catch (error) {
       console.error('Error saving bill:', error);
       if (window.showSimpleToast) {
@@ -4015,14 +4249,14 @@ function initializeBillingSystem() {
 
   async function handleWhatsAppClick() {
     try {
-    // Check if there are items in the bill
-    if (bill.length === 0) {
-      if (window.showSimpleToast) {
-        window.showSimpleToast('Please add items to the bill first', 'warning');
+      // Check if there are items in the bill
+      if (bill.length === 0) {
+        if (window.showSimpleToast) {
+          window.showSimpleToast('Please add items to the bill first', 'warning');
+        }
+        return;
       }
-      return;
-    }
-    
+
       // Check if customer mobile is provided
       const customerMobile = document.getElementById('billMobile')?.value?.trim();
       if (!customerMobile) {
@@ -4040,10 +4274,10 @@ function initializeBillingSystem() {
         }
         return;
       }
-    
+
       let billId = window.currentBillId; // Check if bill is already saved
       let billData = null;
-      
+
       // If bill is not saved, ask user if they want to save it first
       if (!billId) {
         const shouldSave = confirm('Would you like to save this bill before sending WhatsApp? This will create a permanent record.');
@@ -4056,7 +4290,7 @@ function initializeBillingSystem() {
             }
             return;
           }
-          
+
           const saveResponse = await fetch('/api/bills', {
             method: 'POST',
             headers: {
@@ -4064,24 +4298,24 @@ function initializeBillingSystem() {
             },
             body: JSON.stringify(billData)
           });
-          
+
           if (!saveResponse.ok) {
             throw new Error('Failed to save bill');
           }
-          
+
           const saveResult = await saveResponse.json();
-          
+
           if (saveResult.error) {
             if (window.showSimpleToast) {
               window.showSimpleToast(saveResult.error, 'error');
             }
             return;
           }
-          
+
           if (saveResult.bill_id) {
             billId = saveResult.bill_id;
             window.currentBillId = billId;
-            
+
             // Update save button to show saved status
             const saveBillBtn = document.getElementById('saveBillBtn');
             if (saveBillBtn) {
@@ -4106,18 +4340,18 @@ function initializeBillingSystem() {
           }
         }
       }
-      
+
       // If we have a saved bill, use the API endpoint
       if (billId) {
-        const customerPhone = document.getElementById('billMobile')?.value?.trim() || '';
-        
+        const customerPhone = getCombinedPhoneNumber() || '';
+
         if (!customerPhone) {
           if (window.showSimpleToast) {
             window.showSimpleToast('Please enter customer mobile number to send WhatsApp', 'warning');
           }
           return;
         }
-        
+
         // Use the existing WhatsApp API endpoint
         const whatsappResponse = await fetch(`/api/bills/${billId}/whatsapp`, {
           method: 'POST',
@@ -4129,25 +4363,25 @@ function initializeBillingSystem() {
             language: 'en'
           })
         });
-        
+
         if (!whatsappResponse.ok) {
           const errorData = await whatsappResponse.json();
           throw new Error(errorData.error || 'Failed to generate WhatsApp link');
         }
-        
+
         const whatsappResult = await whatsappResponse.json();
-        
+
         if (whatsappResult.success && whatsappResult.whatsapp_url) {
           window.open(whatsappResult.whatsapp_url, '_blank');
-          
+
           // Also open printable invoice in new tab using existing endpoint
           const printUrl = `${window.location.origin}/api/bills/${billId}/print`;
           window.open(printUrl, '_blank');
-          
+
           if (window.showSimpleToast) {
             window.showSimpleToast('WhatsApp opened with bill details!', 'success');
           }
-          
+
           // Reset the billing form after successful WhatsApp send
           await resetBillingForm();
         } else {
@@ -4164,17 +4398,17 @@ function initializeBillingSystem() {
         const vatAmount = billData.bill.vat_amount || '0';
         const advancePaid = billData.bill.advance_paid || '0';
         const balanceAmount = billData.bill.balance_amount || '0';
-        
+
         // Create detailed bill message
         let message = `*🧾 TAJIR POS - DRAFT BILL*\n\n`;
         message += `*Customer Details:*\n`;
         message += `• Name: ${customerName}\n`;
         if (customerPhone) message += `• Phone: ${customerPhone}\n\n`;
-        
+
         message += `*Bill Details:*\n`;
         message += `• Bill #: ${billNumber} (Draft)\n`;
         message += `• Date: ${billDate}\n\n`;
-        
+
         // Add items details
         if (billData.items && billData.items.length > 0) {
           message += `*Items:*\n`;
@@ -4183,135 +4417,127 @@ function initializeBillingSystem() {
           });
           message += `\n`;
         }
-        
+
         message += `*Bill Summary:*\n`;
-                    message += `• Subtotal: ${subtotal}\n`;
-            message += `• VAT: ${vatAmount}\n`;
-            message += `• Advance Paid: ${advancePaid}\n`;
-            message += `• Balance Amount: ${balanceAmount}\n`;
-            message += `*Total Amount: ${totalAmount}*\n\n`;
+        message += `• Subtotal: ${subtotal}\n`;
+        message += `• VAT: ${vatAmount}\n`;
+        message += `• Advance Paid: ${advancePaid}\n`;
+        message += `• Balance Amount: ${balanceAmount}\n`;
+        message += `*Total Amount: ${totalAmount}*\n\n`;
         message += `*Note: This is a draft bill. Please save it in the POS system for permanent record.*`;
-        
+
         // Encode the message for WhatsApp
         const encodedMessage = encodeURIComponent(message);
-        
+
         // Construct WhatsApp URL
         let whatsappUrl;
         if (customerPhone) {
+          // Trust the customerPhone as it comes from the backend or combined input
+          // which should already be a full international number (e.g., +97150...)
+          // We just strip the + for wa.me link
           const cleanPhone = customerPhone.replace(/\D/g, '');
-          let phoneWithCode = cleanPhone;
-          
-          // Handle UAE phone numbers properly
-          if (cleanPhone.length > 0) {
-            if (cleanPhone.startsWith('971')) {
-              phoneWithCode = cleanPhone;
-            } else if (cleanPhone.startsWith('0')) {
-              phoneWithCode = '971' + cleanPhone.substring(1);
-            } else if (cleanPhone.length === 9) {
-              phoneWithCode = '971' + cleanPhone;
-            } else {
-            phoneWithCode = '971' + cleanPhone;
-            }
-          }
-          
-          whatsappUrl = `https://wa.me/${phoneWithCode}?text=${encodedMessage}`;
+          whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
         } else {
           whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
         }
-        
-        window.open(whatsappUrl, '_blank');
-        
-        if (window.showSimpleToast) {
-          window.showSimpleToast('WhatsApp opened with draft bill details!', 'success');
-        }
-        
-        // Reset the billing form after successful WhatsApp send (draft case)
-        await resetBillingForm();
+
+      window.open(whatsappUrl, '_blank');
+
+      if (window.showSimpleToast) {
+        window.showSimpleToast('WhatsApp opened with draft bill details!', 'success');
       }
+
+      // Reset the billing form after successful WhatsApp send (draft case)
+      // await resetBillingForm(); // Commented out to prevent clearing form if user just wants to send message
+      // Or make it optional? The user requirement doesn't specify clearing. 
+      // Existing code clears it, so I'll keep it but maybe it is annoying?
+      // Let's keep existing behavior for now.
+      await resetBillingForm();
+    }
       
     } catch (error) {
-      console.error('Error handling WhatsApp:', error);
-      if (window.showSimpleToast) {
-        window.showSimpleToast('Failed to send WhatsApp. Please try again.', 'error');
-      }
+    console.error('Error handling WhatsApp:', error);
+    if (window.showSimpleToast) {
+      window.showSimpleToast('Failed to send WhatsApp. Please try again.', 'error');
     }
   }
+}
 
-  // Function to update bill item fields inline
-  window.updateBillItemField = function(index, field, value) {
-    const item = bill[index];
-    if (!item) return;
+// Function to update bill item fields inline
+window.updateBillItemField = function (index, field, value) {
+  const item = bill[index];
+  if (!item) return;
 
-    // Convert value to appropriate type
-    let parsedValue;
-    if (field === 'quantity') {
-      parsedValue = parseInt(value) || 1;
-      if (parsedValue < 1) parsedValue = 1;
-    } else {
-      parsedValue = parseFloat(value) || 0;
-      if (parsedValue < 0) parsedValue = 0;
-    }
+  // Convert value to appropriate type
+  let parsedValue;
+  if (field === 'quantity') {
+    parsedValue = parseInt(value) || 1;
+    if (parsedValue < 1) parsedValue = 1;
+  } else {
+    parsedValue = parseFloat(value) || 0;
+    if (parsedValue < 0) parsedValue = 0;
+  }
 
-    // Update the field
-    item[field] = parsedValue;
+  // Update the field
+  item[field] = parsedValue;
 
-    // Check if VAT is included in price
-    const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
-    console.log('🔧 updateBillItemField: includeVatInPrice =', includeVatInPrice);
+  // Check if VAT is included in price
+  const includeVatInPrice = window.getIncludeVatInPrice ? window.getIncludeVatInPrice() : false;
+  console.log('🔧 updateBillItemField: includeVatInPrice =', includeVatInPrice);
 
-    // Recalculate totals for this item
-    const rate = parseFloat(item.rate) || 0;
-    const quantity = parseInt(item.quantity) || 0;
-    const discount = parseFloat(item.discount) || 0;
-    const vatPercent = parseFloat(item.vat_percent) || 5;
+  // Recalculate totals for this item
+  const rate = parseFloat(item.rate) || 0;
+  const quantity = parseInt(item.quantity) || 0;
+  const discount = parseFloat(item.discount) || 0;
+  const vatPercent = parseFloat(item.vat_percent) || 5;
 
-    // Calculate subtotal (before discount)
-    const subtotal = rate * quantity;
+  // Calculate subtotal (before discount)
+  const subtotal = rate * quantity;
 
-    // Calculate discount amount from percentage
-    const discountAmount = (subtotal * discount / 100);
+  // Calculate discount amount from percentage
+  const discountAmount = (subtotal * discount / 100);
 
-    // Calculate total after discount
-    const totalAfterDiscount = subtotal - discountAmount;
+  // Calculate total after discount
+  const totalAfterDiscount = subtotal - discountAmount;
 
-    let vatAmount, total;
-    if (includeVatInPrice) {
-      // VAT is already included in the price, so don't add extra VAT
-      vatAmount = 0;
-      total = totalAfterDiscount;
-      console.log('🔧 updateBillItemField: VAT included in price, setting vatAmount=0, total=', total);
-    } else {
-      // Calculate VAT amount and add to total
-      vatAmount = (totalAfterDiscount * vatPercent) / 100;
-      total = totalAfterDiscount + vatAmount;
-      console.log('🔧 updateBillItemField: VAT added on top, vatAmount=', vatAmount, 'total=', total);
-    }
+  let vatAmount, total;
+  if (includeVatInPrice) {
+    // VAT is already included in the price, so don't add extra VAT
+    vatAmount = 0;
+    total = totalAfterDiscount;
+    console.log('🔧 updateBillItemField: VAT included in price, setting vatAmount=0, total=', total);
+  } else {
+    // Calculate VAT amount and add to total
+    vatAmount = (totalAfterDiscount * vatPercent) / 100;
+    total = totalAfterDiscount + vatAmount;
+    console.log('🔧 updateBillItemField: VAT added on top, vatAmount=', vatAmount, 'total=', total);
+  }
 
-    // Update item totals
-    item.total = total;
-    item.vat_amount = vatAmount;
+  // Update item totals
+  item.total = total;
+  item.vat_amount = vatAmount;
 
-    // Re-render table and update totals
-    renderBillTable();
-    updateTotals();
+  // Re-render table and update totals
+  renderBillTable();
+  updateTotals();
 
-    // Update total advance field if advance was changed
-    if (field === 'advance_paid') {
-      updateTotalAdvanceField();
-    }
+  // Update total advance field if advance was changed
+  if (field === 'advance_paid') {
+    updateTotalAdvanceField();
+  }
 
-    // Show success message
-    if (window.showSimpleToast) {
-      window.showSimpleToast(`${field.charAt(0).toUpperCase() + field.slice(1)} updated!`, 'success');
-    }
-  };
+  // Show success message
+  if (window.showSimpleToast) {
+    window.showSimpleToast(`${field.charAt(0).toUpperCase() + field.slice(1)} updated!`, 'success');
+  }
+};
 
-  // Expose functions globally for debugging
-  window.initializeSaveBill = initializeSaveBill;
-  window.initializeWhatsApp = initializeWhatsApp;
-  window.handleSaveBillClick = handleSaveBillClick;
-  window.handleWhatsAppClick = handleWhatsAppClick;
-  window.prepareBillData = prepareBillData;
+// Expose functions globally for debugging
+window.initializeSaveBill = initializeSaveBill;
+window.initializeWhatsApp = initializeWhatsApp;
+window.handleSaveBillClick = handleSaveBillClick;
+window.handleWhatsAppClick = handleWhatsAppClick;
+window.prepareBillData = prepareBillData;
 }
 
 // Loyalty helpers inside module scope
@@ -4326,7 +4552,7 @@ async function renderLoyaltySummary(customerId) {
 
     // Load current user id via existing session endpoints isn't trivial here; just call the loyalty profile API
     const resp = await fetch(`/api/loyalty/customers/${customerId}`);
-    
+
     // Check if response is successful (200) or not found (404)
     if (resp.ok) {
       const data = await resp.json();
@@ -4349,7 +4575,7 @@ async function renderLoyaltySummary(customerId) {
       console.error('Loyalty API error:', resp.status, resp.statusText);
       showNotEnrolledState();
     }
-    
+
     function showNotEnrolledState() {
       summary.classList.remove('hidden');
       tierBadge.textContent = 'Not enrolled';
@@ -4379,7 +4605,7 @@ async function renderLoyaltySummary(customerId) {
     const pointsText = document.getElementById('loyaltyPointsText');
     const enrollBtn = document.getElementById('loyaltyEnrollBtn');
     const note = document.getElementById('loyaltyNote');
-    
+
     if (summary && tierBadge && pointsText && enrollBtn && note) {
       summary.classList.remove('hidden');
       tierBadge.textContent = 'Not enrolled';
@@ -4398,19 +4624,19 @@ if (document.readyState === 'loading') {
     try {
       // First, load billing configuration
       await loadBillingConfiguration();
-      
+
       // Apply configuration to show/hide fields
       applyBillingConfiguration();
-      
+
       // Then call the original initialization
       initializeBillingSystem();
       // Attach VAT listeners
-      try { attachVatChangeListeners(); } catch(e) {}
+      try { attachVatChangeListeners(); } catch (e) { }
     } catch (error) {
       console.error('Error in async billing initialization:', error);
       // Fallback to original initialization
       initializeBillingSystem();
-      try { attachVatChangeListeners(); } catch(e) {}
+      try { attachVatChangeListeners(); } catch (e) { }
     }
   });
 } else {
@@ -4419,18 +4645,18 @@ if (document.readyState === 'loading') {
     try {
       // First, load billing configuration
       await loadBillingConfiguration();
-      
+
       // Apply configuration to show/hide fields
       applyBillingConfiguration();
-      
+
       // Then call the original initialization
       initializeBillingSystem();
-      try { attachVatChangeListeners(); } catch(e) {}
+      try { attachVatChangeListeners(); } catch (e) { }
     } catch (error) {
       console.error('Error in async billing initialization:', error);
       // Fallback to original initialization
       initializeBillingSystem();
-      try { attachVatChangeListeners(); } catch(e) {}
+      try { attachVatChangeListeners(); } catch (e) { }
     }
   })();
 }
@@ -4446,10 +4672,10 @@ function recalcAllItemsForCurrentVat() {
   console.log(`🔄 Recalculating VAT for all items with ${currentVat}%, includeVatInPrice =`, includeVatInPrice);
   console.log(`VAT Input element:`, vatInput);
   console.log(`VAT Input value:`, vatInput?.value);
-  
+
   // Try multiple ways to access the bill array
   let billArray = null;
-  
+
   if (typeof bill !== 'undefined' && Array.isArray(bill)) {
     billArray = bill;
     console.log('✓ Found bill array:', billArray.length, 'items');
@@ -4460,7 +4686,7 @@ function recalcAllItemsForCurrentVat() {
     console.error('❌ Bill array not found. Available globals:', Object.keys(window).filter(k => k.includes('bill')));
     return;
   }
-  
+
   if (billArray && billArray.length > 0) {
     billArray.forEach((it, index) => {
       const rate = parseFloat(it.rate) || 0;
@@ -4469,7 +4695,7 @@ function recalcAllItemsForCurrentVat() {
       const subtotalBeforeDiscount = rate * quantity;
       const discountAmount = (subtotalBeforeDiscount * discount) / 100;
       const afterDiscount = subtotalBeforeDiscount - discountAmount;
-      
+
       // Update VAT values
       it.vat_percent = currentVat;
       if (includeVatInPrice) {
@@ -4479,10 +4705,10 @@ function recalcAllItemsForCurrentVat() {
         it.vat_amount = (afterDiscount * currentVat) / 100;
         it.total = afterDiscount + it.vat_amount;
       }
-      
+
       console.log(`Item ${index}: Rate=${rate}, Qty=${quantity}, Discount=${discount}%, VAT=${currentVat}%, VAT Amount=${it.vat_amount}, Total=${it.total}`);
     });
-    
+
     // Call global functions if they exist
     if (typeof renderBillTable === 'function') {
       renderBillTable();
@@ -4490,14 +4716,14 @@ function recalcAllItemsForCurrentVat() {
     } else {
       console.error('❌ renderBillTable function not found');
     }
-    
+
     if (typeof updateTotals === 'function') {
       updateTotals();
       console.log('✓ Totals updated');
     } else {
       console.error('❌ updateTotals function not found');
     }
-    
+
     // Also update VAT display
     if (typeof updateVatDisplay === 'function') {
       updateVatDisplay();
@@ -4513,7 +4739,7 @@ function recalcAllItemsForCurrentVat() {
 function attachVatChangeListeners() {
   const vatEls = [document.getElementById('vatPercent'), document.getElementById('vatPercentMobile')].filter(Boolean);
   console.log(`Found ${vatEls.length} VAT input elements:`, vatEls.map(el => el.id));
-  
+
   vatEls.forEach((el) => {
     el.removeEventListener('input', recalcAllItemsForCurrentVat);
     el.addEventListener('input', recalcAllItemsForCurrentVat);
@@ -4523,7 +4749,7 @@ function attachVatChangeListeners() {
     el.addEventListener('blur', recalcAllItemsForCurrentVat);
     console.log(`✓ VAT change listeners attached to ${el.id}`);
   });
-  
+
   // Also try to attach listeners with a delay in case elements are not ready
   setTimeout(() => {
     const delayedVatEls = [document.getElementById('vatPercent'), document.getElementById('vatPercentMobile')].filter(Boolean);
@@ -4546,7 +4772,7 @@ function testVatEventListeners() {
   if (vatInput) {
     console.log('VAT input found:', vatInput);
     console.log('VAT input value:', vatInput.value);
-    
+
     // Simulate a change event
     const event = new Event('change', { bubbles: true });
     vatInput.dispatchEvent(event);

@@ -2068,10 +2068,18 @@ if (typeof window.MobileBilling === 'undefined') {
       return;
     }
     
+    // Try to extract country code from the phone number if not explicitly provided
+    // This is a fallback - ideally the UI should provide the country code separately
+    let countryCode = '';
+    // if (customerPhone && customerPhone.startsWith('+')) {
+    //   // Extract country code logic could go here if needed
+    // }
+
     this.currentBill.customer = {
       id: customerId,
       name: customerName || 'Unknown Customer',
       phone: customerPhone || '',
+      country_code: document.getElementById('countryCode')?.value || '', // Try to get from input if available
       city: customerCity || '',
       area: customerArea || ''
     };
@@ -2303,8 +2311,9 @@ if (typeof window.MobileBilling === 'undefined') {
          bill: {
            bill_number: billNumber,
            customer_name: this.currentBill.customer.name,
-           customer_phone: this.currentBill.customer.phone,
-           customer_city: this.currentBill.customer.city || '',
+          customer_phone: this.currentBill.customer.phone,
+          country_code: this.currentBill.customer.country_code || '', // Pass country code
+          customer_city: this.currentBill.customer.city || '',
            customer_area: this.currentBill.customer.area || '',
            customer_trn: '',
            customer_type: 'Individual',

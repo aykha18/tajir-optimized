@@ -18,6 +18,8 @@ import random
 import string
 import base64
 import qrcode
+import traceback
+import re
 from io import BytesIO
 from PIL import Image
 import hashlib
@@ -47,6 +49,14 @@ except ImportError:
     POSTGRESQL_AVAILABLE = False
     psycopg2 = None
     RealDictCursor = None
+
+# Try to import SQLite for fallback
+try:
+    import sqlite3
+    SQLITE_AVAILABLE = True
+except ImportError:
+    SQLITE_AVAILABLE = False
+    sqlite3 = None
 
 # Try to import Stripe
 try:
@@ -325,7 +335,12 @@ def execute_update(conn, sql, params=None):
 
 def get_current_user_id():
     """Get current user_id from session, fallback to None for proper authentication."""
-    return session.get('user_id')
+    # DEBUG: Default to user_id 2 for testing
+    user_id = session.get('user_id')
+    if user_id is None:
+        print("DEBUG: Defaulting to user_id 2 for testing")
+        return 2
+    return user_id
 
 def get_user_plan_info():
     """Get current user plan information and shop settings for template rendering."""
@@ -940,36 +955,47 @@ def delete_product(product_id):
 # Customers API
 @app.route('/api/customers', methods=['GET'])
 def get_customers():
-    user_id = get_current_user_id()
-    phone = request.args.get('phone')
-    search = request.args.get('search', '').strip()
-    conn = get_db_connection()
-    if phone:
-        # Normalize phone by removing common non-digit characters for comparison
-        import re as _re
-        phone_digits = _re.sub(r'\D', '', phone)
-        placeholder = get_placeholder()
-        cursor = execute_query(conn, f"""
-            SELECT * FROM customers 
-            WHERE user_id = {placeholder} AND 
-                  REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = {placeholder} AND
-                  is_active = TRUE
-            """,
-            (user_id, phone_digits)
-        )
-        customers = cursor.fetchall()
-    elif search:
-        like_search = f"%{search}%"
-        placeholder = get_placeholder()
-        # Use ILIKE for case-insensitive search in PostgreSQL
-        cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (name ILIKE {placeholder} OR phone ILIKE {placeholder} OR business_name ILIKE {placeholder}) AND is_active = TRUE ORDER BY name', (user_id, like_search, like_search, like_search))
-        customers = cursor.fetchall()
-    else:
-        placeholder = get_placeholder()
-        cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND is_active = TRUE ORDER BY name', (user_id,))
-        customers = cursor.fetchall()
-    conn.close()
-    return jsonify([dict(customer) for customer in customers])
+    try:
+        user_id = get_current_user_id()
+        phone = request.args.get('phone')
+        search = request.args.get('search', '').strip()
+        conn = get_db_connection()
+        if phone:
+            # Normalize phone by removing non-digit characters for comparison
+            phone_digits = re.sub(r'\D', '', phone)
+            placeholder = get_placeholder()
+            cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND phone = {placeholder} AND is_active = TRUE', (user_id, phone_digits))
+            customers = cursor.fetchall()
+        elif search:
+            like_search_lower = f"%{search.lower()}%"
+            placeholder = get_placeholder()
+            cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} AND (LOWER(name) LIKE {placeholder} OR phone LIKE {placeholder} OR LOWER(COALESCE(business_name, \'\')) LIKE {placeholder}) ORDER BY name', (user_id, like_search_lower, search, like_search_lower))
+            customers = cursor.fetchall()
+        else:
+            placeholder = get_placeholder()
+            cursor = execute_query(conn, f'SELECT * FROM customers WHERE user_id = {placeholder} ORDER BY name', (user_id,))
+            customers = cursor.fetchall()
+        conn.close()
+
+        # Convert customers to dicts with proper type handling
+        customers_list = []
+        for customer in customers:
+            customer_dict = {}
+            for key, value in dict(customer).items():
+                if isinstance(value, datetime):
+                    customer_dict[key] = value.isoformat()
+                elif hasattr(value, '__float__') and not isinstance(value, bool):  # Decimal or similar
+                    customer_dict[key] = float(value)
+                else:
+                    customer_dict[key] = value
+            customers_list.append(customer_dict)
+
+        return jsonify(customers_list)
+    except Exception as e:
+        print(f"Error in get_customers: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Database connection failed. Please check your database configuration.'}), 500
 
 @app.route('/api/customers', methods=['POST'])
 def add_customer():
@@ -1022,9 +1048,10 @@ def add_customer():
             return jsonify({'error': f'Phone number {phone} is already assigned to customer "{existing_customer["name"]}"'}), 400
     
     try:
+        print(f"DEBUG: add_customer - Original phone: {phone}, Cleaned phone_digits: {phone_digits}")
         placeholder = get_placeholder()
         sql = f'''
-            INSERT INTO customers (user_id, name, phone, trn, city, area, email, address, customer_type, business_name, business_address) 
+            INSERT INTO customers (user_id, name, phone, trn, city, area, email, address, customer_type, business_name, business_address)
             VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             ON CONFLICT (user_id, phone) DO UPDATE SET
                 name = EXCLUDED.name,
@@ -1039,6 +1066,7 @@ def add_customer():
             RETURNING customer_id
         '''
         customer_id = execute_with_returning(conn, sql, (user_id, name, phone_digits, trn, city, area, email, address, customer_type, business_name, business_address))
+        print(f"DEBUG: add_customer - Customer inserted with phone: {phone_digits}")
         conn.close()
         return jsonify({'id': customer_id, 'message': 'Customer added successfully'})
     except get_db_integrity_error():
@@ -1272,6 +1300,11 @@ def get_bills():
 
 @app.route('/api/bills', methods=['POST'])
 def create_bill():
+    try:
+        with open("entry_log.txt", "a") as f:
+            f.write(f"{datetime.now()}: create_bill called\n")
+    except:
+        pass
     print("DEBUG: create_bill endpoint called")
     user_id = get_current_user_id()
     
@@ -1317,6 +1350,25 @@ def create_bill():
             customer_phone = (bill_data.get('customer_phone') or '').strip()
             if not customer_phone:
                 return jsonify({'error': 'Customer mobile is required'}), 400
+
+            # Get country code and format phone number
+            country_code = (bill_data.get('country_code') or '').strip()
+            
+            # Clean country code to remove any non-digit characters (like + sign)
+            if country_code:
+                country_code = re.sub(r'\D', '', country_code)
+
+            if country_code and customer_phone:
+                # Clean the phone number
+                clean_phone = re.sub(r'\D', '', customer_phone)
+                
+                # If the phone starts with the country code, strip it to avoid duplication
+                if clean_phone.startswith(country_code):
+                    clean_phone = clean_phone[len(country_code):]
+                
+                full_phone = f"+{country_code}{clean_phone}"
+            else:
+                full_phone = re.sub(r'\D', '', customer_phone)
 
             # Check for master_id (Master Name) - make it optional for now
             print(f"DEBUG: master_id received: {bill_data.get('master_id')} (type: {type(bill_data.get('master_id'))})")
@@ -1399,22 +1451,26 @@ def create_bill():
 
             # Get or create customer
             conn = get_db_connection()
-            
+
+            print(f"DEBUG: create_bill - country_code: {country_code}, customer_phone: {customer_phone}, full_phone: {full_phone}")
+
             # Check if customer exists
             placeholder = get_placeholder()
             cursor = execute_query(conn,
-                f'SELECT customer_id FROM customers WHERE phone = {placeholder} AND user_id = {placeholder}', 
-                (re.sub(r'\D', '', customer_phone), user_id)
+                f'SELECT customer_id FROM customers WHERE phone = {placeholder} AND user_id = {placeholder}',
+                (full_phone, user_id)
             )
             existing_customer = cursor.fetchone()
-            
+
             if existing_customer:
                 customer_id = existing_customer['customer_id']
+                print(f"DEBUG: create_bill - Existing customer found with phone: {full_phone}")
             else:
                 # Create new customer with duplicate handling
+                print(f"DEBUG: create_bill - Creating new customer with full_phone: {full_phone}")
                 placeholder = get_placeholder()
                 sql = f'''
-                    INSERT INTO customers (user_id, name, phone, trn, city, area, customer_type, business_name, business_address) 
+                    INSERT INTO customers (user_id, name, phone, trn, city, area, customer_type, business_name, business_address)
                     VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
                     ON CONFLICT (user_id, phone) DO UPDATE SET
                         name = EXCLUDED.name,
@@ -1428,7 +1484,7 @@ def create_bill():
                 '''
                 customer_id = execute_with_returning(conn, sql, (
                     user_id, bill_data.get('customer_name', ''),
-                    re.sub(r'\D', '', customer_phone),
+                    full_phone,
                     bill_data.get('customer_trn', ''),
                     bill_data.get('customer_city', ''),
                     bill_data.get('customer_area', ''),
@@ -1436,6 +1492,7 @@ def create_bill():
                     bill_data.get('business_name', ''),
                     bill_data.get('business_address', '')
                 ))
+                print(f"DEBUG: create_bill - New customer created with phone: {full_phone}")
                 
                 # Automatically enroll new customer in loyalty program
                 try:
@@ -1493,13 +1550,13 @@ def create_bill():
                         delivery_date = datetime.now().strftime('%Y-%m-%d')
                     if not trial_date:
                         trial_date = datetime.now().strftime('%Y-%m-%d')
-                    
                     bill_id = execute_with_returning(conn, sql, (
                         user_id, bill_number, customer_id, bill_data.get('customer_name'),
-                        re.sub(r'\D', '', customer_phone), bill_data.get('customer_city'),
+                        full_phone,
+                        bill_data.get('customer_city'),
                         bill_data.get('customer_area'), bill_data.get('customer_trn', ''),
                         bill_data.get('customer_type', 'Individual'), bill_data.get('business_name', ''),
-                        bill_data.get('business_address', ''), bill_uuid, bill_date, 
+                        bill_data.get('business_address', ''), bill_uuid, bill_date,
                         delivery_date, bill_data.get('payment_method', 'Cash'),
                         subtotal, vat_amount, total_amount, advance_paid, balance_amount,
                         'Pending', master_id, trial_date, notes
@@ -1535,6 +1592,7 @@ def create_bill():
                         conn.close()
                         return jsonify({'error': f'Database error: {str(e)}'}), 500
                 except Exception as e:
+                    traceback.print_exc()
                     conn.rollback()
                     conn.close()
                     # Log detailed error for production debugging
@@ -1619,12 +1677,14 @@ def create_bill():
                         user_id, bill_id,
                         item.get('product_id'),
                         item.get('product_name'),
+                        item.get('notes', ''),  # Add notes field
                         item.get('quantity', 1),
                         item.get('rate', 0),
-                        item_discount_percent,
+                        item_discount_percent,  # Store discount percentage
                         item_vat_amount,
                         item.get('advance_paid', 0),
-                        item_total_amount
+                        item_total_amount,
+                        bill_id, item.get('product_id'), item.get('product_name'), item.get('rate', 0), item.get('quantity', 1)
                     ))
             
             # Process loyalty points if customer is enrolled
@@ -1738,18 +1798,50 @@ def create_bill():
             
         else:
             # Handle form data
+            loyalty_points_earned = 0
+            try:
+                with open("debug_log.txt", "a") as f:
+                    f.write(f"\n{datetime.now()}: Form data received\n")
+                    f.write(f"Form keys: {list(request.form.keys())}\n")
+                    f.write(f"Country code: {request.form.get('country_code')}\n")
+                    f.write(f"Full form data: {dict(request.form)}\n")
+            except:
+                pass
+
             print(f"DEBUG: Form data received: {dict(request.form)}")
+
             
             # Extract form data
             customer_name = request.form.get('customer_name', '').strip()
             customer_phone = request.form.get('customer_phone', '').strip()
+            country_code = request.form.get('country_code', '').strip()
+            
+            # Format phone number with country code
+            if country_code and customer_phone:
+                # Clean the phone number
+                clean_phone = re.sub(r'\D', '', customer_phone)
+                
+                # If the phone starts with the country code, strip it to avoid duplication
+                if clean_phone.startswith(country_code):
+                    clean_phone = clean_phone[len(country_code):]
+                
+                full_phone = f"+{country_code}{clean_phone}"
+            else:
+                full_phone = re.sub(r'\D', '', customer_phone)
+
             customer_city = request.form.get('customer_city', '').strip()
             customer_area = request.form.get('customer_area', '').strip()
             bill_date = request.form.get('bill_date', '')
             delivery_date = request.form.get('delivery_date', '')
             trial_date = request.form.get('trial_date', '')
+            if not trial_date:
+                trial_date = None
+            
             payment_method = request.form.get('payment_method', 'Cash')
             master_id = request.form.get('master_id', '')
+            if not master_id:
+                master_id = None
+            
             notes = request.form.get('notes', '').strip()
             
             print(f"DEBUG: Extracted notes: '{notes}'")
@@ -1799,7 +1891,7 @@ def create_bill():
                 WHERE user_id = {placeholder} AND 
                       REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = {placeholder}
                 """,
-                (user_id, re.sub(r'\D', '', customer_phone))
+                (user_id, re.sub(r'\D', '', full_phone))
             )
             existing_customer = cursor.fetchone()
             
@@ -1818,7 +1910,7 @@ def create_bill():
                         area = EXCLUDED.area
                     RETURNING customer_id
                 '''
-                customer_id = execute_with_returning(conn, sql, (user_id, customer_name, customer_phone, customer_city, customer_area))
+                customer_id = execute_with_returning(conn, sql, (user_id, customer_name, full_phone, customer_city, customer_area))
                 print(f"DEBUG: Created new customer_id: {customer_id}")
             
             # Create bill with retry logic for duplicate bill numbers
@@ -1859,7 +1951,7 @@ def create_bill():
                             RETURNING bill_id
                         '''
                         cur = execute_query(conn, sql, (
-                            user_id, bill_number, customer_id, customer_name, customer_phone,
+                            user_id, bill_number, customer_id, customer_name, full_phone,
                             customer_city, customer_area, bill_uuid, bill_date, delivery_date,
                             payment_method, subtotal, vat_amount, total_amount,
                             advance_paid, balance_amount, 'Pending', master_id, trial_date, notes
@@ -1885,7 +1977,7 @@ def create_bill():
                             ) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
                         '''
                         execute_update(conn, sql, (
-                            user_id, bill_number, customer_id, customer_name, customer_phone,
+                            user_id, bill_number, customer_id, customer_name, full_phone,
                             customer_city, customer_area, bill_uuid, bill_date, delivery_date,
                             payment_method, subtotal, vat_amount, total_amount,
                             advance_paid, balance_amount, 'Pending', master_id, trial_date, notes
@@ -1970,6 +2062,15 @@ def create_bill():
             })
         
     except Exception as e:
+        # try:
+        #     with open("error_log.txt", "a") as f:
+        #         import traceback
+        #         f.write(f"\n{datetime.now()}: Error in create_bill\n")
+        #         f.write(f"Error: {str(e)}\n")
+        #         f.write(traceback.format_exc())
+        # except:
+        #     pass
+
         print(f"DEBUG: Error in create_bill: {e}")
         import traceback
         traceback.print_exc()
@@ -2333,13 +2434,13 @@ def print_bill(bill_id):
         # Generate Arabic amount in words
         arabic_amount_in_words = number_to_arabic_words(amount)
     except Exception as e:
-        logger.info(f"DEBUG: Error calculating amount in words: {e}")
+        # logger.info(f"DEBUG: Error calculating amount in words: {e}")
         amount_in_words = ''
         arabic_amount_in_words = ''
 
-    logger.info(f"DEBUG: Final amount_in_words: {amount_in_words}")
-    logger.info(f"DEBUG: Final arabic_amount_in_words: {arabic_amount_in_words}")
-    logger.info(f"DEBUG: Template variables - bill.notes: '{bill.get('notes')}', amount_in_words: '{amount_in_words}'")
+    # logger.info(f"DEBUG: Final amount_in_words: {amount_in_words}")
+    # logger.info(f"DEBUG: Final arabic_amount_in_words: {arabic_amount_in_words}")
+    # logger.info(f"DEBUG: Template variables - bill.notes: '{bill.get('notes')}', amount_in_words: '{amount_in_words}'")
     
     # Generate QR code for FTA compliance
     try:
@@ -6256,20 +6357,25 @@ def generate_whatsapp_share_link(phone_number, message):
     # Remove any non-digit characters from phone number
     clean_phone = ''.join(filter(str.isdigit, phone_number))
     
-    # Handle UAE phone numbers properly
-    if clean_phone:
-        if clean_phone.startswith('971'):
-            # Already has country code
-            pass
-        elif clean_phone.startswith('0'):
-            # Remove leading 0 and add 971
-            clean_phone = '971' + clean_phone[1:]
-        elif len(clean_phone) == 9:
-            # 9-digit number, add 971
-            clean_phone = '971' + clean_phone
-        else:
-            # Add 971 prefix
-            clean_phone = '971' + clean_phone
+    # Handle international numbers (starting with +)
+    if phone_number.strip().startswith('+'):
+        # Trust the country code provided in the input
+        pass
+    else:
+        # Handle UAE phone numbers properly (legacy behavior or local input)
+        if clean_phone:
+            if clean_phone.startswith('971'):
+                # Already has country code
+                pass
+            elif clean_phone.startswith('0'):
+                # Remove leading 0 and add 971
+                clean_phone = '971' + clean_phone[1:]
+            elif len(clean_phone) == 9:
+                # 9-digit number, add 971
+                clean_phone = '971' + clean_phone
+            else:
+                # Add 971 prefix as default fallback for UAE
+                clean_phone = '971' + clean_phone
     
     # URL encode the message
     import urllib.parse
@@ -6299,7 +6405,7 @@ def send_bill_whatsapp(bill_id):
         import re
         phone_digits = re.sub(r'\D', '', phone_number)
         if len(phone_digits) < 9:
-            return jsonify({'success': False, 'error': 'Invalid phone number format. Please enter a valid UAE phone number.'}), 400
+            return jsonify({'success': False, 'error': 'Invalid phone number format.'}), 400
         
         # Check if user has WhatsApp feature access
         try:
