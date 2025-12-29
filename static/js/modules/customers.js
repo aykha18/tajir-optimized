@@ -1,6 +1,39 @@
 // Customers Module
 
 let editingCustomerId = null;
+let customerCountryCodes = [];
+
+// Load customer country codes
+async function loadCustomerCountryCodes() {
+  console.log('loadCustomerCountryCodes: Starting to load country codes');
+  try {
+    const response = await fetch('/static/data/countryCodes.json');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    customerCountryCodes = await response.json();
+    console.log('Customer country codes loaded successfully:', customerCountryCodes.length, 'entries');
+  } catch (error) {
+    console.error('Error loading customer country codes:', error);
+    // Fallback to hardcoded array
+    customerCountryCodes = [
+      { code: "+971", country: "UAE", flag: "🇦🇪" },
+      { code: "+91", country: "India", flag: "🇮🇳" },
+      { code: "+966", country: "Saudi Arabia", flag: "🇸🇦" },
+      { code: "+973", country: "Bahrain", flag: "🇧🇭" },
+      { code: "+968", country: "Oman", flag: "🇴🇲" },
+      { code: "+965", country: "Kuwait", flag: "🇰🇼" },
+      { code: "+974", country: "Qatar", flag: "🇶🇦" },
+      { code: "+1", country: "USA", flag: "🇺🇸" },
+      { code: "+44", country: "UK", flag: "🇬🇧" },
+      { code: "+20", country: "Egypt", flag: "🇪🇬" },
+      { code: "+92", country: "Pakistan", flag: "🇵🇰" },
+      { code: "+63", country: "Philippines", flag: "🇵🇭" },
+      { code: "+880", country: "Bangladesh", flag: "🇧🇩" }
+    ];
+    console.log('Using fallback customer country codes:', customerCountryCodes.length, 'entries');
+  }
+}
 
 // Debounce function for search
 function debounce(func, wait) {
@@ -327,14 +360,56 @@ function handleCustomerTypeChange() {
   }
 }
 
+// Helper to parse phone number into code and local part
+function parsePhoneNumber(fullNumber) {
+  if (!fullNumber) return { code: '+971', number: '', flag: '🇦🇪' };
+
+  let normalized = fullNumber;
+  if (normalized.startsWith('++')) {
+      normalized = normalized.replace(/^\++/, '+');
+  } else if (!normalized.startsWith('+')) {
+      normalized = '+' + normalized;
+  }
+
+  const sortedCodes = [...customerCountryCodes].sort((a, b) => b.code.length - a.code.length);
+
+  for (const country of sortedCodes) {
+    if (normalized.startsWith(country.code)) {
+      return {
+        code: country.code,
+        number: normalized.slice(country.code.length),
+        flag: country.flag
+      };
+    }
+  }
+
+  return { code: '+971', number: normalized.replace(/^\+971/, ''), flag: '🇦🇪' };
+}
+
 // Handle customer form submission
 async function handleCustomerFormSubmit(e) {
   e.preventDefault();
   const form = e.target;
   
+  // Get phone number components
+  const countryCodeElement = document.getElementById('customerCountryCodeText');
+  const countryCode = countryCodeElement ? countryCodeElement.textContent.trim() : '+971';
+  const mobileInput = (form.querySelector('#customerMobile') || {}).value || '';
+  // Remove leading zeros from mobile input if any
+  const cleanMobile = mobileInput.replace(/^0+/, '');
+  const mobileDigits = cleanMobile.replace(/\D/g, '');
+  
+  // If input already starts with +, use it as is
+  let fullPhone = '';
+  if (mobileInput.trim().startsWith('+')) {
+      fullPhone = mobileInput.trim();
+  } else {
+      fullPhone = mobileDigits ? countryCode + mobileDigits : '';
+  }
+
   const customerData = {
     name: (form.querySelector('#customerName') || {}).value || '',
-    phone: (form.querySelector('#customerMobile') || {}).value || '',
+    phone: fullPhone,
     customer_type: (form.querySelector('#customerType') || {}).value || 'Individual',
     city: (form.querySelector('#customerCity') || {}).value || '',
     area: (form.querySelector('#customerArea') || {}).value || '',
@@ -363,12 +438,11 @@ async function handleCustomerFormSubmit(e) {
   }
   
   // Basic phone number validation
-  const phoneDigits = (customerData.phone || '').replace(/\D/g, '');
-  if (phoneDigits && (phoneDigits.length < 9 || phoneDigits.length > 10)) {
-    alert('Please enter a valid phone number (9-10 digits)');
+  // Allow for international numbers which might be longer
+  if (fullPhone.length < 8 || fullPhone.length > 15) {
+    alert('Please enter a valid phone number');
     return;
   }
-  customerData.phone = phoneDigits;
   
   try {
     const url = editingCustomerId ? `/api/customers/${editingCustomerId}` : '/api/customers';
@@ -454,7 +528,15 @@ async function editCustomer(id) {
         if (el) el.value = value || '';
       };
       setValue('#customerName', customer.name);
-      setValue('#customerMobile', customer.phone);
+      
+      // Handle phone number and country code
+      const phoneData = parsePhoneNumber(customer.phone);
+      setValue('#customerMobile', phoneData.number);
+      const codeSpan = document.getElementById('customerCountryCodeText');
+      const flagSpan = document.getElementById('customerCountryFlag');
+      if (codeSpan) codeSpan.textContent = phoneData.code;
+      if (flagSpan) flagSpan.textContent = phoneData.flag;
+
       setValue('#customerCity', customer.city);
       setValue('#customerArea', customer.area);
       setValue('#customerType', customer.customer_type || 'Individual');
@@ -469,7 +551,15 @@ async function editCustomer(id) {
       
       editingCustomerId = id;
       
-  
+      // Update UI for edit mode (optional, but good UX)
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) {
+          submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Update Customer';
+      }
+      
+      // Scroll to form
+      form.scrollIntoView({ behavior: 'smooth' });
+
     }
   } catch (error) {
     console.error('Error editing customer:', error);
@@ -482,9 +572,22 @@ function resetCustomerForm() {
   
   if (form) {
     form.reset();
+    
+    // Reset country code to default
+    const codeSpan = document.getElementById('customerCountryCodeText');
+    const flagSpan = document.getElementById('customerCountryFlag');
+    if (codeSpan) codeSpan.textContent = '+971';
+    if (flagSpan) flagSpan.textContent = '🇦🇪';
+    
+    // Reset submit button text
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Add Customer';
+    }
   }
   
   editingCustomerId = null;
+  handleCustomerTypeChange(); // Reset business fields visibility
 }
 
 // Initialize area autocomplete elements
@@ -611,6 +714,125 @@ async function initializeAreaAutocompleteWithData() {
   initializeAreaAutocomplete();
 }
 
+// Setup Customer Country Code Selector
+function setupCustomerCountryCodeSelector() {
+  const btn = document.getElementById('customerCountryCodeBtn');
+  const flagSpan = document.getElementById('customerCountryFlag');
+  const codeSpan = document.getElementById('customerCountryCodeText');
+  const input = document.getElementById('customerMobile');
+
+  if (!btn) return;
+
+  let modal = null;
+  let searchInput = null;
+  let optionsContainer = null;
+
+  // Create dropdown
+  function createModal() {
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.className = 'absolute bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg z-50 w-full max-w-md overflow-hidden';
+    modal.style.display = 'none';
+
+    modal.innerHTML = `
+      <div class="p-2 border-b border-neutral-700">
+        <input type="text" placeholder="Search countries..." class="search-input w-full bg-neutral-800 border border-neutral-600 rounded px-2 py-1 text-white placeholder-neutral-400 focus:ring-2 focus:ring-indigo-400/60 focus:border-transparent text-sm">
+      </div>
+      <div class="options-container max-h-48 overflow-y-auto p-1">
+        ${renderOptions(customerCountryCodes)}
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Get references
+    searchInput = modal.querySelector('.search-input');
+    optionsContainer = modal.querySelector('.options-container');
+
+    // Search functionality
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      const filtered = customerCountryCodes.filter(c => 
+        c.country.toLowerCase().includes(query) || 
+        c.code.toLowerCase().includes(query)
+      );
+      optionsContainer.innerHTML = renderOptions(filtered);
+    });
+
+    return modal;
+  }
+
+  // Render options
+  function renderOptions(countries) {
+    return countries.map(c => `
+      <div class="customer-country-option px-3 py-2 hover:bg-neutral-700 cursor-pointer flex items-center gap-3 transition-colors rounded-lg" data-code="${c.code}" data-flag="${c.flag}">
+        <span class="text-lg">${c.flag}</span>
+        <span class="text-white font-medium w-12">${c.code}</span>
+        <span class="text-neutral-400 text-sm truncate">${c.country}</span>
+      </div>
+    `).join('');
+  }
+
+  // Show dropdown
+  function showModal() {
+    if (!modal) createModal();
+    const rect = btn.getBoundingClientRect();
+    modal.style.left = rect.left + 'px';
+    modal.style.top = (rect.bottom + 4) + 'px';
+    modal.style.width = Math.max(rect.width, 200) + 'px';
+    modal.style.display = 'block';
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.value = '';
+      optionsContainer.innerHTML = renderOptions(customerCountryCodes);
+    }
+  }
+
+  // Hide modal
+  function hideModal() {
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  // Handle selection
+  function handleSelection(code, flag) {
+    if (codeSpan) codeSpan.textContent = code;
+    if (flagSpan) flagSpan.textContent = flag;
+    hideModal();
+    if (input) input.focus();
+
+    // Trigger search/input event if input has value
+    if (input && input.value) {
+      input.dispatchEvent(new Event('input'));
+    }
+  }
+
+  // Toggle modal on button click
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showModal();
+  });
+
+  // Handle option clicks (delegated)
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.customer-country-option') && modal && modal.style.display !== 'none') {
+      const option = e.target.closest('.customer-country-option');
+      const code = option.getAttribute('data-code');
+      const flag = option.getAttribute('data-flag');
+      handleSelection(code, flag);
+    }
+  });
+
+  // Close on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+      hideModal();
+    }
+  });
+}
+
 // Setup customer mobile autocomplete
 function setupCustomerMobileAutocomplete() {
   const customerMobileElement = document.getElementById('customerMobile');
@@ -672,7 +894,6 @@ function setupCustomerMobileAutocomplete() {
         item.addEventListener('click', function() {
           const customer = JSON.parse(this.dataset.customer);
           populateCustomerFields(customer);
-          customerMobileElement.value = customer.phone;
           hideCustomerMobileDropdown();
         });
       });
@@ -759,13 +980,32 @@ function populateCustomerFields(customer) {
   const customerTypeElement = document.getElementById('customerType');
   const customerBusinessNameElement = document.getElementById('customerBusinessName');
   const customerTRNElement = document.getElementById('customerTRN');
+  const customerEmailElement = document.getElementById('customerEmail');
+  const customerAddressElement = document.getElementById('customerAddress');
+  const customerBusinessAddressElement = document.getElementById('customerBusinessAddress');
   
   if (customerNameElement) customerNameElement.value = customer.name || '';
-  if (customerMobileElement) customerMobileElement.value = customer.phone || '';
+  
+  // Handle phone number and country code
+  if (customerMobileElement && customer.phone) {
+    const phoneData = parsePhoneNumber(customer.phone);
+    customerMobileElement.value = phoneData.number;
+    
+    const codeSpan = document.getElementById('customerCountryCodeText');
+    const flagSpan = document.getElementById('customerCountryFlag');
+    if (codeSpan) codeSpan.textContent = phoneData.code;
+    if (flagSpan) flagSpan.textContent = phoneData.flag;
+  } else if (customerMobileElement) {
+    customerMobileElement.value = '';
+  }
+
   if (customerCityElement) customerCityElement.value = customer.city || '';
   if (customerTypeElement) customerTypeElement.value = customer.customer_type || 'Individual';
   if (customerBusinessNameElement) customerBusinessNameElement.value = customer.business_name || '';
   if (customerTRNElement) customerTRNElement.value = customer.trn || '';
+  if (customerEmailElement) customerEmailElement.value = customer.email || '';
+  if (customerAddressElement) customerAddressElement.value = customer.address || '';
+  if (customerBusinessAddressElement) customerBusinessAddressElement.value = customer.business_address || '';
   
   // Handle customer type change to show/hide business fields
   if (customerTypeElement) {
@@ -808,11 +1048,23 @@ window.setupCustomerSearch = setupCustomerSearch;
 window.initializeAreaAutocompleteWithData = initializeAreaAutocompleteWithData;
 window.editCustomer = editCustomer;
 window.resetCustomerForm = resetCustomerForm;
+
+// Initialize customer module when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  loadCustomerCountryCodes();
+  setupCustomerCountryCodeSelector();
+  setupCustomerMobileAutocomplete();
+  setupCustomerSearch();
+  initializeAreaAutocomplete();
+  setupCustomerTableHandlers();
+  setupCustomerFormHandler();
+  setupCustomerTypeHandler();
+});
+
+// Remove duplicate init if present
+if (window.initializeAreaAutocompleteWithData) {
+    // It's already defined
+}
 window.setupCustomerTableHandlers = setupCustomerTableHandlers;
 
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeAreaAutocompleteWithData);
-} else {
-  initializeAreaAutocompleteWithData();
-} 
+ 

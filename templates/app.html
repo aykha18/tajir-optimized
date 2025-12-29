@@ -27,7 +27,7 @@
 <script src="{{ url_for('static', filename='js/app.js', v='1.0.5') }}"></script>
 <script src="{{ url_for('static', filename='js/modules/product-types.js', v='1.0.5') }}"></script>
 <script src="{{ url_for('static', filename='js/modules/products.js', v='1.0.5') }}"></script>
-<script src="{{ url_for('static', filename='js/modules/customers.js', v='1.0.5') }}"></script>
+<script src="{{ url_for('static', filename='js/modules/customers.js', v='1.0.7') }}"></script>
 <script src="{{ url_for('static', filename='js/modules/vat.js', v='1.0.5') }}"></script>
 <script src="{{ url_for('static', filename='js/modules/vat-config.js', v='1.0.5') }}"></script>
 <script src="{{ url_for('static', filename='js/modules/employees.js', v='1.0.5') }}"></script>
@@ -1525,9 +1525,20 @@
           </div>
           <div class="col-span-3 flex flex-col">
             <label for="customerMobile" class="text-sm font-medium text-neutral-300 mb-1">Mobile Number *</label>
-            <input id="customerMobile" placeholder="e.g. 0501234567" required maxlength="10" inputmode="numeric"
-              pattern="\d{9,10}"
-              class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+            <div class="flex gap-2 relative">
+              <button id="customerCountryCodeBtn" type="button"
+                class="bg-neutral-900/70 border border-neutral-700 px-2 py-2 text-sm text-white rounded-l-lg flex items-center gap-1 min-w-[80px] hover:border-neutral-600 hover:bg-neutral-800 transition-colors focus:ring-2 focus:ring-indigo-400/60">
+                <span id="customerCountryFlag">🇦🇪</span>
+                <span id="customerCountryCodeText">+971</span>
+                <svg class="w-3 h-3 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <input type="hidden" id="customerCountryCode" value="+971">
+              <input id="customerMobile" placeholder="e.g. 501234567" required maxlength="15" inputmode="numeric"
+                pattern="\d*"
+                class="flex-1 bg-neutral-900/70 border border-neutral-700 rounded-r-lg rounded-l-none border-l-0 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 transition-all duration-200 hover:border-neutral-600 focus:border-indigo-500">
+            </div>
           </div>
           <div class="col-span-2 flex flex-col">
             <label for="customerType" class="text-sm font-medium text-neutral-300 mb-1">Customer Type</label>

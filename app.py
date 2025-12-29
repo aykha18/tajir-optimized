@@ -1016,10 +1016,10 @@ def add_customer():
         return jsonify({'error': 'Customer name is required'}), 400
     if not phone:
         return jsonify({'error': 'Customer mobile is required'}), 400
-    # Enforce 9-10 digits for mobile
+    # Enforce 9-15 digits for mobile
     phone_digits = re.sub(r'\D', '', phone)
-    if len(phone_digits) < 9 or len(phone_digits) > 10:
-        return jsonify({'error': 'Customer mobile must be 9-10 digits'}), 400
+    if len(phone_digits) < 9 or len(phone_digits) > 15:
+        return jsonify({'error': 'Customer mobile must be 9-15 digits'}), 400
     
     # Validate customer type
     if customer_type not in ['Individual', 'Business']:
@@ -1115,11 +1115,11 @@ def update_customer(customer_id):
     
     conn = get_db_connection()
     
-    # Enforce 9-10 digits for mobile
+    # Enforce 9-15 digits for mobile
     phone_digits = re.sub(r'\D', '', phone)
-    if phone and (len(phone_digits) < 9 or len(phone_digits) > 10):
+    if phone and (len(phone_digits) < 9 or len(phone_digits) > 15):
         conn.close()
-        return jsonify({'error': 'Customer mobile must be 9-10 digits'}), 400
+        return jsonify({'error': 'Customer mobile must be 9-15 digits'}), 400
 
     # Check for duplicate phone number (excluding current customer, normalized)
     if phone_digits:
