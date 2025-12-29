@@ -194,10 +194,6 @@
               <svg data-lucide="app-window" class="w-4 h-4 inline mr-2"></svg>
               {{ get_translated_text('app') }}
             </a>
-            <a href="#" onclick="window.navigateToUpcomingFeatures()" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-colors">
-              <svg data-lucide="sparkles" class="w-4 h-4 inline mr-2"></svg>
-              Upcoming Features
-            </a>
             <a href="{{ url_for('pricing') }}" class="nav-link {% if request.endpoint == 'pricing' %}active{% endif %} px-3 py-2 rounded-md text-sm font-medium transition-colors">
               <svg data-lucide="credit-card" class="w-4 h-4 inline mr-2"></svg>
               {{ get_translated_text('pricing') }}
@@ -226,10 +222,6 @@
         <a href="{{ url_for('app_page') }}" class="mobile-nav-link {% if request.endpoint == 'app_page' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
           <svg data-lucide="app-window" class="w-4 h-4 inline mr-2"></svg>
           {{ get_translated_text('app') }}
-        </a>
-        <a href="#" onclick="window.navigateToUpcomingFeatures()" class="mobile-nav-link block px-3 py-2 rounded-md text-base font-medium">
-          <svg data-lucide="sparkles" class="w-4 h-4 inline mr-2"></svg>
-          Upcoming Features
         </a>
         <a href="{{ url_for('pricing') }}" class="mobile-nav-link {% if request.endpoint == 'pricing' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
           <svg data-lucide="credit-card" class="w-4 h-4 inline mr-2"></svg>
