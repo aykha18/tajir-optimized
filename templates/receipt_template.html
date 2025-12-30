@@ -275,6 +275,18 @@
             <span>{{ currency_symbol }} {{ net_amount_integer }}</span>
         </div>
         
+        <div class="payment-row bold">
+            <span>{% if shop_settings.payment_mode == 'full' %}Total Amount Paid / المبلغ المدفوع الكلي{% else %}Amount Due / المبلغ المستحق{% endif %}</span>
+            <span>
+                {{ currency_symbol }} 
+                {% if shop_settings.payment_mode == 'full' %}
+                {{ "%.2f"|format(total_before_tax + tax_amount) }}
+                {% else %}
+                {{ "%.2f"|format((total_before_tax + tax_amount) - advance_paid) }}
+                {% endif %}
+            </span>
+        </div>
+        
         <div class="payment-row">
             <span>Cash Received / نقد</span>
             <span>{{ currency_symbol }} {{ "%.2f"|format(advance_paid) }}</span>

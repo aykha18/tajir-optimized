@@ -1,0 +1,19 @@
+        <!-- BILL SUMMARY - More compact -->
+        <div class="bill-summary">
+          <div class="bill-summary-row">
+            <span class="text-neutral-400 text-sm">Total Advance Paid:</span>
+            <input type="number" id="totalAdvancePaid" min="0" step="0.01" class="bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-right text-sm text-white w-24 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="0.00" value="0.00">
+          </div>
+          <div class="bill-summary-row">
+            <span class="text-neutral-400 text-sm">Subtotal:</span>
+            <span id="subTotal" class="font-semibold tracking-tight text-sm">AED 0.00</span>
+          </div>
+          <div class="bill-summary-row" id="vatSummaryRow">
+            <span class="text-neutral-400 text-sm" id="vatLabel">Tax (5%):</span>
+            <span id="vatAmount" class="font-semibold tracking-tight text-sm">AED 0.00</span>
+          </div>
+          <div class="bill-summary-row">
+            <span class="text-neutral-400 text-sm">Total Amount Paid:</span>
+            <span id="amountDue" class="font-semibold tracking-tight text-sm">AED 0.00</span>
+          </div>
+        </div>

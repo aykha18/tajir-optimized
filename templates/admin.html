@@ -312,8 +312,16 @@
             try {
                 showLoading();
                 const response = await fetch('/api/admin/shops');
-                shops = await response.json();
-                renderShops(shops);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                if (Array.isArray(data)) {
+                    shops = data;
+                    renderShops(shops);
+                } else {
+                    console.error('Invalid shops data:', data);
+                    showMessage('Invalid data received from server', 'error');
+                }
             } catch (error) {
                 console.error('Error loading shops:', error);
                 showMessage('Error loading shops', 'error');
@@ -532,10 +540,17 @@
         async function loadRecentActivity() {
             try {
                 const response = await fetch('/api/admin/activity');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const activities = await response.json();
                 
                 const activityContainer = document.getElementById('recentActivity');
                 activityContainer.innerHTML = '';
+
+                if (!Array.isArray(activities)) {
+                    console.error('Invalid activity data:', activities);
+                    activityContainer.innerHTML = '<p class="text-red-400 text-center py-8">Error loading activity</p>';
+                    return;
+                }
 
                 if (activities.length === 0) {
                     activityContainer.innerHTML = '<p class="text-neutral-400 text-center py-8">No recent activity</p>';

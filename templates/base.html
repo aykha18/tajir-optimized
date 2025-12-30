@@ -190,11 +190,11 @@
         <!-- Navigation Links -->
         <div class="hidden md:block">
           <div class="ml-10 flex items-baseline space-x-8">
-            <a href="{{ url_for('app_page') }}" class="nav-link {% if request.endpoint == 'app_page' %}active{% endif %} px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            <a href="{{ url_for('pages_api.app_page') }}" class="nav-link {% if request.endpoint == 'pages_api.app_page' %}active{% endif %} px-3 py-2 rounded-md text-sm font-medium transition-colors">
               <svg data-lucide="app-window" class="w-4 h-4 inline mr-2"></svg>
               {{ get_translated_text('app') }}
             </a>
-            <a href="{{ url_for('pricing') }}" class="nav-link {% if request.endpoint == 'pricing' %}active{% endif %} px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            <a href="{{ url_for('pages_api.pricing') }}" class="nav-link {% if request.endpoint == 'pages_api.pricing' %}active{% endif %} px-3 py-2 rounded-md text-sm font-medium transition-colors">
               <svg data-lucide="credit-card" class="w-4 h-4 inline mr-2"></svg>
               {{ get_translated_text('pricing') }}
             </a>
@@ -219,11 +219,11 @@
     <!-- Mobile menu -->
     <div id="mobile-menu" class="md:hidden hidden">
       <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-neutral-800/90">
-        <a href="{{ url_for('app_page') }}" class="mobile-nav-link {% if request.endpoint == 'app_page' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+        <a href="{{ url_for('pages_api.app_page') }}" class="mobile-nav-link {% if request.endpoint == 'pages_api.app_page' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
           <svg data-lucide="app-window" class="w-4 h-4 inline mr-2"></svg>
           {{ get_translated_text('app') }}
         </a>
-        <a href="{{ url_for('pricing') }}" class="mobile-nav-link {% if request.endpoint == 'pricing' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+        <a href="{{ url_for('pages_api.pricing') }}" class="mobile-nav-link {% if request.endpoint == 'pages_api.pricing' %}active{% endif %} block px-3 py-2 rounded-md text-base font-medium">
           <svg data-lucide="credit-card" class="w-4 h-4 inline mr-2"></svg>
           {{ get_translated_text('pricing') }}
         </a>

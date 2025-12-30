@@ -311,7 +311,13 @@
         <hr style="border: 1px solid #000; margin: 8px 0;">
         <div class="total-row" style="font-weight: bold; font-size: 1.2em; min-width: 0;">
             <span style="flex: 1; min-width: 0;">{% if shop_settings.payment_mode == 'full' %}Total Amount Paid / المبلغ المدفوع الكلي:{% else %}Amount Due / المبلغ المستحق:{% endif %}</span>
-            <span style="flex-shrink: 0; margin-left: 10px;">{{ currency_symbol }} {{ "%.2f"|format(bill.balance_amount) }}</span>
+            <span style="flex-shrink: 0; margin-left: 10px;">
+                {% if shop_settings.payment_mode == 'full' %}
+                {{ currency_symbol }} {{ "%.2f"|format(bill.total_amount) }}
+                {% else %}
+                {{ currency_symbol }} {{ "%.2f"|format(bill.balance_amount) }}
+                {% endif %}
+            </span>
         </div>
         
         <div class="amount-in-words" style="font-weight: bold; margin-top: 12px;">

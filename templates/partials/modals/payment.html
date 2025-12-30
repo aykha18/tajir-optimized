@@ -1,0 +1,21 @@
+<div id="paymentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+  <div class="bg-neutral-900 rounded-lg shadow-lg p-6 w-full max-w-xs text-center mobile-modal">
+    <div class="mb-4">
+      <div>Invoice #: <span id="payBillNum"></span></div>
+      <div>Customer: <span id="payCustomer"></span></div>
+      <div>Paid: <span id="payPaid"></span></div>
+      <div>Due: <span id="payDue"></span></div>
+      <div>Total: <span id="payTotal"></span></div>
+      <div>Delivery: <span id="payDelivery"></span></div>
+      <div>Status: <span id="payStatus"></span></div>
+    </div>
+    <input id="payAmountInput" type="number" min="0" step="0.01"
+      class="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full mb-4" />
+    <div class="flex justify-center gap-4 mobile-button-group">
+      <button id="payModalOk"
+        class="bg-green-600 hover:bg-green-500 text-white rounded-lg px-6 py-2 font-semibold mobile-btn">OK</button>
+      <button id="payModalCancel"
+        class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-6 py-2 font-semibold mobile-btn">Cancel</button>
+    </div>
+  </div>
+</div>

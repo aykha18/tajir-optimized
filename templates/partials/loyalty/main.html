@@ -1,0 +1,251 @@
+<!-- LOYALTY PROGRAM -->
+<section id="loyaltySec" class="page hidden space-y-6">
+
+  <!-- Loading Overlay -->
+  <div id="loyaltyLoadingOverlay"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center hidden">
+    <div class="bg-neutral-900/95 border border-neutral-700 rounded-xl p-8 flex flex-col items-center">
+      <div class="relative mb-4">
+        <div class="w-12 h-12 border-4 border-neutral-700 border-t-indigo-500 rounded-full animate-spin"></div>
+        <div
+          class="absolute inset-0 w-12 h-12 border-4 border-transparent border-t-indigo-400 rounded-full animate-ping opacity-20">
+        </div>
+      </div>
+      <p class="text-white font-medium">Loading Loyalty Program...</p>
+    </div>
+  </div>
+
+  <!-- Header Section -->
+  <div class="flex items-center gap-3">
+    <div
+      class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+      <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+      </svg>
+    </div>
+    <div>
+      <h2 class="text-2xl font-bold text-white tracking-tight">Loyalty Program</h2>
+      <p class="text-neutral-400 text-sm">Manage customer rewards and loyalty tiers</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex items-center gap-2 mb-6">
+    <button id="tabLoyaltyConfig" type="button"
+      class="px-4 py-2 rounded-lg text-sm font-medium bg-neutral-700 text-white border border-neutral-600">
+      Configuration
+    </button>
+    <button id="tabLoyaltyCustomers" type="button"
+      class="px-4 py-2 rounded-lg text-sm font-medium bg-transparent text-neutral-300 hover:text-white border border-neutral-600/40 hover:border-neutral-500/60">
+      Customers
+    </button>
+    <button id="tabLoyaltyTiers" type="button"
+      class="px-4 py-2 rounded-lg text-sm font-medium bg-transparent text-neutral-300 hover:text-white border border-neutral-600/40 hover:border-neutral-500/60">
+      Tiers & Rewards
+    </button>
+    <button id="tabLoyaltyAnalytics" type="button"
+      class="px-4 py-2 rounded-lg text-sm font-medium bg-transparent text-neutral-300 hover:text-white border border-neutral-600/40 hover:border-neutral-500/60">
+      Analytics
+    </button>
+  </div>
+
+  <!-- Configuration Tab -->
+  <div id="loyaltyConfigTab" class="space-y-6">
+    <div
+      class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+      <h3 class="text-lg font-semibold text-white mb-4">Program Configuration</h3>
+      <form id="loyaltyConfigForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="flex flex-col">
+          <label class="text-sm font-medium text-neutral-300 mb-1">Enable Loyalty Program</label>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="enableLoyaltyProgram" class="sr-only peer">
+            <div
+              class="w-11 h-6 bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+            </div>
+          </label>
+        </div>
+        <div class="flex flex-col">
+          <label for="loyaltyProgramName" class="text-sm font-medium text-neutral-300 mb-1">Program Name</label>
+          <input id="loyaltyProgramName" type="text" placeholder="Loyalty Program"
+            class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+        </div>
+        <div class="flex flex-col">
+          <label for="pointsPerAed" class="text-sm font-medium text-neutral-300 mb-1">Points per AED</label>
+          <input id="pointsPerAed" type="number" step="0.01" min="0" placeholder="1.00"
+            class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+        </div>
+        <div class="flex flex-col">
+          <label for="aedPerPoint" class="text-sm font-medium text-neutral-300 mb-1">AED per Point</label>
+          <input id="aedPerPoint" type="number" step="0.01" min="0" placeholder="0.01"
+            class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+        </div>
+        <div class="flex flex-col">
+          <label for="minPointsRedemption" class="text-sm font-medium text-neutral-300 mb-1">Min Points for
+            Redemption</label>
+          <input id="minPointsRedemption" type="number" min="0" placeholder="100"
+            class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+        </div>
+        <div class="flex flex-col">
+          <label for="maxRedemptionPercent" class="text-sm font-medium text-neutral-300 mb-1">Max Redemption
+            %</label>
+          <input id="maxRedemptionPercent" type="number" min="0" max="100" placeholder="20"
+            class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+        </div>
+        <div class="flex flex-col">
+          <label for="birthdayBonusPoints" class="text-sm font-medium text-neutral-300 mb-1">Birthday Bonus
+            Points</label>
+          <input id="birthdayBonusPoints" type="number" min="0" placeholder="50"
+            class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+        </div>
+        <div class="flex flex-col">
+          <label for="anniversaryBonusPoints" class="text-sm font-medium text-neutral-300 mb-1">Anniversary Bonus
+            Points</label>
+          <input id="anniversaryBonusPoints" type="number" min="0" placeholder="100"
+            class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+        </div>
+        <div class="flex flex-col">
+          <label for="referralBonusPoints" class="text-sm font-medium text-neutral-300 mb-1">Referral Bonus
+            Points</label>
+          <input id="referralBonusPoints" type="number" min="0" placeholder="200"
+            class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+        </div>
+        <div class="md:col-span-2 lg:col-span-3">
+          <button type="submit"
+            class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+            Save Configuration
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Customers Tab -->
+  <div id="loyaltyCustomersTab" class="space-y-6 hidden">
+    <div
+      class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-white">Loyalty Customers</h3>
+        <input type="text" id="loyaltyCustomerSearch" placeholder="Search customers..."
+          class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60 w-64">
+      </div>
+      <div id="loyaltyCustomersList" class="space-y-3">
+        <!-- Loyalty customers will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Tiers & Rewards Tab -->
+  <div id="loyaltyTiersTab" class="space-y-6 hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Loyalty Tiers -->
+      <div
+        class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-white">Loyalty Tiers</h3>
+          <button id="addTierBtn"
+            class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            Add Tier
+          </button>
+        </div>
+        <div id="loyaltyTiersList" class="space-y-3">
+          <!-- Tiers will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Loyalty Rewards -->
+      <div
+        class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-white">Loyalty Rewards</h3>
+          <button id="addRewardBtn"
+            class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            Add Reward
+          </button>
+        </div>
+        <div id="loyaltyRewardsList" class="space-y-3">
+          <!-- Rewards will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics Tab -->
+  <div id="loyaltyAnalyticsTab" class="space-y-6 hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Analytics Cards -->
+      <div
+        class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-neutral-400">Total Enrolled</p>
+            <p id="totalEnrolledCustomers" class="text-2xl font-bold text-white">0</p>
+          </div>
+          <div class="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-neutral-400">Points Issued</p>
+            <p id="totalPointsIssued" class="text-2xl font-bold text-white">0</p>
+          </div>
+          <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-neutral-400">Points Redeemed</p>
+            <p id="totalPointsRedeemed" class="text-2xl font-bold text-white">0</p>
+          </div>
+          <div class="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
+                clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-neutral-400">Active Points</p>
+            <p id="activePoints" class="text-2xl font-bold text-white">0</p>
+          </div>
+          <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+              <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tier Distribution Chart -->
+    <div
+      class="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-neutral-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+      <h3 class="text-lg font-semibold text-white mb-4">Tier Distribution</h3>
+      <div id="tierDistributionChart" class="h-64">
+        <!-- Chart will be rendered here -->
+      </div>
+    </div>
+  </div>
+</section>

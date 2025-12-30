@@ -145,18 +145,29 @@ async function handleProductTypeListClick(e) {
         const response = await fetch(`/api/product-types/${typeId}`, { 
           method: 'DELETE' 
         });
+        
         if (response.ok) {
           await loadProductTypes();
           if (window.showToast) {
             window.showToast('Product type deleted successfully!', 'success');
           }
         } else {
-          throw new Error('Failed to delete product type');
+          // Try to get error message from server
+          let errorMessage = 'Failed to delete product type';
+          try {
+            const data = await response.json();
+            if (data.error) {
+              errorMessage = data.error;
+            }
+          } catch (e) {
+            console.warn('Could not parse error response:', e);
+          }
+          throw new Error(errorMessage);
         }
       } catch (error) {
         console.error('Error deleting product type:', error);
         if (window.showToast) {
-          window.showToast('Failed to delete product type. Please try again.', 'error');
+          window.showToast(error.message || 'Failed to delete product type. Please try again.', 'error');
         }
       }
     }

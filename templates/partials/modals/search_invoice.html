@@ -1,0 +1,22 @@
+      <!-- SEARCH INVOICE MODAL -->
+      <div id="searchInvoiceModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden">
+        <div
+          class="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold text-white">Search & Manage Invoices</h3>
+            <button id="closeSearchInvoice" class="text-neutral-400 hover:text-white transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="mb-4">
+            <input id="searchInvoiceInput" type="text"
+              placeholder="Search by invoice number, customer name, or phone number..."
+              class="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-400/60">
+          </div>
+          <div id="searchInvoiceResults" class="overflow-y-auto max-h-96">
+            <!-- Search results will be populated here -->
+          </div>
+        </div>
+      </div>

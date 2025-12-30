@@ -1,0 +1,153 @@
+<script>
+  // Add notes input field to bill table rows
+  document.addEventListener('DOMContentLoaded', function () {
+    // Function to add notes functionality to existing table rows
+    function addNotesToTableRows() {
+      const billTable = document.getElementById('billTable');
+      if (!billTable) return;
+
+      const tbody = billTable.querySelector('tbody');
+      if (!tbody) return;
+
+      // Add notes input to each existing row within the product cell
+      const rows = tbody.querySelectorAll('tr');
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 7) { // Table has 7 columns
+          const productCell = cells[0]; // Product name cell
+          if (productCell && !productCell.querySelector('.item-notes')) {
+            // Add notes input below the product name
+            const notesDiv = document.createElement('div');
+            notesDiv.className = 'mt-1';
+            notesDiv.innerHTML = '<input type="text" class="item-notes bg-neutral-700 border border-neutral-600 rounded px-2 py-1 text-xs text-white w-full" placeholder="Notes..." maxlength="50">';
+            productCell.appendChild(notesDiv);
+          }
+        }
+      });
+    }
+
+    // Function to handle new row additions
+    function handleNewRowAddition(row) {
+      const cells = row.querySelectorAll('td');
+      if (cells.length >= 7) { // Table has 7 columns
+        const productCell = cells[0]; // Product name cell
+        if (productCell && !productCell.querySelector('.item-notes')) {
+          // Add notes input below the product name
+          const notesDiv = document.createElement('div');
+          notesDiv.className = 'mt-1';
+          notesDiv.innerHTML = '<input type="text" class="item-notes bg-neutral-700 border border-neutral-600 rounded px-2 py-1 text-xs text-white w-full" placeholder="Notes..." maxlength="50">';
+          productCell.appendChild(notesDiv);
+        }
+      }
+    }
+
+    // Observe for new rows being added to the table
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        mutation.addedNodes.forEach(function (node) {
+          if (node.nodeType === 1 && node.tagName === 'TR') {
+            handleNewRowAddition(node);
+          }
+        });
+      });
+    });
+
+    // Start observing
+    const billTable = document.getElementById('billTable');
+    if (billTable) {
+      const tbody = billTable.querySelector('tbody');
+      if (tbody) {
+        observer.observe(tbody, { childList: true });
+      }
+
+      // Add notes to existing rows
+      addNotesToTableRows();
+    }
+
+    // Function to collect notes data when processing bill
+    window.getBillItemsWithNotes = function () {
+      const billTable = document.getElementById('billTable');
+      if (!billTable) return [];
+
+      const rows = billTable.querySelectorAll('tbody tr');
+      const items = [];
+
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 7) { // Table has 7 columns
+          const productCell = cells[0]; // Product cell contains both name and notes
+          const notesInput = productCell.querySelector('.item-notes');
+          const notes = notesInput ? notesInput.value.trim() : '';
+
+          // Get product name (first text node before the notes div)
+          let productName = '';
+          for (const child of productCell.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE) {
+              productName += child.textContent.trim();
+            } else if (child.classList && child.classList.contains('item-notes')) {
+              break; // Stop at notes input
+            }
+          }
+          productName = productName.trim();
+
+          // Get other item data
+          const quantity = cells[1].textContent.trim();
+          const rate = cells[2].textContent.trim();
+          const discount = cells[3].textContent.trim();
+
+          items.push({
+            product_name: productName,
+            quantity: quantity,
+            rate: rate,
+            discount: discount,
+            notes: notes
+          });
+        }
+      });
+
+      return items;
+    };
+
+    // Hook into bill processing to include notes data
+    const originalFetch = window.fetch;
+    window.fetch = function (url, options) {
+      // Intercept bill creation requests
+      if (url && url.includes && url.includes('/api/bills') && options && options.method === 'POST') {
+        try {
+          const itemsWithNotes = window.getBillItemsWithNotes();
+          if (itemsWithNotes.length > 0 && options.body) {
+            const requestData = JSON.parse(options.body);
+
+            // Add notes to items if they exist
+            if (requestData.items && Array.isArray(requestData.items)) {
+              requestData.items.forEach((item, index) => {
+                if (itemsWithNotes[index]) {
+                  item.notes = itemsWithNotes[index].notes;
+                }
+              });
+            }
+
+            // Update the request body
+            options.body = JSON.stringify(requestData);
+            console.log('Modified bill request with notes:', requestData);
+          }
+        } catch (error) {
+          console.error('Error modifying bill request:', error);
+        }
+      }
+
+      return originalFetch.apply(this, [url, options]);
+    };
+
+    // Also hook into the process bill button click for debugging
+    document.addEventListener('click', function (e) {
+      const processBtn = e.target.closest('#process-bill-btn, #mobile-process-bill-btn');
+      if (processBtn) {
+        // Collect notes data before processing
+        const itemsWithNotes = window.getBillItemsWithNotes();
+        console.log('Notes data collected:', itemsWithNotes);
+        window.billItemsNotesData = itemsWithNotes;
+      }
+    });
+  });
+</script>

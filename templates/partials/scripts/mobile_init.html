@@ -1,0 +1,284 @@
+<script>
+  // Initialize MobileScreens module
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.innerWidth <= 768) {
+      const mobileScreens = new MobileScreens();
+
+      // Expose mobileScreens globally for debugging
+      window.mobileScreens = mobileScreens;
+
+      // Add manual trigger for view toggles
+      window.setupMobileViewToggles = function () {
+        if (window.mobileScreens) {
+          window.mobileScreens.setupViewToggles();
+        }
+      };
+    }
+
+    // Initialize Mobile Navigation
+    console.log('Checking mobile navigation initialization...');
+    console.log('Window width:', window.innerWidth);
+    console.log('MobileNavigation available:', !!window.MobileNavigation);
+
+    // Force mobile navigation to show on mobile devices or when testing
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobileWidth = window.innerWidth <= 768;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const shouldShowMobileNav = isMobileDevice || isMobileWidth || isTouchDevice;
+
+    console.log('Mobile detection:', {
+      isMobileDevice,
+      isMobileWidth,
+      isTouchDevice,
+      shouldShowMobileNav,
+      windowWidth: window.innerWidth
+    });
+
+    if (window.MobileNavigation && shouldShowMobileNav) {
+      console.log('Initializing MobileNavigation class...');
+      MobileNavigation.initializeMobileNavigation().then(mobileNav => {
+        console.log('Mobile Navigation initialized successfully');
+        window.mobileNavigation = mobileNav;
+      }).catch(error => {
+        console.error('Failed to initialize mobile navigation:', error);
+      });
+    } else if (shouldShowMobileNav) {
+      // Fallback: Create simple mobile navigation if MobileNavigation class is not available
+      console.log('Creating fallback mobile navigation');
+
+      // Create fallback navigation immediately
+      const fallbackNav = document.createElement('nav');
+      fallbackNav.className = 'mobile-nav';
+      fallbackNav.id = 'mobile-navigation-bar';
+      fallbackNav.style.cssText = `
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+                border-top: 1px solid #475569;
+                padding: 8px;
+                z-index: 1000;
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            `;
+
+      // Add navigation items
+      const navItems = [
+        { icon: '🏠', label: 'Home', action: 'showDashboard' },
+        { icon: '📦', label: 'Products', action: 'showProducts' },
+        { icon: '🧾', label: 'Billing', action: 'showBilling' },
+        { icon: '👥', label: 'Customers', action: 'showCustomers' },
+        { icon: '⚙️', label: 'Settings', action: 'showSettings' }
+      ];
+
+      navItems.forEach(item => {
+        const navItem = document.createElement('button');
+        navItem.className = 'mobile-nav-item';
+        navItem.innerHTML = `
+                    <div style="font-size: 20px; margin-bottom: 2px;">${item.icon}</div>
+                    <div style="font-size: 10px; color: #94a3b8;">${item.label}</div>
+                `;
+        navItem.style.cssText = `
+                    background: transparent;
+                    border: none;
+                    color: #94a3b8;
+                    padding: 8px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    min-width: 50px;
+                `;
+
+        navItem.addEventListener('click', () => {
+          console.log(`Mobile nav clicked: ${item.action}`);
+          // Add navigation logic here
+        });
+
+        navItem.addEventListener('mouseenter', () => {
+          navItem.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+          navItem.style.color = '#60a5fa';
+        });
+
+        navItem.addEventListener('mouseleave', () => {
+          navItem.style.backgroundColor = 'transparent';
+          navItem.style.color = '#94a3b8';
+        });
+
+        fallbackNav.appendChild(navItem);
+      });
+
+      // Remove existing mobile nav if present
+      const existingNav = document.querySelector('.mobile-nav, #mobile-navigation-bar');
+      if (existingNav) {
+        existingNav.remove();
+      }
+
+      document.body.appendChild(fallbackNav);
+      console.log('Fallback mobile navigation created');
+    }
+  });
+</script>
+
+<script>
+  // Function to force mobile navigation to show
+  function forceMobileNavigation() {
+    console.log('Forcing mobile navigation to show...');
+
+    // Remove existing mobile nav if present
+    const existingNav = document.querySelector('.mobile-nav, #mobile-navigation-bar');
+    if (existingNav) {
+      existingNav.remove();
+    }
+
+    // Create mobile navigation
+    const nav = document.createElement('nav');
+    nav.className = 'mobile-nav';
+    nav.id = 'mobile-navigation-bar';
+    nav.style.cssText = `
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #374151;
+            padding: 8px 0;
+            z-index: 1000;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        `;
+
+    nav.innerHTML = `
+            <a href="#dashboard" class="mobile-nav-item active" data-section="dashboard" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+                </svg>
+                <span style="font-size: 11px; font-weight: 500;">Dashboard</span>
+            </a>
+            <a href="#billing" class="mobile-nav-item" data-section="billing" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span style="font-size: 11px; font-weight: 500;">Billing</span>
+            </a>
+            <a href="#products" class="mobile-nav-item" data-section="products" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+                <span style="font-size: 11px; font-weight: 500;">Products</span>
+            </a>
+            <a href="#employees" class="mobile-nav-item" data-section="employees" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span style="font-size: 11px; font-weight: 500;">Employees</span>
+            </a>
+            <a href="#more" class="mobile-nav-item" data-section="more" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #9ca3af; text-decoration: none; border-radius: 8px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 4px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z"></path>
+                </svg>
+                <span style="font-size: 11px; font-weight: 500;">More</span>
+            </a>
+        `;
+
+    // Add click handlers
+    nav.addEventListener('click', (e) => {
+      const navItem = e.target.closest('.mobile-nav-item');
+      if (navItem) {
+        e.preventDefault();
+
+        // Remove active class from all items
+        nav.querySelectorAll('.mobile-nav-item').forEach(item => {
+          item.classList.remove('active');
+        });
+
+        // Add active class to clicked item
+        navItem.classList.add('active');
+
+        const section = navItem.dataset.section;
+        const sectionMap = {
+          'dashboard': 'dashSec',
+          'billing': 'billingSec',
+          'products': 'productSec',
+          'employees': 'employeeSec'
+        };
+
+        if (section === 'more') {
+          alert('More menu - Coming soon!');
+          return;
+        }
+
+        const targetSection = sectionMap[section];
+        if (targetSection) {
+          const navButton = document.querySelector(`[data-go="${targetSection}"]`);
+          if (navButton) {
+            navButton.click();
+          }
+        }
+      }
+    });
+
+    document.body.appendChild(nav);
+    console.log('Mobile navigation forced to show');
+  }
+</script>
+
+<!-- Mobile Navigation Force Button (for testing) -->
+<button id="force-mobile-nav-btn"
+  class="fixed top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg z-50 lg:hidden"
+  onclick="forceMobileNavigation()">
+  Show Mobile Nav
+</button>
+
+<!-- Simple Navigation System -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Navigation system loaded
+
+    // Handle navigation buttons with data-go attributes
+    document.addEventListener('click', function (e) {
+      const button = e.target.closest('[data-go]');
+      if (button) {
+        // Navigation button clicked
+        e.preventDefault();
+        const targetSection = button.getAttribute('data-go');
+
+        // Hide all sections
+        document.querySelectorAll('.page').forEach(section => {
+          section.classList.add('hidden');
+        });
+
+        // Show target section
+        const target = document.getElementById(targetSection);
+        if (target) {
+          target.classList.remove('hidden');
+          // Section shown
+
+          // Initialize shop settings if it's the target
+          if (targetSection === 'shopSettingsSec') {
+            // Initializing shop settings
+            if (window.initializeShopSettings) {
+              window.initializeShopSettings();
+            }
+          }
+        }
+      }
+    });
+
+    // Show billing section by default
+    const billingSection = document.getElementById('billingSec');
+    if (billingSection) {
+      billingSection.classList.remove('hidden');
+      // Billing section shown by default
+    }
+  });
+</script>

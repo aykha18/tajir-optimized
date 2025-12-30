@@ -347,8 +347,33 @@ async function productTableClickHandler(e) {
       'delete'
     );
     if (confirmed) {
-      fetch(`/api/products/${id}`, { method: 'DELETE' })
-        .then(() => loadProducts());
+      try {
+        const response = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+        
+        if (response.ok) {
+          await loadProducts();
+          if (window.showToast) {
+            window.showToast('Product deleted successfully!', 'success');
+          }
+        } else {
+          // Try to get error message from server
+          let errorMessage = 'Failed to delete product';
+          try {
+            const data = await response.json();
+            if (data.error) {
+              errorMessage = data.error;
+            }
+          } catch (e) {
+            console.warn('Could not parse error response:', e);
+          }
+          throw new Error(errorMessage);
+        }
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        if (window.showToast) {
+          window.showToast(error.message || 'Failed to delete product. Please try again.', 'error');
+        }
+      }
     }
   }
 }
@@ -371,6 +396,9 @@ async function editProduct(id) {
     }
   } catch (error) {
     console.error('Error editing product:', error);
+    if (window.showToast) {
+      window.showToast('Failed to load product details. Please try again.', 'error');
+    }
   }
 }
 

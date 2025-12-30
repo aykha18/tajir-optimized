@@ -1,0 +1,19 @@
+<div id="paymentProgressModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+  <div class="bg-neutral-900 rounded-lg shadow-lg p-8 w-full max-w-xs flex flex-col items-center mobile-modal">
+    <div class="relative mb-4">
+      <svg id="progressCircle" width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="36" stroke="#444" stroke-width="6" fill="none" />
+        <circle id="progressArc" cx="40" cy="40" r="36" stroke="#22d3ee" stroke-width="6" fill="none"
+          stroke-linecap="round" stroke-dasharray="226.194" stroke-dashoffset="226.194" />
+        <g id="progressCheck" style="opacity:0">
+          <circle cx="40" cy="40" r="36" stroke="#22d3ee" stroke-width="6" fill="#22d3ee" />
+          <polyline points="28,42 38,52 54,32" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </g>
+      </svg>
+    </div>
+    <div id="progressStepMsg" class="text-white text-base font-semibold mb-2">Processing...</div>
+    <button id="progressOkBtn"
+      class="mt-4 px-4 py-2 rounded bg-cyan-500 text-white font-semibold hidden mobile-btn">OK</button>
+  </div>
+</div>

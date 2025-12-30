@@ -1,0 +1,35 @@
+<div id="confirmModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden backdrop-blur-sm p-4">
+  <div
+    class="bg-neutral-900/95 backdrop-blur border border-neutral-700 rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 scale-95 opacity-0 max-h-[90vh] overflow-y-auto mobile-modal"
+    id="confirmModalContent">
+    <!-- Icon -->
+    <div class="flex justify-center mb-6">
+      <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+          </path>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <h3 class="text-xl font-semibold text-white text-center mb-3" id="confirmModalTitle">Confirm Action</h3>
+
+    <!-- Message -->
+    <div id="confirmModalMsg" class="mb-8 text-neutral-300 text-center leading-relaxed"></div>
+
+    <!-- Buttons -->
+    <div class="flex gap-3">
+      <button id="confirmModalCancel"
+        class="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-6 py-3 font-medium transition-colors duration-200 border border-neutral-600 hover:border-neutral-500 mobile-btn">
+        Cancel
+      </button>
+      <button id="confirmModalOk"
+        class="flex-1 bg-red-600 hover:bg-red-500 text-white rounded-lg px-6 py-3 font-medium transition-colors duration-200 border border-red-600 hover:border-red-500 mobile-btn">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>

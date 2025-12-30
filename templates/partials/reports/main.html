@@ -1,0 +1,478 @@
+      <section id="advancedReportsSec" class="page hidden space-y-6">
+        <h3 class="text-2xl font-semibold tracking-tight mb-4">Advanced Reports</h3>
+        <!-- Tabs -->
+        <div class="flex border-b border-neutral-700 mb-6">
+          <button
+            class="report-tab-btn px-6 py-2 -mb-px text-sm font-medium text-neutral-300 border-b-2 border-transparent focus:outline-none transition-colors mobile-btn"
+            data-tab="invoicesTab">Invoices</button>
+          <button
+            class="report-tab-btn px-6 py-2 -mb-px text-sm font-medium text-neutral-300 border-b-2 border-transparent focus:outline-none transition-colors mobile-btn"
+            data-tab="employeesTab">Employees</button>
+          <button
+            class="report-tab-btn px-6 py-2 -mb-px text-sm font-medium text-neutral-300 border-b-2 border-transparent focus:outline-none transition-colors mobile-btn"
+            data-tab="productsTab">Products</button>
+        </div>
+        <!-- Tab Contents -->
+        <div id="invoicesTab" class="report-tab-content">
+          <!-- Filter Bar -->
+          <form
+            class="flex flex-wrap gap-4 items-end mb-6 bg-neutral-800/60 p-4 rounded-xl border border-neutral-700 shadow">
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invFromDate">From Date</label>
+              <input type="date" id="invFromDate"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invToDate">To Date</label>
+              <input type="date" id="invToDate"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invProducts">Products</label>
+              <select id="invProducts" multiple
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60">
+                <!-- <option>All</option> -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invEmployees">Employees</label>
+              <select id="invEmployees" multiple
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60">
+                <!-- <option>All</option> -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invCity">City</label>
+              <select id="invCity"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <!-- <option>All</option> -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invArea">Area</label>
+              <select id="invArea"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <!-- <option>All</option> -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="invStatus">Status</label>
+              <select id="invStatus"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+                <option>Paid</option>
+                <option>Pending</option>
+              </select>
+            </div>
+            <div class="flex gap-2 ml-auto">
+              <button type="button" id="previewInvoicesBtn"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="eye" class="w-4 h-4"></svg> Preview
+              </button>
+              <button type="button" id="downloadInvoicesBtn"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="download" class="w-4 h-4"></svg> Download
+              </button>
+              <button id="invoicePrintBtn" type="button"
+                class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="printer" class="w-4 h-4"></svg> Print
+              </button>
+            </div>
+            <div id="download-spinner" class="hidden flex items-center gap-2 text-emerald-400 text-sm mt-2">
+              <svg class="animate-spin h-5 w-5 text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+              </svg>
+              Preparing download...
+            </div>
+          </form>
+
+          <!-- Invoice Summary Cards -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-lg font-semibold text-white">Invoice Summary</h4>
+              <div class="text-xs text-neutral-400">
+                <span id="summary-date-range">All Time</span>
+                <span id="summary-record-count" class="ml-2">(0 records)</span>
+              </div>
+            </div>
+
+            <!-- Summary Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <!-- Total Revenue Card -->
+              <div
+                class="bg-gradient-to-br from-emerald-500/10 to-emerald-600/20 p-6 rounded-xl border border-emerald-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-emerald-400 font-medium">Total Revenue</p>
+                    <p id="summary-total-revenue" class="text-2xl font-bold text-emerald-300">AED 0</p>
+                    <p class="text-xs text-emerald-400/70 mt-1">All filtered invoices</p>
+                  </div>
+                  <div class="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1">
+                      </path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Total Invoices Card -->
+              <div
+                class="bg-gradient-to-br from-blue-500/10 to-blue-600/20 p-6 rounded-xl border border-blue-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-blue-400 font-medium">Total Invoices</p>
+                    <p id="summary-total-invoices" class="text-2xl font-bold text-blue-300">0</p>
+                    <p class="text-xs text-blue-400/70 mt-1">Invoice count</p>
+                  </div>
+                  <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                      </path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VAT Collected Card -->
+              <div
+                class="bg-gradient-to-br from-purple-500/10 to-purple-600/20 p-6 rounded-xl border border-purple-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-purple-400 font-medium">VAT Collected</p>
+                    <p id="summary-vat-collected" class="text-2xl font-bold text-purple-300">AED 0</p>
+                    <p class="text-xs text-purple-400/70 mt-1">Total VAT amount</p>
+                  </div>
+                  <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                      </path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Average Invoice Value Card -->
+              <div
+                class="bg-gradient-to-br from-orange-500/10 to-orange-600/20 p-6 rounded-xl border border-orange-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-orange-400 font-medium">Avg. Invoice</p>
+                    <p id="summary-avg-invoice" class="text-2xl font-bold text-orange-300">AED 0</p>
+                    <p class="text-xs text-orange-400/70 mt-1">Per invoice</p>
+                  </div>
+                  <div class="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Status Breakdown Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <!-- Paid Invoices -->
+              <div
+                class="bg-gradient-to-br from-green-500/10 to-green-600/20 p-4 rounded-xl border border-green-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-green-400 font-medium">Paid Invoices</p>
+                    <p id="summary-paid-invoices" class="text-xl font-bold text-green-300">0</p>
+                    <p id="summary-paid-amount" class="text-xs text-green-400/70">AED 0</p>
+                  </div>
+                  <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pending Invoices -->
+              <div
+                class="bg-gradient-to-br from-yellow-500/10 to-yellow-600/20 p-4 rounded-xl border border-yellow-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-yellow-400 font-medium">Pending Invoices</p>
+                    <p id="summary-pending-invoices" class="text-xl font-bold text-yellow-300">0</p>
+                    <p id="summary-pending-amount" class="text-xs text-yellow-400/70">AED 0</p>
+                  </div>
+                  <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Unique Customers -->
+              <div
+                class="bg-gradient-to-br from-indigo-500/10 to-indigo-600/20 p-4 rounded-xl border border-indigo-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-indigo-400 font-medium">Unique Customers</p>
+                    <p id="summary-unique-customers" class="text-xl font-bold text-indigo-300">0</p>
+                    <p class="text-xs text-indigo-400/70">Active customers</p>
+                  </div>
+                  <div class="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                      </path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Performers Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Top Products -->
+              <div class="bg-neutral-800/60 p-6 rounded-xl border border-neutral-700 shadow-lg">
+                <h5 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                  </svg>
+                  Top Products
+                </h5>
+                <div id="summary-top-products" class="space-y-3">
+                  <div class="text-center text-neutral-500 py-4">No data available</div>
+                </div>
+              </div>
+
+              <!-- Top Customers -->
+              <div class="bg-neutral-800/60 p-6 rounded-xl border border-neutral-700 shadow-lg">
+                <h5 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                    </path>
+                  </svg>
+                  Top Customers
+                </h5>
+                <div id="summary-top-customers" class="space-y-3">
+                  <div class="text-center text-neutral-500 py-4">No data available</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Data Table -->
+          <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80">
+            <table class="min-w-full text-sm" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
+              <thead class="bg-neutral-800/80">
+                <tr>
+                  <th
+                    class="px-3 py-2 font-semibold whitespace-nowrap min-w-[120px] {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Bill#</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Bill Date</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Customer Name</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Delivery Date</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Total Amt</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Discount</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    VAT</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Total Billed</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Status</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Products</th>
+                </tr>
+              </thead>
+              <tbody id="invoices-table-body">
+                <tr>
+                  <td colspan="11" class="text-center text-neutral-500 py-8">Loading data...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="text-xs text-neutral-400 mt-2">
+            Results are limited to 50 records. Use <b>Download</b> to get all the records.<br>
+            <b>Print</b> will print all records, not just the limited view.
+          </div>
+        </div>
+        <div id="employeesTab" class="report-tab-content hidden">
+          <!-- Filter Bar -->
+          <form
+            class="flex flex-wrap gap-4 items-end mb-6 bg-neutral-800/60 p-4 rounded-xl border border-neutral-700 shadow">
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empFromDate">From Date</label>
+              <input type="date" id="empFromDate"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empToDate">To Date</label>
+              <input type="date" id="empToDate"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empProducts">Products</label>
+              <select id="empProducts" multiple
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empCity">City</label>
+              <select id="empCity"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empArea">Area</label>
+              <select id="empArea"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="empStatus">Status</label>
+              <select id="empStatus"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+                <option>Paid</option>
+                <option>Pending</option>
+              </select>
+            </div>
+            <div class="flex gap-2 ml-auto">
+              <button type="button" id="previewEmployeesBtn"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="eye" class="w-4 h-4"></svg> Preview
+              </button>
+              <button type="button" id="downloadEmployeesBtn"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="download" class="w-4 h-4"></svg> Download
+              </button>
+              <button id="employeesPrintBtn" type="button"
+                class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="printer" class="w-4 h-4"></svg> Print
+              </button>
+            </div>
+          </form>
+          <!-- Data Table -->
+          <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80">
+            <table class="min-w-full text-sm" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
+              <thead class="bg-neutral-800/80">
+                <tr>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Employee Name</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Bills Handled</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Total Billed</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Products</th>
+                </tr>
+              </thead>
+              <tbody id="employees-table-body">
+                <tr>
+                  <td colspan="4" class="text-center text-neutral-500 py-8">No data to display. Use filters.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div id="productsTab" class="report-tab-content hidden">
+          <!-- Filter Bar -->
+          <form
+            class="flex flex-wrap gap-4 items-end mb-6 bg-neutral-800/60 p-4 rounded-xl border border-neutral-700 shadow">
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodFromDate">From Date</label>
+              <input type="date" id="prodFromDate"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodToDate">To Date</label>
+              <input type="date" id="prodToDate"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-400/60" />
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodType">Product Type</label>
+              <select id="prodType"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[120px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodCity">City</label>
+              <select id="prodCity"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodArea">Area</label>
+              <select id="prodArea"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-400 mb-1" for="prodStatus">Status</label>
+              <select id="prodStatus"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white min-w-[100px] focus:ring-2 focus:ring-indigo-400/60">
+                <option>All</option>
+                <option>Paid</option>
+                <option>Pending</option>
+              </select>
+            </div>
+            <div class="flex gap-2 ml-auto">
+              <button type="button" id="previewProductsBtn"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="eye" class="w-4 h-4"></svg> Preview
+              </button>
+              <button type="button" id="downloadProductsBtn"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="download" class="w-4 h-4"></svg> Download
+              </button>
+              <button id="productsPrintBtn" type="button"
+                class="bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                <svg data-lucide="printer" class="w-4 h-4"></svg> Print
+              </button>
+            </div>
+          </form>
+          <!-- Data Table -->
+          <div class="overflow-x-auto rounded-lg border border-neutral-700 bg-neutral-900/80">
+            <table class="min-w-full text-sm" dir="{{ 'rtl' if get_user_language() == 'ar' else 'ltr' }}">
+              <thead class="bg-neutral-800/80">
+                <tr>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Product Name</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Product Type</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Total Quantity</th>
+                  <th
+                    class="px-3 py-2 font-semibold {{ 'text-right' if get_user_language() == 'ar' else 'text-left' }}">
+                    Total Revenue</th>
+                </tr>
+              </thead>
+              <tbody id="products-table-body">
+                <tr>
+                  <td colspan="4" class="text-center text-neutral-500 py-8">No data to display. Use filters.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>

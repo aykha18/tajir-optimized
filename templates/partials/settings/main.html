@@ -1,0 +1,307 @@
+<!-- SHOP SETTINGS (Compact, Mobile-Friendly) -->
+<section id="shopSettingsSec" class="page hidden space-y-4 max-w-5xl mx-auto">
+  <div class="modern-card">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+          <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+            </path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white">Shop Settings</h3>
+      </div>
+    </div>
+
+    <!-- Compact Form -->
+    <form id="shopSettingsForm" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="flex flex-col">
+        <label for="shopName" class="text-xs text-neutral-400 mb-1">Shop Name</label>
+        <input id="shopName" name="shop_name" type="text" placeholder="e.g. Tajir Tailoring" required
+          class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+      </div>
+      <div class="flex flex-col">
+        <label for="shopMobile" class="text-xs text-neutral-400 mb-1">Shop Mobile</label>
+        <input id="shopMobile" name="shop_mobile" type="text" placeholder="e.g. 0501234567" required
+          class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+      </div>
+      <div class="flex flex-col">
+        <label for="shopCity" class="text-xs text-neutral-400 mb-1">City</label>
+        <input id="shopCity" name="city" type="text" placeholder="e.g. Dubai" autocomplete="off" required
+          class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+      </div>
+      <div class="flex flex-col">
+        <label for="shopArea" class="text-xs text-neutral-400 mb-1">Area</label>
+        <input id="shopArea" name="area" type="text" placeholder="e.g. Deira" autocomplete="off" required
+          class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+      </div>
+      <div class="md:col-span-2 flex flex-col">
+        <label for="shopAddress" class="text-xs text-neutral-400 mb-1">Complete Address</label>
+        <input id="shopAddress" name="address" type="text" placeholder="Shop #123, Building, Street, Area, City"
+          class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+      </div>
+      <div class="flex flex-col">
+        <label for="shopTRN" class="text-xs text-neutral-400 mb-1">TRN</label>
+        <input id="shopTRN" name="trn" type="text" placeholder="Tax Registration Number" pattern="[0-9]*"
+          inputmode="numeric"
+          class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+      </div>
+
+      <!-- Currency and Timezone Settings -->
+      <div class="flex flex-col">
+        <label for="currencyCode" class="text-xs text-neutral-400 mb-1">Currency</label>
+        <select id="currencyCode" name="currency_code"
+          class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+          <option value="AED">AED - UAE Dirham (د.إ)</option>
+          <option value="USD">USD - US Dollar ($)</option>
+          <option value="EUR">EUR - Euro (€)</option>
+          <option value="GBP">GBP - British Pound (£)</option>
+          <option value="CAD">CAD - Canadian Dollar (C$)</option>
+          <option value="AUD">AUD - Australian Dollar (A$)</option>
+          <option value="INR">INR - Indian Rupee (₹)</option>
+          <option value="SAR">SAR - Saudi Riyal (﷼)</option>
+          <option value="QAR">QAR - Qatari Riyal (﷼)</option>
+          <option value="KWD">KWD - Kuwaiti Dinar (د.ك)</option>
+          <option value="BHD">BHD - Bahraini Dinar (د.ب)</option>
+          <option value="OMR">OMR - Omani Rial (﷼)</option>
+          <option value="JPY">JPY - Japanese Yen (¥)</option>
+          <option value="CNY">CNY - Chinese Yuan (¥)</option>
+          <option value="SGD">SGD - Singapore Dollar (S$)</option>
+          <option value="MYR">MYR - Malaysian Ringgit (RM)</option>
+          <option value="THB">THB - Thai Baht (฿)</option>
+          <option value="PHP">PHP - Philippine Peso (₱)</option>
+          <option value="IDR">IDR - Indonesian Rupiah (Rp)</option>
+          <option value="VND">VND - Vietnamese Dong (₫)</option>
+          <option value="KRW">KRW - South Korean Won (₩)</option>
+          <option value="TRY">TRY - Turkish Lira (₺)</option>
+          <option value="RUB">RUB - Russian Ruble (₽)</option>
+          <option value="ZAR">ZAR - South African Rand (R)</option>
+          <option value="BRL">BRL - Brazilian Real (R$)</option>
+          <option value="MXN">MXN - Mexican Peso ($)</option>
+          <option value="EGP">EGP - Egyptian Pound (£)</option>
+          <option value="PKR">PKR - Pakistani Rupee (₨)</option>
+          <option value="BDT">BDT - Bangladeshi Taka (৳)</option>
+          <option value="LKR">LKR - Sri Lankan Rupee (₨)</option>
+          <option value="NPR">NPR - Nepalese Rupee (₨)</option>
+          <option value="AFN">AFN - Afghan Afghani (؋)</option>
+          <option value="IRR">IRR - Iranian Rial (﷼)</option>
+          <option value="IQD">IQD - Iraqi Dinar (د.ع)</option>
+          <option value="JOD">JOD - Jordanian Dinar (د.ا)</option>
+          <option value="LBP">LBP - Lebanese Pound (ل.ل)</option>
+          <option value="ILS">ILS - Israeli Shekel (₪)</option>
+          <option value="NGN">NGN - Nigerian Naira (₦)</option>
+          <option value="KES">KES - Kenyan Shilling (KSh)</option>
+          <option value="UGX">UGX - Ugandan Shilling (USh)</option>
+          <option value="TZS">TZS - Tanzanian Shilling (TSh)</option>
+          <option value="ETB">ETB - Ethiopian Birr (Br)</option>
+          <option value="GHS">GHS - Ghanaian Cedi (₵)</option>
+        </select>
+      </div>
+
+      <div class="flex flex-col">
+        <label for="timezone" class="text-xs text-neutral-400 mb-1">Timezone</label>
+        <select id="timezone" name="timezone"
+          class="bg-neutral-900/70 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400/60">
+          <option value="Asia/Dubai">Dubai (UAE)</option>
+          <option value="Asia/Kuwait">Kuwait</option>
+          <option value="Asia/Riyadh">Riyadh (Saudi Arabia)</option>
+          <option value="Asia/Qatar">Doha (Qatar)</option>
+          <option value="Asia/Bahrain">Manama (Bahrain)</option>
+          <option value="Asia/Muscat">Muscat (Oman)</option>
+          <option value="Asia/Karachi">Karachi (Pakistan)</option>
+          <option value="Asia/Kolkata">Mumbai/Delhi (India)</option>
+          <option value="Asia/Dhaka">Dhaka (Bangladesh)</option>
+          <option value="Asia/Colombo">Colombo (Sri Lanka)</option>
+          <option value="Asia/Kathmandu">Kathmandu (Nepal)</option>
+          <option value="Asia/Kabul">Kabul (Afghanistan)</option>
+          <option value="Asia/Tehran">Tehran (Iran)</option>
+          <option value="Asia/Baghdad">Baghdad (Iraq)</option>
+          <option value="Asia/Amman">Amman (Jordan)</option>
+          <option value="Asia/Beirut">Beirut (Lebanon)</option>
+          <option value="Asia/Damascus">Damascus (Syria)</option>
+          <option value="Asia/Jerusalem">Jerusalem (Israel)</option>
+          <option value="Asia/Cairo">Cairo (Egypt)</option>
+          <option value="Africa/Casablanca">Casablanca (Morocco)</option>
+          <option value="Africa/Tunis">Tunis (Tunisia)</option>
+          <option value="Africa/Algiers">Algiers (Algeria)</option>
+          <option value="Africa/Tripoli">Tripoli (Libya)</option>
+          <option value="Africa/Khartoum">Khartoum (Sudan)</option>
+          <option value="Africa/Addis_Ababa">Addis Ababa (Ethiopia)</option>
+          <option value="Africa/Nairobi">Nairobi (Kenya)</option>
+          <option value="Africa/Kampala">Kampala (Uganda)</option>
+          <option value="Africa/Dar_es_Salaam">Dar es Salaam (Tanzania)</option>
+          <option value="Africa/Lagos">Lagos (Nigeria)</option>
+          <option value="Africa/Accra">Accra (Ghana)</option>
+          <option value="Africa/Dakar">Dakar (Senegal)</option>
+          <option value="Africa/Abidjan">Abidjan (Ivory Coast)</option>
+          <option value="America/New_York">New York (USA)</option>
+          <option value="America/Chicago">Chicago (USA)</option>
+          <option value="America/Denver">Denver (USA)</option>
+          <option value="America/Los_Angeles">Los Angeles (USA)</option>
+          <option value="America/Toronto">Toronto (Canada)</option>
+          <option value="America/Vancouver">Vancouver (Canada)</option>
+          <option value="America/Mexico_City">Mexico City (Mexico)</option>
+          <option value="America/Sao_Paulo">São Paulo (Brazil)</option>
+          <option value="America/Buenos_Aires">Buenos Aires (Argentina)</option>
+          <option value="America/Santiago">Santiago (Chile)</option>
+          <option value="America/Bogota">Bogotá (Colombia)</option>
+          <option value="America/Lima">Lima (Peru)</option>
+          <option value="America/Montevideo">Montevideo (Uruguay)</option>
+          <option value="Europe/London">London (UK)</option>
+          <option value="Europe/Paris">Paris (France)</option>
+          <option value="Europe/Berlin">Berlin (Germany)</option>
+          <option value="Europe/Rome">Rome (Italy)</option>
+          <option value="Europe/Madrid">Madrid (Spain)</option>
+          <option value="Europe/Amsterdam">Amsterdam (Netherlands)</option>
+          <option value="Europe/Brussels">Brussels (Belgium)</option>
+          <option value="Europe/Vienna">Vienna (Austria)</option>
+          <option value="Europe/Zurich">Zurich (Switzerland)</option>
+          <option value="Europe/Stockholm">Stockholm (Sweden)</option>
+          <option value="Europe/Oslo">Oslo (Norway)</option>
+          <option value="Europe/Copenhagen">Copenhagen (Denmark)</option>
+          <option value="Europe/Helsinki">Helsinki (Finland)</option>
+          <option value="Europe/Warsaw">Warsaw (Poland)</option>
+          <option value="Europe/Prague">Prague (Czech Republic)</option>
+          <option value="Europe/Budapest">Budapest (Hungary)</option>
+          <option value="Europe/Bucharest">Bucharest (Romania)</option>
+          <option value="Europe/Sofia">Sofia (Bulgaria)</option>
+          <option value="Europe/Athens">Athens (Greece)</option>
+          <option value="Europe/Istanbul">Istanbul (Turkey)</option>
+          <option value="Europe/Moscow">Moscow (Russia)</option>
+          <option value="Europe/Kiev">Kiev (Ukraine)</option>
+          <option value="Asia/Tokyo">Tokyo (Japan)</option>
+          <option value="Asia/Shanghai">Shanghai (China)</option>
+          <option value="Asia/Hong_Kong">Hong Kong</option>
+          <option value="Asia/Singapore">Singapore</option>
+          <option value="Asia/Kuala_Lumpur">Kuala Lumpur (Malaysia)</option>
+          <option value="Asia/Bangkok">Bangkok (Thailand)</option>
+          <option value="Asia/Manila">Manila (Philippines)</option>
+          <option value="Asia/Jakarta">Jakarta (Indonesia)</option>
+          <option value="Asia/Ho_Chi_Minh">Ho Chi Minh City (Vietnam)</option>
+          <option value="Asia/Seoul">Seoul (South Korea)</option>
+          <option value="Asia/Taipei">Taipei (Taiwan)</option>
+          <option value="Australia/Sydney">Sydney (Australia)</option>
+          <option value="Australia/Melbourne">Melbourne (Australia)</option>
+          <option value="Australia/Perth">Perth (Australia)</option>
+          <option value="Australia/Adelaide">Adelaide (Australia)</option>
+          <option value="Australia/Brisbane">Brisbane (Australia)</option>
+          <option value="Pacific/Auckland">Auckland (New Zealand)</option>
+          <option value="Pacific/Fiji">Suva (Fiji)</option>
+          <option value="Pacific/Honolulu">Honolulu (Hawaii)</option>
+        </select>
+      </div>
+
+    </form>
+
+    <!-- Billing Configuration Card (inside Shop Settings) -->
+    <div class="modern-card mt-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white">Billing Configuration</h3>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- Trial Date Toggle + Default Trial Days -->
+        <div
+          class="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-lg border border-indigo-500/20">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="bcEnableTrialDate" name="enable_trial_date"
+              class="w-4 h-4 text-indigo-600 bg-neutral-800 border-neutral-600 rounded">
+            <label for="bcEnableTrialDate" class="text-sm font-medium text-neutral-300">Trial Date</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="defaultTrialDays" name="default_trial_days" min="0" max="30"
+              class="w-20 bg-neutral-800/70 border border-neutral-600/50 rounded-lg px-2 py-1 text-sm text-center focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-500 transition-all duration-200"
+              value="3">
+          </div>
+        </div>
+
+        <!-- Delivery Date Toggle + Default Delivery Days -->
+        <div
+          class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="bcEnableDeliveryDate" name="enable_delivery_date"
+              class="w-4 h-4 text-blue-600 bg-neutral-800 border-neutral-600 rounded">
+            <label for="bcEnableDeliveryDate" class="text-sm font-medium text-neutral-300">Delivery Date</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="defaultDeliveryDaysCfg" name="default_delivery_days" min="0" max="30"
+              class="w-20 bg-neutral-800/70 border border-neutral-600/50 rounded-lg px-2 py-1 text-sm text-center focus:ring-2 focus:ring-blue-400/60 focus:border-blue-500 transition-all duration-200"
+              value="3">
+          </div>
+        </div>
+
+        <!-- Advance Payment Toggle -->
+        <div
+          class="flex items-center justify-between p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="bcEnableAdvancePayment" name="enable_advance_payment"
+              class="w-4 h-4 text-emerald-600 bg-neutral-800 border-neutral-600 rounded">
+            <label for="bcEnableAdvancePayment" class="text-sm font-medium text-neutral-300">Advance
+              Payment</label>
+          </div>
+          <span class="text-xs text-neutral-500">Allow partial payments</span>
+        </div>
+
+        <!-- Use Dynamic Invoice Template -->
+        <div
+          class="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-lg border border-indigo-500/20">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="useDynamicInvoiceTemplate" name="use_dynamic_invoice_template"
+              class="w-4 h-4 text-indigo-600 bg-neutral-800 border-neutral-600 rounded">
+            <label for="useDynamicInvoiceTemplate"
+              class="text-sm font-medium text-neutral-300 flex items-center gap-2">
+              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                </path>
+              </svg>
+              Show Shop Details in Invoice
+            </label>
+          </div>
+        </div>
+
+        <!-- Customer Notes Toggle -->
+        <div
+          class="flex items-center justify-between p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg border border-amber-500/20">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="enableCustomerNotes" name="enable_customer_notes"
+              class="w-4 h-4 text-amber-600 bg-neutral-800 border-neutral-600 rounded">
+            <label for="enableCustomerNotes" class="text-sm font-medium text-neutral-300">Customer Notes</label>
+          </div>
+          <span class="text-xs text-neutral-500">Additional notes field</span>
+        </div>
+
+        <!-- Employee Assignment Toggle + Default Employee -->
+        <div
+          class="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-lg border border-indigo-500/20">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="enableEmployeeAssignment" name="enable_employee_assignment"
+              class="w-4 h-4 text-indigo-600 bg-neutral-800 border-neutral-600 rounded">
+            <label for="enableEmployeeAssignment" class="text-sm font-medium text-neutral-300">Employee
+              Assignment</label>
+          </div>
+          <select id="defaultEmployeeId" name="default_employee_id"
+            class="min-w-[10rem] bg-neutral-800/70 border border-neutral-600/50 rounded-lg px-2 py-1 text-sm text-neutral-200 focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-500 transition-all duration-200">
+            <option value="">Select employee</option>
+          </select>
+        </div>
+      </div>
+      <div class="md:col-span-2 flex justify-center gap-3 pt-2">
+        <button type="button" id="saveShopSettingsBtn" class="modern-btn modern-btn-primary">Save
+          Settings</button>
+        <button type="button" id="openChangePassword" class="modern-btn modern-btn-secondary">Change
+          Password</button>
+        <button type="button" id="logoutBtn" class="modern-btn modern-btn-danger">Logout</button>
+      </div>
+    </div>
+  </div>
+</section>
